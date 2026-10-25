@@ -30,10 +30,12 @@ enum Route: Hashable {
     case artist(String)
     case playlist(String)
     case albums(String)
+    case genre(String)
     case artists
     case playlists
     case favorites
     case downloads
+    case settings
 }
 
 extension View {
@@ -44,10 +46,12 @@ extension View {
             case .artist(let id): ArtistView(id: id)
             case .playlist(let id): PlaylistView(id: id)
             case .albums(let type): AlbumsView(type: type)
+            case .genre(let name): AlbumsView(type: "byGenre", genre: name)
             case .artists: ArtistsView()
             case .playlists: PlaylistsView()
             case .favorites: FavoritesView()
             case .downloads: DownloadsView()
+            case .settings: SettingsView()
             }
         }
     }
@@ -55,8 +59,10 @@ extension View {
 
 struct RootView: View {
     @Environment(AppModel.self) private var app
+    @State private var tab = min(Theme.shared.startTab, 2)
+    @State private var paths = [NavigationPath(), NavigationPath(), NavigationPath()]
     @State private var showNowPlaying = false
-    @State private var tab = Theme.shared.startTab
+    @State private var showMenu = false
 
     var body: some View {
         @Bindable var app = app
@@ -64,33 +70,165 @@ struct RootView: View {
             if app.accounts.isEmpty {
                 NavigationStack { AccountEditorView(account: nil) }
             } else {
-                TabView(selection: $tab) {
-                    page { HomeView() }.tabItem { Label("Home", systemImage: "house.fill") }.tag(0)
-                    page { SearchView() }.tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(1)
-                    page { LibraryView() }.tabItem { Label("Library", systemImage: "books.vertical.fill") }.tag(2)
-                    page { SettingsView() }.tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(3)
-                }
-                .id(app.currentId) // fresh navigation state when switching accounts
+                tabs
             }
         }
         .fullScreenCover(isPresented: $app.showsAccountPicker) { AccountPickerView() }
-        .sheet(isPresented: $showNowPlaying) { NowPlayingView() }
-        .environment(\.openNowPlaying, OpenNowPlaying { showNowPlaying = true })
+        .environment(\.ui, UIActions(
+            nowPlaying: { withAnimation(.spring(duration: 0.4)) { showNowPlaying = true } },
+            profileMenu: { withAnimation(.easeOut(duration: 0.25)) { showMenu = true } },
+            open: { route in
+                withAnimation(.easeOut(duration: 0.25)) { showNowPlaying = false; showMenu = false }
+                paths[tab].append(route)
+            }))
         .tint(.accent) // reads Theme, so a new accent color applies everywhere at once
+        .onChange(of: app.currentId) { paths = [NavigationPath(), NavigationPath(), NavigationPath()] }
     }
 
-    private func page<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        NavigationStack { content().routes() }
-            .safeAreaInset(edge: .bottom) { MiniPlayer().padding(.horizontal, 8).padding(.bottom, 4) }
+    private var tabs: some View {
+        ZStack {
+            // All three stacks stay alive so each tab keeps its place, like the tab bar of a music app should
+            ForEach(0..<3, id: \.self) { i in
+                NavigationStack(path: $paths[i]) { root(i).routes() }
+                    .opacity(tab == i ? 1 : 0)
+                    .allowsHitTesting(tab == i)
+            }
+        }
+        .id(app.currentId) // fresh views when switching accounts
+        .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
+        .overlay {
+            if showNowPlaying {
+                NowPlayingView { withAnimation(.spring(duration: 0.35)) { showNowPlaying = false } }
+                    .transition(.move(edge: .bottom))
+                    .zIndex(2)
+            }
+        }
+        .overlay {
+            if showMenu {
+                ProfileMenu { withAnimation(.easeOut(duration: 0.25)) { showMenu = false } }
+                    .zIndex(3)
+            }
+        }
+    }
+
+    @ViewBuilder private func root(_ i: Int) -> some View {
+        switch i {
+        case 0: HomeView()
+        case 1: SearchView()
+        default: LibraryView()
+        }
+    }
+
+    private var bottomBar: some View {
+        VStack(spacing: 4) {
+            MiniPlayer().padding(.horizontal, 8)
+            TabBar(tab: $tab) { paths[$0] = NavigationPath() }
+        }
+        .background(alignment: .bottom) {
+            LinearGradient(stops: [.init(color: .black.opacity(0), location: 0), .init(color: .black.opacity(0.8), location: 0.45),
+                                   .init(color: .black, location: 1)], startPoint: .top, endPoint: .bottom)
+                .padding(.top, -24)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        }
     }
 }
 
-struct OpenNowPlaying { var action: () -> Void = {} ; func callAsFunction() { action() } }
+struct TabBar: View {
+    @Binding var tab: Int
+    /// Tapping the open tab again goes back to its start page.
+    let reselect: (Int) -> Void
 
-private struct OpenNowPlayingKey: EnvironmentKey { static let defaultValue = OpenNowPlaying() }
-extension EnvironmentValues {
-    var openNowPlaying: OpenNowPlaying {
-        get { self[OpenNowPlayingKey.self] }
-        set { self[OpenNowPlayingKey.self] = newValue }
+    private let items: [(icon: String, selected: String, title: LocalizedStringKey)] = [
+        ("house", "house.fill", "Home"), ("magnifyingglass", "magnifyingglass", "Search"),
+        ("books.vertical", "books.vertical.fill", "Your Library"),
+    ]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(items.indices, id: \.self) { i in
+                let on = tab == i
+                Button { if on { reselect(i) } else { tab = i } } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: on ? items[i].selected : items[i].icon)
+                            .font(.system(size: 22, weight: on ? .semibold : .regular))
+                            .frame(height: 26)
+                        Text(items[i].title).font(.system(size: 10, weight: .medium))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .foregroundStyle(on ? Color.white : Color.subtle)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.top, 8)
+    }
+}
+
+/// Slides in from the left when the avatar is tapped: accounts, downloads, settings.
+struct ProfileMenu: View {
+    @Environment(AppModel.self) private var app
+    @Environment(\.ui) private var ui
+    let close: () -> Void
+    @State private var shown = false
+    @State private var adding = false
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Color.black.opacity(shown ? 0.55 : 0).ignoresSafeArea().onTapGesture(perform: dismiss)
+            VStack(alignment: .leading, spacing: 0) {
+                if let acc = app.current {
+                    HStack(spacing: 12) {
+                        Avatar(name: acc.username, size: 52)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(acc.username).font(.system(size: 20, weight: .bold))
+                            Text(acc.host).font(.system(size: 13)).foregroundStyle(Color.subtle).lineLimit(1)
+                        }
+                    }
+                    .padding(.bottom, 20)
+                }
+                Rectangle().fill(Color(white: 0.22)).frame(height: 1).padding(.bottom, 12)
+                ForEach(app.accounts.filter { $0.id != app.currentId }) { acc in
+                    row(label: Text(acc.username), sub: acc.host) { Avatar(name: acc.username, size: 28) } action: {
+                        dismiss(); app.select(acc.id)
+                    }
+                }
+                row(label: Text("Add account")) { Image(systemName: "plus").font(.system(size: 20)) } action: { adding = true }
+                row(label: Text("Downloads")) { Image(systemName: "arrow.down.circle").font(.system(size: 22)) } action: { ui.open(.downloads) }
+                row(label: Text("Settings")) { Image(systemName: "gearshape").font(.system(size: 22)) } action: { ui.open(.settings) }
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .frame(width: 310)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .background(Color(white: 0.1).ignoresSafeArea())
+            .offset(x: shown ? 0 : -330)
+            .gesture(DragGesture().onEnded { if $0.translation.width < -60 { dismiss() } })
+        }
+        .onAppear { withAnimation(.easeOut(duration: 0.25)) { shown = true } }
+        .sheet(isPresented: $adding) { NavigationStack { AccountEditorView(account: nil) } }
+    }
+
+    private func dismiss() {
+        withAnimation(.easeIn(duration: 0.2)) { shown = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: close)
+    }
+
+    private func row<Icon: View>(label: Text, sub: String? = nil, @ViewBuilder icon: () -> Icon, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                icon().frame(width: 28)
+                VStack(alignment: .leading, spacing: 1) {
+                    label.font(.system(size: 17))
+                    if let sub { Text(sub).font(.system(size: 12)).foregroundStyle(Color.subtle) }
+                }
+                Spacer()
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

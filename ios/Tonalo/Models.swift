@@ -84,6 +84,12 @@ struct Playlist: Codable, Hashable, Identifiable {
     var entry: [Song]?
 }
 
+struct Genre: Codable, Hashable {
+    var value: String
+    var albumCount: Int?
+    var songCount: Int?
+}
+
 struct ArtistInfo: Codable {
     var biography: String?
     var similarArtist: [Artist]?
@@ -108,6 +114,7 @@ struct SongList: Codable { var song: [Song]? }
 struct ArtistIndex: Codable { var name: String; var artist: [Artist]? }
 struct ArtistsBody: Codable { var index: [ArtistIndex]? }
 struct PlaylistsBody: Codable { var playlist: [Playlist]? }
+struct GenresBody: Codable { var genre: [Genre]? }
 struct SearchBody: Codable { var artist: [Artist]?; var album: [Album]?; var song: [Song]? }
 struct StructuredLyrics: Codable { var synced: Bool?; var line: [LyricLine]? }
 struct LyricsListBody: Codable { var structuredLyrics: [StructuredLyrics]? }
@@ -129,6 +136,7 @@ struct Payload: Codable {
     var starred2: SearchBody?
     var searchResult3: SearchBody?
     var lyricsList: LyricsListBody?
+    var genres: GenresBody?
 }
 
 struct Envelope: Codable {

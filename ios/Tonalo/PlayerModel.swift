@@ -9,6 +9,14 @@ import UIKit
 final class PlayerModel {
     enum RepeatMode: String, Codable { case off, all, one }
 
+    /// Where the queue came from, shown as "Playing from …" in the player.
+    struct Context: Codable, Hashable {
+        enum Kind: String, Codable { case album, playlist, artist, favorites, search, mix, downloads }
+        var kind: Kind
+        var id: String?
+        var name: String
+    }
+
     @ObservationIgnored weak var app: AppModel?
 
     private(set) var queue: [Song] = []
@@ -18,6 +26,7 @@ final class PlayerModel {
     private(set) var duration: Double = 0
     private(set) var shuffle = false
     private(set) var repeatMode: RepeatMode = .off
+    private(set) var context: Context?
     var lastError: String?
 
     var current: Song? { queue.indices.contains(index) ? queue[index] : nil }
@@ -64,8 +73,9 @@ final class PlayerModel {
 
     // MARK: Queue
 
-    func play(_ songs: [Song], from start: Int = 0, shuffled: Bool = false) {
+    func play(_ songs: [Song], from start: Int = 0, shuffled: Bool = false, context: Context? = nil) {
         guard !songs.isEmpty else { return }
+        self.context = context
         if shuffled {
             original = songs
             queue = songs.shuffled()
@@ -78,6 +88,11 @@ final class PlayerModel {
         shuffle = shuffled
         errorStreak = 0
         load(autoplay: true)
+    }
+
+    /// True while this album/playlist/… is what the queue was started from.
+    func isPlaying(from kind: Context.Kind, id: String?) -> Bool {
+        isPlaying && context?.kind == kind && context?.id == id
     }
 
     func playNext(_ songs: [Song]) {
@@ -175,11 +190,11 @@ final class PlayerModel {
         endFade()
         player.pause()
         player.replaceCurrentItem(with: nil)
-        queue = []; index = -1; position = 0; duration = 0; original = nil
+        queue = []; index = -1; position = 0; duration = 0; original = nil; context = nil
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
-    private struct Saved: Codable { var queue: [Song]; var index: Int; var position: Double; var repeatMode: RepeatMode; var shuffle: Bool }
+    private struct Saved: Codable { var queue: [Song]; var index: Int; var position: Double; var repeatMode: RepeatMode; var shuffle: Bool; var context: Context? }
 
     private var storageKey: String? { app?.current.map { "queue." + $0.id.uuidString } }
 
@@ -191,12 +206,13 @@ final class PlayerModel {
         position = s.position
         repeatMode = s.repeatMode
         shuffle = s.shuffle
+        context = s.context
         duration = Double(current?.duration ?? 0)
     }
 
     private func persist() {
         guard let key = storageKey else { return }
-        let s = Saved(queue: Array(queue.prefix(1000)), index: index, position: position, repeatMode: repeatMode, shuffle: shuffle)
+        let s = Saved(queue: Array(queue.prefix(1000)), index: index, position: position, repeatMode: repeatMode, shuffle: shuffle, context: context)
         UserDefaults.standard.set(try? JSONEncoder().encode(s), forKey: key)
     }
 

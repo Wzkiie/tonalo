@@ -66,7 +66,9 @@ struct DownloadsView: View {
                 LabeledContent("Storage used", value: ByteCountFormatter.string(fromByteCount: store.totalBytes, countStyle: .file))
                 LabeledContent("Songs", value: "\(songs.count)")
                 if !songs.isEmpty {
-                    PlayButtons(play: { app.player.play(songs) }, shuffle: { app.player.play(songs, shuffled: true) })
+                    PlayButtons(playing: app.player.isPlaying(from: .downloads, id: nil),
+                                play: { app.player.play(songs, context: .init(kind: .downloads, name: String(localized: "Downloads"))) },
+                                shuffle: { app.player.play(songs, shuffled: true, context: .init(kind: .downloads, name: String(localized: "Downloads"))) })
                         .listRowBackground(Color.clear)
                 }
             }

@@ -1,29 +1,53 @@
 import SwiftUI
 
-/// Shared layout: tinted header with cover, title and subtitle, followed by content.
-private struct DetailPage<Header: View, Content: View>: View {
+/// Shared layout for albums and playlists: cover on a tinted gradient, left-aligned title, action row, songs.
+private struct DetailPage<Art: View, Info: View, Actions: View, Content: View>: View {
     let coverId: String?
-    var round = false
     let title: String
-    @ViewBuilder let subtitle: () -> Header
+    @ViewBuilder let art: () -> Art
+    @ViewBuilder let info: () -> Info
+    @ViewBuilder let actions: () -> Actions
     @ViewBuilder let content: () -> Content
+    @State private var titleHidden = false
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                CoverView(id: coverId, size: 600, round: round, corner: 8)
-                    .frame(width: 230)
-                    .shadow(color: .black.opacity(0.5), radius: 16, y: 8)
-                    .padding(.top, 8)
-                Text(title).font(.title2.bold()).multilineTextAlignment(.center)
-                subtitle()
+            VStack(alignment: .leading, spacing: 10) {
+                art()
+                    .frame(width: 250, height: 250)
+                    .shadow(color: .black.opacity(0.55), radius: 18, y: 10)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 4)
+                    .padding(.bottom, 10)
+                Text(title).font(.system(size: 24, weight: .bold)).lineLimit(3)
+                    .onGeometryChange(for: Bool.self) { $0.frame(in: .global).maxY < 100 } action: { titleHidden = $0 }
+                info()
+                actions().padding(.vertical, 4)
                 content()
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 16)
             .padding(.bottom, 24)
+            .background(alignment: .top) {
+                CoverTint(coverId: coverId, height: 560).padding(.horizontal, -16).offset(y: -200)
+            }
         }
-        .background(CoverTint(coverId: coverId))
+        .background(Color.black)
+        .navigationTitle(titleHidden ? title : "")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Gray icon button for the action row under a title.
+private struct ActionIcon: View {
+    let icon: String
+    var active = false
+    let label: LocalizedStringKey
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.system(size: 22)).foregroundStyle(active ? Color.accent : Color.subtle)
+        }
+        .accessibilityLabel(label)
     }
 }
 
@@ -36,39 +60,57 @@ struct AlbumView: View {
     var body: some View {
         if let album {
             let songs = album.song ?? []
+            let context = PlayerModel.Context(kind: .album, id: album.id, name: album.name)
+            let playing = app.player.isPlaying(from: .album, id: album.id)
             DetailPage(coverId: album.coverArt ?? album.id, title: album.name) {
-                VStack(spacing: 4) {
-                    if let artistId = album.artistId {
-                        NavigationLink(album.artist ?? "", value: Route.artist(artistId)).font(.headline)
+                CoverView(id: album.coverArt ?? album.id, size: 600, corner: 4)
+            } info: {
+                if let artistId = album.artistId {
+                    NavigationLink(value: Route.artist(artistId)) {
+                        HStack(spacing: 8) {
+                            CoverView(id: artistId, size: 60, round: true).frame(width: 24)
+                            Text(album.artist ?? "").font(.system(size: 13, weight: .bold))
+                        }
                     }
-                    Text([album.year.map(String.init), String(localized: "\(songs.count) songs"), formatDuration(album.duration ?? 0)].compactMap { $0 }.joined(separator: " · "))
-                        .font(.caption).foregroundStyle(.secondary)
+                    .buttonStyle(.plain)
+                }
+                Text([String(localized: "Album"), album.year.map(String.init)].compactMap { $0 }.joined(separator: " • "))
+                    .font(.system(size: 13)).foregroundStyle(Color.subtle)
+            } actions: {
+                HStack(spacing: 24) {
+                    ActionIcon(icon: album.starred == nil ? "heart" : "heart.fill", active: album.starred != nil,
+                               label: album.starred == nil ? "Add to favorites" : "Remove from favorites") { toggleStar() }
+                    DownloadButton(songs: songs, download: { app.downloads.downloadAlbum(album) }, remove: { app.downloads.removeAlbum(album.id) })
+                        .font(.system(size: 22)).foregroundStyle(Color.subtle)
+                    Menu {
+                        Button { app.player.enqueue(songs) } label: { Label("Add to queue", systemImage: "text.append") }
+                        if let artistId = album.artistId {
+                            NavigationLink(value: Route.artist(artistId)) { Label("Go to artist", systemImage: "music.mic") }
+                        }
+                    } label: { Image(systemName: "ellipsis").font(.system(size: 22)).foregroundStyle(Color.subtle).frame(height: 30) }
+                    PlayButtons(playing: playing,
+                                play: { playing ? app.player.toggle() : app.player.play(songs, context: context) },
+                                shuffle: { app.player.play(songs, shuffled: true, context: context) })
                 }
             } content: {
-                PlayButtons(play: { app.player.play(songs) }, shuffle: { app.player.play(songs, shuffled: true) })
-                HStack(spacing: 28) {
-                    starButton
-                    DownloadButton(songs: songs, download: { app.downloads.downloadAlbum(album) }, remove: { app.downloads.removeAlbum(album.id) })
-                    Button { app.player.enqueue(songs) } label: { Image(systemName: "text.append") }
-                }
-                .font(.title3).foregroundStyle(.secondary)
-                LazyVStack(spacing: 16) {
+                LazyVStack(spacing: 10) {
                     ForEach(Array(songs.enumerated()), id: \.element.id) { i, s in
-                        SongRow(song: s, number: s.track ?? i + 1) { app.player.play(songs, from: i) }
+                        SongRow(song: s) { app.player.play(songs, from: i, context: context) }
                     }
                 }
+                Text([String(localized: "\(songs.count) songs"), formatDuration(album.duration ?? 0)].joined(separator: " • "))
+                    .font(.system(size: 13)).foregroundStyle(Color.subtle).padding(.top, 12)
             }
         } else {
             LoadState(loading: error == nil, error: error).task { await load() }
         }
     }
 
-    private var starButton: some View {
-        Button {
-            guard let client = app.client, let a = album else { return }
-            let on = a.starred == nil
-            Task { try? await client.setStar(albumId: a.id, on: on); album?.starred = on ? "1" : nil }
-        } label: { Image(systemName: album?.starred == nil ? "heart" : "heart.fill") }
+    private func toggleStar() {
+        guard let client = app.client, let a = album else { return }
+        let on = a.starred == nil
+        album?.starred = on ? "1" : nil
+        Task { try? await client.setStar(albumId: a.id, on: on) }
     }
 
     private func load() async {
@@ -83,72 +125,6 @@ struct AlbumView: View {
     }
 }
 
-struct ArtistView: View {
-    @Environment(AppModel.self) private var app
-    let id: String
-    @State private var artist: Artist?
-    @State private var top: [Song] = []
-    @State private var bio: String?
-    @State private var error: String?
-
-    var body: some View {
-        if let artist {
-            let albums = (artist.album ?? []).sorted { ($0.year ?? 0) > ($1.year ?? 0) }
-            DetailPage(coverId: artist.coverArt ?? artist.id, round: true, title: artist.name) {
-                Text("\(albums.count) albums").font(.caption).foregroundStyle(.secondary)
-            } content: {
-                PlayButtons(play: { top.isEmpty ? playAll(shuffled: false) : app.player.play(top) },
-                            shuffle: { playAll(shuffled: true) })
-                Button { radio() } label: { Label("Artist radio", systemImage: "dot.radiowaves.left.and.right") }
-                    .buttonStyle(.bordered).tint(.secondary)
-                if let bio, !bio.isEmpty {
-                    Text(bio).font(.footnote).foregroundStyle(.secondary).lineLimit(4).frame(maxWidth: .infinity, alignment: .leading)
-                }
-                if !top.isEmpty {
-                    Text("Top songs").font(.title3.bold()).frame(maxWidth: .infinity, alignment: .leading)
-                    LazyVStack(spacing: 14) {
-                        ForEach(Array(top.prefix(10).enumerated()), id: \.element.id) { i, s in
-                            SongRow(song: s, showCover: true) { app.player.play(top, from: i) }
-                        }
-                    }
-                }
-                Text("Discography").font(.title3.bold()).frame(maxWidth: .infinity, alignment: .leading)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 20) {
-                    ForEach(albums) { AlbumCard(album: $0, width: nil) }
-                }
-            }
-        } else {
-            LoadState(loading: error == nil, error: error).task { await load() }
-        }
-    }
-
-    private func load() async {
-        guard let client = app.client else { return }
-        do {
-            let a = try await client.artist(id)
-            artist = a
-            top = await client.topSongs(a.name)
-            bio = await client.artistInfo(id)?.biography?
-                .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-        } catch { self.error = error.localizedDescription }
-    }
-
-    private func playAll(shuffled: Bool) {
-        guard let client = app.client, let albums = artist?.album else { return }
-        Task {
-            var songs: [Song] = []
-            for a in albums { songs += (try? await client.album(a.id).song) ?? [] }
-            app.player.play(songs, shuffled: shuffled)
-        }
-    }
-
-    private func radio() {
-        guard let client = app.client else { return }
-        Task { let s = await client.similarSongs(id); if !s.isEmpty { app.player.play(s) } }
-    }
-}
-
 struct PlaylistView: View {
     @Environment(AppModel.self) private var app
     let id: String
@@ -158,16 +134,34 @@ struct PlaylistView: View {
     var body: some View {
         if let p = playlist {
             let songs = p.entry ?? []
+            let context = PlayerModel.Context(kind: .playlist, id: p.id, name: p.name)
+            let playing = app.player.isPlaying(from: .playlist, id: p.id)
             DetailPage(coverId: p.coverArt ?? p.id, title: p.name) {
-                Text([p.owner, String(localized: "\(songs.count) songs"), formatDuration(p.duration ?? 0)].compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption).foregroundStyle(.secondary)
+                CoverView(id: p.coverArt ?? p.id, size: 600, corner: 4)
+            } info: {
+                if let comment = p.comment, !comment.isEmpty {
+                    Text(comment).font(.system(size: 13)).foregroundStyle(Color.subtle).lineLimit(3)
+                }
+                if let owner = p.owner {
+                    HStack(spacing: 8) { Avatar(name: owner, size: 24); Text(owner).font(.system(size: 13, weight: .bold)) }
+                }
+                Text([String(localized: "\(songs.count) songs"), formatDuration(p.duration ?? 0)].joined(separator: " • "))
+                    .font(.system(size: 13)).foregroundStyle(Color.subtle)
+            } actions: {
+                HStack(spacing: 24) {
+                    DownloadButton(songs: songs, download: { app.downloads.downloadPlaylist(p) }, remove: { app.downloads.removePlaylist(p.id) })
+                        .font(.system(size: 22)).foregroundStyle(Color.subtle)
+                    Menu {
+                        Button { app.player.enqueue(songs) } label: { Label("Add to queue", systemImage: "text.append") }
+                    } label: { Image(systemName: "ellipsis").font(.system(size: 22)).foregroundStyle(Color.subtle).frame(height: 30) }
+                    PlayButtons(playing: playing,
+                                play: { playing ? app.player.toggle() : app.player.play(songs, context: context) },
+                                shuffle: { app.player.play(songs, shuffled: true, context: context) })
+                }
             } content: {
-                PlayButtons(play: { app.player.play(songs) }, shuffle: { app.player.play(songs, shuffled: true) })
-                DownloadButton(songs: songs, download: { app.downloads.downloadPlaylist(p) }, remove: { app.downloads.removePlaylist(p.id) })
-                    .font(.title3).foregroundStyle(.secondary)
-                LazyVStack(spacing: 14) {
+                LazyVStack(spacing: 10) {
                     ForEach(Array(songs.enumerated()), id: \.offset) { i, s in
-                        SongRow(song: s, showCover: true) { app.player.play(songs, from: i) }
+                        SongRow(song: s, showCover: true) { app.player.play(songs, from: i, context: context) }
                     }
                 }
             }
@@ -184,6 +178,168 @@ struct PlaylistView: View {
         } catch {
             if let saved = app.downloads.index.playlists[id] { playlist = saved }
             else { self.error = error.localizedDescription }
+        }
+    }
+}
+
+/// Favorite songs, laid out like a playlist.
+struct FavoritesView: View {
+    @Environment(AppModel.self) private var app
+    @State private var songs: [Song]?
+    @State private var error: String?
+
+    var body: some View {
+        let list = songs ?? []
+        let context = PlayerModel.Context(kind: .favorites, name: String(localized: "Favorite songs"))
+        let playing = app.player.isPlaying(from: .favorites, id: nil)
+        DetailPage(coverId: nil, title: String(localized: "Favorite songs")) {
+            FavoritesArt().font(.system(size: 64)).clipShape(RoundedRectangle(cornerRadius: 4))
+        } info: {
+            if let name = app.current?.username {
+                HStack(spacing: 8) { Avatar(name: name, size: 24); Text(name).font(.system(size: 13, weight: .bold)) }
+            }
+            Text("\(list.count) songs").font(.system(size: 13)).foregroundStyle(Color.subtle)
+        } actions: {
+            HStack(spacing: 24) {
+                DownloadButton(songs: list, download: { app.downloads.download(list) }, remove: { app.downloads.remove(list.map(\.id)) })
+                    .font(.system(size: 22)).foregroundStyle(Color.subtle)
+                PlayButtons(playing: playing,
+                            play: { playing ? app.player.toggle() : app.player.play(list, context: context) },
+                            shuffle: { app.player.play(list, shuffled: true, context: context) })
+            }
+        } content: {
+            LoadState(loading: songs == nil && error == nil, error: error)
+            if songs?.isEmpty == true {
+                Text("No favorites yet.").foregroundStyle(Color.subtle).frame(maxWidth: .infinity).padding(40)
+            }
+            LazyVStack(spacing: 10) {
+                ForEach(Array(list.enumerated()), id: \.element.id) { i, s in
+                    SongRow(song: s, showCover: true) { app.player.play(list, from: i, context: context) }
+                }
+            }
+        }
+        .task { await load() }
+        .refreshable { await load() }
+    }
+
+    private func load() async {
+        do { songs = try await app.client?.starred().song ?? [] } catch { self.error = error.localizedDescription }
+    }
+}
+
+struct ArtistView: View {
+    @Environment(AppModel.self) private var app
+    let id: String
+    @State private var artist: Artist?
+    @State private var top: [Song] = []
+    @State private var bio: String?
+    @State private var error: String?
+    @State private var showAllTop = false
+
+    var body: some View {
+        if let artist {
+            let albums = (artist.album ?? []).sorted { ($0.year ?? 0) > ($1.year ?? 0) }
+            let context = PlayerModel.Context(kind: .artist, id: artist.id, name: artist.name)
+            let playing = app.player.isPlaying(from: .artist, id: artist.id)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    hero(artist)
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("\(albums.count) albums").font(.system(size: 13)).foregroundStyle(Color.subtle)
+                        HStack(spacing: 24) {
+                            ActionIcon(icon: artist.starred == nil ? "heart" : "heart.fill", active: artist.starred != nil,
+                                       label: artist.starred == nil ? "Add to favorites" : "Remove from favorites") { toggleStar() }
+                            Menu {
+                                Button { radio() } label: { Label("Artist radio", systemImage: "dot.radiowaves.left.and.right") }
+                            } label: { Image(systemName: "ellipsis").font(.system(size: 22)).foregroundStyle(Color.subtle).frame(height: 30) }
+                            PlayButtons(playing: playing,
+                                        play: { playing ? app.player.toggle() : (top.isEmpty ? playAll(shuffled: false) : app.player.play(top, context: context)) },
+                                        shuffle: { playAll(shuffled: true) })
+                        }
+                        if !top.isEmpty {
+                            Text("Popular").font(.system(size: 22, weight: .bold)).padding(.top, 4)
+                            LazyVStack(spacing: 10) {
+                                ForEach(Array(top.prefix(showAllTop ? 10 : 5).enumerated()), id: \.element.id) { i, s in
+                                    SongRow(song: s, number: i + 1, showCover: true) { app.player.play(top, from: i, context: context) }
+                                }
+                            }
+                            if top.count > 5 {
+                                Button(showAllTop ? "Show less" : "See more") { withAnimation { showAllTop.toggle() } }
+                                    .font(.system(size: 13, weight: .bold)).foregroundStyle(Color.subtle)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    if !albums.isEmpty { AlbumRow(title: "Discography", albums: albums).padding(.top, 8) }
+                    if let bio, !bio.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("About").font(.system(size: 22, weight: .bold))
+                            Text(bio).font(.system(size: 14)).foregroundStyle(Color(white: 0.85)).lineLimit(6)
+                                .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.elevated, in: RoundedRectangle(cornerRadius: 8))
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                }
+                .padding(.bottom, 24)
+            }
+            .background(Color.black)
+            .ignoresSafeArea(.container, edges: .top)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+        } else {
+            LoadState(loading: error == nil, error: error).task { await load() }
+        }
+    }
+
+    /// Full-width artist image with the name on top, fading into the page.
+    private func hero(_ artist: Artist) -> some View {
+        CoverView(id: artist.coverArt ?? artist.id, size: 800, corner: 0)
+            .frame(maxWidth: .infinity)
+            .overlay {
+                LinearGradient(stops: [.init(color: .clear, location: 0.45), .init(color: .black.opacity(0.85), location: 1)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+            .overlay(alignment: .bottomLeading) {
+                Text(artist.name).font(.system(size: 40, weight: .heavy)).lineLimit(2).minimumScaleFactor(0.6)
+                    .padding(.horizontal, 16).padding(.bottom, 12)
+            }
+    }
+
+    private func toggleStar() {
+        guard let client = app.client, let a = artist else { return }
+        let on = a.starred == nil
+        artist?.starred = on ? "1" : nil
+        Task { try? await client.setStar(artistId: a.id, on: on) }
+    }
+
+    private func load() async {
+        guard let client = app.client else { return }
+        do {
+            let a = try await client.artist(id)
+            artist = a
+            top = await client.topSongs(a.name)
+            bio = await client.artistInfo(id)?.biography?
+                .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        } catch { self.error = error.localizedDescription }
+    }
+
+    private func playAll(shuffled: Bool) {
+        guard let client = app.client, let artist else { return }
+        Task {
+            var songs: [Song] = []
+            for a in artist.album ?? [] { songs += (try? await client.album(a.id).song) ?? [] }
+            app.player.play(songs, shuffled: shuffled, context: .init(kind: .artist, id: artist.id, name: artist.name))
+        }
+    }
+
+    private func radio() {
+        guard let client = app.client, let artist else { return }
+        Task {
+            let s = await client.similarSongs(id)
+            if !s.isEmpty { app.player.play(s, context: .init(kind: .mix, name: String(localized: "\(artist.name) radio"))) }
         }
     }
 }

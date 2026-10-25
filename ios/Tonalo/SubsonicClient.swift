@@ -126,6 +126,10 @@ struct SubsonicClient {
         return p
     }
 
+    func genres() async throws -> [Genre] {
+        try await call("getGenres").genres?.genre ?? []
+    }
+
     func starred() async throws -> SearchBody {
         try await call("getStarred2").starred2 ?? SearchBody()
     }
