@@ -1,4 +1,5 @@
 /* Hilfsfunktionen. Zielplattform: webOS 5 (Chromium 68) -> kein ?. / ?? / Array.flat */
+var APP_VERSION = '1.5.0'; // muss zu appinfo.json passen (build_ipk.py prüft das)
 var U = (function () {
   'use strict';
 
@@ -49,8 +50,8 @@ var U = (function () {
 
   function fmtDuration(sec) {
     var m = Math.round((sec || 0) / 60);
-    if (m < 60) return m + ' Min.';
-    return Math.floor(m / 60) + ' Std. ' + (m % 60) + ' Min.';
+    if (m < 60) return T('{n} Min.', { n: m });
+    return T('{h} Std. {m} Min.', { h: Math.floor(m / 60), m: m % 60 });
   }
 
   var store = {

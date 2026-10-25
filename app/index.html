@@ -12,15 +12,15 @@
     <section id="login" class="hidden">
       <div class="login-box">
         <div class="brand"><i data-icon="logo" data-size="40"></i>Tonalo</div>
-        <h1>Mit Navidrome verbinden</h1>
-        <label>Server-URL</label>
+        <h1 data-i18n>Mit Navidrome verbinden</h1>
+        <label data-i18n>Server-URL</label>
         <input id="in-url" class="focusable" type="url" placeholder="http://192.168.1.10:4533">
-        <label>Benutzername</label>
+        <label data-i18n>Benutzername</label>
         <input id="in-user" class="focusable" type="text" autocomplete="off">
-        <label>Passwort</label>
+        <label data-i18n>Passwort</label>
         <input id="in-pass" class="focusable" type="password">
-        <button id="btn-login" class="btn primary focusable">Anmelden</button>
-        <button id="btn-login-cancel" class="btn outline focusable hidden">Abbrechen</button>
+        <button id="btn-login" class="btn primary focusable" data-i18n>Anmelden</button>
+        <button id="btn-login-cancel" class="btn outline focusable hidden" data-i18n>Abbrechen</button>
         <div id="login-msg" class="msg"></div>
       </div>
     </section>
@@ -28,9 +28,9 @@
     <!-- Benutzerauswahl -->
     <section id="users" class="hidden">
       <div class="brand"><i data-icon="logo" data-size="40"></i>Tonalo</div>
-      <h1 class="users-title">Wer hört gerade?</h1>
+      <h1 class="users-title" data-i18n>Wer hört gerade?</h1>
       <div id="user-list" class="nav-container"></div>
-      <p class="users-hint">Gelbe Taste: Konto verwalten</p>
+      <p class="users-hint" data-i18n>Gelbe Taste: Konto verwalten</p>
     </section>
 
     <!-- Hauptoberfläche -->
@@ -38,20 +38,20 @@
       <nav id="sidebar" data-region="sidebar">
         <div class="side-panel">
           <div class="brand"><i data-icon="logo" data-size="36"></i>Tonalo</div>
-          <button class="nav-item focusable" data-view="home"><i data-icon="home"></i><span>Start</span></button>
-          <button class="nav-item focusable" data-view="search"><i data-icon="search"></i><span>Suchen</span></button>
+          <button class="nav-item focusable" data-view="home"><i data-icon="home"></i><span data-i18n>Start</span></button>
+          <button class="nav-item focusable" data-view="search"><i data-icon="search"></i><span data-i18n>Suchen</span></button>
         </div>
         <div class="side-panel lib">
-          <div class="side-label">Bibliothek</div>
-          <button class="nav-item focusable" data-view="starred"><i data-icon="heart"></i><span>Favoriten</span></button>
-          <button class="nav-item focusable" data-view="playlists"><i data-icon="playlist"></i><span>Playlists</span></button>
-          <button class="nav-item focusable" data-view="albums"><i data-icon="library"></i><span>Alben</span></button>
-          <button class="nav-item focusable" data-view="artists"><i data-icon="artist"></i><span>Künstler</span></button>
-          <button class="nav-item focusable" data-view="genres"><i data-icon="genre"></i><span>Genres</span></button>
-          <button class="nav-item focusable" data-view="queue"><i data-icon="queue"></i><span>Warteschlange</span></button>
+          <div class="side-label" data-i18n>Bibliothek</div>
+          <button class="nav-item focusable" data-view="starred"><i data-icon="heart"></i><span data-i18n>Favoriten</span></button>
+          <button class="nav-item focusable" data-view="playlists"><i data-icon="playlist"></i><span data-i18n>Playlists</span></button>
+          <button class="nav-item focusable" data-view="albums"><i data-icon="library"></i><span data-i18n>Alben</span></button>
+          <button class="nav-item focusable" data-view="artists"><i data-icon="artist"></i><span data-i18n>Künstler</span></button>
+          <button class="nav-item focusable" data-view="genres"><i data-icon="genre"></i><span data-i18n>Genres</span></button>
+          <button class="nav-item focusable" data-view="queue"><i data-icon="queue"></i><span data-i18n>Warteschlange</span></button>
           <div class="spacer"></div>
           <button id="nav-user" class="nav-item focusable"><i class="avatar-mini"></i><span class="ellipsis"></span></button>
-          <button class="nav-item focusable" data-view="settings"><i data-icon="settings"></i><span>Einstellungen</span></button>
+          <button class="nav-item focusable" data-view="settings"><i data-icon="settings"></i><span data-i18n>Einstellungen</span></button>
         </div>
       </nav>
       <div id="content" data-region="content"></div>
@@ -103,6 +103,15 @@
 
   <script src="js/md5.js"></script>
   <script src="js/util.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/lang/en.js"></script>
+  <script src="js/lang/es.js"></script>
+  <script src="js/lang/fr.js"></script>
+  <script src="js/lang/it.js"></script>
+  <script src="js/lang/pt.js"></script>
+  <script src="js/lang/nl.js"></script>
+  <script src="js/lang/pl.js"></script>
+  <script src="js/lang/tr.js"></script>
   <script src="js/icons.js"></script>
   <script src="js/api.js"></script>
   <script src="js/nav.js"></script>

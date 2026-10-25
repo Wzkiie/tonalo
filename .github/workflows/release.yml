@@ -27,7 +27,10 @@ jobs:
           fi
 
       - name: JavaScript-Syntax prüfen
-        run: for f in app/js/*.js; do node --check "$f"; done
+        run: for f in app/js/*.js app/js/lang/*.js; do node --check "$f"; done
+
+      - name: Übersetzungen vollständig?
+        run: node tools/i18n_check.js
 
       - name: IPK + Manifest bauen
         run: python3 tools/build_ipk.py

@@ -39,7 +39,7 @@ var API = (function () {
   function url(method, params) { return cfg.url + '/rest/' + method + '?' + qs(params); }
 
   function call(method, params, timeoutMs) {
-    if (!cfg) return Promise.reject(new Error('Nicht angemeldet'));
+    if (!cfg) return Promise.reject(new Error(T('Nicht angemeldet')));
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, timeoutMs || 20000);
     return fetch(url(method, params), { signal: ctrl ? ctrl.signal : undefined })
@@ -50,16 +50,16 @@ var API = (function () {
       .then(function (j) {
         clearTimeout(timer);
         var res = j['subsonic-response'];
-        if (!res) throw new Error('Ungültige Serverantwort');
+        if (!res) throw new Error(T('Ungültige Serverantwort'));
         if (res.status !== 'ok') {
-          var e = new Error((res.error && res.error.message) || 'Serverfehler');
+          var e = new Error((res.error && res.error.message) || T('Serverfehler'));
           e.code = res.error && res.error.code;
           throw e;
         }
         return res;
       }, function (err) {
         clearTimeout(timer);
-        if (err && err.name === 'AbortError') throw new Error('Zeitüberschreitung – Server nicht erreichbar');
+        if (err && err.name === 'AbortError') throw new Error(T('Zeitüberschreitung – Server nicht erreichbar'));
         throw err;
       });
   }

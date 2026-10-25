@@ -20,6 +20,7 @@ Getestet auf **LG OLED65CX** (webOS 5.6, gerootet mit Homebrew Channel). Läuft 
 - Scrobbling, Transkodierung (Original / 320 / 192 / 128 kbps, MP3 / Opus / AAC)
 - **OLED-Bildschirmschoner** (wanderndes, gedimmtes Cover mit Uhr) gegen Einbrennen
 - Anmeldung per Token: Das Passwort wird nicht gespeichert, nur ein daraus berechneter Token.
+- **9 Sprachen:** Deutsch, English, Español, Français, Italiano, Português, Nederlands, Polski, Türkçe – automatisch nach Sprache des Fernsehers, umschaltbar in den Einstellungen
 
 ## Installation
 Lade die neueste `.ipk`-Datei unter **[Releases](../../releases/latest)** herunter.
@@ -55,8 +56,11 @@ Kein Framework und kein Build-Schritt: reines HTML/CSS/JavaScript, kompatibel mi
 ```bash
 node tools/mock_server.js app      # Test-Server mit Beispieldaten auf http://localhost:4599
 python3 tools/build_ipk.py         # baut dist/*.ipk + Homebrew-Channel-Manifest
+node tools/i18n_check.js           # prüft, ob alle Sprachen vollständig sind
 ```
 Im Browser skaliert sich die Oberfläche aufs Fenster; Pfeiltasten, Enter und Esc verhalten sich wie die Fernbedienung.
+
+**Übersetzungen:** Deutsch ist die Ausgangssprache – im Code steht `T('Deutscher Text')`, die Dateien in `app/js/lang/` ordnen jedem deutschen Text die Übersetzung zu. Neue Sprache: Datei kopieren, übersetzen, in `index.html` und `app/js/i18n.js` eintragen.
 
 **Release:** Version in `app/appinfo.json` erhöhen, committen, dann `git tag vX.Y.Z && git push origin vX.Y.Z` – GitHub Actions baut IPK und Manifest und veröffentlicht das Release.
 

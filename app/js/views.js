@@ -20,8 +20,8 @@ var Views = (function () {
       App.viewReady(el);
     }).catch(function (e) {
       if (sp.parentNode) sp.parentNode.removeChild(sp);
-      el.appendChild(h('div.empty', { text: 'Fehler: ' + e.message }));
-      el.appendChild(h('div.nav-container', null, UI.button('Erneut versuchen', function () { App.reload(); }, 'outline')));
+      el.appendChild(h('div.empty', { text: T('Fehler: {msg}', { msg: e.message }) }));
+      el.appendChild(h('div.nav-container', null, UI.button(T('Erneut versuchen'), function () { App.reload(); }, 'outline')));
       App.viewReady(el);
     });
   }
@@ -51,28 +51,28 @@ var Views = (function () {
         obj.starred = on ? 'x' : undefined;
         UI.setIcon(b, on ? 'heartFill' : 'heart');
         b.classList.toggle('on', on);
-        U.toast(on ? 'Zu deiner Bibliothek hinzugefügt' : 'Aus deiner Bibliothek entfernt');
+        U.toast(on ? T('Zu deiner Bibliothek hinzugefügt') : T('Aus deiner Bibliothek entfernt'));
       }).catch(App.error);
-    }, 'Favorit', obj.starred ? 'on' : null);
+    }, T('Favorit'), obj.starred ? 'on' : null);
     return b;
   }
 
   // ---------------- Start
   function home() {
     var el = view('home');
-    var types = [['Zuletzt gespielt', 'recent'], ['Neu hinzugefügt', 'newest'], ['Häufig gespielt', 'frequent'], ['Entdecken', 'random'], ['Deine Lieblingsalben', 'starred']];
+    var types = [[T('Zuletzt gespielt'), 'recent'], [T('Neu hinzugefügt'), 'newest'], [T('Häufig gespielt'), 'frequent'], [T('Entdecken'), 'random'], [T('Deine Lieblingsalben'), 'starred']];
     async(el, Promise.all(types.map(function (t) { return API.albumList(t[1], 20).catch(function () { return []; }); })), function (lists) {
       var recent = lists[0];
       UI.heroBg(el, recent[0] ? API.cover(recent[0].coverArt || recent[0].id, 120) : null, [40, 40, 40]);
       el.appendChild(h('h1.page-title', { text: greeting() }));
       var tiles = [
-        UI.shortcut({ art: { cls: 'liked', icon: 'heartFill' }, label: 'Favoriten', onClick: function () { App.go('starred'); } }),
-        UI.shortcut({ art: { cls: 'mix', icon: 'shuffle' }, label: 'Zufallsmix', onClick: function () {
+        UI.shortcut({ art: { cls: 'liked', icon: 'heartFill' }, label: T('Favoriten'), onClick: function () { App.go('starred'); } }),
+        UI.shortcut({ art: { cls: 'mix', icon: 'shuffle' }, label: T('Zufallsmix'), onClick: function () {
           API.randomSongs(150).then(function (s) { Player.playList(s, 0); App.go('nowplaying'); }).catch(App.error);
         } })
       ];
       var cur = Player.current();
-      if (cur) tiles.push(UI.shortcut({ coverId: cur.coverArt || cur.albumId, label: 'Weiterhören: ' + cur.title, onClick: function () { Player.play(); App.go('nowplaying'); } }));
+      if (cur) tiles.push(UI.shortcut({ coverId: cur.coverArt || cur.albumId, label: T('Weiterhören: {title}', { title: cur.title }), onClick: function () { Player.play(); App.go('nowplaying'); } }));
       recent.slice(0, 8 - tiles.length).forEach(function (a) {
         tiles.push(UI.shortcut({ coverId: a.coverArt || a.id, label: a.name, onClick: function () { App.go('album', { id: a.id }); }, onOptions: function () { Menus.album(a); } }));
       });
@@ -88,13 +88,13 @@ var Views = (function () {
 
   function greeting() {
     var hr = new Date().getHours();
-    return hr < 5 ? 'Gute Nacht' : hr < 11 ? 'Guten Morgen' : hr < 18 ? 'Guten Tag' : 'Guten Abend';
+    return hr < 5 ? T('Gute Nacht') : hr < 11 ? T('Guten Morgen') : hr < 18 ? T('Guten Tag') : T('Guten Abend');
   }
 
   // ---------------- Alben
   var ALBUM_SORTS = [
-    ['alphabeticalByName', 'A–Z'], ['alphabeticalByArtist', 'Künstler'], ['newest', 'Neu hinzugefügt'],
-    ['recent', 'Zuletzt gespielt'], ['frequent', 'Häufig gespielt'], ['random', 'Zufällig'], ['starred', 'Favoriten']
+    ['alphabeticalByName', T('A–Z')], ['alphabeticalByArtist', T('Künstler|Einzahl')], ['newest', T('Neu hinzugefügt')],
+    ['recent', T('Zuletzt gespielt')], ['frequent', T('Häufig gespielt')], ['random', T('Zufällig')], ['starred', T('Favoriten')]
   ];
   function albums(params) {
     var el = view();
@@ -109,7 +109,7 @@ var Views = (function () {
       }, s[0] === sort);
       return c;
     });
-    el.appendChild(UI.header('Alben'));
+    el.appendChild(UI.header(T('Alben')));
     el.appendChild(h('div.chips.nav-container', null, chips));
     el.appendChild(gridHolder);
     function build() {
@@ -125,7 +125,7 @@ var Views = (function () {
   // ---------------- Künstler
   function artists() {
     var el = view();
-    el.appendChild(UI.header('Künstler'));
+    el.appendChild(UI.header(T('Künstler')));
     async(el, API.artists(), function (list) {
       var g = UI.grid(UI.artistCard, function (off, size) { return Promise.resolve(list.slice(off, off + size)); }, 60);
       el.appendChild(g.el);
@@ -142,29 +142,29 @@ var Views = (function () {
       UI.heroBg(el, API.cover(ar.coverArt || ar.id, 120));
       var bio = info.biography ? info.biography.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() : '';
       el.appendChild(hero({
-        type: 'Künstler', title: ar.name, coverId: ar.coverArt || ar.id, round: true,
-        desc: bio, meta: [albumsList.length + (albumsList.length === 1 ? ' Album' : ' Alben')]
+        type: T('Künstler|Einzahl'), title: ar.name, coverId: ar.coverArt || ar.id, round: true,
+        desc: bio, meta: [T.n(albumsList.length, '{n} Album', '{n} Alben')]
       }));
       var top = [];
       el.appendChild(h('div.action-bar.nav-container', null,
         UI.playBig(function () { if (top.length) Player.playList(top, 0); else Menus.artistShuffle(ar.id); }, true),
-        UI.iconBtn('shuffle', function () { Menus.artistShuffle(ar.id); }, 'Zufällig'),
-        UI.iconBtn('radio', function () { Menus.radio(ar.id, ar); }, 'Künstler-Radio'),
+        UI.iconBtn('shuffle', function () { Menus.artistShuffle(ar.id); }, T('Zufällig')),
+        UI.iconBtn('radio', function () { Menus.radio(ar.id, ar); }, T('Künstler-Radio')),
         heartBtn('artist', ar),
-        UI.iconBtn('more', function () { Menus.artist(ar); }, 'Mehr')
+        UI.iconBtn('more', function () { Menus.artist(ar); }, T('Mehr'))
       ));
       var topHolder = h('div');
       el.appendChild(topHolder);
       API.topSongs(ar.name).then(function (t) {
         top = t;
         if (!t.length) return;
-        topHolder.appendChild(h('h2.section-title', { text: 'Top-Songs' }));
+        topHolder.appendChild(h('h2.section-title', { text: T('Top-Songs') }));
         topHolder.appendChild(UI.trackList(t.slice(0, 10), { showCover: true, header: false, hideArtist: true }));
       });
-      el.appendChild(h('h2.section-title', { text: 'Diskografie' }));
+      el.appendChild(h('h2.section-title', { text: T('Diskografie') }));
       el.appendChild(UI.staticGrid(albumsList, UI.albumCard));
       var similar = A(info.similarArtist).filter(function (s) { return s.id; });
-      if (similar.length) el.appendChild(UI.row('Ähnliche Künstler', similar, UI.artistCard));
+      if (similar.length) el.appendChild(UI.row(T('Ähnliche Künstler'), similar, UI.artistCard));
     });
     return { el: el };
   }
@@ -177,15 +177,15 @@ var Views = (function () {
       UI.heroBg(el, API.cover(al.coverArt || al.id, 120));
       var artistLink = h('button.link.focusable', { text: al.artist || '', onclick: function () { if (al.artistId) App.go('artist', { id: al.artistId }); } });
       el.appendChild(hero({
-        type: 'Album', title: al.name, coverId: al.coverArt || al.id,
-        meta: [artistLink, al.year ? String(al.year) : null, songs.length + ' Songs, ' + U.fmtDuration(al.duration)]
+        type: T('Album'), title: al.name, coverId: al.coverArt || al.id,
+        meta: [artistLink, al.year ? String(al.year) : null, T('{n} Songs, {dur}', { n: songs.length, dur: U.fmtDuration(al.duration) })]
       }));
       el.appendChild(h('div.action-bar.nav-container', null,
         UI.playBig(function () { Player.playList(songs, 0); }, true),
-        UI.iconBtn('shuffle', function () { Player.playList(songs, 0, { shuffle: true }); }, 'Zufällig'),
+        UI.iconBtn('shuffle', function () { Player.playList(songs, 0, { shuffle: true }); }, T('Zufällig')),
         heartBtn('album', al),
-        UI.iconBtn('addQueue', function () { Player.enqueue(songs); }, 'Zur Warteschlange'),
-        UI.iconBtn('more', function () { Menus.album(al); }, 'Mehr')
+        UI.iconBtn('addQueue', function () { Player.enqueue(songs); }, T('Zur Warteschlange')),
+        UI.iconBtn('more', function () { Menus.album(al); }, T('Mehr'))
       ));
       var discs = {};
       songs.forEach(function (s) { discs[s.discNumber || 1] = true; });
@@ -206,7 +206,7 @@ var Views = (function () {
   // ---------------- Playlists
   function playlists() {
     var el = view();
-    el.appendChild(UI.header('Playlists'));
+    el.appendChild(UI.header(T('Playlists')));
     async(el, API.playlists(), function (pls) { el.appendChild(UI.staticGrid(pls, UI.playlistCard)); });
     return { el: el };
   }
@@ -217,13 +217,13 @@ var Views = (function () {
       var songs = A(pl.entry);
       UI.heroBg(el, API.cover(pl.coverArt || pl.id, 120));
       el.appendChild(hero({
-        type: pl.public ? 'Öffentliche Playlist' : 'Playlist', title: pl.name, coverId: pl.coverArt || pl.id, desc: pl.comment,
-        meta: [pl.owner ? h('span', { style: 'color:#fff;font-weight:700', text: pl.owner }) : null, songs.length + ' Songs, ' + U.fmtDuration(pl.duration)]
+        type: pl.public ? T('Öffentliche Playlist') : T('Playlist'), title: pl.name, coverId: pl.coverArt || pl.id, desc: pl.comment,
+        meta: [pl.owner ? h('span', { style: 'color:#fff;font-weight:700', text: pl.owner }) : null, T('{n} Songs, {dur}', { n: songs.length, dur: U.fmtDuration(pl.duration) })]
       }));
       el.appendChild(h('div.action-bar.nav-container', null,
         UI.playBig(function () { Player.playList(songs, 0); }, true),
-        UI.iconBtn('shuffle', function () { Player.playList(songs, 0, { shuffle: true }); }, 'Zufällig'),
-        UI.iconBtn('addQueue', function () { Player.enqueue(songs); }, 'Zur Warteschlange')
+        UI.iconBtn('shuffle', function () { Player.playList(songs, 0, { shuffle: true }); }, T('Zufällig')),
+        UI.iconBtn('addQueue', function () { Player.enqueue(songs); }, T('Zur Warteschlange'))
       ));
       el.appendChild(UI.trackList(songs, { showCover: true, showAlbum: true }));
     });
@@ -237,16 +237,16 @@ var Views = (function () {
       grid.appendChild(h('button.genre.focusable', {
         style: 'background:' + tileColor(i),
         onclick: function () { App.go('genre', { name: g.value, color: tileColor(i) }); }
-      }, h('div.genre-name', { text: g.value }), h('div.genre-sub', { text: (g.albumCount || 0) + ' Alben' })));
+      }, h('div.genre-name', { text: g.value }), h('div.genre-sub', { text: T.n(g.albumCount || 0, '{n} Album', '{n} Alben') })));
     });
     return grid;
   }
 
   function genres() {
     var el = view();
-    el.appendChild(UI.header('Genres'));
+    el.appendChild(UI.header(T('Genres')));
     async(el, API.genres(), function (list) {
-      el.appendChild(list.length ? genreTiles(list) : h('div.empty', { text: 'Keine Genres.' }));
+      el.appendChild(list.length ? genreTiles(list) : h('div.empty', { text: T('Keine Genres.') }));
     });
     return { el: el };
   }
@@ -255,7 +255,7 @@ var Views = (function () {
     var el = view('detail');
     UI.heroBg(el, null, hexRgb(params.color || '#535353'));
     el.appendChild(h('div.hero', { style: 'padding-top:80px' }, h('div.hero-info', null,
-      h('div.hero-type', { text: 'Genre' }),
+      h('div.hero-type', { text: T('Genre') }),
       h('h1.hero-title' + (titleClass(params.name) ? '.' + titleClass(params.name) : ''), { text: params.name })
     )));
     el.appendChild(h('div.action-bar.nav-container', null,
@@ -263,7 +263,7 @@ var Views = (function () {
         API.randomSongs(150, params.name).then(function (s) { Player.playList(s, 0); App.go('nowplaying'); }).catch(App.error);
       }, true)
     ));
-    el.appendChild(h('h2.section-title', { text: 'Alben' }));
+    el.appendChild(h('h2.section-title', { text: T('Alben') }));
     var g = UI.grid(UI.albumCard, function (off, size) { return API.albumList('byGenre', size, off, { genre: params.name }); }, 60);
     el.appendChild(g.el);
     g.more().then(function () { App.viewReady(el); });
@@ -277,19 +277,19 @@ var Views = (function () {
     async(el, API.starred(), function (s) {
       var art = h('div.tile-art.liked', { style: 'width:100%;height:100%' }, Icon.el('heartFill', 120));
       var me = App.account();
-      el.appendChild(hero({ type: 'Sammlung', title: 'Favoriten', art: art,
-        meta: [me ? h('span', { style: 'color:#fff;font-weight:700', text: me.user }) : null, s.songs.length + ' Songs'] }));
+      el.appendChild(hero({ type: T('Sammlung'), title: T('Favoriten'), art: art,
+        meta: [me ? h('span', { style: 'color:#fff;font-weight:700', text: me.user }) : null, T('{n} Songs', { n: s.songs.length })] }));
       if (s.songs.length) {
         el.appendChild(h('div.action-bar.nav-container', null,
           UI.playBig(function () { Player.playList(s.songs, 0); }, true),
-          UI.iconBtn('shuffle', function () { Player.playList(s.songs, 0, { shuffle: true }); }, 'Zufällig')
+          UI.iconBtn('shuffle', function () { Player.playList(s.songs, 0, { shuffle: true }); }, T('Zufällig'))
         ));
         el.appendChild(UI.trackList(s.songs, { showCover: true, showAlbum: true }));
       } else {
-        el.appendChild(h('div.empty', { text: 'Noch keine Favoriten. Gelbe Taste auf einem Song → „Zu Favoriten hinzufügen“.' }));
+        el.appendChild(h('div.empty', { text: T('Noch keine Favoriten. Gelbe Taste auf einem Song → „Zu Favoriten hinzufügen“.') }));
       }
-      if (s.albums.length) el.appendChild(UI.row('Favorisierte Alben', s.albums, UI.albumCard));
-      if (s.artists.length) el.appendChild(UI.row('Favorisierte Künstler', s.artists, UI.artistCard));
+      if (s.albums.length) el.appendChild(UI.row(T('Favorisierte Alben'), s.albums, UI.albumCard));
+      if (s.artists.length) el.appendChild(UI.row(T('Favorisierte Künstler'), s.artists, UI.artistCard));
     });
     return { el: el };
   }
@@ -297,7 +297,7 @@ var Views = (function () {
   // ---------------- Suche
   function search() {
     var el = view();
-    var input = h('input.search-input.focusable', { type: 'text', placeholder: 'Künstler, Alben oder Songs', 'data-autofocus': true });
+    var input = h('input.search-input.focusable', { type: 'text', placeholder: T('Künstler, Alben oder Songs'), 'data-autofocus': true });
     var bar = h('div.search-bar', null, Icon.el('search', 34), input);
     var results = h('div.results');
     var lastQ = U.ustore.get('lastSearch', '');
@@ -310,15 +310,15 @@ var Views = (function () {
 
     function browseAll() {
       results.innerHTML = '';
-      results.appendChild(h('h2.section-title', { text: 'Genres entdecken', style: 'margin-top:0' }));
+      results.appendChild(h('h2.section-title', { text: T('Genres entdecken'), style: 'margin-top:0' }));
       API.genres().then(function (list) { results.appendChild(genreTiles(list.slice(0, 20))); }).catch(function () { });
     }
 
     function topCard(r) {
       var a = r.artists[0], al = r.albums[0], s = r.songs[0];
-      var o = a ? { coverId: a.coverArt || a.id, round: true, title: a.name, kind: 'Künstler', go: function () { App.go('artist', { id: a.id }); } }
-        : al ? { coverId: al.coverArt || al.id, title: al.name, sub: al.artist, kind: 'Album', go: function () { App.go('album', { id: al.id }); } }
-          : { coverId: s.coverArt || s.albumId, title: s.title, sub: s.artist, kind: 'Song', go: function () { Player.playList(r.songs, 0); } };
+      var o = a ? { coverId: a.coverArt || a.id, round: true, title: a.name, kind: T('Künstler|Einzahl'), go: function () { App.go('artist', { id: a.id }); } }
+        : al ? { coverId: al.coverArt || al.id, title: al.name, sub: al.artist, kind: T('Album'), go: function () { App.go('album', { id: al.id }); } }
+          : { coverId: s.coverArt || s.albumId, title: s.title, sub: s.artist, kind: T('Song'), go: function () { Player.playList(r.songs, 0); } };
       var sub = h('div.tc-sub', null, o.sub ? o.sub : null, h('b', { text: o.kind }));
       return h('button.top-card.focusable', { onclick: o.go },
         UI.cover(o.coverId, 300, o.round ? 'round' : null, o.round ? 'artist' : 'album'), h('div.tc-title.ellipsis', { text: o.title }), sub, h('span.card-play', null, Icon.el('play', 30)));
@@ -335,17 +335,17 @@ var Views = (function () {
         if (my !== seq) return;
         results.innerHTML = '';
         if (!r.artists.length && !r.albums.length && !r.songs.length) {
-          results.appendChild(h('div.empty', { text: 'Keine Ergebnisse für „' + q + '“' }));
+          results.appendChild(h('div.empty', { text: T('Keine Ergebnisse für „{q}“', { q: q }) }));
           return;
         }
-        var left = h('div', null, h('h2.section-title', { text: 'Top-Ergebnis', style: 'margin-top:0' }), h('div.nav-container', null, topCard(r)));
-        var right = h('div.top-songs', null, r.songs.length ? h('h2.section-title', { text: 'Songs', style: 'margin-top:0' }) : null,
+        var left = h('div', null, h('h2.section-title', { text: T('Top-Ergebnis'), style: 'margin-top:0' }), h('div.nav-container', null, topCard(r)));
+        var right = h('div.top-songs', null, r.songs.length ? h('h2.section-title', { text: T('Songs'), style: 'margin-top:0' }) : null,
           r.songs.length ? UI.trackList(r.songs.slice(0, 4), { showCover: true, header: false }) : null);
         results.appendChild(h('div.top-result', null, left, right));
-        if (r.artists.length) results.appendChild(UI.row('Künstler', r.artists, UI.artistCard));
-        if (r.albums.length) results.appendChild(UI.row('Alben', r.albums, UI.albumCard));
+        if (r.artists.length) results.appendChild(UI.row(T('Künstler'), r.artists, UI.artistCard));
+        if (r.albums.length) results.appendChild(UI.row(T('Alben'), r.albums, UI.albumCard));
         if (r.songs.length > 4) {
-          results.appendChild(h('h2.section-title', { text: 'Alle Songs' }));
+          results.appendChild(h('h2.section-title', { text: T('Alle Songs') }));
           results.appendChild(UI.trackList(r.songs, { showCover: true, showAlbum: true }));
         }
       }).catch(App.error);
@@ -366,19 +366,19 @@ var Views = (function () {
     var bar = h('div.np-bar-fill');
     var progress = h('button.np-progress.focusable', null, h('div.np-bar', null, bar));
     var tCur = h('span'), tDur = h('span');
-    var btnShuffle = UI.iconBtn('shuffle', function () { Player.setShuffle(!Player.shuffle()); }, 'Zufall');
-    var btnPrev = UI.iconBtn('prev', Player.prev, 'Zurück');
-    var btnPlay = h('button.np-play.focusable', { onclick: Player.toggle, title: 'Play/Pause', 'data-autofocus': true });
-    var btnNext = UI.iconBtn('next', Player.next, 'Weiter');
-    var btnRepeat = UI.iconBtn('repeat', Player.cycleRepeat, 'Wiederholen');
+    var btnShuffle = UI.iconBtn('shuffle', function () { Player.setShuffle(!Player.shuffle()); }, T('Zufall'));
+    var btnPrev = UI.iconBtn('prev', Player.prev, T('Zurück'));
+    var btnPlay = h('button.np-play.focusable', { onclick: Player.toggle, title: T('Play/Pause'), 'data-autofocus': true });
+    var btnNext = UI.iconBtn('next', Player.next, T('Weiter'));
+    var btnRepeat = UI.iconBtn('repeat', Player.cycleRepeat, T('Wiederholen'));
     var btnHeart = UI.iconBtn('heart', function () {
       var s = Player.current(); if (!s) return;
       var on = !s.starred;
-      API.star('song', s.id, on).then(function () { Player.setStarred(s, on); U.toast(on ? 'Zu Favoriten hinzugefügt' : 'Aus Favoriten entfernt'); }).catch(App.error);
-    }, 'Favorit');
-    var btnLyrics = UI.iconBtn('mic', function () { lyricsOn = !lyricsOn; U.ustore.set('lyricsOn', lyricsOn); ensureLyrics(); renderPanel(); }, 'Songtext');
-    var btnQueue = UI.iconBtn('queue', function () { App.go('queue'); }, 'Warteschlange');
-    var btnMore = UI.iconBtn('more', function () { var s = Player.current(); if (s) Menus.song(s); }, 'Mehr');
+      API.star('song', s.id, on).then(function () { Player.setStarred(s, on); U.toast(on ? T('Zu Favoriten hinzugefügt') : T('Aus Favoriten entfernt')); }).catch(App.error);
+    }, T('Favorit'));
+    var btnLyrics = UI.iconBtn('mic', function () { lyricsOn = !lyricsOn; U.ustore.set('lyricsOn', lyricsOn); ensureLyrics(); renderPanel(); }, T('Songtext'));
+    var btnQueue = UI.iconBtn('queue', function () { App.go('queue'); }, T('Warteschlange'));
+    var btnMore = UI.iconBtn('more', function () { var s = Player.current(); if (s) Menus.song(s); }, T('Mehr'));
     var panelTitle = h('div.np-panel-title');
     var panel = h('div.np-lyrics');
     var lyricsOn = U.ustore.get('lyricsOn', true);
@@ -432,7 +432,7 @@ var Views = (function () {
       if (showLyrics) {
         panelMode = 'lyrics';
         panel.classList.add('mode-lyrics');
-        panelTitle.textContent = 'Songtext';
+        panelTitle.textContent = T('Songtext');
         var inner = h('div.lyrics-inner' + (lyrics.synced ? '.synced' : ''));
         lyrics.lines.forEach(function (l) { inner.appendChild(h('div.lyric', { text: l.text || '♪' })); });
         panel.appendChild(inner);
@@ -442,7 +442,7 @@ var Views = (function () {
         panel.classList.remove('mode-lyrics');
         var q = Player.queue(), i = Player.index();
         var upcoming = q.slice(i + 1, i + 7);
-        panelTitle.textContent = upcoming.length ? 'Als Nächstes' : '';
+        panelTitle.textContent = upcoming.length ? T('Als Nächstes') : '';
         if (upcoming.length) {
           var list = UI.trackList(upcoming, { showCover: true, header: false, onPlay: function (k) { Player.jump(i + 1 + k); } });
           list.classList.add('np-upnext');
@@ -455,7 +455,7 @@ var Views = (function () {
     function renderTrack() {
       var s = Player.current();
       if (!s) {
-        title.textContent = 'Nichts in der Wiedergabe'; artist.textContent = '';
+        title.textContent = T('Nichts in der Wiedergabe'); artist.textContent = '';
         coverEl.removeAttribute('src'); bg.style.background = '#121212';
         panel.innerHTML = ''; panelTitle.textContent = '';
         return;
@@ -521,21 +521,21 @@ var Views = (function () {
     function render() {
       var q = Player.queue(), idx = Player.index();
       holder.innerHTML = '';
-      holder.appendChild(UI.header('Warteschlange'));
-      if (!q.length) { holder.appendChild(h('div.empty', { text: 'Deine Warteschlange ist leer.' })); return; }
+      holder.appendChild(UI.header(T('Warteschlange')));
+      if (!q.length) { holder.appendChild(h('div.empty', { text: T('Deine Warteschlange ist leer.') })); return; }
       holder.appendChild(h('div.chips.nav-container', null,
-        UI.chip('Zufällig', function () { Player.setShuffle(!Player.shuffle()); }, Player.shuffle()),
-        UI.chip('Als Playlist speichern', function () { Menus.addToPlaylist(q); }),
-        UI.chip('Leeren', function () { UI.confirm('Warteschlange leeren?', 'Leeren', function () { Player.stop(); }, 'trash'); })
+        UI.chip(T('Zufällig'), function () { Player.setShuffle(!Player.shuffle()); }, Player.shuffle()),
+        UI.chip(T('Als Playlist speichern'), function () { Menus.addToPlaylist(q); }),
+        UI.chip(T('Leeren'), function () { UI.confirm(T('Warteschlange leeren?'), T('Leeren'), function () { Player.stop(); }, 'trash'); })
       ));
-      var extra = function (i) { return [{ icon: 'close', label: 'Aus Warteschlange entfernen', action: function () { Player.removeAt(i); } }]; };
+      var extra = function (i) { return [{ icon: 'close', label: T('Aus Warteschlange entfernen'), action: function () { Player.removeAt(i); } }]; };
       if (idx >= 0) {
-        holder.appendChild(h('h2.section-title', { text: 'Läuft gerade', style: 'margin-top:10px' }));
+        holder.appendChild(h('h2.section-title', { text: T('Läuft gerade'), style: 'margin-top:10px' }));
         holder.appendChild(UI.trackList([q[idx]], { showCover: true, showAlbum: true, header: false, onPlay: function () { Player.toggle(); }, menuExtra: function () { return extra(idx); } }));
       }
       var rest = q.slice(idx + 1);
       if (rest.length) {
-        holder.appendChild(h('h2.section-title', { text: 'Als Nächstes · ' + rest.length + ' Songs, ' + U.fmtDuration(rest.reduce(function (a, s) { return a + (s.duration || 0); }, 0)) }));
+        holder.appendChild(h('h2.section-title', { text: T('Als Nächstes · {n} Songs, {dur}', { n: rest.length, dur: U.fmtDuration(rest.reduce(function (a, s) { return a + (s.duration || 0); }, 0)) }) }));
         holder.appendChild(UI.trackList(rest, { showCover: true, showAlbum: true, header: false,
           onPlay: function (i) { Player.jump(idx + 1 + i); }, menuExtra: function (i) { return extra(idx + 1 + i); } }));
       }
@@ -561,7 +561,7 @@ var Views = (function () {
   function settings() {
     var el = view('settings');
     var cfg = API.getConfig();
-    el.appendChild(UI.header('Einstellungen'));
+    el.appendChild(UI.header(T('Einstellungen')));
 
     function option(label, desc, values, key, onChange) {
       var chips = h('div.chips.nav-container');
@@ -577,30 +577,39 @@ var Views = (function () {
       return h('div.setting', null, h('div', null, h('div.setting-label', { text: label }), desc ? h('div.setting-desc', { text: desc }) : null), chips);
     }
 
-    el.appendChild(h('div.settings-section', { text: 'Wiedergabe' }));
-    el.appendChild(option('Streaming-Qualität', 'Original spielt die Datei unverändert ab', [[0, 'Original'], [320, '320 kbps'], [192, '192 kbps'], [128, '128 kbps']], 'maxBitRate', function () { Player.reloadCurrent(); }));
-    el.appendChild(option('Format bei Umwandlung', 'Nur relevant, wenn nicht „Original“', [['mp3', 'MP3'], ['opus', 'Opus'], ['aac', 'AAC']], 'format', function () { Player.reloadCurrent(); }));
-    el.appendChild(option('Scrobbeln', 'Gehörte Songs an den Server melden', [[true, 'An'], [false, 'Aus']], 'scrobble'));
+    el.appendChild(h('div.settings-section', { text: T('Wiedergabe') }));
+    el.appendChild(option(T('Streaming-Qualität'), T('Original spielt die Datei unverändert ab'), [[0, T('Original')], [320, '320 kbps'], [192, '192 kbps'], [128, '128 kbps']], 'maxBitRate', function () { Player.reloadCurrent(); }));
+    el.appendChild(option(T('Format bei Umwandlung'), T('Nur relevant, wenn nicht „Original“'), [['mp3', 'MP3'], ['opus', 'Opus'], ['aac', 'AAC']], 'format', function () { Player.reloadCurrent(); }));
+    el.appendChild(option(T('Scrobbeln'), T('Gehörte Songs an den Server melden'), [[true, T('An')], [false, T('Aus')]], 'scrobble'));
 
-    el.appendChild(h('div.settings-section', { text: 'Anzeige' }));
-    el.appendChild(option('Bildschirmschoner', 'Schützt das OLED-Panel vor Einbrennen', [[0, 'Aus'], [1, '1 Min.'], [3, '3 Min.'], [5, '5 Min.'], [10, '10 Min.']], 'screensaver'));
-    el.appendChild(option('Startansicht', null, [['home', 'Start'], ['nowplaying', 'Läuft gerade'], ['albums', 'Alben']], 'startView'));
+    el.appendChild(h('div.settings-section', { text: T('Anzeige') }));
+    el.appendChild(option(T('Bildschirmschoner'), T('Schützt das OLED-Panel vor Einbrennen'), [[0, T('Aus')], [1, T('{n} Min.', { n: 1 })], [3, T('{n} Min.', { n: 3 })], [5, T('{n} Min.', { n: 5 })], [10, T('{n} Min.', { n: 10 })]], 'screensaver'));
+    el.appendChild(option(T('Startansicht'), null, [['home', T('Start')], ['nowplaying', T('Läuft gerade')], ['albums', T('Alben')]], 'startView'));
 
-    el.appendChild(h('div.settings-section', { text: 'Konto' }));
+    var langBtn = UI.button(I18N.choice() === 'auto' ? T('Automatisch ({lang})', { lang: I18N.languages[I18N.lang()] }) : I18N.languages[I18N.lang()], function () {
+      var items = [{ label: T('Automatisch (Sprache des Fernsehers)'), action: function () { I18N.set('auto'); } }];
+      Object.keys(I18N.languages).forEach(function (code) {
+        items.push({ label: I18N.languages[code], action: function () { I18N.set(code); } });
+      });
+      UI.modal(T('Sprache'), items);
+    }, 'outline');
+    el.appendChild(h('div.setting', null, h('div', null, h('div.setting-label', { text: T('Sprache') }), h('div.setting-desc', { text: 'Language · Idioma · Langue · Lingua · Taal · Język · Dil' })), h('div.nav-container', null, langBtn)));
+
+    el.appendChild(h('div.settings-section', { text: T('Konto') }));
     var infoText = h('div.setting-desc', { text: cfg.url });
     API.ping().then(function (r) { infoText.textContent = cfg.url + ' • ' + (r.type || 'Subsonic') + ' ' + (r.serverVersion || ''); }).catch(function () { });
-    el.appendChild(h('div.setting', null, h('div', null, h('div.setting-label', { text: 'Angemeldet als ' + cfg.user }), infoText)));
+    el.appendChild(h('div.setting', null, h('div', null, h('div.setting-label', { text: T('Angemeldet als {name}', { name: cfg.user }) }), infoText)));
     el.appendChild(h('div.settings-actions.nav-container', null,
-      UI.button('Benutzer wechseln', App.showUsers, 'primary', 'swap'),
-      UI.button('Konto entfernen', function () { UI.confirm('Konto „' + cfg.user + '“ von diesem TV entfernen?', 'Entfernen', App.logout, 'trash'); }, 'danger', 'logout'),
-      UI.button('App beenden', App.exit, 'outline', 'power')
+      UI.button(T('Benutzer wechseln'), App.showUsers, 'primary', 'swap'),
+      UI.button(T('Konto entfernen'), function () { UI.confirm(T('Konto „{name}“ von diesem TV entfernen?', { name: cfg.user }), T('Entfernen'), App.logout, 'trash'); }, 'danger', 'logout'),
+      UI.button(T('App beenden'), App.exit, 'outline', 'power')
     ));
 
-    el.appendChild(h('div.settings-section', { text: 'Fernbedienung' }));
+    el.appendChild(h('div.settings-section', { text: T('Fernbedienung') }));
     el.appendChild(h('div.keys', { html:
-      '<b>▶ / ❚❚ / ■</b> Play, Pause, Stopp · <b>⏪ ⏩</b> 10 s spulen, gedrückt halten = Song wechseln · <b>CH + / –</b> seitenweise scrollen<br>' +
-      '<b style="color:#e53935">Rot</b> Läuft gerade · <b style="color:#43a047">Grün</b> Suchen · <b style="color:#fdd835">Gelb</b> Optionen · <b style="color:#1e88e5">Blau</b> Play/Pause' }));
-    el.appendChild(h('div.version', { text: 'Tonalo · inoffizieller Navidrome-Client für LG webOS · v1.4.0' }));
+      T('<b>▶ / ❚❚ / ■</b> Play, Pause, Stopp · <b>⏪ ⏩</b> 10 s spulen, gedrückt halten = Song wechseln · <b>CH + / –</b> seitenweise scrollen<br>') +
+      T('<b style="color:#e53935">Rot</b> Läuft gerade · <b style="color:#43a047">Grün</b> Suchen · <b style="color:#fdd835">Gelb</b> Optionen · <b style="color:#1e88e5">Blau</b> Play/Pause') }));
+    el.appendChild(h('div.version', { text: 'Tonalo · ' + T('inoffizieller Navidrome-Client für LG webOS') + ' · v' + APP_VERSION }));
     setTimeout(function () { App.viewReady(el); }, 0);
     return { el: el };
   }

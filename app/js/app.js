@@ -84,7 +84,7 @@ var App = (function () {
         U.h('div.avatar', { style: 'background:' + avatarColor(acc.user), text: initial(acc.user) }),
         U.h('div.user-name.ellipsis', { text: acc.user }),
         U.h('div.user-sub.muted.ellipsis', { text: host }),
-        U.h('div.user-last.ellipsis', { text: last ? 'Zuletzt: ' + last.title : ' ' })
+        U.h('div.user-last.ellipsis', { text: last ? T('Zuletzt: {title}', { title: last.title }) : ' ' })
       );
       card.addEventListener('options', function () { userMenu(acc); });
       box.appendChild(card);
@@ -92,8 +92,8 @@ var App = (function () {
     });
     box.appendChild(U.h('button.user-card.focusable', { onclick: function () { showLogin(null, { adding: true }); } },
       U.h('div.avatar.add', null, Icon.el('plus', 80)),
-      U.h('div.user-name', { text: 'Konto hinzufügen' }),
-      U.h('div.user-sub.muted', { text: 'Neu anmelden' }),
+      U.h('div.user-name', { text: T('Konto hinzufügen') }),
+      U.h('div.user-sub.muted', { text: T('Neu anmelden') }),
       U.h('div.user-last', { text: ' ' })
     ));
     updateScope();
@@ -102,10 +102,10 @@ var App = (function () {
 
   function userMenu(acc) {
     UI.modal(acc.user, [
-      { icon: 'play', label: 'Auswählen', action: function () { selectAccount(acc); } },
-      { icon: 'refresh', label: 'Neu anmelden (Passwort geändert)', action: function () { showLogin(null, { prefill: acc, adding: true }); } },
-      { icon: 'trash', label: 'Konto von diesem TV entfernen', danger: true, action: function () {
-        UI.confirm('„' + acc.user + '“ entfernen?', 'Entfernen', function () { removeAccount(acc); }, 'trash');
+      { icon: 'play', label: T('Auswählen'), action: function () { selectAccount(acc); } },
+      { icon: 'refresh', label: T('Neu anmelden (Passwort geändert)'), action: function () { showLogin(null, { prefill: acc, adding: true }); } },
+      { icon: 'trash', label: T('Konto von diesem TV entfernen'), danger: true, action: function () {
+        UI.confirm(T('„{name}“ entfernen?', { name: acc.user }), T('Entfernen'), function () { removeAccount(acc); }, 'trash');
       } }
     ]);
   }
@@ -120,7 +120,7 @@ var App = (function () {
     saveAccounts(accounts().filter(function (a) { return a.id !== acc.id; }));
     U.ustore.clear(acc.id);
     if (U.store.get('lastAccount') === acc.id) U.store.del('lastAccount');
-    U.toast('Konto „' + acc.user + '“ entfernt');
+    U.toast(T('Konto „{name}“ entfernt', { name: acc.user }));
     showUsers();
   }
 
@@ -134,8 +134,8 @@ var App = (function () {
     U.store.set('lastAccount', acc.id);
     startMain();
     API.ping().catch(function (e) {
-      if (e.code === 40) showLogin('Anmeldung für „' + acc.user + '“ abgelaufen – bitte Passwort neu eingeben.', { prefill: acc, adding: true });
-      else U.toast('Server nicht erreichbar: ' + e.message, 4000);
+      if (e.code === 40) showLogin(T('Anmeldung für „{name}“ abgelaufen – bitte Passwort neu eingeben.', { name: acc.user }), { prefill: acc, adding: true });
+      else U.toast(T('Server nicht erreichbar: {msg}', { msg: e.message }), 4000);
     });
   }
 
@@ -182,11 +182,11 @@ var App = (function () {
   function doLogin() {
     var url = U.$('#in-url').value, user = U.$('#in-user').value.trim(), pass = U.$('#in-pass').value;
     var msg = U.$('#login-msg');
-    if (!url || !user || !pass) { msg.textContent = 'Bitte alle Felder ausfüllen.'; return; }
+    if (!url || !user || !pass) { msg.textContent = T('Bitte alle Felder ausfüllen.'); return; }
     var creds = API.makeCreds(url, user, pass);
     var prev = API.getConfig();
     API.setConfig(creds);
-    msg.textContent = 'Verbinde …';
+    msg.textContent = T('Verbinde …');
     msg.className = 'msg';
     API.ping().then(function () {
       var acc = Object.assign({ id: accId(creds.url, creds.user) }, creds);
@@ -197,7 +197,7 @@ var App = (function () {
     }).catch(function (e) {
       API.setConfig(prev);
       msg.className = 'msg error';
-      msg.textContent = e.code === 40 ? 'Benutzername oder Passwort falsch.' : 'Verbindung fehlgeschlagen: ' + e.message;
+      msg.textContent = e.code === 40 ? T('Benutzername oder Passwort falsch.') : T('Verbindung fehlgeschlagen: {msg}', { msg: e.message });
     });
   }
 
@@ -282,7 +282,7 @@ var App = (function () {
     if (top) go(top.name, top.params);
   }
 
-  function confirmExit() { UI.confirm('Tonalo beenden?', 'Beenden', exit); }
+  function confirmExit() { UI.confirm(T('Tonalo beenden?'), T('Beenden'), exit); }
   function exit() {
     try { if (window.webOS && webOS.platformBack) { webOS.platformBack(); return; } } catch (e) { /* weiter */ }
     window.close();
@@ -291,8 +291,8 @@ var App = (function () {
   // ---------------- Fehler
   function error(e) {
     console.error(e);
-    U.toast('Fehler: ' + ((e && e.message) || e));
-    if (e && e.code === 40 && account) showLogin('Anmeldung abgelaufen – bitte Passwort neu eingeben.', { prefill: account, adding: true });
+    U.toast(T('Fehler: {msg}', { msg: (e && e.message) || e }));
+    if (e && e.code === 40 && account) showLogin(T('Anmeldung abgelaufen – bitte Passwort neu eingeben.'), { prefill: account, adding: true });
   }
 
   // ---------------- Mini-Player
@@ -452,6 +452,7 @@ var App = (function () {
   function init() {
     content = U.$('#content'); main = U.$('#main'); login = U.$('#login'); users = U.$('#users');
     // Icon-Platzhalter im HTML durch SVGs ersetzen
+    I18N.applyStatic(document);
     U.$$('[data-icon]').forEach(function (i) { i.outerHTML = Icon.svg(i.getAttribute('data-icon'), +(i.getAttribute('data-size') || 24)); });
     fit();
     window.addEventListener('resize', fit);
@@ -480,7 +481,7 @@ var App = (function () {
       var on = !s.starred;
       API.star('song', s.id, on).then(function () {
         Player.setStarred(s, on);
-        U.toast(on ? 'Zu Favoriten hinzugefügt' : 'Aus Favoriten entfernt');
+        U.toast(on ? T('Zu Favoriten hinzugefügt') : T('Aus Favoriten entfernt'));
       }).catch(error);
     });
 

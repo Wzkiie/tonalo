@@ -140,7 +140,7 @@ var UI = (function () {
       coverId: a.coverArt || a.id,
       round: true,
       title: a.name,
-      sub: 'Künstler',
+      sub: T('Künstler|Einzahl'),
       onClick: function () { App.go('artist', { id: a.id }); },
       onOptions: function () { Menus.artist(a); }
     });
@@ -150,7 +150,7 @@ var UI = (function () {
     return card({
       coverId: p.coverArt || p.id,
       title: p.name,
-      sub: (p.owner ? 'Von ' + p.owner + ' • ' : '') + (p.songCount || 0) + ' Songs',
+      sub: (p.owner ? T('Von {name}', { name: p.owner }) + ' • ' : '') + T('{n} Songs', { n: p.songCount || 0 }),
       onClick: function () { App.go('playlist', { id: p.id }); }
     });
   }
@@ -166,7 +166,7 @@ var UI = (function () {
   // ---- Reihe mit „Alle anzeigen“
   function row(title, items, renderFn, moreFn) {
     var head = h('div.section-head', null, h('h2', { text: title }),
-      moreFn ? h('div.nav-container', null, h('button.show-all.focusable', { text: 'Alle anzeigen', onclick: moreFn })) : null);
+      moreFn ? h('div.nav-container', null, h('button.show-all.focusable', { text: T('Alle anzeigen'), onclick: moreFn })) : null);
     var track = h('div.row-track.nav-container', null, items.map(renderFn));
     return h('section.row', null, head, track);
   }
@@ -182,7 +182,7 @@ var UI = (function () {
         items.forEach(function (it) { el.appendChild(renderFn(it)); });
         offset += items.length;
         if (items.length < pageSize) done = true;
-        if (!offset) el.appendChild(h('div.empty', { text: 'Nichts gefunden.' }));
+        if (!offset) el.appendChild(h('div.empty', { text: T('Nichts gefunden.') }));
         loading = false;
       }).catch(function (e) { loading = false; App.error(e); });
     }
@@ -194,7 +194,7 @@ var UI = (function () {
   }
 
   function staticGrid(items, renderFn) {
-    if (!items.length) return h('div.empty', { text: 'Nichts gefunden.' });
+    if (!items.length) return h('div.empty', { text: T('Nichts gefunden.') });
     return h('div.grid.nav-container', null, items.map(renderFn));
   }
 
@@ -205,8 +205,8 @@ var UI = (function () {
     if (opts.header !== false && songs.length) {
       list.appendChild(h('div.tl-head', null,
         h('span.t-num', { text: '#' }),
-        h('span.t-main', { text: 'Titel' }),
-        opts.showAlbum ? h('span.t-album', { text: 'Album' }) : null,
+        h('span.t-main', { text: T('Titel') }),
+        opts.showAlbum ? h('span.t-album', { text: T('Album') }) : null,
         h('span.t-heart'),
         h('span.t-dur', null, icon('clock')),
         h('span.t-more', { style: 'height:auto' })
@@ -234,7 +234,7 @@ var UI = (function () {
       var more = h('button.t-more.focusable', { onclick: openMenu }, icon('more'));
       list.appendChild(h('div.track-row', null, row, more));
     });
-    if (!songs.length) list.appendChild(h('div.empty', { text: 'Keine Songs.' }));
+    if (!songs.length) list.appendChild(h('div.empty', { text: T('Keine Songs.') }));
     return list;
   }
 
@@ -254,7 +254,7 @@ var UI = (function () {
     return h('button.icon-btn.focusable' + (cls ? '.' + cls : ''), { onclick: onClick, title: title }, icon(name));
   }
   function playBig(onClick, autofocus) {
-    return h('button.play-big.focusable', { onclick: onClick, title: 'Abspielen', 'data-autofocus': autofocus || null }, icon('play'));
+    return h('button.play-big.focusable', { onclick: onClick, title: T('Abspielen'), 'data-autofocus': autofocus || null }, icon('play'));
   }
   function setIcon(btn, name) { btn.innerHTML = Icon.svg(name); }
 
@@ -306,7 +306,7 @@ var UI = (function () {
   function modalOpen() { return modalStack.length > 0; }
 
   function confirm(title, okLabel, onOk, okIcon) {
-    modal(title, [{ label: okLabel, icon: okIcon || 'close', action: onOk, danger: true }, { label: 'Abbrechen', icon: 'prev' }]);
+    modal(title, [{ label: okLabel, icon: okIcon || 'close', action: onOk, danger: true }, { label: T('Abbrechen'), icon: 'prev' }]);
   }
 
   return {
@@ -324,15 +324,14 @@ var Menus = (function () {
 
   function starItem(type, obj, onDone) {
     var on = !obj.starred;
-    var what = 'Favoriten';
     return {
       icon: on ? 'heart' : 'heartFill',
-      label: on ? 'Zu ' + what + ' hinzufügen' : 'Aus ' + what + ' entfernen',
+      label: on ? T('Zu Favoriten hinzufügen') : T('Aus Favoriten entfernen'),
       action: function () {
         API.star(type, obj.id, on).then(function () {
           obj.starred = on ? new Date().toISOString() : undefined;
           if (type === 'song') Player.setStarred(obj, on);
-          U.toast(on ? 'Zu ' + what + ' hinzugefügt' : 'Aus ' + what + ' entfernt');
+          U.toast(on ? T('Zu Favoriten hinzugefügt') : T('Aus Favoriten entfernt'));
           if (onDone) onDone();
         }).catch(App.error);
       }
@@ -342,11 +341,11 @@ var Menus = (function () {
   function addToPlaylist(songs) {
     API.playlists().then(function (pls) {
       var items = [{
-        icon: 'plus', label: 'Neue Playlist',
+        icon: 'plus', label: T('Neue Playlist'),
         action: function () {
-          var name = 'Neue Playlist ' + new Date().toLocaleDateString('de-DE');
+          var name = T('Neue Playlist {date}', { date: new Date().toLocaleDateString(I18N.locale()) });
           API.createPlaylist(name, songs.map(function (s) { return s.id; }))
-            .then(function () { U.toast('„' + name + '“ erstellt'); }).catch(App.error);
+            .then(function () { U.toast(T('„{name}“ erstellt', { name: name })); }).catch(App.error);
         }
       }];
       pls.forEach(function (p) {
@@ -354,54 +353,54 @@ var Menus = (function () {
           icon: 'playlist', label: p.name,
           action: function () {
             API.addToPlaylist(p.id, songs.map(function (s) { return s.id; }))
-              .then(function () { U.toast('Zu „' + p.name + '“ hinzugefügt'); }).catch(App.error);
+              .then(function () { U.toast(T('Zu „{name}“ hinzugefügt', { name: p.name })); }).catch(App.error);
           }
         });
       });
-      UI.modal('Zur Playlist hinzufügen', items);
+      UI.modal(T('Zur Playlist hinzufügen'), items);
     }).catch(App.error);
   }
 
   function song(s, extra) {
     UI.modal(null, [
-      { icon: 'play', label: 'Abspielen', action: function () { Player.playList([s], 0); } },
-      { icon: 'playNext', label: 'Als Nächstes abspielen', action: function () { Player.playNext([s]); } },
-      { icon: 'addQueue', label: 'Zur Warteschlange hinzufügen', action: function () { Player.enqueue([s]); } },
-      { icon: 'radio', label: 'Song-Radio starten', action: function () { radio(s.id, s); } },
+      { icon: 'play', label: T('Abspielen'), action: function () { Player.playList([s], 0); } },
+      { icon: 'playNext', label: T('Als Nächstes abspielen'), action: function () { Player.playNext([s]); } },
+      { icon: 'addQueue', label: T('Zur Warteschlange hinzufügen'), action: function () { Player.enqueue([s]); } },
+      { icon: 'radio', label: T('Song-Radio starten'), action: function () { radio(s.id, s); } },
       starItem('song', s),
-      { icon: 'plus', label: 'Zur Playlist hinzufügen', action: function () { addToPlaylist([s]); } },
-      s.albumId ? { icon: 'album', label: 'Album anzeigen', action: function () { App.go('album', { id: s.albumId }); } } : null,
-      s.artistId ? { icon: 'artist', label: 'Künstler anzeigen', action: function () { App.go('artist', { id: s.artistId }); } } : null
+      { icon: 'plus', label: T('Zur Playlist hinzufügen'), action: function () { addToPlaylist([s]); } },
+      s.albumId ? { icon: 'album', label: T('Album anzeigen'), action: function () { App.go('album', { id: s.albumId }); } } : null,
+      s.artistId ? { icon: 'artist', label: T('Künstler anzeigen'), action: function () { App.go('artist', { id: s.artistId }); } } : null
     ].concat(extra || []), { head: { coverId: s.coverArt || s.albumId, title: s.title, sub: s.artist } });
   }
 
   function album(a) {
     function withSongs(fn) { API.album(a.id).then(function (al) { fn(U.asArray(al.song)); }).catch(App.error); }
     UI.modal(null, [
-      { icon: 'play', label: 'Abspielen', action: function () { withSongs(function (s) { Player.playList(s, 0); }); } },
-      { icon: 'shuffle', label: 'Zufallswiedergabe', action: function () { withSongs(function (s) { Player.playList(s, 0, { shuffle: true }); }); } },
-      { icon: 'playNext', label: 'Als Nächstes abspielen', action: function () { withSongs(Player.playNext); } },
-      { icon: 'addQueue', label: 'Zur Warteschlange hinzufügen', action: function () { withSongs(Player.enqueue); } },
+      { icon: 'play', label: T('Abspielen'), action: function () { withSongs(function (s) { Player.playList(s, 0); }); } },
+      { icon: 'shuffle', label: T('Zufallswiedergabe'), action: function () { withSongs(function (s) { Player.playList(s, 0, { shuffle: true }); }); } },
+      { icon: 'playNext', label: T('Als Nächstes abspielen'), action: function () { withSongs(Player.playNext); } },
+      { icon: 'addQueue', label: T('Zur Warteschlange hinzufügen'), action: function () { withSongs(Player.enqueue); } },
       starItem('album', a),
-      { icon: 'plus', label: 'Zur Playlist hinzufügen', action: function () { withSongs(addToPlaylist); } },
-      a.artistId ? { icon: 'artist', label: 'Künstler anzeigen', action: function () { App.go('artist', { id: a.artistId }); } } : null
+      { icon: 'plus', label: T('Zur Playlist hinzufügen'), action: function () { withSongs(addToPlaylist); } },
+      a.artistId ? { icon: 'artist', label: T('Künstler anzeigen'), action: function () { App.go('artist', { id: a.artistId }); } } : null
     ], { head: { coverId: a.coverArt || a.id, title: a.name, sub: a.artist } });
   }
 
   function artist(a) {
     UI.modal(null, [
-      { icon: 'radio', label: 'Künstler-Radio starten', action: function () { radio(a.id, a); } },
-      { icon: 'shuffle', label: 'Alle Songs zufällig', action: function () { artistShuffle(a.id); } },
+      { icon: 'radio', label: T('Künstler-Radio starten'), action: function () { radio(a.id, a); } },
+      { icon: 'shuffle', label: T('Alle Songs zufällig'), action: function () { artistShuffle(a.id); } },
       starItem('artist', a),
-      { icon: 'artist', label: 'Künstler anzeigen', action: function () { App.go('artist', { id: a.id }); } }
-    ], { head: { coverId: a.coverArt || a.id, title: a.name, sub: 'Künstler', round: true } });
+      { icon: 'artist', label: T('Künstler anzeigen'), action: function () { App.go('artist', { id: a.id }); } }
+    ], { head: { coverId: a.coverArt || a.id, title: a.name, sub: T('Künstler|Einzahl'), round: true } });
   }
 
   function radio(id, seed) {
-    U.toast('Radio wird erstellt …');
+    U.toast(T('Radio wird erstellt …'));
     API.similarSongs(id, 60).then(function (songs) {
       if (seed && seed.title) songs = [seed].concat(songs.filter(function (x) { return x.id !== seed.id; }));
-      if (!songs.length) { U.toast('Keine ähnlichen Songs gefunden'); return; }
+      if (!songs.length) { U.toast(T('Keine ähnlichen Songs gefunden')); return; }
       Player.playList(songs, 0);
       App.go('nowplaying');
     });

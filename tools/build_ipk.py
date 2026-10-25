@@ -48,6 +48,10 @@ def main():
     make_icons.main()
     info = json.load(open(os.path.join(APP, "appinfo.json")))
     app_id, version = info["id"], info["version"]
+    import re
+    js_ver = re.search(r"APP_VERSION = '([^']+)'", open(os.path.join(APP, "js", "util.js"), encoding="utf-8").read())
+    if not js_ver or js_ver.group(1) != version:
+        sys.exit("Version passt nicht: appinfo.json %s, util.js APP_VERSION %s" % (version, js_ver and js_ver.group(1)))
     base = "usr/palm/applications/%s" % app_id
 
     entries, dirs, size = [], set(), 0
