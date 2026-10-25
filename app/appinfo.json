@@ -1,0 +1,16 @@
+{
+  "id": "tonalo",
+  "version": "1.4.0",
+  "vendor": "Wzkiie",
+  "type": "web",
+  "main": "index.html",
+  "title": "Tonalo",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "bgColor": "#000000",
+  "iconColor": "#121212",
+  "splashBackground": "splash.png",
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": true,
+  "requiredPermissions": ["time.query", "activity.operation"]
+}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Tonalo</title>
+  <meta name="viewport" content="width=1920, height=1080">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="stage">
+    <!-- Login -->
+    <section id="login" class="hidden">
+      <div class="login-box">
+        <div class="brand"><i data-icon="logo" data-size="40"></i>Tonalo</div>
+        <h1>Mit Navidrome verbinden</h1>
+        <label>Server-URL</label>
+        <input id="in-url" class="focusable" type="url" placeholder="http://192.168.1.10:4533">
+        <label>Benutzername</label>
+        <input id="in-user" class="focusable" type="text" autocomplete="off">
+        <label>Passwort</label>
+        <input id="in-pass" class="focusable" type="password">
+        <button id="btn-login" class="btn primary focusable">Anmelden</button>
+        <button id="btn-login-cancel" class="btn outline focusable hidden">Abbrechen</button>
+        <div id="login-msg" class="msg"></div>
+      </div>
+    </section>
+
+    <!-- Benutzerauswahl -->
+    <section id="users" class="hidden">
+      <div class="brand"><i data-icon="logo" data-size="40"></i>Tonalo</div>
+      <h1 class="users-title">Wer hört gerade?</h1>
+      <div id="user-list" class="nav-container"></div>
+      <p class="users-hint">Gelbe Taste: Konto verwalten</p>
+    </section>
+
+    <!-- Hauptoberfläche -->
+    <section id="main" class="hidden">
+      <nav id="sidebar" data-region="sidebar">
+        <div class="side-panel">
+          <div class="brand"><i data-icon="logo" data-size="36"></i>Tonalo</div>
+          <button class="nav-item focusable" data-view="home"><i data-icon="home"></i><span>Start</span></button>
+          <button class="nav-item focusable" data-view="search"><i data-icon="search"></i><span>Suchen</span></button>
+        </div>
+        <div class="side-panel lib">
+          <div class="side-label">Bibliothek</div>
+          <button class="nav-item focusable" data-view="starred"><i data-icon="heart"></i><span>Favoriten</span></button>
+          <button class="nav-item focusable" data-view="playlists"><i data-icon="playlist"></i><span>Playlists</span></button>
+          <button class="nav-item focusable" data-view="albums"><i data-icon="library"></i><span>Alben</span></button>
+          <button class="nav-item focusable" data-view="artists"><i data-icon="artist"></i><span>Künstler</span></button>
+          <button class="nav-item focusable" data-view="genres"><i data-icon="genre"></i><span>Genres</span></button>
+          <button class="nav-item focusable" data-view="queue"><i data-icon="queue"></i><span>Warteschlange</span></button>
+          <div class="spacer"></div>
+          <button id="nav-user" class="nav-item focusable"><i class="avatar-mini"></i><span class="ellipsis"></span></button>
+          <button class="nav-item focusable" data-view="settings"><i data-icon="settings"></i><span>Einstellungen</span></button>
+        </div>
+      </nav>
+      <div id="content" data-region="content"></div>
+
+      <div id="miniplayer" class="hidden nav-container" data-region="mini">
+        <div class="mp-left">
+          <button id="mp-info" class="focusable nav-fallback">
+            <img id="mp-cover" alt="">
+            <span class="mp-meta">
+              <span id="mp-title" class="ellipsis"></span>
+              <span id="mp-artist" class="ellipsis"></span>
+            </span>
+          </button>
+          <button id="mp-heart" class="mp-btn focusable nav-fallback" title="Favorit"></button>
+        </div>
+        <div class="mp-center">
+          <div class="mp-controls">
+            <button id="mp-shuffle" class="mp-btn focusable nav-fallback" title="Zufall"><i data-icon="shuffle"></i></button>
+            <button id="mp-prev" class="mp-btn focusable nav-fallback" title="Zurück"><i data-icon="prev"></i></button>
+            <button id="mp-play" class="mp-btn big focusable nav-fallback" title="Play/Pause"></button>
+            <button id="mp-next" class="mp-btn focusable nav-fallback" title="Weiter"><i data-icon="next"></i></button>
+            <button id="mp-repeat" class="mp-btn focusable nav-fallback" title="Wiederholen"></button>
+          </div>
+          <div class="mp-progressrow">
+            <span id="mp-pos">0:00</span>
+            <div class="mp-progress"><div id="mp-bar"></div></div>
+            <span id="mp-dur">0:00</span>
+          </div>
+        </div>
+        <div class="mp-right">
+          <button id="mp-lyrics" class="mp-btn focusable nav-fallback" title="Songtext"><i data-icon="mic"></i></button>
+          <button id="mp-queue" class="mp-btn focusable nav-fallback" title="Warteschlange"><i data-icon="queue"></i></button>
+          <button id="mp-open" class="mp-btn focusable nav-fallback" title="Vollbild"><i data-icon="expand"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <div id="modal-layer" class="hidden"></div>
+    <div id="toast" class="hidden"></div>
+    <div id="screensaver" class="hidden">
+      <div id="ss-box">
+        <img id="ss-cover" alt="">
+        <div id="ss-title"></div>
+        <div id="ss-artist"></div>
+        <div id="ss-clock"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/md5.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+name: Release
+
+# Neues Release: Version in app/appinfo.json erhöhen, committen, dann Tag pushen:
+#   git tag v1.4.1 && git push origin v1.4.1
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Version prüfen (Tag muss zu appinfo.json passen)
+        run: |
+          VERSION=$(python3 -c 'import json;print(json.load(open("app/appinfo.json"))["version"])')
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME passt nicht zu appinfo.json ($VERSION)"; exit 1
+          fi
+
+      - name: JavaScript-Syntax prüfen
+        run: for f in app/js/*.js; do node --check "$f"; done
+
+      - name: IPK + Manifest bauen
+        run: python3 tools/build_ipk.py
+
+      - name: Release veröffentlichen
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.ipk
+            dist/*.manifest.json
+          generate_release_notes: true
