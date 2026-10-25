@@ -3,7 +3,7 @@
 
 Motiv: blaues, abgerundetes Quadrat mit Wellenform – dasselbe Logo wie in der App.
 """
-import os, struct, zlib
+import os, struct, sys, zlib
 
 APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app")
 ACCENT = (0x5B, 0x9D, 0xFF)
@@ -100,17 +100,64 @@ def splash(w=1920, h=1080, logo=300, bg=(0, 0, 0)):
     return png(w, h, rows)
 
 
+# iOS-Icon-Varianten: Name -> (Hintergrund, Balken). Muss zu AppIconChoice in ios/Tonalo/Theme.swift passen.
+IOS_VARIANTS = {
+    "AppIcon": (ACCENT, INK),
+    "AppIcon-Purple": ((0x9B, 0x7B, 0xFF), INK),
+    "AppIcon-Pink": ((0xFF, 0x6F, 0xB5), INK),
+    "AppIcon-Red": ((0xFF, 0x5A, 0x5F), INK),
+    "AppIcon-Orange": ((0xFF, 0x9F, 0x43), INK),
+    "AppIcon-Yellow": ((0xFF, 0xD2, 0x4A), INK),
+    "AppIcon-Green": ((0x3D, 0xDC, 0x97), INK),
+    "AppIcon-Dark": (INK, ACCENT),
+    "AppIcon-Light": ((0xF2, 0xF2, 0xF2), INK),
+}
+
+
+def render_ios_icon(size=1024, ss=2, bg=ACCENT, fg=INK):
+    """Randloses, deckendes Icon für iOS (Ecken rundet iOS selbst ab, Alpha ist nicht erlaubt)."""
+    rows = []
+    for y in range(size):
+        row = bytearray()
+        for x in range(size):
+            acc = [0, 0, 0]
+            for sy in range(ss):
+                for sx in range(ss):
+                    c = fg if in_bar((x + (sx + .5) / ss) / size, (y + (sy + .5) / ss) / size) else bg
+                    acc[0] += c[0]; acc[1] += c[1]; acc[2] += c[2]
+            n = ss * ss
+            row += bytes((acc[0] // n, acc[1] // n, acc[2] // n))
+        rows.append(bytes(row))
+    raw = b"".join(b"\0" + r for r in rows)
+    def chunk(t, d):
+        c = struct.pack(">I", len(d)) + t + d
+        return c + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+
+
 def main():
     for name, size in (("icon.png", 80), ("largeIcon.png", 130)):
         with open(os.path.join(APP, name), "wb") as f:
             f.write(png(size, size, render_logo(size)))
     # Große Version nur als Vorschau / für die README, nicht im IPK
-    assets = os.path.join(os.path.dirname(APP), "assets")
+    assets = os.path.join(os.path.dirname(os.path.dirname(APP)), "assets")  # Repo-Wurzel, geteilt mit iOS
     os.makedirs(assets, exist_ok=True)
     with open(os.path.join(assets, "icon-512.png"), "wb") as f:
         f.write(png(512, 512, render_logo(512)))
     with open(os.path.join(APP, "splash.png"), "wb") as f:
         f.write(splash())
+    assets = os.path.join(os.path.dirname(os.path.dirname(APP)), "ios", "Tonalo", "Assets.xcassets")
+    if os.path.isdir(assets) and "--ios" in sys.argv:
+        for name, (bg, fg) in IOS_VARIANTS.items():
+            folder = os.path.join(assets, name + ".appiconset")
+            os.makedirs(folder, exist_ok=True)
+            with open(os.path.join(folder, "icon-1024.png"), "wb") as f:
+                f.write(render_ios_icon(bg=bg, fg=fg))
+            with open(os.path.join(folder, "Contents.json"), "w") as f:
+                f.write('{\n  "images" : [ { "filename" : "icon-1024.png", "idiom" : "universal", "platform" : "ios", "size" : "1024x1024" } ],\n'
+                        '  "info" : { "author" : "xcode", "version" : 1 }\n}\n')
+            print("iOS-Icon:", name)
     print("Icons + Splash erzeugt in", APP)
 
 

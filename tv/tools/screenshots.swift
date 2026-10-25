@@ -1,6 +1,6 @@
 // Renders README screenshots at TV resolution (1920x1080) with macOS WebKit – no browser download needed.
-// 1. node tools/mock_server.js
-// 2. swift tools/screenshots.swift http://localhost:4599 <output folder>
+// 1. node tv/tools/mock_server.js
+// 2. swift tv/tools/screenshots.swift http://localhost:4599 <output folder>
 import Cocoa
 import WebKit
 
