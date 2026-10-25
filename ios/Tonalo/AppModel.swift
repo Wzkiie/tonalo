@@ -14,6 +14,10 @@ final class AppModel {
     var maxBitRate: Int = UserDefaults.standard.integer(forKey: "maxBitRate") {
         didSet { UserDefaults.standard.set(maxBitRate, forKey: "maxBitRate") }
     }
+    /// Seconds the end of a song overlaps with the start of the next one (0 = off).
+    var crossfade: Int = UserDefaults.standard.integer(forKey: "crossfade") {
+        didSet { UserDefaults.standard.set(crossfade, forKey: "crossfade") }
+    }
     var scrobble: Bool = UserDefaults.standard.object(forKey: "scrobble") as? Bool ?? true {
         didSet { UserDefaults.standard.set(scrobble, forKey: "scrobble") }
     }

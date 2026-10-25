@@ -221,14 +221,23 @@ struct SettingsView: View {
             } header: { Text("Offline") } footer: {
                 Text("Downloads keep going in the background. Without cellular, they wait for Wi-Fi.")
             }
-            Section("Playback") {
+            Section {
                 Picker("Streaming quality", selection: $app.maxBitRate) {
                     Text("Original").tag(0)
                     Text("320 kbps").tag(320)
                     Text("192 kbps").tag(192)
                     Text("128 kbps").tag(128)
                 }
+                VStack(alignment: .leading) {
+                    LabeledContent("Crossfade", value: app.crossfade == 0 ? String(localized: "Off") : "\(app.crossfade) s")
+                    Slider(value: Binding(get: { Double(app.crossfade) }, set: { app.crossfade = Int($0) }), in: 0...12, step: 1)
+                        .tint(.accent)
+                }
                 Toggle("Report played songs (scrobble)", isOn: $app.scrobble)
+            } header: {
+                Text("Playback")
+            } footer: {
+                Text("Crossfade blends the end of a song into the next one.")
             }
             Section {
                 Link("Tonalo on GitHub", destination: URL(string: "https://github.com/Wzkiie/tonalo")!)

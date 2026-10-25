@@ -23,7 +23,10 @@ final class PlayerModel {
     var current: Song? { queue.indices.contains(index) ? queue[index] : nil }
     var upNext: [Song] { index + 1 < queue.count ? Array(queue[(index + 1)...]) : [] }
 
-    @ObservationIgnored private let player = AVPlayer()
+    @ObservationIgnored private var player = AVPlayer()
+    /// The previous song's player while it fades out during a crossfade.
+    @ObservationIgnored private var fading: AVPlayer?
+    @ObservationIgnored private var fadeTimer: Timer?
     @ObservationIgnored private var original: [Song]?
     @ObservationIgnored private var scrobbled = false
     @ObservationIgnored private var artwork: UIImage?
@@ -34,17 +37,7 @@ final class PlayerModel {
 
     init() {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] t in
-            MainActor.assumeIsolated { self?.tick(t.seconds) }
-        }
-        statusObservation = player.observe(\.timeControlStatus) { [weak self] p, _ in
-            let playing = p.timeControlStatus != .paused
-            Task { @MainActor in
-                guard let self else { return }
-                self.isPlaying = playing
-                self.updateNowPlaying()
-            }
-        }
+        observe(player)
         NotificationCenter.default.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification, object: nil, queue: .main) { [weak self] note in
             MainActor.assumeIsolated {
                 guard let self, (note.object as? AVPlayerItem) === self.player.currentItem else { return }
@@ -52,6 +45,21 @@ final class PlayerModel {
             }
         }
         setupRemoteCommands()
+    }
+
+    /// Time and play state always come from the player of the current song.
+    private func observe(_ p: AVPlayer) {
+        timeObserver = p.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] t in
+            MainActor.assumeIsolated { self?.tick(t.seconds) }
+        }
+        statusObservation = p.observe(\.timeControlStatus) { [weak self] p, _ in
+            let playing = p.timeControlStatus != .paused
+            Task { @MainActor in
+                guard let self, p === self.player else { return }
+                self.isPlaying = playing
+                self.updateNowPlaying()
+            }
+        }
     }
 
     // MARK: Queue
@@ -102,10 +110,15 @@ final class PlayerModel {
     func next(auto: Bool = false) {
         guard !queue.isEmpty else { return }
         if auto && repeatMode == .one { seek(to: 0); player.play(); return }
-        if index < queue.count - 1 { index += 1 }
-        else if repeatMode == .all || !auto { index = 0 }
-        else { player.pause(); return }
+        guard let i = nextIndex(auto: auto) else { player.pause(); return }
+        index = i
         load(autoplay: true)
+    }
+
+    /// The song that follows the current one, or nil at the end of the queue.
+    private func nextIndex(auto: Bool) -> Int? {
+        if index < queue.count - 1 { return index + 1 }
+        return repeatMode == .all || !auto ? 0 : nil
     }
 
     func previous() {
@@ -118,10 +131,11 @@ final class PlayerModel {
     func toggle() {
         guard current != nil else { return }
         if player.currentItem == nil { load(autoplay: true, startAt: position); return }
-        if isPlaying { player.pause() } else { activateSession(); player.play() }
+        if isPlaying { endFade(); player.pause() } else { activateSession(); player.play() }
     }
 
     func seek(to seconds: Double) {
+        endFade()
         position = max(0, seconds)
         player.seek(to: CMTime(seconds: position, preferredTimescale: 600))
         updateNowPlaying()
@@ -158,6 +172,7 @@ final class PlayerModel {
     /// Saves the current queue and empties the player, without touching the saved queue.
     func detach() {
         persist()
+        endFade()
         player.pause()
         player.replaceCurrentItem(with: nil)
         queue = []; index = -1; position = 0; duration = 0; original = nil
@@ -187,8 +202,9 @@ final class PlayerModel {
 
     // MARK: Loading
 
-    private func load(autoplay: Bool, startAt: Double = 0) {
+    private func load(autoplay: Bool, startAt: Double = 0, fadeIn: Double = 0) {
         guard let song = current, let client = app?.client else { return }
+        endFade()
         let asset: AVURLAsset
         if let local = app?.downloads.localURL(song.id) {
             asset = AVURLAsset(url: local) // downloaded: plays without network
@@ -203,6 +219,14 @@ final class PlayerModel {
             let message = item.error?.localizedDescription
             Task { @MainActor in self?.handleFailure(message) }
         }
+        if fadeIn > 0 {
+            // The old player keeps playing the end of the last song while the new one fades in
+            if let timeObserver { player.removeTimeObserver(timeObserver) }
+            fading = player
+            player = AVPlayer()
+            player.volume = 0
+            observe(player)
+        }
         player.replaceCurrentItem(with: item)
         duration = Double(song.duration ?? 0)
         position = startAt
@@ -213,10 +237,44 @@ final class PlayerModel {
             player.play()
             if app?.scrobble == true { Task { await client.scrobble(song.id, submission: false) } }
         }
+        if fadeIn > 0 { startFade(over: fadeIn) }
         artwork = nil
         updateNowPlaying()
         loadArtwork(for: song, client: client)
         persist()
+    }
+
+    // MARK: Crossfade
+
+    private func startCrossfade() {
+        guard let i = nextIndex(auto: true) else { return }
+        index = i
+        errorStreak = 0
+        load(autoplay: true, fadeIn: Double(app?.crossfade ?? 0))
+    }
+
+    private func startFade(over seconds: Double) {
+        let start = Date()
+        fadeTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                let t = min(Date().timeIntervalSince(start) / seconds, 1)
+                // Equal-power curve, so the volume doesn't dip in the middle
+                self.player.volume = Float(sin(t * .pi / 2))
+                self.fading?.volume = Float(cos(t * .pi / 2))
+                if t >= 1 { self.endFade() }
+            }
+        }
+    }
+
+    /// Stops a running crossfade at once: the old song stops, the new one plays at full volume.
+    private func endFade() {
+        fadeTimer?.invalidate()
+        fadeTimer = nil
+        fading?.pause()
+        fading?.replaceCurrentItem(with: nil)
+        fading = nil
+        player.volume = 1
     }
 
     private func handleFailure(_ message: String?) {
@@ -240,6 +298,10 @@ final class PlayerModel {
             }
         }
         if Int(seconds) % 10 == 0 { persist() }
+        let fade = Double(app?.crossfade ?? 0)
+        if fade > 0, fading == nil, isPlaying, repeatMode != .one, duration > fade * 2, seconds >= duration - fade {
+            startCrossfade()
+        }
     }
 
     // MARK: Offline scrobbles

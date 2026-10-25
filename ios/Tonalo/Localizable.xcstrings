@@ -1,6 +1,5 @@
 {
   "sourceLanguage": "en",
-  "version": "1.0",
   "strings": {
     "": {
       "shouldTranslate": false
@@ -266,6 +265,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mit deinem Navidrome- oder Subsonic-Server verbinden."
+          }
+        }
+      }
+    },
+    "Crossfade": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überblenden"
+          }
+        }
+      }
+    },
+    "Crossfade blends the end of a song into the next one.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überblenden lässt das Ende eines Songs in den nächsten übergehen."
           }
         }
       }
@@ -616,6 +635,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus"
           }
         }
       }
@@ -1233,5 +1262,6 @@
         }
       }
     }
-  }
+  },
+  "version": "1.0"
 }
