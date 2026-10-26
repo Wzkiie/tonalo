@@ -63,6 +63,7 @@ struct RootView: View {
     @State private var paths = [NavigationPath(), NavigationPath(), NavigationPath()]
     @State private var showNowPlaying = false
     @State private var showMenu = false
+    @State private var barHeight: CGFloat = 0
 
     var body: some View {
         @Bindable var app = app
@@ -95,7 +96,12 @@ struct RootView: View {
             }
         }
         .id(app.currentId) // fresh views when switching accounts
-        .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
+        // Every scrolling page (plain scroll views and system lists alike) ends above the floating bar
+        .contentMargins(.bottom, barHeight, for: .scrollContent)
+        .contentMargins(.bottom, barHeight, for: .scrollIndicators)
+        .overlay(alignment: .bottom) {
+            bottomBar.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
+        }
         .overlay {
             if showNowPlaying {
                 NowPlayingView { withAnimation(.spring(duration: 0.35)) { showNowPlaying = false } }
