@@ -149,6 +149,16 @@
         }
       }
     },
+    "Add song to favorites": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Song zu Lieblingssongs hinzufügen"
+          }
+        }
+      }
+    },
     "Add to favorites": {
       "localizations": {
         "de": {
@@ -165,6 +175,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zur Warteschlange hinzufügen"
+          }
+        }
+      }
+    },
+    "Added “%@” to your favorite songs.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ zu deinen Lieblingssongs hinzugefügt."
+          }
+        }
+      }
+    },
+    "Adds the song that is playing in Tonalo to your favorite songs.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fügt den Song, der gerade in Tonalo läuft, zu deinen Lieblingssongs hinzu."
           }
         }
       }
@@ -400,6 +430,16 @@
         }
       }
     },
+    "Couldn’t reach your music server.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Musikserver ist nicht erreichbar."
+          }
+        }
+      }
+    },
     "Crossfade": {
       "localizations": {
         "de": {
@@ -576,6 +616,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lieblingsalben"
+          }
+        }
+      }
+    },
+    "Favorite song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lieblingssong"
           }
         }
       }
@@ -860,6 +910,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Noch nichts heruntergeladen. Nutze den Download-Knopf bei einem Album oder einer Playlist oder „Herunterladen“ im Menü eines Songs."
+          }
+        }
+      }
+    },
+    "Nothing is playing in Tonalo.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Tonalo läuft gerade nichts."
           }
         }
       }
@@ -1796,6 +1856,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "musik.example.com oder 192.168.1.10:4533"
+          }
+        }
+      }
+    },
+    "“%@” is already in your favorite songs.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ ist schon in deinen Lieblingssongs."
           }
         }
       }

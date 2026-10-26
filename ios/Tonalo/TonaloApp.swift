@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct TonaloApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @State private var app = AppModel()
+    @State private var app = AppModel.shared
 
     var body: some Scene {
         WindowGroup {

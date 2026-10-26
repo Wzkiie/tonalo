@@ -6,6 +6,9 @@ import Observation
 @MainActor
 @Observable
 final class AppModel {
+    /// One instance for the app and for actions run from outside it (lock screen button, Siri)
+    static let shared = AppModel()
+
     private(set) var accounts: [Account] = []
     private(set) var currentId: UUID?
     var showsAccountPicker = false

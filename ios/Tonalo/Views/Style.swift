@@ -164,12 +164,14 @@ struct ItemRow<Art: View>: View {
 
 extension AppModel {
     func toggleStar(_ song: Song) {
-        guard let client else { return }
-        let on = song.starred == nil
-        Task {
-            try? await client.setStar(songId: song.id, on: on)
-            player.setStarred(song, on)
-        }
+        Task { await setFavorite(song, song.starred == nil) }
+    }
+
+    @discardableResult
+    func setFavorite(_ song: Song, _ on: Bool) async -> Bool {
+        guard let client, (try? await client.setStar(songId: song.id, on: on)) != nil else { return false }
+        player.setStarred(song, on)
+        return true
     }
 }
 
