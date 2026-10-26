@@ -33,7 +33,7 @@ struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
         .task(id: "\(app.currentId?.uuidString ?? "")\(Theme.shared.hiddenHomeRows.sorted())\(app.isOnline)\(app.playlistsVersion)") { await load() }
-        .refreshable { await load() }
+        .refreshable { await Task { await load() }.value }
     }
 
     private var header: some View {
@@ -51,7 +51,7 @@ struct HomeView: View {
     @ViewBuilder private var allContent: some View {
         quickGrid
         mixes
-        LoadState(loading: loading && sections.isEmpty, error: error) { await load() }
+        LoadState(loading: loading && sections.allSatisfy { $0.albums.isEmpty }, error: error) { await load() }
         if !playlists.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 ShelfHeader(title: "Your playlists", more: .playlists)
@@ -126,17 +126,38 @@ struct HomeView: View {
 
     private func load() async {
         guard let client = app.client else { return }
-        loading = true; error = nil
-        playlists = (try? await client.playlists()) ?? playlists
-        do {
-            var result: [HomeSection] = []
-            for (type, title) in Theme.homeRows where !Theme.shared.hiddenHomeRows.contains(type) {
-                result.append(HomeSection(id: type, title: title, albums: try await client.albumList(type, size: 20)))
+        let rows = Theme.homeRows.filter { !Theme.shared.hiddenHomeRows.contains($0.id) }
+        // The last known state first: the page is there at once, even before (or without) the network
+        if sections.isEmpty {
+            if let saved = client.cached("getPlaylists")?.playlists?.playlist { playlists = saved }
+            sections = rows.map { row in
+                HomeSection(id: row.id, title: row.name,
+                            albums: client.cached("getAlbumList2", ["type": row.id, "size": "20", "offset": "0"])?.albumList2?.album ?? [])
             }
-            sections = result
-        } catch {
-            if app.isOnline { self.error = error.localizedDescription }
         }
+        loading = true; error = nil
+        // All rows at the same time – faster, and one slow or failing row doesn't hold up the others
+        async let freshPlaylists = try? client.playlists()
+        var fresh: [String: [Album]] = [:]
+        var failure: Error?
+        await withTaskGroup(of: (String, Result<[Album], Error>).self) { group in
+            for row in rows {
+                group.addTask {
+                    do { return (row.id, .success(try await client.albumList(row.id, size: 20))) } catch { return (row.id, .failure(error)) }
+                }
+            }
+            for await (id, result) in group {
+                switch result {
+                case .success(let albums): fresh[id] = albums
+                case .failure(let e): failure = e
+                }
+            }
+        }
+        if let p = await freshPlaylists { playlists = p }
+        let old = Dictionary(uniqueKeysWithValues: sections.map { ($0.id, $0.albums) })
+        sections = rows.map { HomeSection(id: $0.id, title: $0.name, albums: fresh[$0.id] ?? old[$0.id] ?? []) }
+        // Only worth a message when there's nothing to show at all
+        if let failure, fresh.isEmpty, sections.allSatisfy({ $0.albums.isEmpty }), app.isOnline { error = failure.userMessage }
         loading = false
     }
 }
@@ -279,7 +300,7 @@ struct SearchView: View {
             guard q.count >= 2 else { result = nil; return }
             try? await Task.sleep(for: .milliseconds(350)) // wait until typing pauses
             guard !Task.isCancelled, let client = app.client else { return }
-            do { result = try await client.search(q); error = nil } catch { self.error = error.localizedDescription }
+            do { result = try await client.search(q); error = nil } catch { self.error = error.userMessage }
         }
         .task {
             guard genres.isEmpty, let all = try? await app.client?.genres() else { return }
@@ -422,7 +443,7 @@ struct LibraryView: View {
         .statusBarBackground()
         .task(id: "\(app.currentId?.uuidString ?? "")\(app.playlistsVersion)") { await load() }
         .task(id: filter) { await loadFilter() }
-        .refreshable { await load(); await loadFilter() }
+        .refreshable { await Task { await load(); await loadFilter() }.value }
     }
 
     private var chips: some View {
@@ -510,8 +531,12 @@ struct LibraryView: View {
 
     private func load() async {
         guard let client = app.client else { return }
-        if let p = try? await client.playlists() { playlists = p }
-        if let s = try? await client.starred() { starred = s }
+        if playlists.isEmpty, let saved = client.cached("getPlaylists")?.playlists?.playlist { playlists = saved }
+        if starred == nil, let saved = client.cached("getStarred2")?.starred2 { starred = saved }
+        async let p = try? client.playlists()
+        async let s = try? client.starred()
+        if let p = await p { playlists = p }
+        if let s = await s { starred = s }
     }
 
     private func loadFilter() async {
@@ -571,7 +596,7 @@ struct AlbumsView: View {
             let page = try await client.albumList(type, size: 60, offset: albums.count, genre: genre)
             albums += page.filter { a in !albums.contains(where: { $0.id == a.id }) }
             if page.count < 60 { done = true }
-        } catch { self.error = error.localizedDescription; done = true }
+        } catch { self.error = error.userMessage; done = true }
     }
 }
 
@@ -600,7 +625,7 @@ struct ArtistsView: View {
         .navigationTitle("Artists")
         .searchable(text: $filter)
         .task {
-            do { artists = try await app.client?.artists() ?? [] } catch { self.error = error.localizedDescription }
+            do { artists = try await app.client?.artists() ?? [] } catch { self.error = error.userMessage }
         }
     }
 }
@@ -635,7 +660,7 @@ struct PlaylistsView: View {
     }
 
     private func load() async {
-        do { playlists = try await app.client?.playlists() ?? [] } catch { self.error = error.localizedDescription }
+        do { playlists = try await app.client?.playlists() ?? [] } catch { self.error = error.userMessage }
         loaded = true
     }
 
@@ -646,7 +671,7 @@ struct PlaylistsView: View {
             try await client.createPlaylist(name: name, songIds: [])
             app.playlistsChanged()
         } catch {
-            app.notify(error.localizedDescription)
+            if let message = error.userMessage { app.notify(message) }
         }
     }
 }

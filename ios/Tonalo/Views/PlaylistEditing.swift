@@ -85,7 +85,7 @@ struct AddToPlaylistSheet: View {
         do {
             playlists = (try await app.client?.playlists() ?? []).filter { $0.isOwned(by: app) }
         } catch {
-            self.error = error.localizedDescription
+            self.error = error.userMessage
         }
     }
 
@@ -113,7 +113,7 @@ struct AddToPlaylistSheet: View {
             app.notify(String(localized: "Added to \(p.name)"))
             dismiss()
         } catch {
-            self.error = error.localizedDescription
+            self.error = error.userMessage
         }
     }
 
@@ -128,7 +128,7 @@ struct AddToPlaylistSheet: View {
             app.notify(String(localized: "Added to \(name)"))
             dismiss()
         } catch {
-            self.error = error.localizedDescription
+            self.error = error.userMessage
         }
     }
 }
@@ -205,7 +205,7 @@ struct PlaylistEditor: View {
             saved()
             dismiss()
         } catch {
-            self.error = error.localizedDescription
+            self.error = error.userMessage
         }
     }
 }

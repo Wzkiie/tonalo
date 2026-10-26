@@ -192,8 +192,9 @@ function handle(req, res, u) {
       case 'getLyricsBySongId': body = ok({ lyricsList: { structuredLyrics: [{ synced: true, line: Array.from({ length: 32 }, (_, i) => ({ start: i * 4500, value: LYRICS[(i + hash(q.id || '')) % LYRICS.length] })) }] } }); break;
       default: body = ok({});
     }
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-    return res.end(JSON.stringify(body));
+    // MOCK_DELAY=<ms>: answer slowly, like a server on a bad connection
+    const send = () => { res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify(body)); };
+    return process.env.MOCK_DELAY ? setTimeout(send, +process.env.MOCK_DELAY) : send();
   }
   const p = path.join(APP, u.pathname === '/' ? 'index.html' : decodeURIComponent(u.pathname));
   if (p !== APP && !p.startsWith(APP + path.sep)) { res.writeHead(403); return res.end(); }

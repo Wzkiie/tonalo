@@ -158,7 +158,7 @@ The screenshots in this README use a made-up demo library (`tv/tools/mock_server
 ## Security
 
 - Your password is never stored. Like every Subsonic client, Tonalo keeps the salted token derived from it, and that token is sent with each request. Anyone who gets hold of it can use your server account (but not learn the password) – so use https for any server reachable from the internet.
-- iPhone: the token and custom headers live in the Keychain, only on that device. Server responses aren't cached on disk, custom headers never follow a redirect to another host, and plain http is only tried automatically for home-network addresses.
+- iPhone: the token and custom headers live in the Keychain, only on that device. Library info and covers are kept on the device so pages open at once and offline, but never the request addresses, which carry the token. Custom headers never follow a redirect to another host, and plain http is only tried automatically for home-network addresses.
 - TV: webOS has no secure storage, so the token sits in the app's local storage. Without a scheme, addresses in the home network use http and all others https.
 
 Found a security problem? Please report it privately – see [SECURITY.md](SECURITY.md). For bugs and ideas, use the [issue forms](../../issues/new/choose).

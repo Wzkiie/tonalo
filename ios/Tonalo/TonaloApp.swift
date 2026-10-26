@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         MainActor.assumeIsolated { WatchBridge.shared.start() }
         // Earlier versions let iOS cache server responses on disk, login token in the addresses included – remove that
         URLCache.shared.removeAllCachedResponses()
+        Task.detached(priority: .background) { ImageLoader.trimDisk() }
         return true
     }
 

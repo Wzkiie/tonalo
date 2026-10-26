@@ -1,6 +1,24 @@
 import Foundation
 import CryptoKit
 
+extension Error {
+    /// The request was stopped on purpose (page left, pulled to refresh again) – not something to show.
+    var isCancellation: Bool {
+        if self is CancellationError { return true }
+        if let e = self as? URLError, e.code == .cancelled { return true }
+        return (self as NSError).domain == NSURLErrorDomain && (self as NSError).code == NSURLErrorCancelled
+    }
+
+    /// The server answered properly, just with an error (wrong password, not found …).
+    var isServerAnswer: Bool {
+        if let e = self as? SubsonicError, case .server = e { return true }
+        return false
+    }
+
+    /// Text for the user, or nil when there's nothing to tell (a cancelled request).
+    var userMessage: String? { isCancellation ? nil : localizedDescription }
+}
+
 enum SubsonicError: LocalizedError {
     case badURL
     case server(code: Int, message: String)
@@ -36,6 +54,50 @@ final class ServerSession: NSObject, URLSessionTaskDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest) async -> URLRequest? {
         task.originalRequest?.url?.host == request.url?.host ? request : nil
+    }
+}
+
+/// Library answers saved on the device per account: pages show the last known state at once,
+/// and a bad or missing connection shows that instead of an error. Only music metadata is stored –
+/// never the request addresses, which carry the login token.
+enum LibraryCache {
+    /// Endpoints worth keeping. Searches, random picks and anything that changes something are left out.
+    static let methods: Set<String> = ["getAlbumList2", "getAlbum", "getArtists", "getArtist", "getArtistInfo2",
+                                       "getTopSongs", "getPlaylists", "getPlaylist", "getGenres", "getStarred2"]
+
+    private static let root: URL = {
+        var url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("LibraryCache", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? url.setResourceValues(values)
+        return url
+    }()
+
+    static func key(_ method: String, _ params: [String: String]) -> String? {
+        guard methods.contains(method) else { return nil }
+        return ([method] + params.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }).joined(separator: "&")
+    }
+
+    private static func file(_ account: UUID, _ key: String) -> URL {
+        let name = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
+        return root.appendingPathComponent(account.uuidString, isDirectory: true).appendingPathComponent(name + ".json")
+    }
+
+    static func load(_ account: UUID, _ key: String) -> Payload? {
+        guard let data = try? Data(contentsOf: file(account, key)) else { return nil }
+        return try? JSONDecoder().decode(Envelope.self, from: data).response
+    }
+
+    static func save(_ data: Data, _ account: UUID, _ key: String) {
+        let url = file(account, key)
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+
+    static func deleteAccount(_ id: UUID) {
+        try? FileManager.default.removeItem(at: root.appendingPathComponent(id.uuidString, isDirectory: true))
     }
 }
 
@@ -124,7 +186,23 @@ struct SubsonicClient {
 
     func call(_ method: String, _ params: [String: String] = [:]) async throws -> Payload {
         guard let u = url(method, params) else { throw SubsonicError.badURL }
-        return try await send(request(u))
+        let key = LibraryCache.key(method, params)
+        do {
+            let (payload, data) = try await sendRaw(request(u))
+            if let key { LibraryCache.save(data, account.id, key) }
+            return payload
+        } catch {
+            // No (usable) connection: the last known answer is better than an error.
+            // Not for real answers from the server (wrong password, not found) or cancelled requests.
+            if let key, !error.isCancellation, !error.isServerAnswer,
+               let saved = LibraryCache.load(account.id, key) { return saved }
+            throw error
+        }
+    }
+
+    /// The saved answer of a library request, without asking the server – for showing a page at once.
+    func cached(_ method: String, _ params: [String: String] = [:]) -> Payload? {
+        LibraryCache.key(method, params).flatMap { LibraryCache.load(account.id, $0) }
     }
 
     /// Long lists (a whole queue or playlist) go in a form body instead of the address, which servers limit in length.
@@ -148,6 +226,10 @@ struct SubsonicClient {
     }
 
     private func send(_ r: URLRequest) async throws -> Payload {
+        try await sendRaw(r).0
+    }
+
+    private func sendRaw(_ r: URLRequest) async throws -> (Payload, Data) {
         let (data, resp) = try await ServerSession.shared.session.data(for: r)
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         let type = (resp as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type") ?? ""
@@ -158,7 +240,7 @@ struct SubsonicClient {
         if env.response.status != "ok" {
             throw SubsonicError.server(code: env.response.error?.code ?? 0, message: env.response.error?.message ?? "Unknown error")
         }
-        return env.response
+        return (env.response, data)
     }
 
     // MARK: Endpoints

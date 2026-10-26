@@ -117,13 +117,14 @@ struct AlbumView: View {
     }
 
     private func load() async {
+        if album == nil, let saved = app.client?.cached("getAlbum", ["id": id])?.album { album = saved } // at once
         do {
             album = try await app.client?.album(id)
             // Keep a downloaded album in sync with songs added on the server
             if let a = album, app.downloads.index.albums[id] != nil { app.downloads.downloadAlbum(a) }
         } catch {
             if let saved = app.downloads.index.albums[id] { album = saved } // offline: use the downloaded copy
-            else { self.error = error.localizedDescription }
+            else { self.error = error.userMessage }
         }
     }
 }
@@ -210,7 +211,7 @@ struct PlaylistView: View {
             app.playlistsChanged()
             await load()
         } catch {
-            app.notify(error.localizedDescription)
+            if let message = error.userMessage { app.notify(message) }
         }
     }
 
@@ -223,18 +224,19 @@ struct PlaylistView: View {
             app.notify(String(localized: "Playlist deleted"))
             dismiss()
         } catch {
-            app.notify(error.localizedDescription)
+            if let message = error.userMessage { app.notify(message) }
         }
     }
 
     private func load() async {
+        if playlist == nil, let saved = app.client?.cached("getPlaylist", ["id": id])?.playlist { playlist = saved } // at once
         do {
             playlist = try await app.client?.playlist(id)
             // A downloaded playlist picks up songs that were added on the server
             if let p = playlist, app.downloads.index.playlists[id] != nil { app.downloads.downloadPlaylist(p) }
         } catch {
             if let saved = app.downloads.index.playlists[id] { playlist = saved }
-            else { self.error = error.localizedDescription }
+            else { self.error = error.userMessage }
         }
     }
 }
@@ -276,11 +278,11 @@ struct FavoritesView: View {
             }
         }
         .task { await load() }
-        .refreshable { await load() }
+        .refreshable { await Task { await load() }.value }
     }
 
     private func load() async {
-        do { songs = try await app.client?.starred().song ?? [] } catch { self.error = error.localizedDescription }
+        do { songs = try await app.client?.starred().song ?? [] } catch { self.error = error.userMessage }
     }
 }
 
@@ -380,7 +382,7 @@ struct ArtistView: View {
             bio = await client.artistInfo(id)?.biography?
                 .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-        } catch { self.error = error.localizedDescription }
+        } catch { self.error = error.userMessage }
     }
 
     private func playAll(shuffled: Bool) {

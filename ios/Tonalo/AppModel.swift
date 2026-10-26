@@ -179,6 +179,8 @@ final class AppModel {
         UserDefaults.standard.removeObject(forKey: "scrobbles." + account.id.uuidString)
         UserDefaults.standard.removeObject(forKey: "queue.dismissed." + account.id.uuidString)
         DownloadStore.deleteAccount(account.id)
+        LibraryCache.deleteAccount(account.id)
+        ImageLoader.clearDisk()
         persist()
         if account.id == currentId {
             currentId = accounts.first?.id

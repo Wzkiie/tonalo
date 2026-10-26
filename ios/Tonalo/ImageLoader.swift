@@ -1,29 +1,73 @@
 import SwiftUI
 import UIKit
 import CoreImage
+import CryptoKit
 
-/// Loads cover art with the account's custom headers (AsyncImage can't send headers) and keeps a memory cache.
+/// Loads cover art with the account's custom headers (AsyncImage can't send headers).
+/// Keeps covers in memory and on disk, so pages look complete right away and without a connection.
+/// The disk copy is named after user, cover and size – never after the address, which holds the login token.
 actor ImageLoader {
     static let shared = ImageLoader()
     private let cache = NSCache<NSURL, UIImage>()
     private var running: [URL: Task<UIImage?, Never>] = [:]
+    nonisolated static let folder: URL = {
+        let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Covers", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }()
+    /// Upper limit for the covers on disk; the oldest go first.
+    private static let diskLimit = 300 * 1024 * 1024
 
     init() { cache.countLimit = 400 }
+
+    private static func diskFile(for url: URL) -> URL? {
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        func value(_ name: String) -> String { items.first { $0.name == name }?.value ?? "" }
+        guard !value("id").isEmpty else { return nil }
+        let key = [value("u"), value("id"), value("size")].joined(separator: "|")
+        return folder.appendingPathComponent(SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined())
+    }
 
     func image(_ url: URL, headers: [String: String]) async -> UIImage? {
         if let hit = cache.object(forKey: url as NSURL) { return hit }
         if let task = running[url] { return await task.value }
         let task = Task<UIImage?, Never> {
+            let file = Self.diskFile(for: url)
+            if let file, let data = try? Data(contentsOf: file), let img = UIImage(data: data) { return img }
             var req = URLRequest(url: url)
             for (k, v) in headers { req.setValue(v, forHTTPHeaderField: k) }
-            guard let (data, _) = try? await ServerSession.shared.session.data(for: req) else { return nil }
-            return UIImage(data: data)
+            guard let (data, resp) = try? await ServerSession.shared.session.data(for: req),
+                  (resp as? HTTPURLResponse)?.statusCode == 200, let img = UIImage(data: data) else { return nil }
+            if let file { try? data.write(to: file, options: .atomic) }
+            return img
         }
         running[url] = task
         let img = await task.value
         running[url] = nil
         if let img { cache.setObject(img, forKey: url as NSURL) }
         return img
+    }
+
+    /// Removes all covers on disk (when an account is removed – they're named by user, not by account).
+    nonisolated static func clearDisk() {
+        for file in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] {
+            try? FileManager.default.removeItem(at: file)
+        }
+    }
+
+    /// Keeps the disk cache under its limit. Run once at launch, in the background.
+    nonisolated static func trimDisk() {
+        let keys: [URLResourceKey] = [.contentModificationDateKey, .fileSizeKey]
+        guard let files = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: keys) else { return }
+        let entries = files.compactMap { url -> (URL, Date, Int)? in
+            guard let v = try? url.resourceValues(forKeys: Set(keys)) else { return nil }
+            return (url, v.contentModificationDate ?? .distantPast, v.fileSize ?? 0)
+        }.sorted { $0.1 < $1.1 }
+        var total = entries.reduce(0) { $0 + $1.2 }
+        for (url, _, size) in entries where total > diskLimit {
+            try? FileManager.default.removeItem(at: url)
+            total -= size
+        }
     }
 }
 
