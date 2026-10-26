@@ -66,6 +66,9 @@ struct NowPlayingView: View {
     let close: () -> Void
     @State private var tint = Color(white: 0.25)
     @State private var drag: CGFloat = 0
+    @State private var dragAxis: Axis?
+    @State private var closing = false
+    @State private var height: CGFloat = 900
     @State private var showLyrics = false
     @State private var showQueue = false
     @State private var lyrics: Lyrics?
@@ -92,6 +95,7 @@ struct NowPlayingView: View {
             }
         }
         .offset(y: drag)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         .onAppear { if Theme.shared.lyricsFirst { showLyrics = true } }
         .sheet(isPresented: $showQueue) { QueueView() }
         .task(id: p.current?.id) {
@@ -115,13 +119,35 @@ struct NowPlayingView: View {
         .ignoresSafeArea()
     }
 
-    /// Pull down on the top part to close.
-    private var dismissDrag: some Gesture {
-        DragGesture(minimumDistance: 10)
-            .onChanged { v in drag = max(0, v.translation.height) }
+    /// Pull down on the top part or the cover to close; on the cover, a sideways swipe skips songs instead.
+    /// Measured on screen, not in the player itself – the player moves with the finger, so its own
+    /// coordinates would shift under the gesture and make it stutter.
+    private func dismissDrag(skips: Bool = false) -> some Gesture {
+        DragGesture(minimumDistance: 10, coordinateSpace: .global)
+            .onChanged { v in
+                guard !closing else { return }
+                if dragAxis == nil {
+                    dragAxis = skips && abs(v.translation.width) > abs(v.translation.height) ? .horizontal : .vertical
+                }
+                guard dragAxis == .vertical else { return }
+                drag = max(0, v.translation.height)
+            }
             .onEnded { v in
-                if v.translation.height > 140 || v.predictedEndTranslation.height > 300 { close() }
-                withAnimation(.spring(duration: 0.3)) { drag = 0 }
+                defer { dragAxis = nil }
+                guard !closing else { return }
+                if dragAxis == .horizontal {
+                    if v.translation.width < -60 { app.player.next() } else if v.translation.width > 60 { app.player.previous() }
+                    return
+                }
+                let speed = v.velocity.height
+                if drag > 0, v.translation.height > height * 0.25 || speed > 700 {
+                    // Keep moving at the finger's speed until it's off screen, then close
+                    closing = true
+                    let duration = min(0.35, max(0.15, (height - drag) / max(speed, 1800)))
+                    withAnimation(.easeOut(duration: duration)) { drag = height } completion: { close() }
+                } else {
+                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30, initialVelocity: min(10, max(-10, Double(-speed / max(drag, 20)))))) { drag = 0 }
+                }
             }
     }
 
@@ -132,11 +158,7 @@ struct NowPlayingView: View {
             Spacer(minLength: 16)
             CoverView(id: song.coverArt ?? song.albumId, size: 800, corner: 8)
                 .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
-                .gesture(dismissDrag)
-                .gesture(DragGesture(minimumDistance: 30).onEnded { v in
-                    guard abs(v.translation.width) > abs(v.translation.height) else { return }
-                    if v.translation.width < -60 { p.next() } else if v.translation.width > 60 { p.previous() }
-                })
+                .gesture(dismissDrag(skips: true))
             Spacer(minLength: 16)
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -205,7 +227,7 @@ struct NowPlayingView: View {
         .foregroundStyle(.white)
         .padding(.top, 8)
         .contentShape(Rectangle())
-        .gesture(dismissDrag)
+        .gesture(dismissDrag())
     }
 
     private var contextLabel: String {
