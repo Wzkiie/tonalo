@@ -59,6 +59,68 @@ struct MiniPlayer: View {
     }
 }
 
+/// Moon button in the player: stop after a while or at the end of the song. Shows the time left while running.
+struct SleepTimerButton: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        let p = app.player
+        Menu {
+            if p.sleepAt != nil || p.sleepAfterSong {
+                Button(role: .destructive) { p.cancelSleepTimer() } label: { Label("Turn off timer", systemImage: "xmark") }
+            }
+            ForEach([5, 15, 30, 45, 60, 90], id: \.self) { m in
+                Button { p.setSleepTimer(minutes: m) } label: { Text("\(m) minutes") }
+            }
+            Button { p.sleepAtEndOfSong() } label: { Text("End of song") }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: p.sleepAt != nil || p.sleepAfterSong ? "moon.zzz.fill" : "moon.zzz")
+                if let end = p.sleepAt {
+                    Text(timerInterval: Date.now...max(end, .now), countsDown: true)
+                        .font(.system(size: 13, weight: .semibold).monospacedDigit()).fixedSize()
+                } else if p.sleepAfterSong {
+                    Text("End of song").font(.system(size: 13, weight: .semibold))
+                }
+            }
+            .foregroundStyle(p.sleepAt != nil || p.sleepAfterSong ? Color.accent : .white.opacity(0.8))
+        }
+        .accessibilityLabel("Sleep timer")
+    }
+}
+
+/// "Continue listening from your TV": the queue another device left on the server, one tap to play it here.
+struct ContinueBanner: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        if let offer = app.player.remoteOffer {
+            HStack(spacing: 10) {
+                CoverView(id: offer.song.coverArt ?? offer.song.albumId, size: 120, corner: 4).frame(width: 40)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Continue from \(offer.source)").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.accent).lineLimit(1)
+                    Text([offer.song.title, offer.song.artist].compactMap { $0 }.joined(separator: " · "))
+                        .font(.system(size: 13)).lineLimit(1)
+                }
+                Spacer(minLength: 4)
+                Button { app.player.acceptRemoteOffer() } label: {
+                    Image(systemName: "play.fill").font(.system(size: 15)).foregroundStyle(.black)
+                        .frame(width: 34, height: 34).background(Color.accent, in: Circle())
+                }
+                .accessibilityLabel("Continue here")
+                Button { withAnimation { app.player.dismissRemoteOffer() } } label: {
+                    Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.subtle)
+                        .frame(width: 30, height: 34)
+                }
+                .accessibilityLabel("Not now")
+            }
+            .padding(.leading, 8).padding(.trailing, 4).padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.elevated))
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+}
+
 /// Full-screen player. Lyrics sit in a card below and can be opened full screen.
 struct NowPlayingView: View {
     @Environment(AppModel.self) private var app
@@ -100,7 +162,10 @@ struct NowPlayingView: View {
         .sheet(isPresented: $showQueue) { QueueView() }
         .task(id: p.current?.id) {
             lyrics = nil
-            if let id = p.current?.id { lyrics = await app.client?.lyrics(id) }
+            guard let id = p.current?.id else { return }
+            // Downloaded songs bring their lyrics along – works offline and shows up instantly
+            if let saved = app.downloads.localLyrics(id) { lyrics = saved; return }
+            lyrics = await app.client?.lyrics(id)
         }
         .task(id: p.current?.coverArt ?? p.current?.albumId) {
             if let c = await loadCoverColor(app, p.current?.coverArt ?? p.current?.albumId) { withAnimation(.easeOut(duration: 0.5)) { tint = c } }
@@ -185,6 +250,8 @@ struct NowPlayingView: View {
                 Button { showLyrics = true } label: { Image(systemName: "quote.bubble") }
                     .disabled(lyrics == nil)
                     .accessibilityLabel("Lyrics")
+                Spacer()
+                SleepTimerButton()
                 Spacer()
                 Button { showQueue = true } label: { Image(systemName: "list.bullet") }
                     .accessibilityLabel("Queue")

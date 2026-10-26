@@ -33,6 +33,9 @@ final class PlayerModel {
     var upNext: [Song] { index + 1 < queue.count ? Array(queue[(index + 1)...]) : [] }
 
     @ObservationIgnored private var player = AVPlayer()
+    /// ReplayGain volume of the current song and of the one fading out.
+    @ObservationIgnored private var gain: Float = 1
+    @ObservationIgnored private var fadingGain: Float = 1
     /// The previous song's player while it fades out during a crossfade.
     @ObservationIgnored private var fading: AVPlayer?
     @ObservationIgnored private var fadeTimer: Timer?
@@ -49,6 +52,30 @@ final class PlayerModel {
     /// What is playing, e.g. "FLAC" or "AAC 256" – shown small in the player.
     private(set) var qualityLabel: String?
     private(set) var playingDownload = false
+
+    /// A queue another device (the TV, for example) left on the server, offered as "Continue listening".
+    struct RemoteQueue: Equatable {
+        var songs: [Song]
+        var index: Int
+        var position: Double
+        var source: String
+        var changed: String
+        var changedDate: Date
+        var song: Song { songs[index] }
+    }
+    private(set) var remoteOffer: RemoteQueue?
+
+    /// Sleep timer: playback stops at this time, or at the end of the current song.
+    private(set) var sleepAt: Date?
+    private(set) var sleepAfterSong = false
+    @ObservationIgnored private var sleepTask: Task<Void, Never>?
+    /// When this device last changed the queue or position – compared with the server's copy.
+    @ObservationIgnored private var localChange = Date.distantPast
+    @ObservationIgnored private var remoteSignature = ""
+    @ObservationIgnored private var remoteSavedAt = Date.distantPast
+    @ObservationIgnored private var remoteSave: Task<Void, Never>?
+    /// A change (usually just the position) that was held back and hasn't reached the server yet.
+    @ObservationIgnored private var unsynced = false
 
     init() {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
@@ -139,6 +166,7 @@ final class PlayerModel {
 
     func next(auto: Bool = false) {
         guard !queue.isEmpty else { return }
+        if auto && sleepAfterSong { sleepAfterSong = false; player.pause(); persist(); syncToServer(force: true); return }
         if auto && repeatMode == .one { seek(to: 0); player.play(); return }
         guard let i = nextIndex(auto: auto) else { player.pause(); return }
         index = i
@@ -161,7 +189,7 @@ final class PlayerModel {
     func toggle() {
         guard current != nil else { return }
         if player.currentItem == nil { load(autoplay: true, startAt: position); return }
-        if isPlaying { endFade(); player.pause() } else { activateSession(); player.play() }
+        if isPlaying { endFade(); player.pause(); persist(); syncToServer(force: true) } else { activateSession(); player.play() }
     }
 
     func seek(to seconds: Double) {
@@ -199,7 +227,55 @@ final class PlayerModel {
 
     func setStarred(_ song: Song, _ on: Bool) {
         for i in queue.indices where queue[i].id == song.id { queue[i].starred = on ? "1" : nil }
-        persist()
+        persist(sync: false) // not a change to the queue – mustn't replace what another device saved
+    }
+
+    // MARK: Sleep timer
+
+    func setSleepTimer(minutes: Int) {
+        cancelSleepTimer()
+        let end = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        sleepAt = end
+        sleepTask = Task {
+            try? await Task.sleep(until: .now + .seconds(end.timeIntervalSinceNow), clock: .continuous)
+            guard !Task.isCancelled else { return }
+            sleepAt = nil
+            fadeOutAndPause()
+        }
+    }
+
+    func sleepAtEndOfSong() {
+        cancelSleepTimer()
+        sleepAfterSong = true
+    }
+
+    func cancelSleepTimer() {
+        sleepTask?.cancel()
+        sleepTask = nil
+        sleepAt = nil
+        sleepAfterSong = false
+    }
+
+    /// Turns the volume down over a few seconds instead of stopping abruptly – nicer when falling asleep.
+    private func fadeOutAndPause() {
+        guard isPlaying else { return }
+        endFade()
+        let start = Date(), from = gain
+        fadeTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                let t = min(Date().timeIntervalSince(start) / 6, 1)
+                self.player.volume = from * Float(1 - t)
+                if t >= 1 {
+                    timer.invalidate()
+                    self.fadeTimer = nil
+                    self.player.pause()
+                    self.player.volume = self.gain
+                    self.persist()
+                    self.syncToServer(force: true)
+                }
+            }
+        }
     }
 
     // MARK: Account switching
@@ -211,10 +287,15 @@ final class PlayerModel {
         player.pause()
         player.replaceCurrentItem(with: nil)
         queue = []; index = -1; position = 0; duration = 0; original = nil; context = nil
+        remoteOffer = nil; remoteSave?.cancel(); remoteSignature = ""; localChange = .distantPast; unsynced = false
+        cancelSleepTimer()
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
-    private struct Saved: Codable { var queue: [Song]; var index: Int; var position: Double; var repeatMode: RepeatMode; var shuffle: Bool; var context: Context? }
+    private struct Saved: Codable {
+        var queue: [Song]; var index: Int; var position: Double; var repeatMode: RepeatMode; var shuffle: Bool; var context: Context?
+        var changed: Date?
+    }
 
     private var storageKey: String? { app?.current.map { "queue." + $0.id.uuidString } }
 
@@ -228,12 +309,91 @@ final class PlayerModel {
         shuffle = s.shuffle
         context = s.context
         duration = Double(current?.duration ?? 0)
+        localChange = s.changed ?? .distantPast
     }
 
-    private func persist() {
+    /// Saves the queue on the device, and on the server so other devices can continue from here.
+    private func persist(sync: Bool = true) {
         guard let key = storageKey else { return }
-        let s = Saved(queue: Array(queue.prefix(1000)), index: index, position: position, repeatMode: repeatMode, shuffle: shuffle, context: context)
+        if sync { localChange = .now }
+        let s = Saved(queue: Array(queue.prefix(1000)), index: index, position: position, repeatMode: repeatMode, shuffle: shuffle,
+                      context: context, changed: localChange)
         UserDefaults.standard.set(try? JSONEncoder().encode(s), forKey: key)
+        if sync { syncToServer() }
+    }
+
+    // MARK: Continue on another device
+
+    /// Sends the queue to the server: right away when the songs or the current song changed,
+    /// otherwise (only the position moved) at most every 30 seconds.
+    func syncToServer(force: Bool = false) {
+        guard let song = current, let client = app?.client, app?.isOnline != false else { return }
+        // A window around the current song keeps the request small for huge queues
+        let start = max(0, index - 100)
+        let ids = queue[start..<min(queue.count, start + 500)].map(\.id)
+        let signature = ids.joined(separator: ",") + "|" + song.id
+        guard force || signature != remoteSignature || Date().timeIntervalSince(remoteSavedAt) > 30 else { unsynced = true; return }
+        unsynced = false
+        remoteSignature = signature
+        remoteSavedAt = .now
+        let position = position
+        remoteSave?.cancel()
+        remoteSave = Task {
+            if !force { try? await Task.sleep(for: .seconds(2)) } // several quick skips send only once
+            guard !Task.isCancelled else { return }
+            await client.savePlayQueue(ids, current: song.id, position: position)
+        }
+    }
+
+    /// Going to the background: only send what hasn't reached the server yet (the position while playing).
+    /// A device that just sat there must not overwrite what another one saved in the meantime.
+    func syncBeforeLeaving() {
+        if isPlaying || unsynced { syncToServer(force: true) }
+    }
+
+    private var dismissedKey: String? { app?.current.map { "queue.dismissed." + $0.id.uuidString } }
+
+    /// Looks for a newer queue from another device. With nothing queued here it is taken over quietly
+    /// (paused); otherwise it's offered, as long as nothing plays on this device.
+    func checkServerQueue() async {
+        guard !isPlaying, let client = app?.client, let remote = await client.playQueue(), !isPlaying,
+              let by = remote.changedBy, by != SubsonicClient.clientName,
+              let changed = remote.changedDate, changed > localChange.addingTimeInterval(10),
+              let songs = remote.entry, !songs.isEmpty, let stamp = remote.changed,
+              stamp != dismissedKey.flatMap({ UserDefaults.standard.string(forKey: $0) }) else { return }
+        let i = songs.firstIndex { $0.id == remote.current } ?? 0
+        let offer = RemoteQueue(songs: songs, index: i, position: Double(remote.position ?? 0) / 1000,
+                                source: by == "Tonalo" ? String(localized: "your TV") : by, changed: stamp, changedDate: changed)
+        if queue.isEmpty {
+            take(offer, play: false)
+        } else if current?.id != offer.song.id || abs(position - offer.position) > 15 {
+            remoteOffer = offer
+        }
+    }
+
+    func acceptRemoteOffer() {
+        guard let offer = remoteOffer else { return }
+        take(offer, play: true)
+    }
+
+    func dismissRemoteOffer() {
+        if let key = dismissedKey, let offer = remoteOffer { UserDefaults.standard.set(offer.changed, forKey: key) }
+        remoteOffer = nil
+    }
+
+    private func take(_ offer: RemoteQueue, play: Bool) {
+        remoteOffer = nil
+        queue = offer.songs; index = offer.index; original = nil; shuffle = false; context = nil
+        errorStreak = 0
+        if play {
+            load(autoplay: true, startAt: offer.position)
+        } else {
+            endFade(); player.pause(); player.replaceCurrentItem(with: nil)
+            position = offer.position
+            duration = Double(offer.song.duration ?? 0)
+            localChange = offer.changedDate
+            persist(sync: false) // the server already has this queue
+        }
     }
 
     // MARK: Loading
@@ -257,22 +417,28 @@ final class PlayerModel {
             qualityLabel = quality.label(for: song)
             playingDownload = false
             // Custom headers (e.g. Cloudflare Access) also have to reach the audio stream itself
-            asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": client.account.httpHeaders])
+            asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": client.headers])
         }
+        remoteOffer = nil
         let item = AVPlayerItem(asset: asset)
         itemObservation = item.observe(\.status) { [weak self] item, _ in
             guard item.status == .failed else { return }
             let message = item.error?.localizedDescription
             Task { @MainActor in self?.handleFailure(message) }
         }
+        let newGain = app?.volumeLeveling.factor(for: song) ?? 1
         if fadeIn > 0 {
             // The old player keeps playing the end of the last song while the new one fades in
             if let timeObserver { player.removeTimeObserver(timeObserver) }
             fading = player
+            fadingGain = gain
             player = AVPlayer()
             player.volume = 0
             observe(player)
+        } else {
+            player.volume = newGain
         }
+        gain = newGain
         player.replaceCurrentItem(with: item)
         duration = Double(song.duration ?? 0)
         position = startAt
@@ -306,8 +472,8 @@ final class PlayerModel {
                 guard let self else { return }
                 let t = min(Date().timeIntervalSince(start) / seconds, 1)
                 // Equal-power curve, so the volume doesn't dip in the middle
-                self.player.volume = Float(sin(t * .pi / 2))
-                self.fading?.volume = Float(cos(t * .pi / 2))
+                self.player.volume = Float(sin(t * .pi / 2)) * self.gain
+                self.fading?.volume = Float(cos(t * .pi / 2)) * self.fadingGain
                 if t >= 1 { self.endFade() }
             }
         }
@@ -320,7 +486,25 @@ final class PlayerModel {
         fading?.pause()
         fading?.replaceCurrentItem(with: nil)
         fading = nil
-        player.volume = 1
+        player.volume = gain
+    }
+
+    /// The leveling setting changed: apply it to the song that's playing right away.
+    func levelingChanged() {
+        gain = app?.volumeLeveling.factor(for: current) ?? 1
+        if fading == nil { player.volume = gain }
+    }
+
+    /// The server address changed (arriving home or leaving): a stream continues from the new one at the same spot.
+    func addressChanged() {
+        guard current != nil, player.currentItem != nil, !playingDownload else { return }
+        if isPlaying {
+            load(autoplay: true, startAt: position)
+        } else {
+            // Paused: just drop the old stream, Play loads it from the new address (no change to report to other devices)
+            endFade()
+            player.replaceCurrentItem(with: nil)
+        }
     }
 
     private func handleFailure(_ message: String?) {
@@ -346,7 +530,7 @@ final class PlayerModel {
         }
         if Int(seconds) % 10 == 0 { persist() }
         let fade = Double(app?.crossfade ?? 0)
-        if fade > 0, fading == nil, isPlaying, repeatMode != .one, duration > fade * 2, seconds >= duration - fade {
+        if fade > 0, fading == nil, !sleepAfterSong, isPlaying, repeatMode != .one, duration > fade * 2, seconds >= duration - fade {
             startCrossfade()
         }
     }
@@ -388,7 +572,7 @@ final class PlayerModel {
             var img: UIImage?
             if let local { img = UIImage(contentsOfFile: local.path) }
             if img == nil, let url = client.coverURL(coverId, size: 600) {
-                img = await ImageLoader.shared.image(url, headers: client.account.httpHeaders)
+                img = await ImageLoader.shared.image(url, headers: client.headers)
             }
             guard current?.id == song.id else { return }
             artwork = img

@@ -25,8 +25,27 @@ final class AppModel {
     var crossfade: Int = UserDefaults.standard.integer(forKey: "crossfade") {
         didSet { UserDefaults.standard.set(crossfade, forKey: "crossfade") }
     }
+    /// Evens out loudness between songs with the ReplayGain tags of the files.
+    var volumeLeveling = VolumeLeveling(rawValue: UserDefaults.standard.string(forKey: "volumeLeveling") ?? "") ?? .off {
+        didSet { UserDefaults.standard.set(volumeLeveling.rawValue, forKey: "volumeLeveling"); player.levelingChanged() }
+    }
     var scrobble: Bool = UserDefaults.standard.object(forKey: "scrobble") as? Bool ?? true {
         didSet { UserDefaults.standard.set(scrobble, forKey: "scrobble") }
+    }
+
+    /// Short confirmation shown above the player bar, e.g. "Added to Road trip".
+    private(set) var notice: String?
+
+    /// Goes up whenever a playlist is created, changed or deleted here, so lists showing playlists reload.
+    private(set) var playlistsVersion = 0
+    func playlistsChanged() { playlistsVersion += 1 }
+
+    func notify(_ text: String) {
+        notice = text
+        Task {
+            try? await Task.sleep(for: .seconds(2.5))
+            if notice == text { notice = nil }
+        }
     }
 
     let player = PlayerModel()
@@ -37,8 +56,12 @@ final class AppModel {
     private(set) var cellularOnly = false
     @ObservationIgnored private let monitor = NWPathMonitor()
 
+    /// On Wi-Fi at home with a home address set and answering: requests go there directly.
+    private(set) var atHome = false
+    @ObservationIgnored private var routeCheck: Task<Void, Never>?
+
     var current: Account? { accounts.first { $0.id == currentId } }
-    var client: SubsonicClient? { current.map(SubsonicClient.init) }
+    var client: SubsonicClient? { current.map { SubsonicClient(account: $0, atHome: atHome) } }
 
     init() {
         accounts = Keychain.load([Account].self, key: "accounts") ?? []
@@ -46,11 +69,18 @@ final class AppModel {
         // Test hook for the simulator: launch with -demoAccount to sign in to the public Navidrome demo server,
         // or add -demoServer <url> to use another one (tv/tools/mock_server.js for the README screenshots).
         // Compiled out of release builds.
+        // -demoHome <url> and -demoHeader <name=value> set the home address and a custom header (for testing both routes).
         let args = ProcessInfo.processInfo.arguments
-        if args.contains("-demoAccount"), accounts.isEmpty {
+        func arg(_ name: String) -> String? { args.firstIndex(of: name).flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil } }
+        if args.contains("-demoAccount") {
             let t = SubsonicClient.makeToken(password: "demo")
-            let server = args.firstIndex(of: "-demoServer").flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil }
-            accounts = [Account(serverURL: server ?? "https://demo.navidrome.org", username: "demo", salt: t.salt, token: t.token)]
+            var acc = accounts.first ?? Account(serverURL: "https://demo.navidrome.org", username: "demo", salt: t.salt, token: t.token)
+            if let server = arg("-demoServer") { acc.serverURL = server }
+            acc.localURL = arg("-demoHome")
+            if let h = arg("-demoHeader")?.split(separator: "=", maxSplits: 1), h.count == 2 {
+                acc.headers = [HeaderField(name: String(h[0]), value: String(h[1]))]
+            }
+            accounts = [acc]
             persist()
         }
         #endif
@@ -76,6 +106,7 @@ final class AppModel {
             Task { @MainActor in
                 guard let self else { return }
                 if self.cellularOnly != cellular { self.cellularOnly = cellular }
+                self.checkRoute() // also when switching between Wi-Fi networks
                 guard self.isOnline != online else { return }
                 self.isOnline = online
                 if online { await self.player.flushScrobbles() }
@@ -102,15 +133,37 @@ final class AppModel {
             throw KeychainError.saveFailed
         }
         select(accounts.first { $0.serverURL == account.serverURL && $0.username == account.username }!.id)
+        checkRoute() // the home address may have changed
+    }
+
+    /// Picks the home address or the normal one: the home address only on Wi-Fi, and only if it answers.
+    func checkRoute() {
+        routeCheck?.cancel()
+        guard let account = current, account.localURL != nil, isOnline, !cellularOnly else { setAtHome(false); return }
+        routeCheck = Task {
+            let ok = await SubsonicClient(account: account, atHome: true).reachable()
+            guard !Task.isCancelled, account.id == currentId else { return }
+            setAtHome(ok)
+        }
+    }
+
+    private func setAtHome(_ value: Bool) {
+        guard value != atHome else { return }
+        atHome = value
+        // Running streams and downloads still use the old address – move them over
+        player.addressChanged()
+        downloads.requeue()
     }
 
     func select(_ id: UUID) {
         if id != currentId {
             player.detach()
+            atHome = false
             currentId = id
             UserDefaults.standard.set(id.uuidString, forKey: "currentAccount")
             downloads.reload()
             player.restore()
+            checkRoute()
         }
         showsAccountPicker = false
     }

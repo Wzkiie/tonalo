@@ -219,7 +219,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         Task { @MainActor in
             if let local = app.downloads.localCover(id), let img = UIImage(contentsOfFile: local.path) { apply(img); return }
             guard let client = app.client, let url = client.coverURL(id, size: 200),
-                  let img = await ImageLoader.shared.image(url, headers: client.account.httpHeaders) else { return }
+                  let img = await ImageLoader.shared.image(url, headers: client.headers) else { return }
             apply(img)
         }
     }

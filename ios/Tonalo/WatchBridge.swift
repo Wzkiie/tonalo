@@ -157,7 +157,7 @@ final class WatchBridge: NSObject {
         var image: UIImage?
         if let local = app.downloads.localCover(id) { image = UIImage(contentsOfFile: local.path) }
         if image == nil, let client = app.client, let url = client.coverURL(id, size: 300) {
-            image = await ImageLoader.shared.image(url, headers: client.account.httpHeaders)
+            image = await ImageLoader.shared.image(url, headers: client.headers)
         }
         guard let image else { return nil }
         let target = CGSize(width: size, height: size)

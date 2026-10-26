@@ -64,6 +64,9 @@ final class DownloadStore {
     nonisolated static func songFile(account: String, name: String) -> URL {
         folder(account).appendingPathComponent("songs", isDirectory: true).appendingPathComponent(name)
     }
+    nonisolated static func lyricsFile(account: String, id: String) -> URL {
+        folder(account).appendingPathComponent("lyrics", isDirectory: true).appendingPathComponent(id.replacingOccurrences(of: "/", with: "_") + ".json")
+    }
     nonisolated static func coverFile(account: String, id: String) -> URL {
         folder(account).appendingPathComponent("covers", isDirectory: true).appendingPathComponent(id.replacingOccurrences(of: "/", with: "_"))
     }
@@ -125,6 +128,22 @@ final class DownloadStore {
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
+    /// Lyrics saved with a downloaded song, so they also show without network.
+    func localLyrics(_ songId: String) -> Lyrics? {
+        guard let key = accountKey, let data = try? Data(contentsOf: Self.lyricsFile(account: key, id: songId)) else { return nil }
+        return try? JSONDecoder().decode(Lyrics.self, from: data)
+    }
+
+    private func saveLyrics(_ songId: String, client: SubsonicClient, account: String) {
+        let dest = Self.lyricsFile(account: account, id: songId)
+        guard !FileManager.default.fileExists(atPath: dest.path) else { return }
+        Task {
+            guard let lyrics = await client.lyrics(songId), let data = try? JSONEncoder().encode(lyrics) else { return }
+            try? FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? data.write(to: dest, options: .atomic)
+        }
+    }
+
     func localCover(_ id: String?) -> URL? {
         guard let key = accountKey, let id, !id.isEmpty else { return nil }
         let url = Self.coverFile(account: key, id: id)
@@ -160,6 +179,7 @@ final class DownloadStore {
             progress[song.id] = 0
             task.resume()
             saveCover(song.coverArt ?? song.albumId, client: client, account: key)
+            saveLyrics(song.id, client: client, account: key)
         }
         save()
     }
@@ -182,7 +202,7 @@ final class DownloadStore {
         let dest = Self.coverFile(account: account, id: id)
         Task.detached {
             var req = URLRequest(url: url)
-            for (k, v) in client.account.httpHeaders { req.setValue(v, forHTTPHeaderField: k) }
+            for (k, v) in client.headers { req.setValue(v, forHTTPHeaderField: k) }
             guard let (data, resp) = try? await URLSession.shared.data(for: req),
                   (resp as? HTTPURLResponse)?.statusCode == 200 else { return }
             try? FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -226,7 +246,8 @@ final class DownloadStore {
         }
     }
 
-    private func requeue() {
+    /// Starts unfinished downloads again – also when the server address changes (leaving home, for example).
+    func requeue() {
         let songs = Array(index.queued.values)
         guard !songs.isEmpty else { return }
         cancelTasks(Set(songs.map(\.id))) {
@@ -245,6 +266,7 @@ final class DownloadStore {
         for id in songIds {
             if let d = index.songs.removeValue(forKey: id) {
                 try? FileManager.default.removeItem(at: Self.songFile(account: key, name: d.file))
+                try? FileManager.default.removeItem(at: Self.lyricsFile(account: key, id: id))
             }
             index.queued.removeValue(forKey: id)
             progress.removeValue(forKey: id)

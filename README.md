@@ -29,6 +29,7 @@ Navidrome's web UI technically works in the TV browser, but it's made for a mous
 - Albums, artists, playlists, genres, favorites and search
 - Full-screen player with synced lyrics (if your server has them)
 - Queue that survives restarts, plus "play next", artist/song radio and adding to playlists
+- **Continue on another device**: the queue is kept on your server, so the TV offers to pick up where the iPhone left off (and the other way round)
 - Several people on one TV: everyone signs in once, then picks their profile on start. Queues and settings stay separate.
 - Transcoding options for weaker Wi-Fi, scrobbling, and a moving screensaver so the OLED doesn't burn in
 - English, German, Spanish, French, Italian, Portuguese, Dutch, Polish and Turkish – it follows the TV's language
@@ -93,10 +94,14 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 ### What it does
 
 - Home, search with genre tiles, and a library with playlists, albums, artists and downloads
-- Player with synced lyrics, a queue, swipe gestures and colors taken from the cover
+- Player with synced lyrics, a queue, swipe gestures, colors taken from the cover and a sleep timer
+- **Continue on another device**: started on the TV, finished on the iPhone – the app offers to pick up the queue another device left on your server
+- **Playlists**: create, rename and delete them, add songs from any menu (with a warning for duplicates), remove and reorder songs
 - **Crossfade** between songs, adjustable from 1 to 12 seconds
 - **Audio quality** set separately for Wi-Fi, cellular and downloads: lossless (your files as they are, FLAC stays FLAC) or converted by your server to AAC or MP3. Formats the iPhone can't play are converted automatically.
-- **Offline downloads** of songs, albums and playlists, in the background, optionally only on Wi-Fi. Scrobbles made offline are sent later.
+- **Offline downloads** of songs, albums and playlists, in the background, optionally only on Wi-Fi. Lyrics come along, and scrobbles made offline are sent later.
+- **Address at home**: on Wi-Fi the app talks to your server directly in the home network when it answers, and switches back to the outside address when you leave – mid-song without a gap
+- **Volume leveling** with the ReplayGain tags of your files, per song or per album
 - **Favorites from the lock screen**: a heart button for Control Center and the lock screen (iOS 18+) and a Siri shortcut ("Add this song to my favorites in Tonalo")
 - **Apple Watch app**: player with cover, favorites, shuffle and the iPhone's volume on the Digital Crown, plus your playlists and favorites to start music from the wrist. It remote-controls the iPhone.
 - **CarPlay** is built but switched off until Apple grants the CarPlay audio entitlement – see [`ios/CARPLAY.md`](ios/CARPLAY.md)

@@ -70,6 +70,26 @@
         }
       }
     },
+    "%lld minutes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Minuten"
+          }
+        }
+      }
+    },
+    "%lld of these songs are already in the playlist.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dieser Songs sind schon in der Playlist."
+          }
+        }
+      }
+    },
     "%lld songs": {
       "localizations": {
         "de": {
@@ -119,6 +139,16 @@
         }
       }
     },
+    "Add %lld songs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Songs hinzufügen"
+          }
+        }
+      }
+    },
     "Add Cloudflare Access headers": {
       "localizations": {
         "de": {
@@ -139,12 +169,32 @@
         }
       }
     },
+    "Add anyway": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trotzdem hinzufügen"
+          }
+        }
+      }
+    },
     "Add header": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Header hinzufügen"
+          }
+        }
+      }
+    },
+    "Add new ones only": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur neue hinzufügen"
           }
         }
       }
@@ -169,6 +219,26 @@
         }
       }
     },
+    "Add to other playlist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu anderer Playlist hinzufügen"
+          }
+        }
+      }
+    },
+    "Add to playlist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zur Playlist hinzufügen"
+          }
+        }
+      }
+    },
     "Add to queue": {
       "localizations": {
         "de": {
@@ -179,12 +249,32 @@
         }
       }
     },
+    "Added to %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu „%@“ hinzugefügt"
+          }
+        }
+      }
+    },
     "Added “%@” to your favorite songs.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "„%@“ zu deinen Lieblingssongs hinzugefügt."
+          }
+        }
+      }
+    },
+    "Address at home (optional)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse zuhause (optional)"
           }
         }
       }
@@ -235,6 +325,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Alle"
+          }
+        }
+      }
+    },
+    "Already in “%@”": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schon in „%@“"
           }
         }
       }
@@ -430,12 +530,52 @@
         }
       }
     },
+    "Connected at home": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuhause verbunden"
+          }
+        }
+      }
+    },
+    "Continue from %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiterhören von %@"
+          }
+        }
+      }
+    },
+    "Continue here": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier weiterhören"
+          }
+        }
+      }
+    },
     "Couldn’t reach your music server.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Dein Musikserver ist nicht erreichbar."
+          }
+        }
+      }
+    },
+    "Create": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erstellen"
           }
         }
       }
@@ -520,6 +660,26 @@
         }
       }
     },
+    "Delete playlist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playlist löschen"
+          }
+        }
+      }
+    },
+    "Delete “%@”?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ löschen?"
+          }
+        }
+      }
+    },
     "Discography": {
       "localizations": {
         "de": {
@@ -536,6 +696,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Entdecken"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
           }
         }
       }
@@ -626,6 +796,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Konto bearbeiten"
+          }
+        }
+      }
+    },
+    "Edit songs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Songs bearbeiten"
+          }
+        }
+      }
+    },
+    "End of song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ende des Songs"
           }
         }
       }
@@ -854,12 +1044,12 @@
         }
       }
     },
-    "Lossless plays your files unchanged, FLAC stays FLAC. Formats the iPhone can’t play are converted to AAC 256 by your server. Crossfade blends the end of a song into the next one.": {
+    "Lossless plays your files unchanged, FLAC stays FLAC. Formats the iPhone can’t play are converted to AAC 256 by your server. Crossfade blends the end of a song into the next one. Volume leveling uses the ReplayGain tags of your files.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verlustfrei spielt deine Dateien unverändert ab, FLAC bleibt FLAC. Formate, die das iPhone nicht abspielen kann, wandelt dein Server in AAC 256 um. Überblenden lässt das Ende eines Songs in den nächsten übergehen."
+            "value": "Verlustfrei spielt deine Dateien unverändert ab, FLAC bleibt FLAC. Formate, die das iPhone nicht abspielen kann, wandelt dein Server in AAC 256 um. Überblenden lässt das Ende eines Songs in den nächsten übergehen. Die Lautstärkeanpassung nutzt die ReplayGain-Tags deiner Dateien."
           }
         }
       }
@@ -890,6 +1080,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Häufig gespielt"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "New playlist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Playlist"
           }
         }
       }
@@ -984,6 +1194,16 @@
         }
       }
     },
+    "Not now": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jetzt nicht"
+          }
+        }
+      }
+    },
     "Nothing downloaded yet. Use the download button on an album or playlist, or “Download” in a song’s menu.": {
       "localizations": {
         "de": {
@@ -1050,6 +1270,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Offline"
+          }
+        }
+      }
+    },
+    "On Wi-Fi, Tonalo uses this address whenever it answers – faster, and without your proxy. Custom headers aren’t sent to it.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im WLAN nutzt Tonalo diese Adresse, sobald sie antwortet – schneller und ohne deinen Proxy. Eigene Header werden an sie nicht gesendet."
           }
         }
       }
@@ -1244,6 +1474,16 @@
         }
       }
     },
+    "Playlist deleted": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playlist gelöscht"
+          }
+        }
+      }
+    },
     "Playlist • %lld songs": {
       "localizations": {
         "de": {
@@ -1414,6 +1654,26 @@
         }
       }
     },
+    "Rename": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Umbenennen"
+          }
+        }
+      }
+    },
+    "Rename playlist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playlist umbenennen"
+          }
+        }
+      }
+    },
     "Repeat": {
       "localizations": {
         "de": {
@@ -1450,6 +1710,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld fehlgeschlagene Downloads wiederholen"
+          }
+        }
+      }
+    },
+    "Same volume for every album": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gleiche Lautstärke pro Album"
+          }
+        }
+      }
+    },
+    "Same volume for every song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gleiche Lautstärke für jeden Song"
           }
         }
       }
@@ -1584,6 +1864,16 @@
         }
       }
     },
+    "Sleep timer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep-Timer"
+          }
+        }
+      }
+    },
     "Songs": {
       "localizations": {
         "de": {
@@ -1705,6 +1995,16 @@
         }
       }
     },
+    "The playlist is removed from your server. The songs stay in your library.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Playlist wird von deinem Server gelöscht. Die Songs bleiben in deiner Bibliothek."
+          }
+        }
+      }
+    },
     "The server address is not valid.": {
       "localizations": {
         "de": {
@@ -1725,12 +2025,32 @@
         }
       }
     },
+    "This playlist is empty. Add songs with “Add to playlist” in a song’s menu.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Playlist ist leer. Füge Songs über „Zur Playlist hinzufügen“ im Menü eines Songs hinzu."
+          }
+        }
+      }
+    },
     "This song can't be played.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Dieser Song kann nicht abgespielt werden."
+          }
+        }
+      }
+    },
+    "This song is already in the playlist.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Song ist schon in der Playlist."
           }
         }
       }
@@ -1775,6 +2095,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Erneut versuchen"
+          }
+        }
+      }
+    },
+    "Turn off timer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timer ausschalten"
           }
         }
       }
@@ -1836,6 +2166,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sehr hoch · AAC 256 kbit/s"
+          }
+        }
+      }
+    },
+    "Volume leveling": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lautstärke angleichen"
           }
         }
       }
@@ -1976,6 +2316,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "musik.example.com oder 192.168.1.10:4533"
+          }
+        }
+      }
+    },
+    "your TV": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "deinem TV"
           }
         }
       }

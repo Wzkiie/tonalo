@@ -17,6 +17,8 @@ struct Account: Codable, Hashable, Identifiable {
     var salt: String
     var token: String
     var headers: [HeaderField] = []
+    /// Optional address inside the home network (e.g. http://192.168.1.10:4533), used on Wi-Fi when it answers.
+    var localURL: String?
 
     var host: String { URL(string: serverURL)?.host ?? serverURL }
 
@@ -48,6 +50,15 @@ struct Song: Codable, Hashable, Identifiable {
     var starred: String?
     var suffix: String?
     var bitRate: Int?
+    var replayGain: ReplayGain?
+}
+
+/// Loudness values from the file tags (OpenSubsonic). Navidrome sends 0 dB when a file has none.
+struct ReplayGain: Codable, Hashable {
+    var trackGain: Double?
+    var albumGain: Double?
+    var trackPeak: Double?
+    var albumPeak: Double?
 }
 
 struct Album: Codable, Hashable, Identifiable {
@@ -81,7 +92,29 @@ struct Playlist: Codable, Hashable, Identifiable {
     var coverArt: String?
     var owner: String?
     var comment: String?
+    var `public`: Bool?
     var entry: [Song]?
+}
+
+/// The queue as the server keeps it for the user – whichever app saved it last.
+struct PlayQueue: Codable {
+    var entry: [Song]?
+    var current: String?
+    /// Milliseconds
+    var position: Int?
+    var changed: String?
+    var changedBy: String?
+
+    var changedDate: Date? {
+        // Navidrome sends nanoseconds; the date parser only takes milliseconds
+        guard let changed else { return nil }
+        let trimmed = changed.replacingOccurrences(of: #"(\.\d{3})\d+"#, with: "$1", options: .regularExpression)
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = f.date(from: trimmed) { return d }
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: trimmed)
+    }
 }
 
 struct Genre: Codable, Hashable {
@@ -100,7 +133,7 @@ struct LyricLine: Codable, Hashable {
     var value: String
 }
 
-struct Lyrics {
+struct Lyrics: Codable {
     var synced: Bool
     var lines: [LyricLine]
 }
@@ -137,6 +170,7 @@ struct Payload: Codable {
     var searchResult3: SearchBody?
     var lyricsList: LyricsListBody?
     var genres: GenresBody?
+    var playQueue: PlayQueue?
 }
 
 struct Envelope: Codable {

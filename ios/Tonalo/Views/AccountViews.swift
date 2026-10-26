@@ -55,6 +55,7 @@ struct AccountEditorView: View {
     let account: Account?
 
     @State private var server = ""
+    @State private var localServer = ""
     @State private var username = ""
     @State private var password = ""
     @State private var headers: [HeaderField] = []
@@ -76,6 +77,14 @@ struct AccountEditorView: View {
             Section("Server") {
                 TextField("music.example.com or 192.168.1.10:4533", text: $server)
                     .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+            }
+            Section {
+                TextField("192.168.1.10:4533", text: $localServer)
+                    .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+            } header: {
+                Text("Address at home (optional)")
+            } footer: {
+                Text("On Wi-Fi, Tonalo uses this address whenever it answers – faster, and without your proxy. Custom headers aren’t sent to it.")
             }
             Section {
                 TextField("Username", text: $username).textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -123,7 +132,7 @@ struct AccountEditorView: View {
         }
         .onAppear {
             guard let a = account, server.isEmpty else { return }
-            server = a.serverURL; username = a.username; headers = a.headers
+            server = a.serverURL; username = a.username; headers = a.headers; localServer = a.localURL ?? ""
         }
     }
 
@@ -141,6 +150,7 @@ struct AccountEditorView: View {
         saving = true; error = nil
         var acc = account ?? Account(serverURL: "", username: "", salt: "", token: "")
         acc.serverURL = SubsonicClient.normalize(server)
+        acc.localURL = SubsonicClient.normalizeLocal(localServer)
         acc.username = username.trimmingCharacters(in: .whitespaces)
         acc.headers = headers.filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }
         if !password.isEmpty {
@@ -188,6 +198,9 @@ struct SettingsView: View {
                                     Text(acc.username)
                                     Text(acc.host + (acc.headers.isEmpty ? "" : " · " + String(localized: "\(acc.headers.count) headers")))
                                         .font(.caption).foregroundStyle(.secondary)
+                                    if acc.id == app.currentId && app.atHome {
+                                        Label("Connected at home", systemImage: "house.fill").font(.caption).foregroundStyle(Color.accent)
+                                    }
                                 }
                                 Spacer()
                                 if acc.id == app.currentId { Image(systemName: "checkmark").foregroundStyle(Color.accent) }
@@ -224,11 +237,15 @@ struct SettingsView: View {
                     Slider(value: Binding(get: { Double(app.crossfade) }, set: { app.crossfade = Int($0) }), in: 0...12, step: 1)
                         .tint(.accent)
                 }
+                Picker("Volume leveling", selection: $app.volumeLeveling) {
+                    ForEach(VolumeLeveling.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.navigationLink)
                 Toggle("Report played songs (scrobble)", isOn: $app.scrobble)
             } header: {
                 Text("Playback")
             } footer: {
-                Text("Lossless plays your files unchanged, FLAC stays FLAC. Formats the iPhone can’t play are converted to AAC 256 by your server. Crossfade blends the end of a song into the next one.")
+                Text("Lossless plays your files unchanged, FLAC stays FLAC. Formats the iPhone can’t play are converted to AAC 256 by your server. Crossfade blends the end of a song into the next one. Volume leveling uses the ReplayGain tags of your files.")
             }
             Section {
                 Link("Tonalo on GitHub", destination: URL(string: "https://github.com/Wzkiie/tonalo")!)

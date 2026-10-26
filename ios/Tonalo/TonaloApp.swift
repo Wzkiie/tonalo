@@ -69,6 +69,8 @@ struct RootView: View {
     @State private var showNowPlaying = false
     @State private var showMenu = false
     @State private var barHeight: CGFloat = 0
+    @State private var addBatch: SongBatch?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         @Bindable var app = app
@@ -86,9 +88,19 @@ struct RootView: View {
             open: { route in
                 withAnimation(.easeOut(duration: 0.25)) { showNowPlaying = false; showMenu = false }
                 paths[tab].append(route)
-            }))
+            },
+            addToPlaylist: { songs in if !songs.isEmpty { addBatch = SongBatch(songs: songs) } }))
+        .sheet(item: $addBatch) { AddToPlaylistSheet(songs: $0.songs) }
         .tint(.accent) // reads Theme, so a new accent color applies everywhere at once
-        .onChange(of: app.currentId) { paths = [NavigationPath(), NavigationPath(), NavigationPath()] }
+        .onChange(of: app.currentId) {
+            paths = [NavigationPath(), NavigationPath(), NavigationPath()]
+            Task { await app.player.checkServerQueue() }
+        }
+        // Continue where another device left off – and leave the queue on the server when going away
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { app.checkRoute(); Task { await app.player.checkServerQueue() } }
+            if phase == .background { app.player.syncBeforeLeaving() }
+        }
     }
 
     private var tabs: some View {
@@ -132,6 +144,14 @@ struct RootView: View {
 
     private var bottomBar: some View {
         VStack(spacing: 4) {
+            if let notice = app.notice {
+                Text(notice).font(.system(size: 14, weight: .semibold)).foregroundStyle(.black)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(Color.white, in: Capsule())
+                    .padding(.bottom, 4)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+            ContinueBanner().padding(.horizontal, 8)
             MiniPlayer().padding(.horizontal, 8)
             TabBar(tab: $tab) { paths[$0] = NavigationPath() }
         }

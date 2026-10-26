@@ -32,7 +32,7 @@ struct HomeView: View {
         .scrollIndicators(.hidden)
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
-        .task(id: "\(app.currentId?.uuidString ?? "")\(Theme.shared.hiddenHomeRows.sorted())\(app.isOnline)") { await load() }
+        .task(id: "\(app.currentId?.uuidString ?? "")\(Theme.shared.hiddenHomeRows.sorted())\(app.isOnline)\(app.playlistsVersion)") { await load() }
         .refreshable { await load() }
     }
 
@@ -420,7 +420,7 @@ struct LibraryView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
-        .task(id: app.currentId) { await load() }
+        .task(id: "\(app.currentId?.uuidString ?? "")\(app.playlistsVersion)") { await load() }
         .task(id: filter) { await loadFilter() }
         .refreshable { await load(); await loadFilter() }
     }
@@ -610,6 +610,8 @@ struct PlaylistsView: View {
     @State private var playlists: [Playlist] = []
     @State private var error: String?
     @State private var loaded = false
+    @State private var naming = false
+    @State private var newName = ""
 
     var body: some View {
         ScrollView {
@@ -620,9 +622,31 @@ struct PlaylistsView: View {
         }
         .overlay { LoadState(loading: !loaded, error: error) }
         .navigationTitle("Playlists")
-        .task {
-            do { playlists = try await app.client?.playlists() ?? [] } catch { self.error = error.localizedDescription }
-            loaded = true
+        .toolbar {
+            Button { newName = ""; naming = true } label: { Image(systemName: "plus") }
+                .accessibilityLabel("New playlist")
+        }
+        .alert("New playlist", isPresented: $naming) {
+            TextField("Name", text: $newName)
+            Button("Create") { Task { await create() } }
+            Button("Cancel", role: .cancel) {}
+        }
+        .task(id: app.playlistsVersion) { await load() }
+    }
+
+    private func load() async {
+        do { playlists = try await app.client?.playlists() ?? [] } catch { self.error = error.localizedDescription }
+        loaded = true
+    }
+
+    private func create() async {
+        let name = newName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, let client = app.client else { return }
+        do {
+            try await client.createPlaylist(name: name, songIds: [])
+            app.playlistsChanged()
+        } catch {
+            app.notify(error.localizedDescription)
         }
     }
 }

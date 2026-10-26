@@ -12,6 +12,7 @@ struct UIActions {
     var nowPlaying: () -> Void = {}
     var profileMenu: () -> Void = {}
     var open: (Route) -> Void = { _ in }
+    var addToPlaylist: ([Song]) -> Void = { _ in }
 }
 
 private struct UIActionsKey: EnvironmentKey { static let defaultValue = UIActions() }
@@ -158,7 +159,7 @@ struct ItemRow<Art: View>: View {
 @MainActor func loadCoverColor(_ app: AppModel, _ id: String?) async -> Color? {
     if let local = app.downloads.localCover(id), let img = UIImage(contentsOfFile: local.path) { return img.averageColor }
     guard let client = app.client, let url = client.coverURL(id, size: 120),
-          let img = await ImageLoader.shared.image(url, headers: client.account.httpHeaders) else { return nil }
+          let img = await ImageLoader.shared.image(url, headers: client.headers) else { return nil }
     return img.averageColor
 }
 

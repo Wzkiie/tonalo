@@ -23,13 +23,31 @@ enum SubsonicError: LocalizedError {
 /// Talks to a Subsonic/Navidrome server. Every request carries the account's custom headers.
 struct SubsonicClient {
     let account: Account
-    private static let clientName = "Tonalo-iOS"
+    /// Talking to the home address: faster, and without the custom headers – those belong to the proxy outside.
+    let atHome: Bool
+
+    init(account: Account, atHome: Bool = false) {
+        self.account = account
+        self.atHome = atHome && account.localURL != nil
+    }
+
+    var base: String { atHome ? account.localURL ?? account.serverURL : account.serverURL }
+    var headers: [String: String] { atHome ? [:] : account.httpHeaders }
+    /// Also how other apps recognize us in the shared play queue ("changedBy").
+    static let clientName = "Tonalo-iOS"
     private static let apiVersion = "1.16.1"
 
     static func makeToken(password: String) -> (salt: String, token: String) {
         let salt = String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(12)).lowercased()
         let digest = Insecure.MD5.hash(data: Data((password + salt).utf8))
         return (salt, digest.map { String(format: "%02x", $0) }.joined())
+    }
+
+    /// Home addresses are usually plain http on the local network.
+    static func normalizeLocal(_ address: String) -> String? {
+        let s = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !s.isEmpty else { return nil }
+        return normalize(s.lowercased().hasPrefix("http") ? s : "http://" + s)
     }
 
     static func normalize(_ address: String) -> String {
@@ -41,7 +59,12 @@ struct SubsonicClient {
     }
 
     func url(_ method: String, _ params: [String: String] = [:]) -> URL? {
-        guard var comps = URLComponents(string: account.serverURL + "/rest/" + method) else { return nil }
+        url(method, items: params.sorted(by: { $0.key < $1.key }).map { URLQueryItem(name: $0.key, value: $0.value) })
+    }
+
+    /// Repeated parameters (several `id`s, for example) need a list instead of a dictionary.
+    func url(_ method: String, items extra: [URLQueryItem]) -> URL? {
+        guard var comps = URLComponents(string: base + "/rest/" + method) else { return nil }
         var items = [
             URLQueryItem(name: "u", value: account.username),
             URLQueryItem(name: "t", value: account.token),
@@ -50,7 +73,7 @@ struct SubsonicClient {
             URLQueryItem(name: "c", value: Self.clientName),
             URLQueryItem(name: "f", value: "json"),
         ]
-        for (k, v) in params.sorted(by: { $0.key < $1.key }) { items.append(URLQueryItem(name: k, value: v)) }
+        items += extra
         comps.queryItems = items
         return comps.url
     }
@@ -58,13 +81,38 @@ struct SubsonicClient {
     func request(_ url: URL) -> URLRequest {
         var r = URLRequest(url: url)
         r.timeoutInterval = 20
-        for (k, v) in account.httpHeaders { r.setValue(v, forHTTPHeaderField: k) }
+        for (k, v) in headers { r.setValue(v, forHTTPHeaderField: k) }
         return r
     }
 
     func call(_ method: String, _ params: [String: String] = [:]) async throws -> Payload {
         guard let u = url(method, params) else { throw SubsonicError.badURL }
-        let (data, resp) = try await URLSession.shared.data(for: request(u))
+        return try await send(request(u))
+    }
+
+    /// Long lists (a whole queue or playlist) go in a form body instead of the address, which servers limit in length.
+    /// Navidrome accepts that ("formPost"); servers that don't get the address version.
+    func post(_ method: String, _ params: [URLQueryItem]) async throws -> Payload {
+        guard let full = url(method, items: params), var comps = URLComponents(url: full, resolvingAgainstBaseURL: false) else { throw SubsonicError.badURL }
+        let query = comps.percentEncodedQuery ?? ""
+        comps.query = nil
+        guard let endpoint = comps.url else { throw SubsonicError.badURL }
+        var r = request(endpoint)
+        r.httpMethod = "POST"
+        r.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        // In a form body "+" means a space, so it has to be escaped as well
+        r.httpBody = Data(query.replacingOccurrences(of: "+", with: "%2B").utf8)
+        do {
+            return try await send(r)
+        } catch SubsonicError.server(let code, let message) {
+            throw SubsonicError.server(code: code, message: message)
+        } catch {
+            return try await send(request(full))
+        }
+    }
+
+    private func send(_ r: URLRequest) async throws -> Payload {
+        let (data, resp) = try await URLSession.shared.data(for: r)
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         let type = (resp as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type") ?? ""
         guard type.contains("json") else { throw SubsonicError.notSubsonic(status: status) }
@@ -80,6 +128,14 @@ struct SubsonicClient {
     // MARK: Endpoints
 
     func ping() async throws { _ = try await call("ping") }
+
+    /// Quick check whether this address answers at all – used for the home address.
+    func reachable() async -> Bool {
+        guard let u = url("ping") else { return false }
+        var r = request(u)
+        r.timeoutInterval = 3
+        return (try? await send(r)) != nil
+    }
 
     func albumList(_ type: String, size: Int = 30, offset: Int = 0, genre: String? = nil) async throws -> [Album] {
         var p = ["type": type, "size": "\(size)", "offset": "\(offset)"]
@@ -152,6 +208,42 @@ struct SubsonicClient {
         var p = ["id": id, "submission": submission ? "true" : "false"]
         if let time { p["time"] = String(Int64(time.timeIntervalSince1970 * 1000)) }
         do { _ = try await call("scrobble", p); return true } catch { return false }
+    }
+
+    // MARK: Play queue (continue on another device)
+
+    func playQueue() async -> PlayQueue? {
+        try? await call("getPlayQueue").playQueue
+    }
+
+    func savePlayQueue(_ ids: [String], current: String, position: Double) async {
+        var items = ids.map { URLQueryItem(name: "id", value: $0) }
+        items += [URLQueryItem(name: "current", value: current), URLQueryItem(name: "position", value: "\(Int(position * 1000))")]
+        _ = try? await post("savePlayQueue", items)
+    }
+
+    // MARK: Playlists
+
+    @discardableResult
+    func createPlaylist(name: String, songIds: [String]) async throws -> Playlist? {
+        try await post("createPlaylist", [URLQueryItem(name: "name", value: name)] + songIds.map { URLQueryItem(name: "songId", value: $0) }).playlist
+    }
+
+    /// Replaces all songs of a playlist – used for reordering, which updatePlaylist can't do.
+    func replacePlaylistSongs(_ id: String, songIds: [String]) async throws {
+        _ = try await post("createPlaylist", [URLQueryItem(name: "playlistId", value: id)] + songIds.map { URLQueryItem(name: "songId", value: $0) })
+    }
+
+    func updatePlaylist(_ id: String, name: String? = nil, add: [String] = [], removeIndexes: [Int] = []) async throws {
+        var items = [URLQueryItem(name: "playlistId", value: id)]
+        if let name { items.append(URLQueryItem(name: "name", value: name)) }
+        items += add.map { URLQueryItem(name: "songIdToAdd", value: $0) }
+        items += removeIndexes.map { URLQueryItem(name: "songIndexToRemove", value: "\($0)") }
+        _ = try await post("updatePlaylist", items)
+    }
+
+    func deletePlaylist(_ id: String) async throws {
+        _ = try await call("deletePlaylist", ["id": id])
     }
 
     func lyrics(_ songId: String) async -> Lyrics? {

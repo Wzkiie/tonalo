@@ -445,8 +445,27 @@ var App = (function () {
     Player.restore();
     updateMini('init');
     updateUserBadge();
+    offerRemoteQueue();
     stack = [];
     go(settings.startView === 'nowplaying' && !Player.current() ? 'home' : settings.startView, null, { root: true });
+  }
+
+  // Lief zuletzt auf einem anderen Gerät (z. B. dem iPhone) etwas, kann der TV dort weitermachen
+  var offerOpen = false;
+  function offerRemoteQueue() {
+    if (!account || (UI.modalOpen() && !offerOpen)) return;
+    Player.checkRemote().then(function (o) {
+      if (!o) return;
+      // Ein noch offenes älteres Angebot durch das aktuelle ersetzen, sonst andere Dialoge nicht stören
+      if (UI.modalOpen()) { if (!offerOpen) return; UI.closeModal(); }
+      var s = o.songs[o.index];
+      offerOpen = true;
+      UI.modal(null, [
+        { icon: 'play', label: T('Hier weiterhören'), action: function () { offerOpen = false; Player.take(o, true); } },
+        { icon: 'close', label: T('Nein, danke'), action: function () { offerOpen = false; Player.dismissRemote(o); } }
+      ], { head: { coverId: s.coverArt || s.albumId, title: T('Weiterhören vom {device}?', { device: o.device }),
+        sub: s.title + (s.artist ? ' · ' + s.artist : '') } });
+    });
   }
 
   function init() {
@@ -456,6 +475,11 @@ var App = (function () {
     U.$$('[data-icon]').forEach(function (i) { i.outerHTML = Icon.svg(i.getAttribute('data-icon'), +(i.getAttribute('data-size') || 24)); });
     fit();
     window.addEventListener('resize', fit);
+    // App wieder im Vordergrund (webOS hält Apps im Hintergrund am Leben)
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && !main.classList.contains('hidden')) offerRemoteQueue();
+    });
+    document.addEventListener('webOSRelaunch', function () { if (!main.classList.contains('hidden')) offerRemoteQueue(); });
     updateScope();
     Nav.onKey(keyHandler);
     document.addEventListener('mousemove', function () { if (ssActive) ssHide(); else touch(); });

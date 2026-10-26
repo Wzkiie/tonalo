@@ -186,8 +186,10 @@ var Player = (function () {
 
   // ---- Persistenz (Warteschlange beim nächsten Start wiederherstellen)
   var persistTimer;
-  function persistNow() {
+  function persistNow(quiet) {
     clearTimeout(persistTimer);
+    // quiet: übernommene Warteschlange – der Server hat sie schon, nicht zurückschicken
+    if (!quiet) { U.ustore.set('changed', Date.now()); syncRemote(); }
     U.ustore.set('queue', queue.slice(0, 1000));
     U.ustore.set('index', index);
     U.ustore.set('repeat', repeat);
@@ -200,9 +202,68 @@ var Player = (function () {
     persistTimer = setTimeout(persistNow, 300);
   }
 
+  // ---- Gemeinsame Warteschlange auf dem Server (Weiterhören auf dem iPhone und umgekehrt)
+  var remoteSig = '', remoteAt = 0;
+  // Sofort, wenn sich Titel oder Warteschlange geändert haben, sonst (nur Position) höchstens alle 30 s
+  function syncRemote(force) {
+    var s = current();
+    if (!s) return;
+    var start = Math.max(0, index - 100);
+    var ids = queue.slice(start, start + 500).map(function (x) { return x.id; });
+    var sig = ids.join(',') + '|' + s.id;
+    if (!force && sig === remoteSig && Date.now() - remoteAt < 30000) return;
+    remoteSig = sig; remoteAt = Date.now();
+    API.savePlayQueue(ids, s.id, position());
+  }
+
+  function parseDate(iso) {
+    // Navidrome liefert Nanosekunden – älteren Browsern reichen Millisekunden
+    return Date.parse(String(iso || '').replace(/(\.\d{3})\d+/, '$1')) || 0;
+  }
+
+  // Neuere Warteschlange von einem anderen Gerät? Ohne eigene Warteschlange still übernehmen (pausiert),
+  // sonst als Angebot zurückgeben – aber nur, wenn hier gerade nichts läuft.
+  function checkRemote() {
+    if (!audio.paused) return Promise.resolve(null);
+    return API.playQueue().then(function (r) {
+      var songs = r && U.asArray(r.entry);
+      if (!songs || !songs.length || !audio.paused || !r.changedBy || r.changedBy === API.client) return null;
+      if (parseDate(r.changed) <= (U.ustore.get('changed', 0) || 0) + 10000) return null;
+      if (r.changed === U.ustore.get('queueDismissed', '')) return null;
+      var i = 0;
+      songs.forEach(function (x, k) { if (x.id === r.current && !i) i = k; });
+      var offer = { songs: songs, index: i, pos: (r.position || 0) / 1000, changed: r.changed,
+        device: r.changedBy === 'Tonalo-iOS' ? 'iPhone' : r.changedBy };
+      if (!queue.length) { take(offer, false); return null; }
+      var cur = current();
+      if (cur && cur.id === songs[i].id && Math.abs(position() - offer.pos) < 15) return null;
+      return offer;
+    });
+  }
+
+  function take(offer, autoplay) {
+    queue = offer.songs.slice(); original = null; shuffleOn = false; index = offer.index;
+    errorStreak = 0;
+    if (autoplay) {
+      load(offer.pos, true);
+    } else {
+      audio.pause();
+      audio.removeAttribute('src');
+      try { audio.load(); } catch (e) { /* egal */ }
+      U.ustore.set('pos', Math.floor(offer.pos));
+      U.ustore.set('changed', parseDate(offer.changed));
+      persistNow(true);
+      emit('track', current());
+    }
+    emit('queue', queue); emit('mode'); emit('state');
+  }
+
+  function dismissRemote(offer) { U.ustore.set('queueDismissed', offer.changed); }
+
   // Beim Benutzerwechsel: Zustand des alten Kontos sichern und Player leeren (ohne gespeicherte Daten zu löschen)
   function detach() {
-    if (queue.length) persistNow();
+    if (queue.length) persistNow(true);
+    remoteSig = '';
     clearTimeout(persistTimer);
     audio.pause();
     audio.removeAttribute('src');
@@ -225,7 +286,7 @@ var Player = (function () {
     if (pendingSeek) { try { audio.currentTime = pendingSeek; } catch (e) { /* egal */ } pendingSeek = 0; }
   });
   audio.addEventListener('playing', function () { errorStreak = 0; emit('state'); });
-  audio.addEventListener('pause', function () { emit('state'); persist(); });
+  audio.addEventListener('pause', function () { emit('state'); persist(); setTimeout(function () { syncRemote(true); }, 400); });
   audio.addEventListener('waiting', function () { emit('state'); });
   audio.addEventListener('ended', function () { next(true); });
   audio.addEventListener('timeupdate', function () {
@@ -275,6 +336,9 @@ var Player = (function () {
     buffering: function () { return !audio.paused && audio.readyState < 3; },
     shuffle: function () { return shuffleOn; },
     repeat: function () { return repeat; },
+    checkRemote: checkRemote,
+    take: take,
+    dismissRemote: dismissRemote,
     reloadCurrent: function () { if (current() && audio.src) load(position(), !audio.paused); }
   };
 })();

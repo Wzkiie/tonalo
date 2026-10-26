@@ -1,5 +1,30 @@
 import AVFoundation
 
+/// Volume leveling with ReplayGain: per song, or per album so quiet and loud tracks of one album keep their difference.
+enum VolumeLeveling: String, CaseIterable, Identifiable {
+    case off, track, album
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .off: String(localized: "Off")
+        case .track: String(localized: "Same volume for every song")
+        case .album: String(localized: "Same volume for every album")
+        }
+    }
+
+    /// Volume factor for a song (AVPlayer can only turn down, so louder than 1 isn't possible).
+    func factor(for song: Song?) -> Float {
+        guard self != .off, let rg = song?.replayGain else { return 1 }
+        let gain = self == .album ? rg.albumGain.flatMap { $0 != 0 ? $0 : nil } ?? rg.trackGain : rg.trackGain ?? rg.albumGain
+        let peak = self == .album ? rg.albumPeak ?? rg.trackPeak : rg.trackPeak ?? rg.albumPeak
+        guard let gain, gain != 0 else { return 1 }
+        var f = pow(10, gain / 20)
+        if let peak, peak > 0 { f = min(f, 1 / peak) } // never clip
+        return Float(min(max(f, 0.05), 1))
+    }
+}
+
 /// Audio quality for streaming and downloads. "Lossless" sends the files as they are (FLAC stays FLAC);
 /// everything else is converted by the server. Navidrome converts to MP3 and AAC – for any other
 /// format it falls back to Opus in an OGG container, which older iOS versions can't play, so only those two are used.

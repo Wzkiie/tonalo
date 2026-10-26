@@ -53,6 +53,7 @@ private struct ActionIcon: View {
 
 struct AlbumView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.ui) private var ui
     let id: String
     @State private var album: Album?
     @State private var error: String?
@@ -85,6 +86,7 @@ struct AlbumView: View {
                         .font(.system(size: 22)).foregroundStyle(Color.subtle)
                     Menu {
                         Button { app.player.enqueue(songs) } label: { Label("Add to queue", systemImage: "text.append") }
+                        Button { ui.addToPlaylist(songs) } label: { Label("Add to playlist", systemImage: "text.badge.plus") }
                         if let artistId = album.artistId {
                             NavigationLink(value: Route.artist(artistId)) { Label("Go to artist", systemImage: "music.mic") }
                         }
@@ -128,9 +130,15 @@ struct AlbumView: View {
 
 struct PlaylistView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.ui) private var ui
+    @Environment(\.dismiss) private var dismiss
     let id: String
     @State private var playlist: Playlist?
     @State private var error: String?
+    @State private var editing = false
+    @State private var renaming = false
+    @State private var newName = ""
+    @State private var confirmDelete = false
 
     var body: some View {
         if let p = playlist {
@@ -155,6 +163,13 @@ struct PlaylistView: View {
                         .font(.system(size: 22)).foregroundStyle(Color.subtle)
                     Menu {
                         Button { app.player.enqueue(songs) } label: { Label("Add to queue", systemImage: "text.append") }
+                        Button { ui.addToPlaylist(songs) } label: { Label("Add to other playlist", systemImage: "text.badge.plus") }
+                        if p.isOwned(by: app) {
+                            Divider()
+                            Button { editing = true } label: { Label("Edit songs", systemImage: "list.bullet") }
+                            Button { newName = p.name; renaming = true } label: { Label("Rename", systemImage: "pencil") }
+                            Button(role: .destructive) { confirmDelete = true } label: { Label("Delete playlist", systemImage: "trash") }
+                        }
                     } label: { Image(systemName: "ellipsis").font(.system(size: 22)).foregroundStyle(Color.subtle).frame(height: 30) }
                     PlayButtons(playing: playing,
                                 play: { playing ? app.player.toggle() : app.player.play(songs, context: context) },
@@ -166,9 +181,49 @@ struct PlaylistView: View {
                         SongRow(song: s, showCover: true) { app.player.play(songs, from: i, context: context) }
                     }
                 }
+                if songs.isEmpty {
+                    Text("This playlist is empty. Add songs with “Add to playlist” in a song’s menu.")
+                        .font(.system(size: 14)).foregroundStyle(Color.subtle).padding(.top, 8)
+                }
+            }
+            .sheet(isPresented: $editing) { PlaylistEditor(playlist: p) { Task { await load() } } }
+            .alert("Rename playlist", isPresented: $renaming) {
+                TextField("Name", text: $newName)
+                Button("Save") { Task { await rename() } }
+                Button("Cancel", role: .cancel) {}
+            }
+            .confirmationDialog("Delete “\(p.name)”?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Delete playlist", role: .destructive) { Task { await delete() } }
+            } message: {
+                Text("The playlist is removed from your server. The songs stay in your library.")
             }
         } else {
             LoadState(loading: error == nil, error: error).task { await load() }
+        }
+    }
+
+    private func rename() async {
+        let name = newName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, let client = app.client else { return }
+        do {
+            try await client.updatePlaylist(id, name: name)
+            app.playlistsChanged()
+            await load()
+        } catch {
+            app.notify(error.localizedDescription)
+        }
+    }
+
+    private func delete() async {
+        guard let client = app.client else { return }
+        do {
+            try await client.deletePlaylist(id)
+            app.playlistsChanged()
+            if app.downloads.index.playlists[id] != nil { app.downloads.removePlaylist(id) }
+            app.notify(String(localized: "Playlist deleted"))
+            dismiss()
+        } catch {
+            app.notify(error.localizedDescription)
         }
     }
 

@@ -54,7 +54,7 @@ struct CoverView: View {
             // Downloaded covers first, so offline music keeps its artwork
             if let local = app.downloads.localCover(id), let img = UIImage(contentsOfFile: local.path) { image = img; return }
             guard let client = app.client, let url = client.coverURL(id, size: size) else { return }
-            image = await ImageLoader.shared.image(url, headers: client.account.httpHeaders)
+            image = await ImageLoader.shared.image(url, headers: client.headers)
         }
     }
 }

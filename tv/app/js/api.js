@@ -38,11 +38,16 @@ var API = (function () {
 
   function url(method, params) { return cfg.url + '/rest/' + method + '?' + qs(params); }
 
-  function call(method, params, timeoutMs) {
+  // post: Parameter im Formular statt in der Adresse – für lange Listen (ganze Warteschlange), Navidrome kann das ("formPost")
+  function call(method, params, timeoutMs, post) {
     if (!cfg) return Promise.reject(new Error(T('Nicht angemeldet')));
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, timeoutMs || 20000);
-    return fetch(url(method, params), { signal: ctrl ? ctrl.signal : undefined })
+    var req = post
+      ? fetch(cfg.url + '/rest/' + method, { method: 'POST', body: qs(params), signal: ctrl ? ctrl.signal : undefined,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
+      : fetch(url(method, params), { signal: ctrl ? ctrl.signal : undefined });
+    return req
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
@@ -82,6 +87,7 @@ var API = (function () {
   var A = U.asArray;
 
   return {
+    client: CLIENT,
     normalizeUrl: normalizeUrl,
     makeCreds: makeCreds,
     setConfig: setConfig,
@@ -146,6 +152,20 @@ var API = (function () {
     star: function (type, id, on) {
       var p = {}; p[type === 'album' ? 'albumId' : type === 'artist' ? 'artistId' : 'id'] = id;
       return call(on ? 'star' : 'unstar', p);
+    },
+    // Gemeinsame Warteschlange: was zuletzt auf einem Gerät lief, kann ein anderes übernehmen
+    playQueue: function () {
+      return call('getPlayQueue').then(function (r) { return r.playQueue || null; }).catch(function () { return null; });
+    },
+    savePlayQueue: function (ids, current, positionSec) {
+      var p = { id: ids, current: current, position: Math.floor(positionSec * 1000) };
+      return call('savePlayQueue', p, 15000, true).catch(function (e) {
+        if (e && e.code) return; // Server hat geantwortet, nur eben mit Fehler
+        // Server ohne Formular-Unterstützung: kürzere Liste in der Adresse
+        var i = Math.max(0, ids.indexOf(current) - 20);
+        p.id = ids.slice(i, i + 150);
+        return call('savePlayQueue', p).catch(function () { });
+      });
     },
     scrobble: function (id, submission) {
       return call('scrobble', { id: id, submission: submission ? 'true' : 'false', time: Date.now() }).catch(function () { });

@@ -78,7 +78,9 @@ function wav(sec) {
   const sr = 8000, n = sr * sec, b = Buffer.alloc(44 + n);
   b.write('RIFF', 0); b.writeUInt32LE(36 + n, 4); b.write('WAVEfmt ', 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22);
   b.writeUInt32LE(sr, 24); b.writeUInt32LE(sr, 28); b.writeUInt16LE(1, 32); b.writeUInt16LE(8, 34); b.write('data', 36); b.writeUInt32LE(n, 40);
-  for (let i = 0; i < n; i++) b[44 + i] = 128 + Math.round(12 * Math.sin(i / sr * 2 * Math.PI * 440));
+  // MOCK_SILENT=1 for automated tests: real audio data, but nothing to hear
+  const amp = process.env.MOCK_SILENT ? 0 : 12;
+  for (let i = 0; i < n; i++) b[44 + i] = 128 + Math.round(amp * Math.sin(i / sr * 2 * Math.PI * 440));
   return b;
 }
 const WAV = wav(180);
@@ -91,15 +93,43 @@ const sorters = {
   frequent: (a, b) => hash(a.id + 'f') - hash(b.id + 'f'), random: () => Math.random() - 0.5,
 };
 
+// Play queue shared between clients (savePlayQueue / getPlayQueue), like Navidrome keeps it per user
+let playQueue = null;
+const list = v => v == null ? [] : Array.isArray(v) ? v : [v];
+const withCounts = p => Object.assign(p, { songCount: p.entry.length, duration: p.entry.reduce((s, x) => s + x.duration, 0) });
+
 http.createServer((req, res) => {
-  const u = url.parse(req.url, true), q = u.query;
+  // POST forms (OpenSubsonic "formPost") carry the same parameters in the body
+  if (req.method === 'POST') {
+    let data = '';
+    req.on('data', c => { data += c; });
+    req.on('end', () => {
+      const u = url.parse(req.url, true);
+      for (const [k, v] of new URLSearchParams(data)) u.query[k] = k in u.query ? list(u.query[k]).concat(v) : v;
+      handle(req, res, u);
+    });
+    return;
+  }
+  handle(req, res, url.parse(req.url, true));
+}).listen(PORT, () => console.log(`Demo server: http://localhost:${PORT}`));
+
+function handle(req, res, u) {
+  const q = u.query;
   if (u.pathname.startsWith('/rest/')) {
     const m = u.pathname.slice(6).replace('.view', '');
+    if (process.env.MOCK_LOG) console.log(req.method, req.headers.host, Object.keys(req.headers).filter(h => h.startsWith('x-')).join(',') || '-', m, Object.entries(q).filter(([k]) => !'utscvf'.includes(k) || k.length > 1).map(([k, v]) => `${k}=${v}`).join(' '));
     if (m === 'getCoverArt' && COVERS && fs.existsSync(path.join(COVERS, (q.id || '') + '.png'))) {
       res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(fs.readFileSync(path.join(COVERS, q.id + '.png')));
     }
     if (m === 'getCoverArt') { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Access-Control-Allow-Origin': '*' }); return res.end(coverSvg(q.id || '')); }
-    if (m === 'stream') { res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': WAV.length }); return res.end(WAV); }
+    if (m === 'stream' || m === 'download') {
+      // Byte ranges like a real server – AVPlayer on iOS refuses streams without them
+      const r = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
+      if (!r) { res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': WAV.length, 'Accept-Ranges': 'bytes' }); return res.end(WAV); }
+      const start = r[1] ? +r[1] : WAV.length - +r[2], end = r[1] && r[2] ? Math.min(+r[2], WAV.length - 1) : WAV.length - 1;
+      res.writeHead(206, { 'Content-Type': 'audio/wav', 'Content-Length': end - start + 1, 'Accept-Ranges': 'bytes', 'Content-Range': `bytes ${start}-${end}/${WAV.length}` });
+      return res.end(WAV.subarray(start, end + 1));
+    }
     let body;
     switch (m) {
       case 'getAlbumList2': {
@@ -127,6 +157,31 @@ http.createServer((req, res) => {
         body = ok({ searchResult3: { artist: artists.filter(a => has(a.name)), album: albums.filter(a => has(a.name) || has(a.artist)).slice(0, 40), song: songs.filter(x => has(x.title) || has(x.artist)).slice(0, 60) } });
         break;
       }
+      case 'getPlayQueue': body = ok(playQueue ? { playQueue } : {}); break;
+      case 'savePlayQueue': {
+        const entry = list(q.id).map(id => byId(songs, id)).filter(Boolean);
+        playQueue = entry.length ? { entry, current: q.current || entry[0].id, position: +q.position || 0, username: 'demo',
+          changed: new Date().toISOString(), changedBy: q.c } : null;
+        body = ok({}); break;
+      }
+      case 'createPlaylist': {
+        const entry = list(q.songId).map(id => byId(songs, id)).filter(Boolean);
+        let pl = byId(playlists, q.playlistId);
+        if (pl) pl.entry = entry; // with an id it replaces the songs, as in Navidrome
+        else playlists.push(pl = { id: 'pl' + Date.now(), name: q.name || 'New playlist', owner: 'demo', public: false, coverArt: entry[0] && entry[0].coverArt, entry });
+        withCounts(pl);
+        body = ok({ playlist: pl }); break;
+      }
+      case 'updatePlaylist': {
+        const pl = byId(playlists, q.playlistId);
+        if (!pl) { body = { 'subsonic-response': { status: 'failed', version: '1.16.1', error: { code: 70, message: 'Playlist not found' } } }; break; }
+        if (q.name) pl.name = q.name;
+        const drop = new Set(list(q.songIndexToRemove).map(Number));
+        pl.entry = pl.entry.filter((_, i) => !drop.has(i)).concat(list(q.songIdToAdd).map(id => byId(songs, id)).filter(Boolean));
+        withCounts(pl);
+        body = ok({}); break;
+      }
+      case 'deletePlaylist': { const i = playlists.findIndex(p => p.id === q.id); if (i >= 0) playlists.splice(i, 1); body = ok({}); break; }
       case 'getLyricsBySongId': body = ok({ lyricsList: { structuredLyrics: [{ synced: true, line: Array.from({ length: 32 }, (_, i) => ({ start: i * 4500, value: LYRICS[(i + hash(q.id || '')) % LYRICS.length] })) }] } }); break;
       default: body = ok({});
     }
@@ -141,4 +196,4 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': types[path.extname(p)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     res.end(d);
   });
-}).listen(PORT, () => console.log(`Demo server: http://localhost:${PORT}`));
+}
