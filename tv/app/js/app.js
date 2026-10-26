@@ -189,6 +189,7 @@ var App = (function () {
     msg.textContent = T('Verbinde …');
     msg.className = 'msg';
     API.ping().then(function () {
+      U.$('#in-pass').value = ''; // das Passwort selbst wird nirgends gebraucht, nur der Token
       var acc = Object.assign({ id: accId(creds.url, creds.user) }, creds);
       saveAccounts(accounts().filter(function (a) { return a.id !== acc.id; }).concat([acc]));
       U.store.set('lastUrl', creds.url);

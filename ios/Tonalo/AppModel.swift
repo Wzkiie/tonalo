@@ -177,6 +177,7 @@ final class AppModel {
         accounts.removeAll { $0.id == account.id }
         UserDefaults.standard.removeObject(forKey: "queue." + account.id.uuidString)
         UserDefaults.standard.removeObject(forKey: "scrobbles." + account.id.uuidString)
+        UserDefaults.standard.removeObject(forKey: "queue.dismissed." + account.id.uuidString)
         DownloadStore.deleteAccount(account.id)
         persist()
         if account.id == currentId {
