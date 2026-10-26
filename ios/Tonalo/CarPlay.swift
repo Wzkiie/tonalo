@@ -5,7 +5,7 @@ import UIKit
 
 /// CarPlay: tabs for Home, Library and Downloads, song lists, and the system Now Playing screen with
 /// shuffle, repeat and a heart. iOS only connects this scene when the app has Apple's CarPlay audio
-/// entitlement (see ios/CARPLAY.md) – without it nothing here runs.
+/// entitlement (see docs/CARPLAY.md) – without it nothing here runs.
 @MainActor
 final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPNowPlayingTemplateObserver {
     private var interface: CPInterfaceController?

@@ -36,9 +36,9 @@ Neuen Stand aufspielen: iPhone über Xcode, TV mit `python3 tv/tools/build_ipk.p
 
 ## 3. Sicherheit und Datenschutz
 
-- [ ] GitHub: **Settings → Code security → Private vulnerability reporting** einschalten (sonst funktioniert der Link in `SECURITY.md` nicht)
+- [ ] GitHub: **Settings → Code security → Private vulnerability reporting** einschalten (sonst funktioniert der Link in [`SECURITY.md`](../SECURITY.md) nicht)
 - [ ] Am eigenen TV: Root-Telnet abschalten, SSH nutzen (`deploy.py` dann auf SSH umstellen)
-- [ ] `PRIVACY.md` und README-Abschnitt „Security“ passen noch zum Stand?
+- [ ] [`PRIVACY.md`](../PRIVACY.md) und README-Abschnitt „Security“ passen noch zum Stand?
 
 ## 4. Kleine Beta
 
@@ -49,8 +49,8 @@ Neuen Stand aufspielen: iPhone über Xcode, TV mit `python3 tv/tools/build_ipk.p
 ## 5. Veröffentlichen
 
 - [ ] **Homebrew Channel:** Antrag im Repo `webosbrew/apps-repo`; verlangt eigenes Icon, Beschreibung, Test auf echtem TV, Hinweis auf KI-Unterstützung (steht im README)
-- [ ] **App Store:** Schritte in [`ios/APP_STORE.md`](ios/APP_STORE.md)
-- [ ] **CarPlay:** Freigabe bei Apple beantragen, Anleitung in [`ios/CARPLAY.md`](ios/CARPLAY.md)
+- [ ] **App Store:** Schritte in [`APP_STORE.md`](APP_STORE.md)
+- [ ] **CarPlay:** Freigabe bei Apple beantragen, Anleitung in [`CARPLAY.md`](CARPLAY.md)
 - [ ] Ankündigung: kurzer Post mit Screenshots (r/navidrome, r/selfhosted, r/webos), Link aufs Repo
 
 ## Nach dem Launch

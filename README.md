@@ -104,14 +104,14 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 - **Volume leveling** with the ReplayGain tags of your files, per song or per album
 - **Favorites from the lock screen**: a heart button for Control Center and the lock screen (iOS 18+) and a Siri shortcut ("Add this song to my favorites in Tonalo")
 - **Apple Watch app**: player with cover, favorites, shuffle and the iPhone's volume on the Digital Crown, plus your playlists and favorites to start music from the wrist. It remote-controls the iPhone.
-- **CarPlay** is built but switched off until Apple grants the CarPlay audio entitlement – see [`ios/CARPLAY.md`](ios/CARPLAY.md)
+- **CarPlay** is built but switched off until Apple grants the CarPlay audio entitlement – see [`docs/CARPLAY.md`](docs/CARPLAY.md)
 - Several accounts, accent colors and alternative app icons
 - **Custom HTTP headers per account**, sent with every request including the audio stream and cover art, so servers behind Cloudflare Access (service token), Authelia or a similar proxy work. There's a one-tap preset for the two Cloudflare Access headers, and all secrets live in the iOS Keychain.
 - English and German
 
 ### Installing
 
-There's no App Store build yet (see [`ios/APP_STORE.md`](ios/APP_STORE.md) for what's needed). To put it on your own phone:
+There's no App Store build yet (see [`docs/APP_STORE.md`](docs/APP_STORE.md) for what's needed). To put it on your own phone:
 
 1. Open `ios/Tonalo.xcodeproj` in Xcode.
 2. Create `ios/Local.xcconfig` with your team ID, `DEVELOPMENT_TEAM = ABCDE12345` (git ignores this file). Alternatively, pick your Apple ID as the team under *Signing & Capabilities* for the Tonalo, TonaloControls and TonaloWatch targets.

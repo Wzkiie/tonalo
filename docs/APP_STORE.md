@@ -4,8 +4,8 @@ Alles, was beim Einreichen der iPhone-App in App Store Connect gebraucht wird. D
 
 ## Schon im Code erledigt
 
-- **Privacy Manifest** (`Tonalo/PrivacyInfo.xcprivacy`): kein Tracking, keine erhobenen Daten; `UserDefaults` mit Grund `CA92.1` (nur eigene App-Daten).
-- **Verschlüsselung:** `ITSAppUsesNonExemptEncryption = NO` in `Info.plist` – die App nutzt nur Standard-HTTPS von iOS, damit entfällt die Export-Frage bei jedem Upload.
+- **Privacy Manifest** (`ios/Tonalo/PrivacyInfo.xcprivacy`): kein Tracking, keine erhobenen Daten; `UserDefaults` mit Grund `CA92.1` (nur eigene App-Daten).
+- **Verschlüsselung:** `ITSAppUsesNonExemptEncryption = NO` in `ios/Info.plist` – die App nutzt nur Standard-HTTPS von iOS, damit entfällt die Export-Frage bei jedem Upload.
 - **Zugangsdaten** im Schlüsselbund (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`), Passwort wird nie gespeichert.
 - **Berechtigungstext** für das lokale Netzwerk auf Englisch und Deutsch.
 - **Datenschutzerklärung:** [`PRIVACY.md`](../PRIVACY.md)
