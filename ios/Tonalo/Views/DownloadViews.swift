@@ -15,20 +15,26 @@ struct ProgressRing: View {
     }
 }
 
+extension DownloadState {
+    var isDownloading: Bool { if case .downloading = self { true } else { false } }
+}
+
 /// Download button for an album or playlist: arrow → progress ring → checkmark. Tapping a finished one offers removal.
 struct DownloadButton: View {
     @Environment(AppModel.self) private var app
     let songs: [Song]
     let download: () -> Void
     let remove: () -> Void
+    var cancel: (() -> Void)?
     @State private var confirmRemove = false
+    @State private var confirmCancel = false
 
     var body: some View {
         let state = app.downloads.state(songs)
         Button {
             switch state {
             case .complete: confirmRemove = true
-            case .downloading: break
+            case .downloading: confirmCancel = true
             default: download()
             }
         } label: {
@@ -36,15 +42,28 @@ struct DownloadButton: View {
             case .none: Image(systemName: "arrow.down.circle")
             case .partial: Image(systemName: "arrow.down.circle.dotted")
             case .complete: Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.accent)
+            case .downloading where app.downloads.waitingForWiFi:
+                Image(systemName: "wifi.exclamationmark").foregroundStyle(.orange)
             case .downloading(let done, let total):
                 // Finished songs plus the progress of the ones still loading
                 let partial = songs.compactMap { app.downloads.progress[$0.id] }.reduce(0, +)
                 ProgressRing(value: (Double(done) + partial) / Double(max(total, 1)), lineWidth: 3).frame(width: 22, height: 22)
             }
         }
-        .accessibilityLabel(state == .complete ? Text("Remove download") : Text("Download"))
+        .accessibilityLabel(state == .complete ? Text("Remove download") : state.isDownloading ? Text("Cancel download") : Text("Download"))
         .confirmationDialog("Remove download?", isPresented: $confirmRemove, titleVisibility: .visible) {
             Button("Remove download", role: .destructive, action: remove)
+        }
+        .confirmationDialog("Cancel download?", isPresented: $confirmCancel, titleVisibility: .visible) {
+            Button("Cancel download", role: .destructive) { (cancel ?? { app.downloads.cancel(songs.map(\.id)) })() }
+            Button("Keep downloading", role: .cancel) {}
+            if app.downloads.waitingForWiFi {
+                Button("Download over cellular") { app.downloads.allowCellular = true }
+            }
+        } message: {
+            app.downloads.waitingForWiFi
+                ? Text("Waiting for Wi-Fi. Songs that are already downloaded stay on your iPhone.")
+                : Text("Songs that are already downloaded stay on your iPhone.")
         }
     }
 }
@@ -73,22 +92,46 @@ struct DownloadsView: View {
                 }
             }
 
+            if store.waitingForWiFi {
+                Section {
+                    Label("Waiting for Wi-Fi", systemImage: "wifi.exclamationmark").font(.headline)
+                    Toggle("Download over cellular", isOn: Bindable(store).allowCellular)
+                } footer: {
+                    Text("You’re on mobile data. Downloads start as soon as you’re on Wi-Fi, or right away if you allow cellular.")
+                }
+            }
+
             if !active.isEmpty {
-                Section("Downloading") {
+                Section {
                     ForEach(active) { s in
-                        HStack {
-                            Text(s.title).lineLimit(1)
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(s.title).lineLimit(1)
+                                Text(store.bytes[s.id].map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? String(localized: "Waiting…"))
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                             Spacer()
-                            ProgressView(value: store.progress[s.id] ?? 0).frame(width: 80).tint(.accent)
+                            ProgressRing(value: store.progress[s.id] ?? 0).frame(width: 22, height: 22)
                         }
+                        .swipeActions {
+                            Button("Cancel", role: .destructive) { store.cancel([s.id]) }
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text("Downloading (\(active.count))")
+                        Spacer()
+                        Button("Cancel all", role: .destructive) { store.cancelAll() }
+                            .font(.footnote.weight(.semibold)).textCase(nil)
                     }
                 }
             }
 
             if !store.failed.isEmpty {
                 Section {
-                    Text("\(store.failed.count) downloads failed. Open the album or playlist and tap the download button to retry.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                    Button { store.retryFailed() } label: {
+                        Label("Retry \(store.failed.count) failed downloads", systemImage: "arrow.clockwise")
+                    }
                 }
             }
 
@@ -143,6 +186,7 @@ struct DownloadsView: View {
             }
         }
         .navigationTitle("Downloads")
+        .toolbar { if !songs.isEmpty { EditButton() } }
         .confirmationDialog("Delete all downloads?", isPresented: $confirmDeleteAll, titleVisibility: .visible) {
             Button("Delete all downloads", role: .destructive) { store.removeAll() }
         }

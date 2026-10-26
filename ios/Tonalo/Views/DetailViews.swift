@@ -80,7 +80,8 @@ struct AlbumView: View {
                 HStack(spacing: 24) {
                     ActionIcon(icon: album.starred == nil ? "heart" : "heart.fill", active: album.starred != nil,
                                label: album.starred == nil ? "Add to favorites" : "Remove from favorites") { toggleStar() }
-                    DownloadButton(songs: songs, download: { app.downloads.downloadAlbum(album) }, remove: { app.downloads.removeAlbum(album.id) })
+                    DownloadButton(songs: songs, download: { app.downloads.downloadAlbum(album) }, remove: { app.downloads.removeAlbum(album.id) },
+                                   cancel: { app.downloads.cancelCollection(songs, album: album.id) })
                         .font(.system(size: 22)).foregroundStyle(Color.subtle)
                     Menu {
                         Button { app.player.enqueue(songs) } label: { Label("Add to queue", systemImage: "text.append") }
@@ -149,7 +150,8 @@ struct PlaylistView: View {
                     .font(.system(size: 13)).foregroundStyle(Color.subtle)
             } actions: {
                 HStack(spacing: 24) {
-                    DownloadButton(songs: songs, download: { app.downloads.downloadPlaylist(p) }, remove: { app.downloads.removePlaylist(p.id) })
+                    DownloadButton(songs: songs, download: { app.downloads.downloadPlaylist(p) }, remove: { app.downloads.removePlaylist(p.id) },
+                                   cancel: { app.downloads.cancelCollection(songs, playlist: p.id) })
                         .font(.system(size: 22)).foregroundStyle(Color.subtle)
                     Menu {
                         Button { app.player.enqueue(songs) } label: { Label("Add to queue", systemImage: "text.append") }

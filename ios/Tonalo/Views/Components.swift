@@ -118,6 +118,8 @@ struct SongMenuItems: View {
         Button { startRadio() } label: { Label("Start song radio", systemImage: "dot.radiowaves.left.and.right") }
         if app.downloads.isDownloaded(song.id) {
             Button(role: .destructive) { app.downloads.remove([song.id]) } label: { Label("Remove download", systemImage: "trash") }
+        } else if app.downloads.index.queued[song.id] != nil {
+            Button(role: .destructive) { app.downloads.cancel([song.id]) } label: { Label("Cancel download", systemImage: "xmark.circle") }
         } else {
             Button { app.downloads.download([song]) } label: { Label("Download", systemImage: "arrow.down.circle") }
         }

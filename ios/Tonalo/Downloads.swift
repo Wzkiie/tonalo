@@ -33,15 +33,25 @@ final class DownloadStore {
 
     private(set) var index = DownloadIndex()
     private(set) var progress: [String: Double] = [:]
-    private(set) var failed: Set<String> = []
+    /// Songs whose download failed, so they can be retried in one go
+    private(set) var failed: [String: Song] = [:]
+    /// Bytes received so far, for the "downloading" list
+    private(set) var bytes: [String: Int64] = [:]
 
     /// kbit/s for downloads, 0 = original file
     var quality: Int = UserDefaults.standard.object(forKey: "downloadBitRate") as? Int ?? 320 {
         didSet { UserDefaults.standard.set(quality, forKey: "downloadBitRate") }
     }
     var allowCellular: Bool = UserDefaults.standard.bool(forKey: "downloadCellular") {
-        didSet { UserDefaults.standard.set(allowCellular, forKey: "downloadCellular") }
+        didSet {
+            UserDefaults.standard.set(allowCellular, forKey: "downloadCellular")
+            // Waiting transfers keep the setting they were started with, so start them again
+            if allowCellular != oldValue { requeue() }
+        }
     }
+
+    /// True while transfers sit idle because only mobile data is available.
+    var waitingForWiFi: Bool { !index.queued.isEmpty && !allowCellular && app?.cellularOnly == true }
 
     private var accountKey: String? { app?.currentId?.uuidString }
 
@@ -70,7 +80,7 @@ final class DownloadStore {
     // MARK: Index
 
     func reload() {
-        progress = [:]; failed = []
+        progress = [:]; failed = [:]
         guard let key = accountKey, let data = try? Data(contentsOf: Self.folder(key).appendingPathComponent("index.json")),
               let idx = try? JSONDecoder().decode(DownloadIndex.self, from: data) else { index = DownloadIndex(); return }
         index = idx
@@ -80,7 +90,7 @@ final class DownloadStore {
             Task { @MainActor in
                 let stale = self.index.queued.keys.filter { !running.contains($0) }
                 guard !stale.isEmpty else { return }
-                for id in stale { self.index.queued.removeValue(forKey: id); self.failed.insert(id) }
+                for id in stale { self.failed[id] = self.index.queued.removeValue(forKey: id) }
                 self.save()
             }
         }
@@ -140,7 +150,7 @@ final class DownloadStore {
             let task = DownloadSession.shared.session.downloadTask(with: req)
             task.taskDescription = [key, song.id, ext].joined(separator: "|")
             index.queued[song.id] = song
-            failed.remove(song.id)
+            failed.removeValue(forKey: song.id)
             progress[song.id] = 0
             task.resume()
             saveCover(song.coverArt ?? song.albumId, client: client, account: key)
@@ -174,10 +184,58 @@ final class DownloadStore {
         }
     }
 
+    // MARK: Cancelling
+
+    /// Stops transfers of this account that haven't finished yet. Already downloaded songs stay.
+    func cancel(_ songIds: [String]) {
+        let ids = Set(songIds.filter { index.queued[$0] != nil })
+        guard !ids.isEmpty else { return }
+        cancelTasks(ids)
+        for id in ids { index.queued.removeValue(forKey: id); progress.removeValue(forKey: id); bytes.removeValue(forKey: id) }
+        save()
+    }
+
+    func cancelAll() { cancel(Array(index.queued.keys)) }
+
+    func retryFailed() { download(Array(failed.values)) }
+
+    /// Cancels a collection's pending songs and forgets the collection if nothing of it is downloaded yet.
+    func cancelCollection(_ songs: [Song], album: String? = nil, playlist: String? = nil) {
+        cancel(songs.map(\.id))
+        if !songs.contains(where: { isDownloaded($0.id) }) {
+            if let album { index.albums.removeValue(forKey: album) }
+            if let playlist { index.playlists.removeValue(forKey: playlist) }
+            save()
+        }
+    }
+
+    private func cancelTasks(_ ids: Set<String>, then: (@Sendable () -> Void)? = nil) {
+        let account = accountKey
+        DownloadSession.shared.session.getAllTasks { tasks in
+            for t in tasks {
+                let parts = (t.taskDescription ?? "").components(separatedBy: "|")
+                if parts.count == 3, parts[0] == account, ids.contains(parts[1]) { t.cancel() }
+            }
+            then?()
+        }
+    }
+
+    private func requeue() {
+        let songs = Array(index.queued.values)
+        guard !songs.isEmpty else { return }
+        cancelTasks(Set(songs.map(\.id))) {
+            Task { @MainActor in
+                for s in songs { self.index.queued.removeValue(forKey: s.id) }
+                self.download(songs)
+            }
+        }
+    }
+
     // MARK: Removing
 
     func remove(_ songIds: [String]) {
         guard let key = accountKey else { return }
+        cancelTasks(Set(songIds.filter { index.queued[$0] != nil }))
         for id in songIds {
             if let d = index.songs.removeValue(forKey: id) {
                 try? FileManager.default.removeItem(at: Self.songFile(account: key, name: d.file))
@@ -203,9 +261,9 @@ final class DownloadStore {
     private func neededByAlbums(_ id: String) -> Bool { index.albums.values.contains { ($0.song ?? []).contains { $0.id == id } } }
 
     func removeAll() {
-        DownloadSession.shared.session.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
+        cancelTasks(Set(index.queued.keys))
         if let key = accountKey { try? FileManager.default.removeItem(at: Self.folder(key)) }
-        index = DownloadIndex(); progress = [:]; failed = []
+        index = DownloadIndex(); progress = [:]; failed = [:]
     }
 
     nonisolated static func deleteAccount(_ id: UUID) {
@@ -214,30 +272,43 @@ final class DownloadStore {
 
     // MARK: Session callbacks
 
-    func didProgress(account: String, songId: String, fraction: Double) {
+    /// `expected` is -1 when the server converts the file on the fly and doesn't send a size;
+    /// the size is then estimated from the song length and the chosen bitrate.
+    func didProgress(account: String, songId: String, written: Int64, expected: Int64) {
         guard account == accountKey else { return }
-        progress[songId] = fraction
+        bytes[songId] = written
+        if expected > 0 {
+            progress[songId] = Double(written) / Double(expected)
+        } else if let song = index.queued[songId], let duration = song.duration, duration > 0 {
+            let rate = quality > 0 ? quality : (song.bitRate ?? 320)
+            progress[songId] = min(0.97, Double(written) / Double(duration * rate * 125))
+        }
     }
 
     func didFinish(account: String, songId: String, file: String, size: Int64) {
         guard account == accountKey else {
             updateOther(account) { idx in
                 if let song = idx.queued.removeValue(forKey: songId) { idx.songs[songId] = DownloadedSong(song: song, file: file, size: size) }
+                else if idx.songs[songId] == nil { try? FileManager.default.removeItem(at: Self.songFile(account: account, name: file)) }
             }
             return
         }
         if let song = index.queued.removeValue(forKey: songId) {
             index.songs[songId] = DownloadedSong(song: song, file: file, size: size)
+        } else if index.songs[songId] == nil {
+            // Cancelled while the last bytes were arriving: don't leave an orphaned file behind
+            try? FileManager.default.removeItem(at: Self.songFile(account: account, name: file))
         }
         progress.removeValue(forKey: songId)
+        bytes.removeValue(forKey: songId)
         save()
     }
 
     func didFail(account: String, songId: String) {
         guard account == accountKey else { updateOther(account) { $0.queued.removeValue(forKey: songId) }; return }
-        index.queued.removeValue(forKey: songId)
+        failed[songId] = index.queued.removeValue(forKey: songId)
         progress.removeValue(forKey: songId)
-        failed.insert(songId)
+        bytes.removeValue(forKey: songId)
         save()
     }
 }
@@ -285,9 +356,11 @@ final class DownloadSession: NSObject, URLSessionDownloadDelegate {
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64,
                     totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        guard let info = parse(downloadTask), totalBytesExpectedToWrite > 0 else { return }
-        let fraction = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-        Task { @MainActor in DownloadStore.shared.didProgress(account: info.account, songId: info.songId, fraction: fraction) }
+        guard let info = parse(downloadTask) else { return }
+        Task { @MainActor in
+            DownloadStore.shared.didProgress(account: info.account, songId: info.songId,
+                                             written: totalBytesWritten, expected: totalBytesExpectedToWrite)
+        }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {

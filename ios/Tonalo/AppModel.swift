@@ -26,6 +26,8 @@ final class AppModel {
     let downloads = DownloadStore.shared
     /// False when the device has no network – the app then falls back to downloaded music.
     private(set) var isOnline = true
+    /// Online, but only over mobile data – downloads wait for Wi-Fi unless cellular is allowed.
+    private(set) var cellularOnly = false
     @ObservationIgnored private let monitor = NWPathMonitor()
 
     var current: Account? { accounts.first { $0.id == currentId } }
@@ -53,8 +55,12 @@ final class AppModel {
         player.restore()
         monitor.pathUpdateHandler = { [weak self] path in
             let online = path.status == .satisfied
+            let cellular = online && path.usesInterfaceType(.cellular)
+                && !path.usesInterfaceType(.wifi) && !path.usesInterfaceType(.wiredEthernet)
             Task { @MainActor in
-                guard let self, self.isOnline != online else { return }
+                guard let self else { return }
+                if self.cellularOnly != cellular { self.cellularOnly = cellular }
+                guard self.isOnline != online else { return }
                 self.isOnline = online
                 if online { await self.player.flushScrobbles() }
             }
