@@ -13,10 +13,14 @@ final class AppModel {
     private(set) var currentId: UUID?
     var showsAccountPicker = false
 
-    /// Streaming quality in kbit/s, 0 = original file.
-    var maxBitRate: Int = UserDefaults.standard.integer(forKey: "maxBitRate") {
-        didSet { UserDefaults.standard.set(maxBitRate, forKey: "maxBitRate") }
+    /// Streaming quality on Wi-Fi and on mobile data, like the big streaming apps offer it.
+    var wifiQuality = AudioQuality.stored("quality.wifi", legacy: "maxBitRate", default: .lossless) {
+        didSet { UserDefaults.standard.set(wifiQuality.rawValue, forKey: "quality.wifi") }
     }
+    var cellularQuality = AudioQuality.stored("quality.cellular", legacy: "maxBitRate", default: .aac256) {
+        didSet { UserDefaults.standard.set(cellularQuality.rawValue, forKey: "quality.cellular") }
+    }
+    var streamingQuality: AudioQuality { cellularOnly ? cellularQuality : wifiQuality }
     /// Seconds the end of a song overlaps with the start of the next one (0 = off).
     var crossfade: Int = UserDefaults.standard.integer(forKey: "crossfade") {
         didSet { UserDefaults.standard.set(crossfade, forKey: "crossfade") }

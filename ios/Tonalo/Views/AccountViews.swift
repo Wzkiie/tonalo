@@ -211,23 +211,14 @@ struct SettingsView: View {
                         Text(ByteCountFormatter.string(fromByteCount: app.downloads.totalBytes, countStyle: .file))
                     } label: { Label("Downloads", systemImage: "arrow.down.circle") }
                 }
-                Picker("Download quality", selection: Bindable(app.downloads).quality) {
-                    Text("Original").tag(0)
-                    Text("320 kbps").tag(320)
-                    Text("192 kbps").tag(192)
-                    Text("128 kbps").tag(128)
-                }
+                qualityPicker("Download quality", selection: Bindable(app.downloads).quality)
                 Toggle("Download over cellular", isOn: Bindable(app.downloads).allowCellular)
             } header: { Text("Offline") } footer: {
                 Text("Downloads keep going in the background. Without cellular, they wait for Wi-Fi.")
             }
             Section {
-                Picker("Streaming quality", selection: $app.maxBitRate) {
-                    Text("Original").tag(0)
-                    Text("320 kbps").tag(320)
-                    Text("192 kbps").tag(192)
-                    Text("128 kbps").tag(128)
-                }
+                qualityPicker("Streaming on Wi-Fi", selection: $app.wifiQuality)
+                qualityPicker("Streaming on cellular", selection: $app.cellularQuality)
                 VStack(alignment: .leading) {
                     LabeledContent("Crossfade", value: app.crossfade == 0 ? String(localized: "Off") : "\(app.crossfade) s")
                     Slider(value: Binding(get: { Double(app.crossfade) }, set: { app.crossfade = Int($0) }), in: 0...12, step: 1)
@@ -237,7 +228,7 @@ struct SettingsView: View {
             } header: {
                 Text("Playback")
             } footer: {
-                Text("Crossfade blends the end of a song into the next one.")
+                Text("Lossless plays your files unchanged, FLAC stays FLAC. Formats the iPhone can’t play are converted to AAC 256 by your server. Crossfade blends the end of a song into the next one.")
             }
             Section {
                 Link("Tonalo on GitHub", destination: URL(string: "https://github.com/Wzkiie/tonalo")!)
@@ -249,4 +240,11 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .sheet(isPresented: $adding) { NavigationStack { AccountEditorView(account: nil) } }
     }
+}
+
+private func qualityPicker(_ title: LocalizedStringKey, selection: Binding<AudioQuality>) -> some View {
+    Picker(title, selection: selection) {
+        ForEach(AudioQuality.allCases) { Text($0.title).tag($0) }
+    }
+    .pickerStyle(.navigationLink)
 }

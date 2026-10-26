@@ -38,9 +38,8 @@ final class DownloadStore {
     /// Bytes received so far, for the "downloading" list
     private(set) var bytes: [String: Int64] = [:]
 
-    /// kbit/s for downloads, 0 = original file
-    var quality: Int = UserDefaults.standard.object(forKey: "downloadBitRate") as? Int ?? 320 {
-        didSet { UserDefaults.standard.set(quality, forKey: "downloadBitRate") }
+    var quality = AudioQuality.stored("quality.download", legacy: "downloadBitRate", default: .aac256) {
+        didSet { UserDefaults.standard.set(quality.rawValue, forKey: "quality.download") }
     }
     var allowCellular: Bool = UserDefaults.standard.bool(forKey: "downloadCellular") {
         didSet {
@@ -113,6 +112,13 @@ final class DownloadStore {
 
     func isDownloaded(_ songId: String) -> Bool { index.songs[songId] != nil }
 
+    /// "FLAC", "AAC 256" … for a downloaded song, read from the saved file's extension.
+    func qualityLabel(_ song: Song) -> String? {
+        guard let file = index.songs[song.id]?.file else { return nil }
+        let ext = (file as NSString).pathExtension.uppercased()
+        return ext.isEmpty ? nil : ext
+    }
+
     func localURL(_ songId: String) -> URL? {
         guard let key = accountKey, let d = index.songs[songId] else { return nil }
         let url = Self.songFile(account: key, name: d.file)
@@ -142,8 +148,8 @@ final class DownloadStore {
         guard let client = app?.client, let key = accountKey else { return }
         Self.prepareRoot()
         for song in songs where index.songs[song.id] == nil && index.queued[song.id] == nil {
-            guard let url = client.downloadURL(song.id, maxBitRate: quality) else { continue }
-            let ext = quality > 0 ? "mp3" : (song.suffix ?? "audio")
+            guard let url = client.downloadURL(song, quality: quality) else { continue }
+            let ext = quality.resolved(for: song).fileExtension(for: song)
             var req = client.request(url)
             req.timeoutInterval = 120
             req.allowsCellularAccess = allowCellular
@@ -280,7 +286,8 @@ final class DownloadStore {
         if expected > 0 {
             progress[songId] = Double(written) / Double(expected)
         } else if let song = index.queued[songId], let duration = song.duration, duration > 0 {
-            let rate = quality > 0 ? quality : (song.bitRate ?? 320)
+            let q = quality.resolved(for: song)
+            let rate = q.format != nil ? q.bitRate : (song.bitRate ?? 900)
             progress[songId] = min(0.97, Double(written) / Double(duration * rate * 125))
         }
     }
@@ -336,7 +343,9 @@ final class DownloadSession: NSObject, URLSessionDownloadDelegate {
         let http = downloadTask.response as? HTTPURLResponse
         let type = http?.value(forHTTPHeaderField: "Content-Type") ?? ""
         // A JSON/HTML answer means an error page (e.g. Subsonic error or a Cloudflare login page), not audio
-        guard http?.statusCode == 200, !type.contains("json"), !type.contains("html") else {
+        // OGG instead of the requested MP3/AAC means the server couldn't convert and fell back to Opus
+        let wrongFormat = ["aac", "mp3"].contains(info.ext) && type.contains("ogg")
+        guard http?.statusCode == 200, !type.contains("json"), !type.contains("html"), !wrongFormat else {
             Task { @MainActor in DownloadStore.shared.didFail(account: info.account, songId: info.songId) }
             return
         }

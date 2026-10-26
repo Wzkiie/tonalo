@@ -168,14 +168,18 @@ struct SubsonicClient {
         return url("getCoverArt", ["id": id, "size": "\(size)"])
     }
 
-    /// For offline downloads: the original file, or a transcoded MP3 when a bitrate is set.
-    func downloadURL(_ id: String, maxBitRate: Int) -> URL? {
-        maxBitRate > 0 ? streamURL(id, maxBitRate: maxBitRate) : url("download", ["id": id])
+    /// For offline downloads: the original file byte for byte, or the converted version.
+    func downloadURL(_ song: Song, quality: AudioQuality) -> URL? {
+        let q = quality.resolved(for: song)
+        return q.format == nil ? url("download", ["id": song.id]) : streamURL(song, quality: q)
     }
 
-    func streamURL(_ id: String, maxBitRate: Int) -> URL? {
-        var p = ["id": id]
-        if maxBitRate > 0 { p["maxBitRate"] = "\(maxBitRate)"; p["format"] = "mp3" }
+    /// `offset` starts a converted stream later in the song – converted streams can't be seeked otherwise.
+    func streamURL(_ song: Song, quality: AudioQuality, offset: Int = 0) -> URL? {
+        let q = quality.resolved(for: song)
+        guard let format = q.format else { return url("stream", ["id": song.id, "format": "raw"]) }
+        var p = ["id": song.id, "format": format, "maxBitRate": "\(q.bitRate)"]
+        if offset > 0 { p["timeOffset"] = "\(offset)" }
         return url("stream", p)
     }
 }

@@ -490,6 +490,16 @@
         }
       }
     },
+    "Data saver · AAC 96 kbit/s": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datensparend · AAC 96 kbit/s"
+          }
+        }
+      }
+    },
     "Delete all downloads": {
       "localizations": {
         "de": {
@@ -754,6 +764,16 @@
         }
       }
     },
+    "High · AAC 192 kbit/s": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoch · AAC 192 kbit/s"
+          }
+        }
+      }
+    },
     "Home": {
       "localizations": {
         "de": {
@@ -820,6 +840,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anmeldung"
+          }
+        }
+      }
+    },
+    "Lossless (original files)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlustfrei (Originaldateien)"
+          }
+        }
+      }
+    },
+    "Lossless plays your files unchanged, FLAC stays FLAC. Formats the iPhone can’t play are converted to AAC 256 by your server. Crossfade blends the end of a song into the next one.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlustfrei spielt deine Dateien unverändert ab, FLAC bleibt FLAC. Formate, die das iPhone nicht abspielen kann, wandelt dein Server in AAC 256 um. Überblenden lässt das Ende eines Songs in den nächsten übergehen."
           }
         }
       }
@@ -930,6 +970,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Keine Ergebnisse für „%@“"
+          }
+        }
+      }
+    },
+    "Normal · AAC 128 kbit/s": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal · AAC 128 kbit/s"
           }
         }
       }
@@ -1594,6 +1644,26 @@
         }
       }
     },
+    "Streaming on Wi-Fi": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streaming im WLAN"
+          }
+        }
+      }
+    },
+    "Streaming on cellular": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streaming über Mobilfunk"
+          }
+        }
+      }
+    },
     "Streaming quality": {
       "localizations": {
         "de": {
@@ -1756,6 +1826,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Version"
+          }
+        }
+      }
+    },
+    "Very high · AAC 256 kbit/s": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sehr hoch · AAC 256 kbit/s"
           }
         }
       }

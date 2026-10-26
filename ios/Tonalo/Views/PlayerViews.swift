@@ -155,6 +155,7 @@ struct NowPlayingView: View {
             }
             .padding(.bottom, 18)
             ProgressBar()
+                .overlay(alignment: .bottom) { qualityBadge.offset(y: 2) }
                 .padding(.bottom, 14)
             controls
                 .padding(.bottom, 20)
@@ -169,6 +170,20 @@ struct NowPlayingView: View {
             .font(.system(size: 20))
             .foregroundStyle(.white.opacity(0.8))
             .padding(.bottom, 12)
+        }
+    }
+
+    /// "FLAC" / "AAC 256", centered between the times under the seek bar.
+    @ViewBuilder private var qualityBadge: some View {
+        if let label = app.player.qualityLabel {
+            HStack(spacing: 3) {
+                if app.player.playingDownload { Image(systemName: "arrow.down.circle.fill") }
+                Text(label)
+            }
+            .font(.system(size: 9, weight: .bold))
+            .foregroundStyle(.white.opacity(0.75))
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .overlay(Capsule().stroke(.white.opacity(0.35), lineWidth: 1))
         }
     }
 

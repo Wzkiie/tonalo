@@ -43,6 +43,12 @@ final class PlayerModel {
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
     @ObservationIgnored private var itemObservation: NSKeyValueObservation?
     @ObservationIgnored private var errorStreak = 0
+    /// Converted streams start at `timeOffset` when seeking (the server cuts them); the player's own clock starts at 0.
+    @ObservationIgnored private var timeOffset: Double = 0
+    @ObservationIgnored private var streamQuality: AudioQuality?
+    /// What is playing, e.g. "FLAC" or "AAC 256" – shown small in the player.
+    private(set) var qualityLabel: String?
+    private(set) var playingDownload = false
 
     init() {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
@@ -161,6 +167,11 @@ final class PlayerModel {
     func seek(to seconds: Double) {
         endFade()
         position = max(0, seconds)
+        if streamQuality?.format != nil {
+            // A converted stream has no file to jump around in: ask the server to start there instead
+            load(autoplay: isPlaying, startAt: position)
+            return
+        }
         player.seek(to: CMTime(seconds: position, preferredTimescale: 600))
         updateNowPlaying()
     }
@@ -231,10 +242,20 @@ final class PlayerModel {
         guard let song = current, let client = app?.client else { return }
         endFade()
         let asset: AVURLAsset
+        timeOffset = 0
         if let local = app?.downloads.localURL(song.id) {
             asset = AVURLAsset(url: local) // downloaded: plays without network
+            streamQuality = nil
+            qualityLabel = app?.downloads.qualityLabel(song)
+            playingDownload = true
         } else {
-            guard let url = client.streamURL(song.id, maxBitRate: app?.maxBitRate ?? 0) else { return }
+            let quality = (app?.streamingQuality ?? .lossless).resolved(for: song)
+            let offset = quality.format != nil && startAt > 1 ? Int(startAt) : 0
+            guard let url = client.streamURL(song, quality: quality, offset: offset) else { return }
+            timeOffset = Double(offset)
+            streamQuality = quality
+            qualityLabel = quality.label(for: song)
+            playingDownload = false
             // Custom headers (e.g. Cloudflare Access) also have to reach the audio stream itself
             asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": client.account.httpHeaders])
         }
@@ -255,7 +276,7 @@ final class PlayerModel {
         player.replaceCurrentItem(with: item)
         duration = Double(song.duration ?? 0)
         position = startAt
-        if startAt > 1 { player.seek(to: CMTime(seconds: startAt, preferredTimescale: 600)) }
+        if startAt > 1 && timeOffset == 0 { player.seek(to: CMTime(seconds: startAt, preferredTimescale: 600)) }
         scrobbled = false
         if autoplay {
             activateSession()
@@ -310,8 +331,9 @@ final class PlayerModel {
 
     private func activateSession() { try? AVAudioSession.sharedInstance().setActive(true) }
 
-    private func tick(_ seconds: Double) {
-        guard seconds.isFinite, player.currentItem != nil else { return }
+    private func tick(_ clock: Double) {
+        guard clock.isFinite, player.currentItem != nil else { return }
+        let seconds = clock + timeOffset
         position = seconds
         if duration <= 0, let d = player.currentItem?.duration.seconds, d.isFinite { duration = d }
         if isPlaying { errorStreak = 0 }
