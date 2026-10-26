@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Problem with Navidrome itself
+    url: https://github.com/navidrome/navidrome/discussions
+    about: Questions about the server (scanning, transcoding, users) are best asked there.
+  - name: Security problem
+    url: https://github.com/Wzkiie/tonalo/blob/main/SECURITY.md
+    about: Please report security problems privately, not as an issue.

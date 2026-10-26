@@ -1,0 +1,23 @@
+name: Feature request
+description: An idea for Tonalo
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app?
+      multiple: true
+      options:
+        - TV app (LG webOS)
+        - iPhone app
+        - Apple Watch app
+        - CarPlay
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: What would it help you with? If another app does it well, mention which one.
+    validations:
+      required: true

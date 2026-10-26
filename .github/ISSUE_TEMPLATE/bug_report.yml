@@ -1,0 +1,72 @@
+name: Bug report
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time! **Please don't post anything private:** no passwords, tokens, custom header values (e.g. Cloudflare Access secrets) or your server's real address. "My server at home" or "behind Cloudflare" is all that's needed.
+
+        Found a security problem? Please don't open an issue – see [SECURITY.md](https://github.com/Wzkiie/tonalo/blob/main/SECURITY.md).
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app?
+      options:
+        - TV app (LG webOS)
+        - iPhone app
+        - Apple Watch app
+        - CarPlay
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: And what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can it be reproduced?
+      placeholder: |
+        1. Open an album
+        2. Press …
+        3. …
+  - type: input
+    id: version
+    attributes:
+      label: Tonalo version
+      description: TV – Settings, at the bottom. iPhone – Settings → Version.
+      placeholder: "1.6.0"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and system version
+      placeholder: "LG OLED65CX, webOS 5.6 / iPhone 15, iOS 18.2"
+    validations:
+      required: true
+  - type: input
+    id: server
+    attributes:
+      label: Music server and version
+      placeholder: "Navidrome 0.64.2"
+    validations:
+      required: true
+  - type: checkboxes
+    id: setup
+    attributes:
+      label: Setup (if it might matter)
+      options:
+        - label: Server is behind a reverse proxy or Cloudflare Access (custom headers)
+        - label: An address at home is set (iPhone)
+        - label: The problem happens with downloaded songs / offline
+        - label: Several accounts are set up
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?
+      description: Screenshots help a lot – please hide your server address in them.
