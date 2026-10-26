@@ -2,15 +2,28 @@
 
 <h1 align="center">Tonalo</h1>
 
-<p align="center">A Navidrome client for LG TVs. Play your own music library from the couch, with nothing but the remote.</p>
+<p align="center">A Navidrome client for LG TVs and the iPhone. Play your own music library from the couch with nothing but the remote, or take it with you.</p>
 
-![Home screen](assets/screenshots/home.jpg)
+<p align="center">
+  <img src="assets/screenshots/tv/home.jpg" width="74%" alt="TV app home screen">
+  <img src="assets/screenshots/ios/home.jpg" width="19%" alt="iPhone app home screen">
+</p>
 
-Navidrome's web UI technically works in the TV browser, but it's made for a mouse and gets fiddly fast. Tonalo is a native webOS app built around the remote: arrow keys and OK to get around, Back to go back, and the play/pause and skip buttons do what you'd expect.
+Tonalo talks to any server that speaks the Subsonic API. It was built and tested against Navidrome; other Subsonic servers should work but haven't been tried.
 
-It talks to any server that speaks the Subsonic API. It was built and tested against Navidrome; other Subsonic servers should work but haven't been tried.
+There are two apps in this repository. They share the name, the icon and the idea, but no code, because each one is written for its platform:
 
-## What it does
+| | TV app | iPhone app |
+|---|---|---|
+| Runs on | LG TVs with webOS 5 or newer | iPhone with iOS 17 or newer, plus Apple Watch |
+| Code | [`tv/`](tv) – plain HTML, CSS and JavaScript | [`ios/`](ios) – Swift and SwiftUI |
+| Install | `.ipk` from the [releases](../../releases/latest) | Build it yourself with Xcode (no App Store version yet) |
+
+## TV app
+
+Navidrome's web UI technically works in the TV browser, but it's made for a mouse and gets fiddly fast. The TV app is a native webOS app built around the remote: arrow keys and OK to get around, Back to go back, and the play/pause and skip buttons do what you'd expect.
+
+### What it does
 
 - Home screen with recently played, recently added, most played and a shuffle mix
 - Albums, artists, playlists, genres, favorites and search
@@ -22,14 +35,12 @@ It talks to any server that speaks the Subsonic API. It was built and tested aga
 
 | | |
 |---|---|
-| ![Now playing with lyrics](assets/screenshots/nowplaying.jpg) | ![Album](assets/screenshots/album.jpg) |
-| ![Artist](assets/screenshots/artist.jpg) | ![Search](assets/screenshots/search.jpg) |
+| ![Now playing with lyrics](assets/screenshots/tv/nowplaying.jpg) | ![Album](assets/screenshots/tv/album.jpg) |
+| ![Artist](assets/screenshots/tv/artist.jpg) | ![Search](assets/screenshots/tv/search.jpg) |
 
-<p align="center"><img src="assets/screenshots/users.jpg" width="49%" alt="Profile picker"></p>
+<p align="center"><img src="assets/screenshots/tv/users.jpg" width="49%" alt="Profile picker"></p>
 
-The screenshots use a made-up demo library (`tv/tools/mock_server.js`), not real artists.
-
-## Installing
+### Installing
 
 Grab the `.ipk` from the [latest release](../../releases/latest).
 
@@ -52,13 +63,7 @@ On first start, enter your server address (for example `http://192.168.1.10:4533
 
 Tested on an LG OLED65CX with webOS 5.6. Anything from webOS 5 up should be fine; older versions are untested.
 
-## iPhone app
-
-There's also a native iPhone app in `ios/` (SwiftUI, iOS 17+). It covers the same basics – home, search, library, a player with lyrics, lock screen controls and multiple accounts – plus offline downloads (songs, albums and playlists, in the background, with offline scrobbles sent later), a choice of accent colors and app icons, and one thing the TV doesn't need: **custom HTTP headers per account**. They're sent with every request, including the audio stream and cover art, so servers behind Cloudflare Access (service token), Authelia or a similar proxy work. There's a one-tap preset for the two Cloudflare Access headers, and all secrets live in the iOS Keychain.
-
-There's no App Store build yet (see `ios/APP_STORE.md` for what's needed). To put it on your own phone, open `ios/Tonalo.xcodeproj` in Xcode, pick your Apple ID as the team under *Signing & Capabilities*, and run it on your connected iPhone. With a free Apple ID the app has to be reinstalled every 7 days.
-
-## Remote
+### Remote
 
 | Button | Action |
 |---|---|
@@ -71,7 +76,47 @@ There's no App Store build yet (see `ios/APP_STORE.md` for what's needed). To pu
 
 The Magic Remote pointer works too.
 
+## iPhone app
+
+A native SwiftUI app that feels like the big streaming apps rather than a classic Subsonic client.
+
+<p align="center">
+  <img src="assets/screenshots/ios/player.jpg" width="30%" alt="Player">
+  <img src="assets/screenshots/ios/lyrics.jpg" width="30%" alt="Synced lyrics">
+  <img src="assets/screenshots/ios/album.jpg" width="30%" alt="Album">
+</p>
+<p align="center">
+  <img src="assets/screenshots/ios/search.jpg" width="30%" alt="Search with genres">
+  <img src="assets/screenshots/ios/library.jpg" width="30%" alt="Your library">
+</p>
+
+### What it does
+
+- Home, search with genre tiles, and a library with playlists, albums, artists and downloads
+- Player with synced lyrics, a queue, swipe gestures and colors taken from the cover
+- **Crossfade** between songs, adjustable from 1 to 12 seconds
+- **Audio quality** set separately for Wi-Fi, cellular and downloads: lossless (your files as they are, FLAC stays FLAC) or converted by your server to AAC or MP3. Formats the iPhone can't play are converted automatically.
+- **Offline downloads** of songs, albums and playlists, in the background, optionally only on Wi-Fi. Scrobbles made offline are sent later.
+- **Favorites from the lock screen**: a heart button for Control Center and the lock screen (iOS 18+) and a Siri shortcut ("Add this song to my favorites in Tonalo")
+- **Apple Watch app**: player with cover, favorites, shuffle and the iPhone's volume on the Digital Crown, plus your playlists and favorites to start music from the wrist. It remote-controls the iPhone.
+- **CarPlay** is built but switched off until Apple grants the CarPlay audio entitlement – see [`ios/CARPLAY.md`](ios/CARPLAY.md)
+- Several accounts, accent colors and alternative app icons
+- **Custom HTTP headers per account**, sent with every request including the audio stream and cover art, so servers behind Cloudflare Access (service token), Authelia or a similar proxy work. There's a one-tap preset for the two Cloudflare Access headers, and all secrets live in the iOS Keychain.
+- English and German
+
+### Installing
+
+There's no App Store build yet (see [`ios/APP_STORE.md`](ios/APP_STORE.md) for what's needed). To put it on your own phone:
+
+1. Open `ios/Tonalo.xcodeproj` in Xcode.
+2. Create `ios/Local.xcconfig` with your team ID, `DEVELOPMENT_TEAM = ABCDE12345` (git ignores this file). Alternatively, pick your Apple ID as the team under *Signing & Capabilities* for the Tonalo, TonaloControls and TonaloWatch targets.
+3. Connect your iPhone and run the *Tonalo* scheme. The watch app comes along automatically if your iPhone is paired with an Apple Watch.
+
+With a free Apple ID the app has to be reinstalled every 7 days.
+
 ## Development
+
+### TV app
 
 There's no framework and no build step – plain HTML, CSS and JavaScript in `tv/app/`. The code sticks to what the Chromium 68 engine in webOS 5 understands, so no optional chaining, `??`, flexbox `gap` and so on.
 
@@ -79,7 +124,7 @@ There's no framework and no build step – plain HTML, CSS and JavaScript in `tv
 node tv/tools/mock_server.js            # demo server + app on http://localhost:4599
 python3 tv/tools/build_ipk.py           # builds tv/dist/*.ipk and the Homebrew Channel manifest
 node tv/tools/i18n_check.js             # checks that every language has every string
-swift tv/tools/screenshots.swift http://localhost:4599 shots   # renders the README screenshots (macOS)
+swift tv/tools/screenshots.swift http://localhost:4599 shots   # renders the TV screenshots (macOS)
 ```
 
 In a desktop browser the UI scales to the window, and arrow keys, Enter and Esc behave like the remote. Log in to the mock server with any user name and password.
@@ -88,9 +133,24 @@ In a desktop browser the UI scales to the window, and arrow keys, Enter and Esc 
 
 **Releases:** bump the version in `tv/app/appinfo.json` and `tv/app/js/util.js`, commit, then push a tag (`git tag v1.5.1 && git push origin v1.5.1`). GitHub Actions builds the package and publishes the release.
 
+### iPhone app
+
+Swift 5 with SwiftUI and `@Observable`, no third-party dependencies. Texts live in String Catalogs (`Localizable.xcstrings`), with English as the source language.
+
+The iPhone screenshots use the same demo server as the TV. It draws its covers as SVG, which iOS can't show, so render them to PNG first:
+
+```bash
+swift ios/tools/render_covers.swift http://localhost:4599 covers
+MOCK_COVERS=covers node tv/tools/mock_server.js
+```
+
+Debug builds sign in to that server when launched with `-demoAccount -demoServer http://localhost:4599`, and `-demoQueue` fills the queue without starting playback.
+
+The screenshots in this README use a made-up demo library (`tv/tools/mock_server.js`), not real artists.
+
 ## Notes
 
-Tonalo doesn't collect any data – see the [privacy policy](PRIVACY.md). It isn't affiliated with Navidrome or LG. A good part of the code was written together with an AI coding assistant; everything was tested on a real TV.
+Tonalo doesn't collect any data – see the [privacy policy](PRIVACY.md). It isn't affiliated with Navidrome, LG or Apple. A good part of the code was written together with an AI coding assistant; everything was tested on a real TV and iPhone.
 
 ## License
 

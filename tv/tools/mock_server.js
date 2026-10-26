@@ -4,6 +4,8 @@
 const http = require('http'), fs = require('fs'), path = require('path'), url = require('url');
 const APP = path.join(__dirname, '..', 'app');
 const PORT = +process.argv[2] || 4599;
+// Pre-rendered PNG covers for the iPhone app, which can't show SVG (see ios/tools/render_covers.swift)
+const COVERS = process.env.MOCK_COVERS;
 
 // ---- deterministic random numbers, so the demo library looks the same every time
 let seed = 7;
@@ -93,6 +95,9 @@ http.createServer((req, res) => {
   const u = url.parse(req.url, true), q = u.query;
   if (u.pathname.startsWith('/rest/')) {
     const m = u.pathname.slice(6).replace('.view', '');
+    if (m === 'getCoverArt' && COVERS && fs.existsSync(path.join(COVERS, (q.id || '') + '.png'))) {
+      res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(fs.readFileSync(path.join(COVERS, q.id + '.png')));
+    }
     if (m === 'getCoverArt') { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Access-Control-Allow-Origin': '*' }); return res.end(coverSvg(q.id || '')); }
     if (m === 'stream') { res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': WAV.length }); return res.end(WAV); }
     let body;

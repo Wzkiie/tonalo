@@ -43,11 +43,14 @@ final class AppModel {
     init() {
         accounts = Keychain.load([Account].self, key: "accounts") ?? []
         #if DEBUG
-        // Test hook for the simulator: launch with -demoAccount to sign in to the public Navidrome demo server.
+        // Test hook for the simulator: launch with -demoAccount to sign in to the public Navidrome demo server,
+        // or add -demoServer <url> to use another one (tv/tools/mock_server.js for the README screenshots).
         // Compiled out of release builds.
-        if ProcessInfo.processInfo.arguments.contains("-demoAccount"), accounts.isEmpty {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-demoAccount"), accounts.isEmpty {
             let t = SubsonicClient.makeToken(password: "demo")
-            accounts = [Account(serverURL: "https://demo.navidrome.org", username: "demo", salt: t.salt, token: t.token)]
+            let server = args.firstIndex(of: "-demoServer").flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil }
+            accounts = [Account(serverURL: server ?? "https://demo.navidrome.org", username: "demo", salt: t.salt, token: t.token)]
             persist()
         }
         #endif
