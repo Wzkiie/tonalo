@@ -540,6 +540,16 @@
         }
       }
     },
+    "Download albums and playlists on your iPhone to listen without network.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lade auf dem iPhone Alben und Playlists herunter, um ohne Netz zu hören."
+          }
+        }
+      }
+    },
     "Download over cellular": {
       "localizations": {
         "de": {
@@ -794,6 +804,16 @@
         }
       }
     },
+    "Loading…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird geladen …"
+          }
+        }
+      }
+    },
     "Login": {
       "localizations": {
         "de": {
@@ -860,6 +880,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Als Nächstes in der Warteschlange"
+          }
+        }
+      }
+    },
+    "No downloads": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Downloads"
           }
         }
       }
@@ -1110,6 +1140,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abspielen"
+          }
+        }
+      }
+    },
+    "Play all": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle abspielen"
           }
         }
       }
