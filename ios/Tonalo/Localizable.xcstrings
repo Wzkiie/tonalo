@@ -81,6 +81,16 @@
         }
       }
     },
+    "%lld of %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld von %2$lld"
+          }
+        }
+      }
+    },
     "%lld of these songs are already in the playlist.": {
       "localizations": {
         "de": {
@@ -995,6 +1005,16 @@
         }
       }
     },
+    "Genres": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genres"
+          }
+        }
+      }
+    },
     "Go to album": {
       "localizations": {
         "de": {
@@ -1139,12 +1159,32 @@
         }
       }
     },
+    "Last sync": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzter Abgleich"
+          }
+        }
+      }
+    },
     "Library": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Bibliothek"
+          }
+        }
+      }
+    },
+    "Library offline": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bibliothek offline"
           }
         }
       }
@@ -1159,12 +1199,72 @@
         }
       }
     },
+    "Load next songs ahead": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nächste Songs vorladen"
+          }
+        }
+      }
+    },
+    "Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorladen hält die Musik am Laufen, wenn die Verbindung kurz abreißt. Die Lautstärkeangleichung nutzt die ReplayGain-Tags deiner Dateien. Beim Scrobbeln erfährt dein Server, was du gehört hast."
+          }
+        }
+      }
+    },
+    "Loading albums, artists and playlists…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alben, Künstler und Playlists werden geladen …"
+          }
+        }
+      }
+    },
+    "Loading albums… %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alben werden geladen … %lld"
+          }
+        }
+      }
+    },
+    "Loading overview…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übersicht wird geladen …"
+          }
+        }
+      }
+    },
     "Loading…": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Wird geladen …"
+          }
+        }
+      }
+    },
+    "Loads every album, artist and playlist onto this iPhone once, so everything opens at once and without a connection. Large libraries take a few minutes. Repeat it now and then, about once a month, to pick up changes.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lädt alle Alben, Künstler und Playlists einmal auf dieses iPhone, damit sich alles sofort und auch ohne Verbindung öffnet. Große Bibliotheken brauchen ein paar Minuten. Wiederhole es ab und zu, etwa einmal im Monat, um Änderungen zu übernehmen."
           }
         }
       }
@@ -1369,6 +1469,16 @@
         }
       }
     },
+    "Not synced yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch nicht synchronisiert"
+          }
+        }
+      }
+    },
     "Nothing downloaded yet. Use the download button on an album or playlist, or “Download” in a song’s menu.": {
       "localizations": {
         "de": {
@@ -1449,6 +1559,16 @@
         }
       }
     },
+    "On this iPhone": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf diesem iPhone"
+          }
+        }
+      }
+    },
     "Orange": {
       "localizations": {
         "de": {
@@ -1475,6 +1595,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Originaldateien"
+          }
+        }
+      }
+    },
+    "Out of date": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veraltet"
           }
         }
       }
@@ -2089,6 +2219,16 @@
         }
       }
     },
+    "Songs loaded ahead": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorgeladene Songs"
+          }
+        }
+      }
+    },
     "Songs that are already downloaded stay on your iPhone.": {
       "localizations": {
         "de": {
@@ -2145,6 +2285,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Song-Radio starten"
+          }
+        }
+      }
+    },
+    "Status": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppen"
           }
         }
       }
@@ -2231,6 +2391,36 @@
         }
       }
     },
+    "Sync again": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut synchronisieren"
+          }
+        }
+      }
+    },
+    "Sync library now": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bibliothek jetzt synchronisieren"
+          }
+        }
+      }
+    },
+    "Syncing…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird synchronisiert …"
+          }
+        }
+      }
+    },
     "Teal": {
       "localizations": {
         "de": {
@@ -2251,6 +2441,16 @@
         }
       }
     },
+    "The last sync is more than a month old. Sync again to pick up new music.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der letzte Abgleich ist über einen Monat her. Synchronisiere neu, um neue Musik zu übernehmen."
+          }
+        }
+      }
+    },
     "The login couldn't be saved securely on this device.": {
       "localizations": {
         "de": {
@@ -2267,6 +2467,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Der effizienteste Codec: bester Klang bei wenig Daten. Vom Server umgewandelt."
+          }
+        }
+      }
+    },
+    "The next songs of your queue. Swapped out by itself as you listen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die nächsten Songs deiner Warteschlange. Werden beim Hören von selbst ausgetauscht."
           }
         }
       }
@@ -2421,6 +2631,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Als Nächstes"
+          }
+        }
+      }
+    },
+    "Up to date": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuell"
           }
         }
       }

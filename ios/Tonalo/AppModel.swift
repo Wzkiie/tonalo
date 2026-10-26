@@ -32,6 +32,10 @@ final class AppModel {
     var scrobble: Bool = UserDefaults.standard.object(forKey: "scrobble") as? Bool ?? true {
         didSet { UserDefaults.standard.set(scrobble, forKey: "scrobble") }
     }
+    /// How many of the next songs in the queue are loaded ahead (0 = off).
+    var preloadCount: Int = UserDefaults.standard.object(forKey: "preload") as? Int ?? 2 {
+        didSet { UserDefaults.standard.set(preloadCount, forKey: "preload"); player.preloadChanged() }
+    }
 
     /// Short confirmation shown above the player bar, e.g. "Added to Road trip".
     private(set) var notice: String?
@@ -50,6 +54,7 @@ final class AppModel {
 
     let player = PlayerModel()
     let downloads = DownloadStore.shared
+    let librarySync = LibrarySync()
     /// False when the device has no network – the app then falls back to downloaded music.
     private(set) var isOnline = true
     /// Online, but only over mobile data – downloads wait for Wi-Fi unless cellular is allowed.
@@ -115,6 +120,7 @@ final class AppModel {
         monitor.start(queue: DispatchQueue(label: "network-monitor"))
         // Several accounts: ask who is listening on start, like the TV app
         showsAccountPicker = accounts.count > 1
+        librarySync.show(currentId)
     }
 
     /// Checks the login, then stores the account. Replaces an existing one for the same server and user.
@@ -166,6 +172,7 @@ final class AppModel {
             currentId = id
             UserDefaults.standard.set(id.uuidString, forKey: "currentAccount")
             downloads.reload()
+            librarySync.show(id)
             player.restore()
             checkRoute()
         }
@@ -180,6 +187,7 @@ final class AppModel {
         UserDefaults.standard.removeObject(forKey: "queue.dismissed." + account.id.uuidString)
         DownloadStore.deleteAccount(account.id)
         LibraryCache.deleteAccount(account.id)
+        librarySync.forget(account.id)
         ImageLoader.clearDisk()
         persist()
         if account.id == currentId {
@@ -187,6 +195,7 @@ final class AppModel {
             UserDefaults.standard.set(currentId?.uuidString, forKey: "currentAccount")
             atHome = false
             downloads.reload()
+            librarySync.show(currentId)
             player.restore()
             checkRoute()
         }

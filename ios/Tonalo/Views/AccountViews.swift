@@ -479,17 +479,25 @@ struct SettingsView: View {
                     ForEach(VolumeLeveling.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.navigationLink)
+                Picker("Load next songs ahead", selection: $app.preloadCount) {
+                    Text("Off").tag(0)
+                    ForEach([1, 2, 3, 5], id: \.self) { Text("\($0)").tag($0) }
+                }
                 Toggle("Scrobble played songs", isOn: $app.scrobble)
             } header: {
                 Text("Playback")
             } footer: {
-                Text("Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to.")
+                Text("Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to.")
             }
             Section {
                 NavigationLink { DownloadsView() } label: {
                     LabeledContent("Downloaded music", value: ByteCountFormatter.string(fromByteCount: app.downloads.totalBytes, countStyle: .file))
                 }
                 Toggle("Download over cellular", isOn: Bindable(app.downloads).allowCellular)
+                NavigationLink { LibrarySyncView() } label: {
+                    LabeledContent("Library offline", value: app.librarySync.running ? String(localized: "Syncing…")
+                                   : app.librarySync.summary.map { $0.date.formatted(.relative(presentation: .named)) } ?? String(localized: "Off"))
+                }
                 NavigationLink("Storage") { StorageView() }
             } header: { Text("Offline") } footer: {
                 Text("Downloads keep going in the background. Without cellular, they wait for Wi-Fi.")
@@ -547,11 +555,73 @@ private struct LogoutDialog: ViewModifier {
     }
 }
 
+/// Loads the whole library onto the iPhone, like the big Subsonic apps do – and shows how far it got.
+private struct LibrarySyncView: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        let sync = app.librarySync
+        List {
+            Section {
+                LabeledContent("Status") {
+                    if sync.running {
+                        Text("Syncing…").foregroundStyle(Color.accent)
+                    } else if sync.summary != nil {
+                        Text(sync.isStale ? "Out of date" : "Up to date").foregroundStyle(sync.isStale ? .orange : .green)
+                    } else {
+                        Text("Not synced yet")
+                    }
+                }
+                if let summary = sync.summary {
+                    LabeledContent("Last sync", value: summary.date.formatted(date: .abbreviated, time: .shortened))
+                }
+                if sync.running {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ProgressView(value: Double(sync.done), total: Double(max(sync.total, 1))).tint(.accent)
+                        HStack {
+                            Text(sync.phase)
+                            Spacer()
+                            if sync.total > 0 { Text("\(sync.done) of \(sync.total)").monospacedDigit() }
+                        }
+                        .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                    Button("Stop", role: .destructive) { sync.cancel() }
+                } else {
+                    Button(sync.summary == nil ? "Sync library now" : "Sync again") {
+                        if let client = app.client { sync.start(client) }
+                    }
+                    .disabled(!app.isOnline || app.client == nil)
+                }
+                if let error = sync.error {
+                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.footnote)
+                }
+            } footer: {
+                Text(sync.isStale
+                     ? "The last sync is more than a month old. Sync again to pick up new music."
+                     : "Loads every album, artist and playlist onto this iPhone once, so everything opens at once and without a connection. Large libraries take a few minutes. Repeat it now and then, about once a month, to pick up changes.")
+            }
+            if let summary = sync.summary {
+                Section("On this iPhone") {
+                    LabeledContent("Albums", value: "\(summary.albums)")
+                    LabeledContent("Artists", value: "\(summary.artists)")
+                    LabeledContent("Songs", value: "\(summary.songs)")
+                    LabeledContent("Playlists", value: "\(summary.playlists)")
+                    LabeledContent("Genres", value: "\(summary.genres)")
+                }
+            }
+        }
+        .navigationTitle("Library offline")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
 /// What Tonalo keeps on the iPhone, with a way to clear each part.
 private struct StorageView: View {
     @Environment(AppModel.self) private var app
     @State private var covers: Int64 = 0
     @State private var library: Int64 = 0
+    @State private var preloaded: Int64 = 0
     @State private var confirmDownloads = false
 
     var body: some View {
@@ -574,9 +644,14 @@ private struct StorageView: View {
                 Text("Album art, so it shows at once. At most 300 MB; the oldest go first.")
             }
             Section {
+                LabeledContent("Songs loaded ahead", value: bytes(preloaded))
+            } footer: {
+                Text("The next songs of your queue. Swapped out by itself as you listen.")
+            }
+            Section {
                 LabeledContent("Library", value: bytes(library))
                 Button("Clear library cache") {
-                    if let id = app.currentId { LibraryCache.deleteAccount(id) }
+                    if let id = app.currentId { LibraryCache.deleteAccount(id); app.librarySync.forget(id) }
                     measure()
                 }
                 .disabled(library == 0)
@@ -592,6 +667,7 @@ private struct StorageView: View {
     private func measure() {
         covers = FileManager.default.size(of: ImageLoader.folder)
         library = app.currentId.map(LibraryCache.size) ?? 0
+        preloaded = FileManager.default.size(of: Prefetcher.folder)
     }
 
     private func bytes(_ n: Int64) -> String { ByteCountFormatter.string(fromByteCount: n, countStyle: .file) }

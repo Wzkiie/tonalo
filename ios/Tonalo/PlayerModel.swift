@@ -52,6 +52,9 @@ final class PlayerModel {
     /// What is playing, e.g. "FLAC" or "AAC 256" – shown small in the player.
     private(set) var qualityLabel: String?
     private(set) var playingDownload = false
+    /// Playing a song that was loaded ahead: a file on the device, so a new server address doesn't matter.
+    @ObservationIgnored private var playingPreloaded = false
+    @ObservationIgnored private let prefetcher = Prefetcher()
 
     /// A queue another device (the TV, for example) left on the server, offered as "Continue listening".
     struct RemoteQueue: Equatable {
@@ -144,6 +147,7 @@ final class PlayerModel {
         queue.insert(contentsOf: songs, at: index + 1)
         original?.append(contentsOf: songs)
         persist()
+        if isPlaying { preload() }
     }
 
     func enqueue(_ songs: [Song]) {
@@ -151,6 +155,7 @@ final class PlayerModel {
         queue.append(contentsOf: songs)
         original?.append(contentsOf: songs)
         persist()
+        if isPlaying { preload() }
     }
 
     func jump(to i: Int) {
@@ -164,6 +169,7 @@ final class PlayerModel {
         queue.remove(at: i)
         if i < index { index -= 1 }
         persist()
+        if isPlaying { preload() }
     }
 
     func next(auto: Bool = false) {
@@ -191,7 +197,7 @@ final class PlayerModel {
     func toggle() {
         guard current != nil else { return }
         if player.currentItem == nil { load(autoplay: true, startAt: position); return }
-        if isPlaying { endFade(); player.pause(); persist(); syncToServer(force: true) } else { remoteOffer = nil; activateSession(); player.play() }
+        if isPlaying { endFade(); player.pause(); persist(); syncToServer(force: true) } else { remoteOffer = nil; activateSession(); player.play(); preload() }
     }
 
     func seek(to seconds: Double) {
@@ -294,6 +300,7 @@ final class PlayerModel {
         queue = []; index = -1; position = 0; duration = 0; original = nil; context = nil
         remoteOffer = nil; remoteSave?.cancel(); remoteSignature = ""; localChange = .distantPast; unsynced = false
         cancelSleepTimer()
+        prefetcher.clear()
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
@@ -408,11 +415,19 @@ final class PlayerModel {
         endFade()
         let asset: AVURLAsset
         timeOffset = 0
+        playingPreloaded = false
+        let streaming = (app?.streamingQuality ?? .lossless).resolved(for: song)
         if let local = app?.downloads.localURL(song.id) {
             asset = AVURLAsset(url: local) // downloaded: plays without network
             streamQuality = nil
             qualityLabel = app?.downloads.qualityLabel(song)
             playingDownload = true
+        } else if let file = prefetcher.localFile(account: client.account.id, song: song, quality: streaming) {
+            asset = AVURLAsset(url: file) // loaded ahead: a whole file, so seeking works without asking the server
+            streamQuality = nil
+            qualityLabel = streaming.label(for: song)
+            playingDownload = false
+            playingPreloaded = true
         } else {
             let quality = (app?.streamingQuality ?? .lossless).resolved(for: song)
             let offset = quality.format != nil && startAt > 1 ? Int(startAt) : 0
@@ -459,7 +474,20 @@ final class PlayerModel {
         updateNowPlaying()
         loadArtwork(for: song, client: client)
         persist()
+        if autoplay { preload() } // not for a queue restored on start that may never be played
     }
+
+    // MARK: Loading ahead
+
+    /// Loads the next songs of the queue in the background (downloaded ones don't need it).
+    private func preload() {
+        guard let app, let client = app.client else { return }
+        let count = app.preloadCount
+        let upcoming = count == 0 || index < 0 ? [] : queue.dropFirst(index + 1).prefix(count).filter { app.downloads.localURL($0.id) == nil }
+        prefetcher.update(current: current, upcoming: Array(upcoming), client: client, quality: app.streamingQuality)
+    }
+
+    func preloadChanged() { if current != nil { preload() } }
 
     // MARK: Crossfade
 
@@ -503,7 +531,7 @@ final class PlayerModel {
 
     /// The server address changed (arriving home or leaving): a stream continues from the new one at the same spot.
     func addressChanged() {
-        guard current != nil, player.currentItem != nil, !playingDownload else { return }
+        guard current != nil, player.currentItem != nil, !playingDownload, !playingPreloaded else { return }
         if isPlaying {
             load(autoplay: true, startAt: position)
         } else {

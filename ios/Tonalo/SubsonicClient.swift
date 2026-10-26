@@ -204,6 +204,15 @@ struct SubsonicClient {
         }
     }
 
+    /// Like `call`, but always from the server and saved for later – for syncing the whole library.
+    /// No fallback to the saved answer, so a sync without connection fails instead of pretending.
+    func refresh(_ method: String, _ params: [String: String] = [:]) async throws -> Payload {
+        guard let u = url(method, params) else { throw SubsonicError.badURL }
+        let (payload, data) = try await sendRaw(request(u))
+        if let key = LibraryCache.key(method, params) { LibraryCache.save(data, account.id, key) }
+        return payload
+    }
+
     /// The saved answer of a library request, without asking the server – for showing a page at once.
     func cached(_ method: String, _ params: [String: String] = [:]) -> Payload? {
         LibraryCache.key(method, params).flatMap { LibraryCache.load(account.id, $0) }

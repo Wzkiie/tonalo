@@ -100,6 +100,8 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 - **Crossfade** between songs, adjustable from 1 to 12 seconds
 - **Audio quality** set separately for Wi-Fi, cellular and downloads: the original files (lossless, FLAC stays FLAC) or converted by your server to AAC, Opus or MP3, with the data an hour of music takes next to each level. Formats the iPhone can't play are converted automatically.
 - **Offline downloads** of songs, albums and playlists, in the background, optionally only on Wi-Fi. Lyrics come along, and scrobbles made offline are sent later.
+- **Library sync**: loads every album, artist and playlist onto the phone in one go, so the whole library opens instantly and offline. Repeat it whenever you like; the app reminds you after a month.
+- **Loading ahead**: the next songs of the queue (1–5, adjustable) are loaded in the background, so a dead spot on the train doesn't stop the music
 - **Address at home**: on Wi-Fi the app talks to your server directly in the home network when it answers, and switches back to the outside address when you leave – mid-song without a gap
 - **Volume leveling** with the ReplayGain tags of your files, per song or per album
 - **Favorites from the lock screen**: a heart button for Control Center and the lock screen (iOS 18+) and a Siri shortcut ("Add this song to my favorites in Tonalo")
