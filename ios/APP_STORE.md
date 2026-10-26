@@ -57,10 +57,26 @@ service token) that are sent to their server. They are stored in the Keychain.
 
 Accounts: the app does not create accounts. It only signs in to an existing
 server, and accounts can be removed from the device in Settings.
+
+Apple Watch: the watch app is a remote control for the iPhone app. It gets
+the current song and the user's playlists from the iPhone over
+WatchConnectivity and never connects to a server itself.
+
+Lock screen button and Siri: a Control Center / lock screen control and an
+App Shortcut ("Add this song to my favorites in Tonalo") mark the playing
+song as a favorite on the user's server.
+
+Home address: users can optionally enter a second address of their server for
+their home network. On Wi-Fi the app uses it when it answers.
+
+Continue on another device: the play queue is saved on the user's own server
+through the standard Subsonic play queue endpoints, so another device can
+pick it up.
 ```
 
 ## Vorher selbst testen
 
 1. Mit dem Demo-Server anmelden, Album abspielen, App in den Hintergrund – Musik läuft weiter, Sperrbildschirm zeigt Cover und Steuerung.
+1. Beim Demo-Server keine Playlists anlegen oder löschen und keine Warteschlange zum Testen stehen lassen – er ist öffentlich und wird von allen geteilt.
 2. In Xcode: **Product → Generate Privacy Report** – darf keine fehlenden Gründe melden.
 3. Archiv bauen (**Product → Archive**) und über **Validate App** prüfen lassen, bevor hochgeladen wird.

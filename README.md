@@ -149,7 +149,9 @@ swift ios/tools/render_covers.swift http://localhost:4599 covers
 MOCK_COVERS=covers node tv/tools/mock_server.js
 ```
 
-Debug builds sign in to that server when launched with `-demoAccount -demoServer http://localhost:4599`, and `-demoQueue` fills the queue without starting playback.
+Debug builds sign in to that server when launched with `-demoAccount -demoServer http://localhost:4599`, and `-demoQueue` fills the queue without starting playback. `-demoHome <url>` and `-demoHeader Name=value` set a home address and a custom header, to try both routes.
+
+The demo server has a few switches for testing: `MOCK_SILENT=1` streams silence, `MOCK_LOG=1` prints every request with the address it came in on, and `MOCK_SLOW=1` makes downloads take about 20 seconds. Start a second one on another port (`node tv/tools/mock_server.js 4598`) to stand in for the home address.
 
 The screenshots in this README use a made-up demo library (`tv/tools/mock_server.js`), not real artists.
 
