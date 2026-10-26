@@ -1,11 +1,45 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Tonalo"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Tonalo"
+          }
+        }
+      }
+    },
     "NSLocalNetworkUsageDescription" : {
       "comment" : "Permission prompt for the local network",
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Tonalo verbindet sich mit deinem Musikserver im lokalen Netzwerk." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tonalo connects to your music server on the local network." } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tonalo verbindet sich mit deinem Musikserver im lokalen Netzwerk."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tonalo connects to your music server on the local network."
+          }
+        }
       }
     }
   },

@@ -1,0 +1,5 @@
+// Code signing for running Tonalo on your own iPhone.
+// Put your team ID into Local.xcconfig next to this file (git ignores it), for example:
+//   DEVELOPMENT_TEAM = ABCDE12345
+// Or just pick your team in Xcode under Signing & Capabilities – then don't commit that change.
+#include? "Local.xcconfig"
