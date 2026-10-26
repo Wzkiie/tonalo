@@ -174,6 +174,10 @@ extension WatchBridge: WCSessionDelegate {
     nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
     nonisolated func sessionDidDeactivate(_ session: WCSession) { WCSession.default.activate() }
 
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+        Task { @MainActor in self.lastSent = nil; self.push() }
+    }
+
     nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
         Task { @MainActor in self.lastSent = nil; self.push() }
     }

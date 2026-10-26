@@ -90,6 +90,15 @@ final class PlayerModel {
         load(autoplay: true)
     }
 
+    /// Puts songs in the queue without starting playback.
+    func cue(_ songs: [Song], context: Context? = nil) {
+        guard !songs.isEmpty else { return }
+        queue = songs; index = 0; position = 0; original = nil; shuffle = false
+        self.context = context
+        duration = Double(songs[0].duration ?? 0)
+        persist()
+    }
+
     /// True while this album/playlist/… is what the queue was started from.
     func isPlaying(from kind: Context.Kind, id: String?) -> Bool {
         isPlaying && context?.kind == kind && context?.id == id

@@ -56,6 +56,12 @@ final class AppModel {
         downloads.app = self
         downloads.reload()
         player.restore()
+        #if DEBUG
+        // Test hook: -demoQueue fills an empty queue with a few songs, paused – for testing the watch silently
+        if ProcessInfo.processInfo.arguments.contains("-demoQueue"), player.current == nil, let client {
+            Task { if let songs = try? await client.randomSongs(8) { player.cue(songs, context: .init(kind: .mix, name: "Demo")) } }
+        }
+        #endif
         monitor.pathUpdateHandler = { [weak self] path in
             let online = path.status == .satisfied
             let cellular = online && path.usesInterfaceType(.cellular)

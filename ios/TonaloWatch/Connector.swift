@@ -75,6 +75,10 @@ final class Connector: NSObject {
     }
 
     private func request(_ message: [String: Any]) async -> [String: Any]? {
+        // Right after launch the session may still be connecting – give it a moment
+        for _ in 0..<30 where WCSession.default.activationState != .activated || !WCSession.default.isReachable {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
         guard WCSession.default.activationState == .activated else { error = String(localized: "Not connected to your iPhone."); return nil }
         nonisolated(unsafe) let message = message
         return await withCheckedContinuation { (done: CheckedContinuation<[String: Any]?, Never>) in

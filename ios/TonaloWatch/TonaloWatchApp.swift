@@ -5,7 +5,12 @@ import WatchKit
 struct TonaloWatchApp: App {
     @State private var connector = Connector.shared
 
-    init() { Connector.shared.start() }
+    init() {
+        Connector.shared.start()
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-library") { Connector.shared.page = 1 } // simulator test hook
+        #endif
+    }
 
     var body: some Scene {
         WindowGroup {
