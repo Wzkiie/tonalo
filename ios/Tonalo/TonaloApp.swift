@@ -3,6 +3,11 @@ import UIKit
 
 /// Lets iOS hand finished background downloads back to the app.
 final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        MainActor.assumeIsolated { WatchBridge.shared.start() }
+        return true
+    }
+
     func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String,
                      completionHandler: @escaping () -> Void) {
         DownloadSession.shared.backgroundCompletion = completionHandler

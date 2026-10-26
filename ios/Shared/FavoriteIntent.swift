@@ -1,3 +1,4 @@
+#if os(iOS)
 import AppIntents
 
 /// Adds the song that is playing to the favorite songs. Used by the lock screen / Control Center button
@@ -20,3 +21,4 @@ struct FavoriteCurrentSongIntent: AudioPlaybackIntent {
         #endif
     }
 }
+#endif
