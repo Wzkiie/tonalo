@@ -166,6 +166,7 @@ struct NowPlayingView: View {
             // Downloaded songs bring their lyrics along – works offline and shows up instantly
             if let saved = app.downloads.localLyrics(id) { lyrics = saved; return }
             lyrics = await app.client?.lyrics(id)
+            if let lyrics, p.current?.id == id { app.downloads.storeLyrics(lyrics, for: id) } // older downloads catch up
         }
         .task(id: p.current?.coverArt ?? p.current?.albumId) {
             if let c = await loadCoverColor(app, p.current?.coverArt ?? p.current?.albumId) { withAnimation(.easeOut(duration: 0.5)) { tint = c } }

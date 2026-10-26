@@ -148,11 +148,15 @@ final class AppModel {
     }
 
     private func setAtHome(_ value: Bool) {
+        // Away from home: downloads started at home (maybe before the app was even opened) can't finish there
+        if !value, let home = current?.localURL.flatMap({ URL(string: $0)?.host }), home != current?.host {
+            downloads.restartTasks(onHost: home)
+        }
         guard value != atHome else { return }
         atHome = value
-        // Running streams and downloads still use the old address – move them over
-        player.addressChanged()
-        downloads.requeue()
+        // Leaving home: a stream from the home address breaks – continue it from the outside one.
+        // Arriving home needs nothing: the outside address keeps working, new requests go home anyway.
+        if !value { player.addressChanged() }
     }
 
     func select(_ id: UUID) {
@@ -178,8 +182,10 @@ final class AppModel {
         if account.id == currentId {
             currentId = accounts.first?.id
             UserDefaults.standard.set(currentId?.uuidString, forKey: "currentAccount")
+            atHome = false
             downloads.reload()
             player.restore()
+            checkRoute()
         }
     }
 

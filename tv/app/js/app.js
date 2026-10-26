@@ -451,20 +451,25 @@ var App = (function () {
   }
 
   // Lief zuletzt auf einem anderen Gerät (z. B. dem iPhone) etwas, kann der TV dort weitermachen
-  var offerOpen = false;
+  var offerModal = null; // das offene „Weiterhören?“-Fenster, sonst null
   function offerRemoteQueue() {
-    if (!account || (UI.modalOpen() && !offerOpen)) return;
+    if (!account || (UI.modalOpen() && !offerModal)) return;
     Player.checkRemote().then(function (o) {
       if (!o) return;
-      // Ein noch offenes älteres Angebot durch das aktuelle ersetzen, sonst andere Dialoge nicht stören
-      if (UI.modalOpen()) { if (!offerOpen) return; UI.closeModal(); }
+      // Ein älteres Angebot durch das aktuelle ersetzen – andere offene Dialoge aber nie anfassen
+      if (offerModal) offerModal.close();
+      else if (UI.modalOpen()) return;
       var s = o.songs[o.index];
-      offerOpen = true;
-      UI.modal(null, [
-        { icon: 'play', label: T('Hier weiterhören'), action: function () { offerOpen = false; Player.take(o, true); } },
-        { icon: 'close', label: T('Nein, danke'), action: function () { offerOpen = false; Player.dismissRemote(o); } }
+      var m = UI.modal(null, [
+        { icon: 'play', label: T('Hier weiterhören'), action: function () { Player.take(o, true); } },
+        { icon: 'close', label: T('Nein, danke'), action: function () { Player.dismissRemote(o); } }
       ], { head: { coverId: s.coverArt || s.albumId, title: T('Weiterhören vom {device}?', { device: o.device }),
         sub: s.title + (s.artist ? ' · ' + s.artist : '') } });
+      offerModal = m;
+      // Egal wie es zugeht (Knopf, Zurück-Taste, ersetzt): danach gilt es als geschlossen
+      var close = m.close;
+      m.close = function () { if (offerModal === m) offerModal = null; close(); };
+      m.box.addEventListener('click', function () { if (offerModal === m) offerModal = null; });
     });
   }
 

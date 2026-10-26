@@ -69,6 +69,8 @@ final class PlayerModel {
     private(set) var sleepAt: Date?
     private(set) var sleepAfterSong = false
     @ObservationIgnored private var sleepTask: Task<Void, Never>?
+    /// The sleep timer is turning the volume down – no crossfade into the next song now.
+    @ObservationIgnored private var fadingOut = false
     /// When this device last changed the queue or position – compared with the server's copy.
     @ObservationIgnored private var localChange = Date.distantPast
     @ObservationIgnored private var remoteSignature = ""
@@ -189,7 +191,7 @@ final class PlayerModel {
     func toggle() {
         guard current != nil else { return }
         if player.currentItem == nil { load(autoplay: true, startAt: position); return }
-        if isPlaying { endFade(); player.pause(); persist(); syncToServer(force: true) } else { activateSession(); player.play() }
+        if isPlaying { endFade(); player.pause(); persist(); syncToServer(force: true) } else { remoteOffer = nil; activateSession(); player.play() }
     }
 
     func seek(to seconds: Double) {
@@ -260,6 +262,7 @@ final class PlayerModel {
     private func fadeOutAndPause() {
         guard isPlaying else { return }
         endFade()
+        fadingOut = true
         let start = Date(), from = gain
         fadeTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
             MainActor.assumeIsolated {
@@ -269,6 +272,7 @@ final class PlayerModel {
                 if t >= 1 {
                     timer.invalidate()
                     self.fadeTimer = nil
+                    self.fadingOut = false
                     self.player.pause()
                     self.player.volume = self.gain
                     self.persist()
@@ -483,6 +487,7 @@ final class PlayerModel {
     private func endFade() {
         fadeTimer?.invalidate()
         fadeTimer = nil
+        fadingOut = false
         fading?.pause()
         fading?.replaceCurrentItem(with: nil)
         fading = nil
@@ -530,7 +535,7 @@ final class PlayerModel {
         }
         if Int(seconds) % 10 == 0 { persist() }
         let fade = Double(app?.crossfade ?? 0)
-        if fade > 0, fading == nil, !sleepAfterSong, isPlaying, repeatMode != .one, duration > fade * 2, seconds >= duration - fade {
+        if fade > 0, fading == nil, !sleepAfterSong, !fadingOut, isPlaying, repeatMode != .one, duration > fade * 2, seconds >= duration - fade {
             startCrossfade()
         }
     }

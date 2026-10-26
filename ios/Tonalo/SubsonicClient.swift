@@ -47,7 +47,8 @@ struct SubsonicClient {
     static func normalizeLocal(_ address: String) -> String? {
         let s = address.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !s.isEmpty else { return nil }
-        return normalize(s.lowercased().hasPrefix("http") ? s : "http://" + s)
+        let hasScheme = s.lowercased().hasPrefix("http://") || s.lowercased().hasPrefix("https://")
+        return normalize(hasScheme ? s : "http://" + s)
     }
 
     static func normalize(_ address: String) -> String {
@@ -75,6 +76,8 @@ struct SubsonicClient {
         ]
         items += extra
         comps.queryItems = items
+        // URLComponents leaves "+" alone, but servers read it as a space ("Simon + Garfunkel" would lose its plus)
+        comps.percentEncodedQuery = comps.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         return comps.url
     }
 
@@ -100,8 +103,7 @@ struct SubsonicClient {
         var r = request(endpoint)
         r.httpMethod = "POST"
         r.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        // In a form body "+" means a space, so it has to be escaped as well
-        r.httpBody = Data(query.replacingOccurrences(of: "+", with: "%2B").utf8)
+        r.httpBody = Data(query.utf8) // "+" is already escaped by url(), see there
         do {
             return try await send(r)
         } catch SubsonicError.server(let code, let message) {

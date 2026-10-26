@@ -125,7 +125,14 @@ function handle(req, res, u) {
     if (m === 'stream' || m === 'download') {
       // Byte ranges like a real server – AVPlayer on iOS refuses streams without them
       const r = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
-      if (!r) { res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': WAV.length, 'Accept-Ranges': 'bytes' }); return res.end(WAV); }
+      if (!r) {
+        res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': WAV.length, 'Accept-Ranges': 'bytes' });
+        if (!process.env.MOCK_SLOW) return res.end(WAV);
+        // MOCK_SLOW=1: whole-file requests (downloads) trickle in over ~20 s, to test what happens mid-download
+        let at = 0;
+        const step = () => { if (res.destroyed) return; const next = Math.min(at + 36000, WAV.length); res.write(WAV.subarray(at, next)); at = next; if (at < WAV.length) setTimeout(step, 500); else res.end(); };
+        return step();
+      }
       const start = r[1] ? +r[1] : WAV.length - +r[2], end = r[1] && r[2] ? Math.min(+r[2], WAV.length - 1) : WAV.length - 1;
       res.writeHead(206, { 'Content-Type': 'audio/wav', 'Content-Length': end - start + 1, 'Accept-Ranges': 'bytes', 'Content-Range': `bytes ${start}-${end}/${WAV.length}` });
       return res.end(WAV.subarray(start, end + 1));

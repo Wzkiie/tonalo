@@ -246,7 +246,37 @@ final class DownloadStore {
         }
     }
 
-    /// Starts unfinished downloads again – also when the server address changes (leaving home, for example).
+    /// Starts the unfinished downloads that talk to `host` again – they now get the current address.
+    func restartTasks(onHost host: String) {
+        let account = accountKey
+        DownloadSession.shared.session.getAllTasks { tasks in
+            let ids = Set(tasks.compactMap { t -> String? in
+                let parts = (t.taskDescription ?? "").components(separatedBy: "|")
+                guard parts.count == 3, parts[0] == account, t.originalRequest?.url?.host == host else { return nil }
+                return parts[1]
+            })
+            guard !ids.isEmpty else { return }
+            Task { @MainActor in
+                let songs = ids.compactMap { self.index.queued[$0] }
+                self.cancelTasks(ids) {
+                    Task { @MainActor in
+                        for s in songs { self.index.queued.removeValue(forKey: s.id) }
+                        self.download(songs)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Lyrics fetched while playing a song that was downloaded before lyrics were saved along.
+    func storeLyrics(_ lyrics: Lyrics, for songId: String) {
+        guard let key = accountKey, isDownloaded(songId), let data = try? JSONEncoder().encode(lyrics) else { return }
+        let dest = Self.lyricsFile(account: key, id: songId)
+        try? FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? data.write(to: dest, options: .atomic)
+    }
+
+    /// Starts unfinished downloads again with the current settings (e.g. after allowing cellular).
     func requeue() {
         let songs = Array(index.queued.values)
         guard !songs.isEmpty else { return }
