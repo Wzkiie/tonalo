@@ -98,7 +98,7 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 - **Continue on another device**: started on the TV, finished on the iPhone – the app offers to pick up the queue another device left on your server
 - **Playlists**: create, rename and delete them, add songs from any menu (with a warning for duplicates), remove and reorder songs
 - **Crossfade** between songs, adjustable from 1 to 12 seconds
-- **Audio quality** set separately for Wi-Fi, cellular and downloads: lossless (your files as they are, FLAC stays FLAC) or converted by your server to AAC or MP3. Formats the iPhone can't play are converted automatically.
+- **Audio quality** set separately for Wi-Fi, cellular and downloads: the original files (lossless, FLAC stays FLAC) or converted by your server to AAC, Opus or MP3, with the data an hour of music takes next to each level. Formats the iPhone can't play are converted automatically.
 - **Offline downloads** of songs, albums and playlists, in the background, optionally only on Wi-Fi. Lyrics come along, and scrobbles made offline are sent later.
 - **Address at home**: on Wi-Fi the app talks to your server directly in the home network when it answers, and switches back to the outside address when you leave – mid-song without a gap
 - **Volume leveling** with the ReplayGain tags of your files, per song or per album

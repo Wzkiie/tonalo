@@ -207,6 +207,7 @@ struct ProfileMenu: View {
     let close: () -> Void
     @State private var shown = false
     @State private var adding = false
+    @State private var confirmLogout = false
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -232,6 +233,12 @@ struct ProfileMenu: View {
                 row(label: Text("Downloads")) { Image(systemName: "arrow.down.circle").font(.system(size: 22)) } action: { ui.open(.downloads) }
                 row(label: Text("Settings")) { Image(systemName: "gearshape").font(.system(size: 22)) } action: { ui.open(.settings) }
                 Spacer()
+                row(label: Text("Log out")) {
+                    Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 20))
+                } action: { confirmLogout = true }
+                .foregroundStyle(Color.subtle)
+                .padding(.bottom, 8)
+                .logoutDialog(isPresented: $confirmLogout, done: dismiss)
             }
             .padding(.horizontal, 20)
             .padding(.top, 24)

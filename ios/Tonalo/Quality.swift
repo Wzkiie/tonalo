@@ -25,49 +25,75 @@ enum VolumeLeveling: String, CaseIterable, Identifiable {
     }
 }
 
-/// Audio quality for streaming and downloads. "Lossless" sends the files as they are (FLAC stays FLAC);
-/// everything else is converted by the server. Navidrome converts to MP3 and AAC – for any other
-/// format it falls back to Opus in an OGG container, which older iOS versions can't play, so only those two are used.
+/// Audio quality for streaming and downloads. "Original" sends the files as they are (FLAC stays FLAC);
+/// everything else is converted by the server. Navidrome converts to AAC, Opus (in an OGG container) and MP3 –
+/// any other format falls back to Opus, so lossless conversion isn't possible and only original files are lossless.
 enum AudioQuality: String, CaseIterable, Identifiable, Codable {
     case lossless
     case aac256, aac192, aac128, aac96
+    case opus192, opus128, opus96
     case mp3320, mp3192, mp3128
 
     var id: String { rawValue }
 
-    /// Server format, nil = original file
-    var format: String? {
+    enum Codec: String, CaseIterable, Identifiable {
+        case original, aac, opus, mp3
+        var id: String { rawValue }
+        var name: String {
+            switch self {
+            case .original: String(localized: "Original")
+            case .aac: "AAC"
+            case .opus: "Opus"
+            case .mp3: "MP3"
+            }
+        }
+        /// Opus needs a newer iOS (OGG playback), asked at runtime.
+        var available: Bool { self != .opus || AudioQuality.playable.contains("opus") }
+        var levels: [AudioQuality] { AudioQuality.allCases.filter { $0.codec == self } }
+    }
+
+    var codec: Codec {
         switch self {
-        case .lossless: nil
-        case .aac256, .aac192, .aac128, .aac96: "aac"
-        case .mp3320, .mp3192, .mp3128: "mp3"
+        case .lossless: .original
+        case .aac256, .aac192, .aac128, .aac96: .aac
+        case .opus192, .opus128, .opus96: .opus
+        case .mp3320, .mp3192, .mp3128: .mp3
         }
     }
+
+    /// Server format, nil = original file
+    var format: String? { codec == .original ? nil : codec.rawValue }
 
     var bitRate: Int {
         switch self {
         case .lossless: 0
         case .aac256: 256
-        case .aac192: 192
-        case .aac128: 128
-        case .aac96: 96
+        case .aac192, .opus192, .mp3192: 192
+        case .aac128, .opus128, .mp3128: 128
+        case .aac96, .opus96: 96
         case .mp3320: 320
-        case .mp3192: 192
-        case .mp3128: 128
         }
     }
 
-    var title: String {
-        switch self {
-        case .lossless: String(localized: "Lossless (original files)")
-        case .aac256: String(localized: "Very high · AAC 256 kbit/s")
-        case .aac192: String(localized: "High · AAC 192 kbit/s")
-        case .aac128: String(localized: "Normal · AAC 128 kbit/s")
-        case .aac96: String(localized: "Data saver · AAC 96 kbit/s")
-        case .mp3320: "MP3 320 kbit/s"
-        case .mp3192: "MP3 192 kbit/s"
-        case .mp3128: "MP3 128 kbit/s"
+    /// "AAC 256 kbit/s" – what the settings show.
+    var title: String { codec == .original ? codec.name : "\(codec.name) \(bitRate) kbit/s" }
+
+    /// The bitrate on its own, for the rows under a codec heading.
+    var rateTitle: String { codec == .original ? String(localized: "Original files") : "\(bitRate) kbit/s" }
+
+    /// How good it sounds and how much data an hour of music takes.
+    var detail: String {
+        guard codec != .original else { return String(localized: "Lossless · FLAC stays FLAC, largest files") }
+        // Opus sounds as good as AAC and MP3 at a lower bitrate
+        let rate = codec == .opus ? bitRate * 3 / 2 : bitRate
+        let level = switch rate {
+        case 256...: String(localized: "Highest quality")
+        case 192...: String(localized: "High quality")
+        case 128...: String(localized: "Standard quality")
+        default: String(localized: "Data saver")
         }
+        let perHour = Int((Double(bitRate) * 3600 / 8 / 1000 / 5).rounded()) * 5
+        return String(localized: "\(level) · about \(perHour) MB per hour")
     }
 
     /// Formats this iPhone plays itself; anything else (WMA, APE, WavPack, DSD …) is converted.
@@ -80,18 +106,19 @@ enum AudioQuality: String, CaseIterable, Identifiable, Codable {
 
     /// The quality actually used for a song: lossless only works for files the iPhone can play.
     func resolved(for song: Song) -> AudioQuality {
+        if codec == .opus && !codec.available { return .aac192 }
         guard self == .lossless else { return self }
         return Self.playable.contains((song.suffix ?? "").lowercased()) ? .lossless : .aac256
     }
 
     /// File extension of the result, so iOS recognizes downloaded files.
     func fileExtension(for song: Song) -> String {
-        format ?? (song.suffix?.lowercased() ?? "audio")
+        codec == .opus ? "ogg" : format ?? (song.suffix?.lowercased() ?? "audio")
     }
 
     /// Short label for the player, e.g. "FLAC" or "AAC 256".
     func label(for song: Song) -> String {
-        if let format { return "\(format.uppercased()) \(bitRate)" }
+        if codec != .original { return "\(codec.name.uppercased()) \(bitRate)" }
         let suffix = (song.suffix ?? "").uppercased()
         if let rate = song.bitRate, ["MP3", "M4A", "AAC", "MP4"].contains(suffix) { return "\(suffix) \(rate)" }
         return suffix.isEmpty ? String(localized: "Original") : suffix

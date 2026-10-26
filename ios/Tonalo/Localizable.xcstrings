@@ -17,6 +17,16 @@
         }
       }
     },
+    "%@ · about %lld MB per hour": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · ca. %2$lld MB pro Stunde"
+          }
+        }
+      }
+    },
     "%lld": {
       "shouldTranslate": false
     },
@@ -47,16 +57,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld Std. %lld Min."
-          }
-        }
-      }
-    },
-    "%lld headers": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Header"
           }
         }
       }
@@ -262,12 +262,12 @@
         }
       }
     },
-    "Address at home (optional)": {
+    "Address at home": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adresse zuhause (optional)"
+            "value": "Adresse im Heimnetz"
           }
         }
       }
@@ -278,6 +278,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fügt den Song, der gerade in Tonalo läuft, zu deinen Lieblingssongs hinzu."
+          }
+        }
+      }
+    },
+    "Advanced": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erweitert"
           }
         }
       }
@@ -393,6 +403,16 @@
         }
       }
     },
+    "Audio quality": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audioqualität"
+          }
+        }
+      }
+    },
     "A–Z": {
       "localizations": {
         "de": {
@@ -469,6 +489,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Download abbrechen?"
+          }
+        }
+      }
+    },
+    "Cellular": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mobilfunk"
           }
         }
       }
@@ -553,6 +583,16 @@
         }
       }
     },
+    "Converted by your server. Plays everywhere and sounds better than MP3 at the same bitrate.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vom Server umgewandelt. Läuft überall und klingt bei gleicher Bitrate besser als MP3."
+          }
+        }
+      }
+    },
     "Couldn’t reach your music server.": {
       "localizations": {
         "de": {
@@ -624,12 +664,12 @@
         }
       }
     },
-    "Data saver · AAC 96 kbit/s": {
+    "Data saver": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Datensparend · AAC 96 kbit/s"
+            "value": "Datensparend"
           }
         }
       }
@@ -744,6 +784,16 @@
         }
       }
     },
+    "Downloaded music": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heruntergeladene Musik"
+          }
+        }
+      }
+    },
     "Downloading": {
       "extractionState": "stale",
       "localizations": {
@@ -771,6 +821,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Downloads"
+          }
+        }
+      }
+    },
+    "Downloads and everything Tonalo keeps for this account are deleted from this iPhone. Nothing changes on your server.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloads und alles, was Tonalo für dieses Konto speichert, werden von diesem iPhone gelöscht. Auf deinem Server ändert sich nichts."
           }
         }
       }
@@ -875,6 +935,26 @@
         }
       }
     },
+    "For servers that don’t convert to AAC or Opus.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für Server, die nicht in AAC oder Opus umwandeln."
+          }
+        }
+      }
+    },
+    "Formats the iPhone can’t play, such as WMA or APE, are converted to AAC 256 by your server.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formate, die das iPhone nicht abspielen kann (z. B. WMA oder APE), wandelt dein Server in AAC 256 um."
+          }
+        }
+      }
+    },
     "Go to album": {
       "localizations": {
         "de": {
@@ -959,12 +1039,22 @@
         }
       }
     },
-    "High · AAC 192 kbit/s": {
+    "High quality": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hoch · AAC 192 kbit/s"
+            "value": "Hohe Qualität"
+          }
+        }
+      }
+    },
+    "Highest quality": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höchste Qualität"
           }
         }
       }
@@ -985,6 +1075,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reihen auf der Startseite"
+          }
+        }
+      }
+    },
+    "Its downloads and everything Tonalo keeps for it are deleted from this iPhone. Nothing changes on your server.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seine Downloads und alles, was Tonalo dafür speichert, werden von diesem iPhone gelöscht. Auf deinem Server ändert sich nichts."
           }
         }
       }
@@ -1029,6 +1129,26 @@
         }
       }
     },
+    "Log out": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abmelden"
+          }
+        }
+      }
+    },
+    "Log out of %@?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Von %@ abmelden?"
+          }
+        }
+      }
+    },
     "Login": {
       "localizations": {
         "de": {
@@ -1039,22 +1159,12 @@
         }
       }
     },
-    "Lossless (original files)": {
+    "Lossless · FLAC stays FLAC, largest files": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verlustfrei (Originaldateien)"
-          }
-        }
-      }
-    },
-    "Lossless plays your files unchanged, FLAC stays FLAC. Formats the iPhone can’t play are converted to AAC 256 by your server. Crossfade blends the end of a song into the next one. Volume leveling uses the ReplayGain tags of your files.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verlustfrei spielt deine Dateien unverändert ab, FLAC bleibt FLAC. Formate, die das iPhone nicht abspielen kann, wandelt dein Server in AAC 256 um. Überblenden lässt das Ende eines Songs in den nächsten übergehen. Die Lautstärkeanpassung nutzt die ReplayGain-Tags deiner Dateien."
+            "value": "Verlustfrei · FLAC bleibt FLAC, größte Dateien"
           }
         }
       }
@@ -1189,12 +1299,12 @@
         }
       }
     },
-    "Normal · AAC 128 kbit/s": {
+    "None": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Normal · AAC 128 kbit/s"
+            "value": "Keine"
           }
         }
       }
@@ -1279,12 +1389,12 @@
         }
       }
     },
-    "On Wi-Fi, Tonalo uses this address whenever it answers – faster, and without your proxy. Custom headers aren’t sent to it.": {
+    "On Wi-Fi, Tonalo uses this address whenever it answers – faster, and without your proxy. Custom headers aren’t sent to it. Leave it empty to always use the server address.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Im WLAN nutzt Tonalo diese Adresse, sobald sie antwortet – schneller und ohne deinen Proxy. Eigene Header werden an sie nicht gesendet."
+            "value": "Im WLAN nutzt Tonalo diese Adresse, sobald sie antwortet – schneller und ohne deinen Proxy. Eigene Header werden an sie nicht gesendet. Leer lassen, um immer die Serveradresse zu nutzen."
           }
         }
       }
@@ -1305,6 +1415,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Original"
+          }
+        }
+      }
+    },
+    "Original files": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Originaldateien"
           }
         }
       }
@@ -1629,6 +1749,16 @@
         }
       }
     },
+    "Remove account": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konto entfernen"
+          }
+        }
+      }
+    },
     "Remove download": {
       "localizations": {
         "de": {
@@ -1659,6 +1789,16 @@
         }
       }
     },
+    "Remove this account?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Konto entfernen?"
+          }
+        }
+      }
+    },
     "Rename": {
       "localizations": {
         "de": {
@@ -1685,16 +1825,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wiederholen"
-          }
-        }
-      }
-    },
-    "Report played songs (scrobble)": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gehörte Songs melden (Scrobbeln)"
           }
         }
       }
@@ -1745,6 +1875,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Speichern"
+          }
+        }
+      }
+    },
+    "Scrobble played songs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gehörte Songs scrobbeln"
           }
         }
       }
@@ -1909,6 +2049,16 @@
         }
       }
     },
+    "Standard quality": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standardqualität"
+          }
+        }
+      }
+    },
     "Start screen": {
       "localizations": {
         "de": {
@@ -1970,6 +2120,26 @@
         }
       }
     },
+    "Swipe left to remove a header.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Entfernen eines Headers nach links wischen."
+          }
+        }
+      }
+    },
+    "Switch": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wechseln"
+          }
+        }
+      }
+    },
     "Switch user": {
       "extractionState": "stale",
       "localizations": {
@@ -1997,6 +2167,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Die Anmeldung konnte auf diesem Gerät nicht sicher gespeichert werden."
+          }
+        }
+      }
+    },
+    "The most efficient codec: the best sound for the least data. Converted by your server.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der effizienteste Codec: bester Klang bei wenig Daten. Vom Server umgewandelt."
           }
         }
       }
@@ -2041,12 +2221,12 @@
         }
       }
     },
-    "This address uses http, so these headers would travel unencrypted over the internet. Use https.": {
+    "This address uses http, so your custom headers would travel unencrypted over the internet. Use https.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diese Adresse nutzt http – die Header würden unverschlüsselt durchs Internet gehen. Nutze https."
+            "value": "Diese Adresse nutzt http, deine eigenen Header würden also unverschlüsselt durchs Internet gehen. Nutze https."
           }
         }
       }
@@ -2185,22 +2365,22 @@
         }
       }
     },
-    "Very high · AAC 256 kbit/s": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sehr hoch · AAC 256 kbit/s"
-          }
-        }
-      }
-    },
     "Volume leveling": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Lautstärke angleichen"
+          }
+        }
+      }
+    },
+    "Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Lautstärkeangleichung nutzt die ReplayGain-Tags deiner Dateien. Beim Scrobbeln erfährt dein Server, was du gehört hast."
           }
         }
       }
@@ -2251,6 +2431,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wer hört gerade?"
+          }
+        }
+      }
+    },
+    "Wi-Fi": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WLAN"
           }
         }
       }
