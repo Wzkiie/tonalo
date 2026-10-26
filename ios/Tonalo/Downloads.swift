@@ -203,7 +203,7 @@ final class DownloadStore {
         Task.detached {
             var req = URLRequest(url: url)
             for (k, v) in client.headers { req.setValue(v, forHTTPHeaderField: k) }
-            guard let (data, resp) = try? await URLSession.shared.data(for: req),
+            guard let (data, resp) = try? await ServerSession.shared.session.data(for: req),
                   (resp as? HTTPURLResponse)?.statusCode == 200 else { return }
             try? FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? data.write(to: dest, options: .atomic)
@@ -427,6 +427,12 @@ final class DownloadSession: NSObject, URLSessionDownloadDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         guard let error, let info = parse(task), (error as? URLError)?.code != .cancelled else { return }
         Task { @MainActor in DownloadStore.shared.didFail(account: info.account, songId: info.songId) }
+    }
+
+    /// Custom headers (secrets) must not follow a redirect to another host.
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
+        completionHandler(task.originalRequest?.url?.host == request.url?.host ? request : nil)
     }
 
     func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {

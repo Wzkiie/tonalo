@@ -16,7 +16,7 @@ actor ImageLoader {
         let task = Task<UIImage?, Never> {
             var req = URLRequest(url: url)
             for (k, v) in headers { req.setValue(v, forHTTPHeaderField: k) }
-            guard let (data, _) = try? await URLSession.shared.data(for: req) else { return nil }
+            guard let (data, _) = try? await ServerSession.shared.session.data(for: req) else { return nil }
             return UIImage(data: data)
         }
         running[url] = task

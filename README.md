@@ -155,6 +155,12 @@ The demo server has a few switches for testing: `MOCK_SILENT=1` streams silence,
 
 The screenshots in this README use a made-up demo library (`tv/tools/mock_server.js`), not real artists.
 
+## Security
+
+- Your password is never stored. Like every Subsonic client, Tonalo keeps the salted token derived from it, and that token is sent with each request. Anyone who gets hold of it can use your server account (but not learn the password) – so use https for any server reachable from the internet.
+- iPhone: the token and custom headers live in the Keychain, only on that device. Server responses aren't cached on disk, custom headers never follow a redirect to another host, and plain http is only tried automatically for home-network addresses.
+- TV: webOS has no secure storage, so the token sits in the app's local storage. Without a scheme, addresses in the home network use http and all others https.
+
 ## Notes
 
 Tonalo doesn't collect any data – see the [privacy policy](PRIVACY.md). It isn't affiliated with Navidrome, LG or Apple. A good part of the code was written together with an AI coding assistant; everything was tested on a real TV and iPhone.

@@ -5,6 +5,8 @@ import UIKit
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         MainActor.assumeIsolated { WatchBridge.shared.start() }
+        // Earlier versions let iOS cache server responses on disk, login token in the addresses included – remove that
+        URLCache.shared.removeAllCachedResponses()
         return true
     }
 

@@ -196,7 +196,7 @@ function handle(req, res, u) {
     return res.end(JSON.stringify(body));
   }
   const p = path.join(APP, u.pathname === '/' ? 'index.html' : decodeURIComponent(u.pathname));
-  if (!p.startsWith(APP)) { res.writeHead(403); return res.end(); }
+  if (p !== APP && !p.startsWith(APP + path.sep)) { res.writeHead(403); return res.end(); }
   fs.readFile(p, (e, d) => {
     if (e) { res.writeHead(404); return res.end(); }
     const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.json': 'application/json' };

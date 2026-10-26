@@ -2025,6 +2025,26 @@
         }
       }
     },
+    "The server couldn’t be reached over https. If it really only runs on http, type the address with http:// at the start.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Server ist über https nicht erreichbar. Falls er wirklich nur http kann, gib die Adresse mit http:// am Anfang ein."
+          }
+        }
+      }
+    },
+    "This address uses http, so these headers would travel unencrypted over the internet. Use https.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Adresse nutzt http – die Header würden unverschlüsselt durchs Internet gehen. Nutze https."
+          }
+        }
+      }
+    },
     "This playlist is empty. Add songs with “Add to playlist” in a song’s menu.": {
       "localizations": {
         "de": {

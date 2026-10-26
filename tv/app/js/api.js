@@ -5,10 +5,22 @@ var API = (function () {
   var VERSION = '1.16.1';
   var cfg = null; // {url, user, token, salt}
 
+  // Adressen, die es nur im Heimnetz gibt (private IPs, localhost, .local …)
+  function isLocal(u) {
+    var host = String(u || '').replace(/^https?:\/\//i, '').split(/[\/:?#]/)[0].toLowerCase();
+    if (host === 'localhost' || host.indexOf('.') < 0) return true;
+    if (/\.(local|lan|home|home\.arpa|internal|fritz\.box)$/.test(host)) return true;
+    var p = host.split('.').map(Number);
+    if (p.length !== 4 || p.some(isNaN)) return false;
+    return p[0] === 10 || p[0] === 127 || (p[0] === 192 && p[1] === 168) || (p[0] === 172 && p[1] >= 16 && p[1] <= 31) ||
+      (p[0] === 169 && p[1] === 254) || (p[0] === 100 && p[1] >= 64 && p[1] <= 127);
+  }
+
   function normalizeUrl(u) {
     u = String(u || '').trim();
     if (!u) return '';
-    if (!/^https?:\/\//i.test(u)) u = 'http://' + u;
+    // Ohne Angabe: im Heimnetz http, sonst https – damit Zugangsdaten nicht unverschlüsselt durchs Internet gehen
+    if (!/^https?:\/\//i.test(u)) u = (isLocal(u) ? 'http://' : 'https://') + u;
     return u.replace(/\/+$/, '').replace(/\/rest$/, '');
   }
 

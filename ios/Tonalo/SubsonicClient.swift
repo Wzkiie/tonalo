@@ -20,6 +20,25 @@ enum SubsonicError: LocalizedError {
     }
 }
 
+/// Network session for everything that talks to the server.
+/// - No disk cache: Subsonic puts the login token into every address, and iOS would otherwise keep
+///   those addresses (and the responses) in a plain database in the app's Caches folder.
+/// - No redirects to other hosts: custom headers (e.g. a Cloudflare Access secret) must only reach the server itself.
+final class ServerSession: NSObject, URLSessionTaskDelegate {
+    static let shared = ServerSession()
+    private(set) lazy var session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: config, delegate: self, delegateQueue: nil)
+    }()
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest) async -> URLRequest? {
+        task.originalRequest?.url?.host == request.url?.host ? request : nil
+    }
+}
+
 /// Talks to a Subsonic/Navidrome server. Every request carries the account's custom headers.
 struct SubsonicClient {
     let account: Account
@@ -41,6 +60,21 @@ struct SubsonicClient {
         let salt = String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(12)).lowercased()
         let digest = Insecure.MD5.hash(data: Data((password + salt).utf8))
         return (salt, digest.map { String(format: "%02x", $0) }.joined())
+    }
+
+    /// Addresses that only exist in the home network: private IPs, localhost, .local and similar names.
+    /// Only for those is plain http tried automatically – anywhere else that would send the login unencrypted.
+    static func isLocal(_ address: String) -> Bool {
+        guard let host = URL(string: address.contains("://") ? address : "http://" + address)?.host?.lowercased() else { return false }
+        if host == "localhost" || !host.contains(".") && !host.contains(":") { return true }
+        for suffix in [".local", ".lan", ".home", ".home.arpa", ".internal", ".fritz.box"] where host.hasSuffix(suffix) { return true }
+        let p = host.split(separator: ".").compactMap { Int($0) }
+        if p.count == 4 {
+            return p[0] == 10 || p[0] == 127 || (p[0] == 192 && p[1] == 168) || (p[0] == 172 && (16...31).contains(p[1]))
+                || (p[0] == 169 && p[1] == 254) || (p[0] == 100 && (64...127).contains(p[1])) // last: Tailscale & co.
+        }
+        let v6 = host.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+        return v6.hasPrefix("fd") || v6.hasPrefix("fc") || v6.hasPrefix("fe80") || v6 == "::1"
     }
 
     /// Home addresses are usually plain http on the local network.
@@ -114,7 +148,7 @@ struct SubsonicClient {
     }
 
     private func send(_ r: URLRequest) async throws -> Payload {
-        let (data, resp) = try await URLSession.shared.data(for: r)
+        let (data, resp) = try await ServerSession.shared.session.data(for: r)
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         let type = (resp as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type") ?? ""
         guard type.contains("json") else { throw SubsonicError.notSubsonic(status: status) }

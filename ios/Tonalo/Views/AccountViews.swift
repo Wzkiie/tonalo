@@ -114,7 +114,13 @@ struct AccountEditorView: View {
             } header: {
                 Text("Custom headers")
             } footer: {
-                Text("Sent with every request, including streaming and cover art. For Cloudflare Access, create a service token in Zero Trust and paste its Client ID and Client Secret. Values are stored in the Keychain.")
+                VStack(alignment: .leading, spacing: 6) {
+                    if sendsHeadersUnencrypted {
+                        Label("This address uses http, so these headers would travel unencrypted over the internet. Use https.", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                    }
+                    Text("Sent with every request, including streaming and cover art. For Cloudflare Access, create a service token in Zero Trust and paste its Client ID and Client Secret. Values are stored in the Keychain.")
+                }
             }
 
             if let error { Section { Text(error).foregroundStyle(.red) } }
@@ -134,6 +140,12 @@ struct AccountEditorView: View {
             guard let a = account, server.isEmpty else { return }
             server = a.serverURL; username = a.username; headers = a.headers; localServer = a.localURL ?? ""
         }
+    }
+
+    /// Custom headers usually hold secrets – on plain http to a public address anyone on the way could read them.
+    private var sendsHeadersUnencrypted: Bool {
+        server.lowercased().hasPrefix("http://") && !SubsonicClient.isLocal(server)
+            && headers.contains { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
     private func toggleReveal(_ id: UUID) {
@@ -161,9 +173,13 @@ struct AccountEditorView: View {
             try await app.save(acc)
             dismiss()
         } catch let first {
-            // No scheme typed and https didn't connect at all (typical for an IP in the home network): try plain http
+            // No scheme typed and https didn't connect at all (typical for an IP in the home network): try plain http.
+            // Only for home-network addresses – for a public one, someone blocking https could otherwise
+            // make the app send the login and custom headers unencrypted.
             let typedScheme = server.lowercased().contains("://")
-            if !typedScheme, first is URLError {
+            if !typedScheme, first is URLError, !SubsonicClient.isLocal(server) {
+                self.error = String(localized: "The server couldn’t be reached over https. If it really only runs on http, type the address with http:// at the start.")
+            } else if !typedScheme, first is URLError {
                 acc.serverURL = "http://" + acc.serverURL.dropFirst("https://".count)
                 do {
                     try await app.save(acc)
