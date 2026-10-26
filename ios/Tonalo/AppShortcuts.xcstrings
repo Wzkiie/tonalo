@@ -1,26 +1,37 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "Add this song to my favorites in ${applicationName}": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Füg diesen Song in ${applicationName} zu meinen Lieblingssongs hinzu"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Add this song to my favorites in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Füg diesen Song in ${applicationName} zu meinen Lieblingssongs hinzu"
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Add this song to my favorites in ${applicationName}",
+              "Like this song in ${applicationName}"
+            ]
           }
         }
       }
     },
-    "Like this song in ${applicationName}": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Markier diesen Song in ${applicationName} als Lieblingssong"
+    "Like this song in ${applicationName}" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markier diesen Song in ${applicationName} als Lieblingssong"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

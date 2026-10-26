@@ -31,6 +31,7 @@
       }
     },
     "%lld downloads failed. Open the album or playlist and tap the download button to retry.": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -100,15 +101,7 @@
         }
       }
     },
-    "128 kbps": {
-      "shouldTranslate": false
-    },
-    "192 kbps": {
-      "shouldTranslate": false
-    },
-    "320 kbps": {
-      "shouldTranslate": false
-    },
+    "192.168.1.10:4533": {},
     "About": {
       "localizations": {
         "de": {
@@ -591,6 +584,7 @@
       }
     },
     "Crossfade blends the end of a song into the next one.": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -751,6 +745,7 @@
       }
     },
     "Downloading": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -816,6 +811,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ende des Songs"
+          }
+        }
+      }
+    },
+    "Favorite": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lieblingssong"
           }
         }
       }
@@ -1955,6 +1960,7 @@
       }
     },
     "Streaming quality": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -2140,7 +2146,6 @@
       }
     },
     "Up next": {
-      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {

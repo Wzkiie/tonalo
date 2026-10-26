@@ -230,6 +230,7 @@ final class PlayerModel {
     func setStarred(_ song: Song, _ on: Bool) {
         for i in queue.indices where queue[i].id == song.id { queue[i].starred = on ? "1" : nil }
         persist(sync: false) // not a change to the queue – mustn't replace what another device saved
+        updateNowPlaying() // the heart on the lock screen
     }
 
     // MARK: Sleep timer
@@ -599,6 +600,7 @@ final class PlayerModel {
             info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artwork.size) { _ in artwork }
         }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        MPRemoteCommandCenter.shared().likeCommand.isActive = song.starred != nil
     }
 
     private func setupRemoteCommands() {
@@ -608,6 +610,17 @@ final class PlayerModel {
         c.togglePlayPauseCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { self?.toggle() }; return .success }
         c.nextTrackCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { self?.next() }; return .success }
         c.previousTrackCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { self?.previous() }; return .success }
+        // Heart in the lock screen player and Control Center (where iOS shows it): adds to / removes from favorites
+        c.likeCommand.localizedTitle = String(localized: "Add to favorites")
+        c.likeCommand.localizedShortTitle = String(localized: "Favorite")
+        c.likeCommand.isEnabled = true
+        c.likeCommand.addTarget { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let song = self.current, let app = self.app else { return }
+                Task { await app.setFavorite(song, song.starred == nil) }
+            }
+            return .success
+        }
         c.changePlaybackPositionCommand.addTarget { [weak self] e in
             guard let e = e as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             MainActor.assumeIsolated { self?.seek(to: e.positionTime) }
