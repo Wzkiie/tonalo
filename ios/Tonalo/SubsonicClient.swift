@@ -99,6 +99,10 @@ enum LibraryCache {
     static func deleteAccount(_ id: UUID) {
         try? FileManager.default.removeItem(at: root.appendingPathComponent(id.uuidString, isDirectory: true))
     }
+
+    static func size(_ id: UUID) -> Int64 {
+        FileManager.default.size(of: root.appendingPathComponent(id.uuidString, isDirectory: true))
+    }
 }
 
 /// Talks to a Subsonic/Navidrome server. Every request carries the account's custom headers.

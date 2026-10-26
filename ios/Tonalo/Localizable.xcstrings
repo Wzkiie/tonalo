@@ -302,6 +302,16 @@
         }
       }
     },
+    "Album art, so it shows at once. At most 300 MB; the oldest go first.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Albumcover, damit sie sofort erscheinen. Höchstens 300 MB, die ältesten fliegen zuerst raus."
+          }
+        }
+      }
+    },
     "Albums": {
       "localizations": {
         "de": {
@@ -523,6 +533,16 @@
         }
       }
     },
+    "Clear cover cache": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cover-Cache leeren"
+          }
+        }
+      }
+    },
     "Clear filter": {
       "localizations": {
         "de": {
@@ -533,22 +553,22 @@
         }
       }
     },
+    "Clear library cache": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bibliotheks-Cache leeren"
+          }
+        }
+      }
+    },
     "Close": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Schließen"
-          }
-        }
-      }
-    },
-    "Connect to your Navidrome or Subsonic server.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mit deinem Navidrome- oder Subsonic-Server verbinden."
           }
         }
       }
@@ -599,6 +619,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dein Musikserver ist nicht erreichbar."
+          }
+        }
+      }
+    },
+    "Covers": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cover"
           }
         }
       }
@@ -935,6 +965,16 @@
         }
       }
     },
+    "For example music.example.com or 192.168.1.10:4533. Works with Navidrome and other Subsonic servers. Your password isn’t stored – only a salted token, in the Keychain.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Beispiel musik.example.com oder 192.168.1.10:4533. Funktioniert mit Navidrome und anderen Subsonic-Servern. Dein Passwort wird nicht gespeichert – nur ein gesalzenes Token im Schlüsselbund."
+          }
+        }
+      }
+    },
     "For servers that don’t convert to AAC or Opus.": {
       "localizations": {
         "de": {
@@ -1185,6 +1225,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Für dich"
+          }
+        }
+      }
+    },
+    "More options": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weitere Optionen"
           }
         }
       }
@@ -1929,6 +1979,16 @@
         }
       }
     },
+    "Server address": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serveradresse"
+          }
+        }
+      }
+    },
     "Server error (HTTP %lld).": {
       "localizations": {
         "de": {
@@ -2039,6 +2099,16 @@
         }
       }
     },
+    "Songs you downloaded to listen offline.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Songs, die du zum Offline-Hören geladen hast."
+          }
+        }
+      }
+    },
     "Sort": {
       "localizations": {
         "de": {
@@ -2075,6 +2145,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Song-Radio starten"
+          }
+        }
+      }
+    },
+    "Storage": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speicher"
           }
         }
       }
@@ -2157,6 +2237,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Türkis"
+          }
+        }
+      }
+    },
+    "The last state of your albums, playlists and home page, so they open without waiting and offline. It fills up again as you browse.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der letzte Stand deiner Alben, Playlists und Startseite, damit sie ohne Warten und offline öffnen. Füllt sich beim Stöbern wieder."
           }
         }
       }
@@ -2491,6 +2581,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deine Lieblingssongs, gemischt"
+          }
+        }
+      }
+    },
+    "Your music, from your own server.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Musik, von deinem eigenen Server."
           }
         }
       }

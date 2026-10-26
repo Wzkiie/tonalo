@@ -118,3 +118,15 @@ extension UIImage {
         return Color(hue: h, saturation: min(s, 0.6), brightness: max(0.3, min(b, 0.55)))
     }
 }
+
+extension FileManager {
+    /// Bytes the files in a folder take on disk, subfolders included.
+    nonisolated func size(of folder: URL) -> Int64 {
+        guard let files = enumerator(at: folder, includingPropertiesForKeys: [.totalFileAllocatedSizeKey]) else { return 0 }
+        var total: Int64 = 0
+        for case let url as URL in files {
+            total += Int64((try? url.resourceValues(forKeys: [.totalFileAllocatedSizeKey]))?.totalFileAllocatedSize ?? 0)
+        }
+        return total
+    }
+}

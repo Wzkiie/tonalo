@@ -62,21 +62,119 @@ struct AccountEditorView: View {
     @State private var saving = false
     @State private var error: String?
     @State private var confirmRemove = false
+    @State private var showsOptions = false
+    @FocusState private var focus: LoginField.Field?
 
     private var canSave: Bool { !saving && !server.isEmpty && !username.isEmpty && (account != nil || !password.isEmpty) }
     private var namedHeaders: [HeaderField] { headers.filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty } }
 
     var body: some View {
-        Form {
-            if account == nil && app.accounts.isEmpty {
-                Section {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Tonalo").font(.largeTitle.bold())
-                        Text("Connect to your Navidrome or Subsonic server.").foregroundStyle(.secondary)
-                    }
-                    .listRowBackground(Color.clear)
+        if account == nil { login } else { form }
+    }
+
+    /// Signing in: logo, three fields and one big button – the rest hides under "More options".
+    private var login: some View {
+        ScrollView {
+            VStack(spacing: 28) {
+                VStack(spacing: 14) {
+                    TonaloLogo(size: 88)
+                    Text("Tonalo").font(.system(size: 34, weight: .bold))
+                    Text("Your music, from your own server.").font(.callout).foregroundStyle(Color.subtle)
                 }
+                .padding(.top, 28)
+
+                VStack(spacing: 12) {
+                    LoginField(icon: "server.rack", prompt: "Server address", text: $server,
+                               kind: .url, focus: $focus, field: .server) { focus = .username }
+                    LoginField(icon: "person.fill", prompt: "Username", text: $username,
+                               kind: .username, focus: $focus, field: .username) { focus = .password }
+                    LoginField(icon: "lock.fill", prompt: "Password", text: $password,
+                               kind: .password, focus: $focus, field: .password) { if canSave { Task { await save() } } }
+                }
+
+                if let error {
+                    Label(error, systemImage: "exclamationmark.circle.fill")
+                        .font(.footnote).foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Button { focus = nil; Task { await save() } } label: {
+                    ZStack {
+                        if saving { ProgressView().tint(.black) } else { Text("Sign in").font(.headline) }
+                    }
+                    .frame(maxWidth: .infinity).frame(height: 54)
+                    .foregroundStyle(canSave || saving ? Color.black : Color.subtle)
+                    .background(canSave || saving ? Color.accent : Color.elevated, in: Capsule())
+                    .animation(.easeOut(duration: 0.2), value: canSave)
+                }
+                .disabled(!canSave)
+
+                VStack(spacing: 0) {
+                    Button { withAnimation(.easeOut(duration: 0.2)) { showsOptions.toggle() } } label: {
+                        HStack {
+                            Text("More options")
+                            Image(systemName: "chevron.down").font(.caption.bold()).rotationEffect(.degrees(showsOptions ? 180 : 0))
+                        }
+                        .font(.subheadline).foregroundStyle(Color.subtle)
+                    }
+                    if showsOptions {
+                        VStack(spacing: 0) {
+                            NavigationLink { HomeAddressView(address: $localServer) } label: {
+                                optionRow("house.fill", "Address at home", localServer.isEmpty ? String(localized: "Off") : localServer)
+                            }
+                            Divider().padding(.leading, 50)
+                            NavigationLink { HeadersView(headers: $headers, server: server) } label: {
+                                optionRow("key.fill", "Custom headers", namedHeaders.isEmpty ? String(localized: "None") : "\(namedHeaders.count)")
+                            }
+                        }
+                        .background(Color.elevated, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .padding(.top, 14)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                    if sendsHeadersUnencrypted {
+                        Label("This address uses http, so your custom headers would travel unencrypted over the internet. Use https.", systemImage: "exclamationmark.triangle.fill")
+                            .font(.footnote).foregroundStyle(.orange).padding(.top, 10)
+                    }
+                }
+
+                Text("For example music.example.com or 192.168.1.10:4533. Works with Navidrome and other Subsonic servers. Your password isn’t stored – only a salted token, in the Keychain.")
+                    .font(.footnote).foregroundStyle(Color.subtle.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 24)
             }
+            .padding(.horizontal, 24)
+            .frame(maxWidth: 460)
+            .frame(maxWidth: .infinity)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .background {
+            ZStack {
+                Color.black
+                RadialGradient(colors: [Color.accent.opacity(0.38), .clear], center: .top, startRadius: 0, endRadius: 460)
+            }
+            .ignoresSafeArea()
+        }
+        .toolbar {
+            // The sheet for a second account can be closed; the very first sign-in can't
+            if !app.accounts.isEmpty { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func optionRow(_ icon: String, _ title: LocalizedStringKey, _ value: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon).foregroundStyle(Color.accent).frame(width: 22)
+            Text(title).foregroundStyle(.white)
+            Spacer()
+            Text(value).foregroundStyle(Color.subtle).lineLimit(1)
+            Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.subtle.opacity(0.6))
+        }
+        .padding(.horizontal, 16).frame(height: 52)
+        .contentShape(Rectangle())
+    }
+
+    private var form: some View {
+        Form {
             Section("Server") {
                 TextField("music.example.com or 192.168.1.10:4533", text: $server)
                     .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -103,15 +201,7 @@ struct AccountEditorView: View {
 
             if let error { Section { Text(error).foregroundStyle(.red) } }
 
-            if account == nil {
-                Section {
-                    Button { Task { await save() } } label: {
-                        HStack { Spacer(); if saving { ProgressView() } else { Text("Sign in").bold() }; Spacer() }
-                    }
-                    .disabled(!canSave)
-                }
-            } else {
-                Section {
+            Section {
                     Button("Remove account", role: .destructive) { confirmRemove = true }
                         .frame(maxWidth: .infinity)
                         .confirmationDialog("Remove this account?", isPresented: $confirmRemove, titleVisibility: .visible) {
@@ -121,20 +211,14 @@ struct AccountEditorView: View {
                         } message: {
                             Text("Its downloads and everything Tonalo keeps for it are deleted from this iPhone. Nothing changes on your server.")
                         }
-                }
             }
         }
-        .navigationTitle(account == nil ? "Add account" : "Edit account")
+        .navigationTitle("Edit account")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // Pushed from the settings it has a back button; only the sheet for a new account needs Cancel
-            if account == nil && !app.accounts.isEmpty {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-            }
-            if account != nil {
-                ToolbarItem(placement: .confirmationAction) {
-                    if saving { ProgressView() } else { Button("Save") { Task { await save() } }.bold().disabled(!canSave) }
-                }
+            // Pushed from the settings, so the back button cancels
+            ToolbarItem(placement: .confirmationAction) {
+                if saving { ProgressView() } else { Button("Save") { Task { await save() } }.bold().disabled(!canSave) }
             }
         }
         .onAppear {
@@ -183,6 +267,77 @@ struct AccountEditorView: View {
             }
         }
         saving = false
+    }
+}
+
+/// The app icon drawn in SwiftUI, so it follows the accent color. The bars breathe gently.
+struct TonaloLogo: View {
+    var size: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var moving = false
+    // Bar heights of the icon, relative to its size
+    private let heights: [CGFloat] = [0.21, 0.375, 0.54, 0.335, 0.19]
+    private let swing: [CGFloat] = [1.25, 0.85, 1.1, 0.8, 1.3]
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
+            .fill(Color.accent)
+            .frame(width: size, height: size)
+            .overlay {
+                HStack(spacing: size * 0.045) {
+                    ForEach(heights.indices, id: \.self) { i in
+                        Capsule().fill(Color(white: 0.07))
+                            .frame(width: size * 0.07, height: size * heights[i] * (moving ? swing[i] : 1))
+                    }
+                }
+            }
+            .shadow(color: Color.accent.opacity(0.45), radius: 28, y: 10)
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { moving = true }
+            }
+            .accessibilityHidden(true)
+    }
+}
+
+/// Text field of the sign-in screen: icon, rounded dark surface, keyboard and autofill set up for its kind.
+private struct LoginField: View {
+    enum Field { case server, username, password }
+    enum Kind { case url, username, password }
+
+    let icon: String
+    let prompt: LocalizedStringKey
+    @Binding var text: String
+    let kind: Kind
+    var focus: FocusState<Field?>.Binding
+    let field: Field
+    let next: () -> Void
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon).foregroundStyle(Color.subtle).frame(width: 22)
+            Group {
+                if kind == .password {
+                    SecureField(prompt, text: $text).textContentType(.password).submitLabel(.go)
+                } else {
+                    TextField(prompt, text: $text)
+                        .keyboardType(kind == .url ? .URL : .default)
+                        .textContentType(kind == .url ? .URL : .username)
+                        .submitLabel(.next)
+                }
+            }
+            .textInputAutocapitalization(.never).autocorrectionDisabled()
+            .focused(focus, equals: field)
+            .onSubmit(next)
+        }
+        .padding(.horizontal, 16).frame(height: 54)
+        .background(Color.elevated, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.accent.opacity(focus.wrappedValue == field ? 0.8 : 0), lineWidth: 1.5)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { focus.wrappedValue = field }
     }
 }
 
@@ -335,6 +490,7 @@ struct SettingsView: View {
                     LabeledContent("Downloaded music", value: ByteCountFormatter.string(fromByteCount: app.downloads.totalBytes, countStyle: .file))
                 }
                 Toggle("Download over cellular", isOn: Bindable(app.downloads).allowCellular)
+                NavigationLink("Storage") { StorageView() }
             } header: { Text("Offline") } footer: {
                 Text("Downloads keep going in the background. Without cellular, they wait for Wi-Fi.")
             }
@@ -389,6 +545,56 @@ private struct LogoutDialog: ViewModifier {
     private var title: String {
         app.current.map { String(localized: "Log out of \($0.host)?") } ?? ""
     }
+}
+
+/// What Tonalo keeps on the iPhone, with a way to clear each part.
+private struct StorageView: View {
+    @Environment(AppModel.self) private var app
+    @State private var covers: Int64 = 0
+    @State private var library: Int64 = 0
+    @State private var confirmDownloads = false
+
+    var body: some View {
+        List {
+            Section {
+                NavigationLink { DownloadsView() } label: { LabeledContent("Downloaded music", value: bytes(app.downloads.totalBytes)) }
+                if app.downloads.totalBytes > 0 {
+                    Button("Delete all downloads", role: .destructive) { confirmDownloads = true }
+                        .confirmationDialog("Delete all downloads?", isPresented: $confirmDownloads, titleVisibility: .visible) {
+                            Button("Delete all downloads", role: .destructive) { app.downloads.removeAll() }
+                        }
+                }
+            } footer: {
+                Text("Songs you downloaded to listen offline.")
+            }
+            Section {
+                LabeledContent("Covers", value: bytes(covers))
+                Button("Clear cover cache") { ImageLoader.clearDisk(); measure() }.disabled(covers == 0)
+            } footer: {
+                Text("Album art, so it shows at once. At most 300 MB; the oldest go first.")
+            }
+            Section {
+                LabeledContent("Library", value: bytes(library))
+                Button("Clear library cache") {
+                    if let id = app.currentId { LibraryCache.deleteAccount(id) }
+                    measure()
+                }
+                .disabled(library == 0)
+            } footer: {
+                Text("The last state of your albums, playlists and home page, so they open without waiting and offline. It fills up again as you browse.")
+            }
+        }
+        .navigationTitle("Storage")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear(perform: measure)
+    }
+
+    private func measure() {
+        covers = FileManager.default.size(of: ImageLoader.folder)
+        library = app.currentId.map(LibraryCache.size) ?? 0
+    }
+
+    private func bytes(_ n: Int64) -> String { ByteCountFormatter.string(fromByteCount: n, countStyle: .file) }
 }
 
 /// Picks a quality, grouped by codec like the big apps do, with the data an hour of music takes.
