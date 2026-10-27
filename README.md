@@ -95,11 +95,12 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 
 - Home, search with genre tiles, and a library with playlists, albums, artists and downloads – sortable, searchable, with pinning (long press) and as a list or grid
 - Player with synced lyrics, a queue, swipe gestures, colors taken from the cover and a sleep timer
+- **Artist pages** with popular songs, the discography, "Fans also like" and a biography. Without Last.fm on the server, the artist's songs you played most stand in for the popular ones – see [Server tips](#server-tips)
 - **Continue on another device**: started on the TV, finished on the iPhone – the app offers to pick up the queue another device left on your server
 - **Playlists**: create, rename and delete them, add songs from any menu (with a warning for duplicates), remove and reorder songs
 - **Crossfade** between songs, adjustable from 1 to 12 seconds
 - **Audio quality** set separately for Wi-Fi, cellular and downloads: the original files (lossless, FLAC stays FLAC) or converted by your server to AAC, Opus or MP3, with the data an hour of music takes next to each level. Formats the iPhone can't play are converted automatically.
-- **Offline downloads** of songs, albums and playlists, in the background, optionally only on Wi-Fi. Lyrics come along, and scrobbles made offline are sent later.
+- **Offline downloads** of songs, albums and playlists, in the background, optionally only on Wi-Fi. A thin bar at the top shows how far they are on every page, and a note says when they're done. Lyrics come along, and scrobbles made offline are sent later.
 - **Library sync**: loads every album, artist and playlist onto the phone in one go, so the whole library opens instantly and offline. Repeat it whenever you like; the app reminds you after a month.
 - **Loading ahead**: the next songs of the queue (1–5, adjustable) are loaded in the background, so a dead spot on the train doesn't stop the music
 - **Address at home**: on Wi-Fi the app talks to your server directly in the home network when it answers, and switches back to the outside address when you leave – mid-song without a gap
@@ -120,6 +121,26 @@ There's no App Store build yet (see [`docs/APP_STORE.md`](docs/APP_STORE.md) for
 3. Connect your iPhone and run the *Tonalo* scheme. The watch app comes along automatically if your iPhone is paired with an Apple Watch.
 
 With a free Apple ID the app has to be reinstalled every 7 days.
+
+## Server tips
+
+**Connect Last.fm to Navidrome.** Popular songs, similar artists ("Fans also like") and artist biographies come from your server, and Navidrome gets them from Last.fm. Without it, both apps still work, but artist pages stay rather empty (the iPhone app shows your own most played songs instead). Setting it up takes two minutes and is free:
+
+1. Create an API account at [last.fm/api/account/create](https://www.last.fm/api/account/create) – only the application name is required. Note the *API key* and *Shared secret*.
+2. Give them to Navidrome, for example in your Docker Compose file:
+
+   ```yaml
+   environment:
+     ND_LASTFM_APIKEY: your-api-key
+     ND_LASTFM_SECRET: your-shared-secret
+   ```
+
+   or as `LastFM.ApiKey` and `LastFM.Secret` in `navidrome.toml`.
+3. Restart Navidrome. Artist info is fetched when an artist is opened, so the first visit can take a moment.
+
+The same key also lets every user scrobble to Last.fm from Navidrome's web UI. Details are in Navidrome's [external integrations](https://www.navidrome.org/docs/usage/external-integrations/) docs.
+
+**Lyrics** come from your server too: Navidrome shows lyrics that are embedded in the files or stored next to them as `.lrc`.
 
 ## Development
 
