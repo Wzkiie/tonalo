@@ -346,14 +346,18 @@ var App = (function () {
   }
   function ssShow() {
     ssActive = true;
+    ssFill();
+    U.$('#screensaver').classList.remove('hidden');
+    ssMove();
+    ssMoveTimer = setInterval(ssMove, 15000);
+  }
+  // Cover und Titel des laufenden Songs – auch bei jedem Songwechsel, solange der Schoner läuft
+  function ssFill() {
     var s = Player.current();
     U.$('#ss-cover').style.display = s ? '' : 'none';
     if (s) U.$('#ss-cover').src = API.cover(s.coverArt || s.albumId, 400);
     U.$('#ss-title').textContent = s ? s.title : '';
     U.$('#ss-artist').textContent = s ? (s.artist || '') : '';
-    U.$('#screensaver').classList.remove('hidden');
-    ssMove();
-    ssMoveTimer = setInterval(ssMove, 15000);
   }
   function ssMove() {
     var box = U.$('#ss-box');
@@ -531,7 +535,7 @@ var App = (function () {
     ['track', 'state', 'time', 'queue', 'mode'].forEach(function (evt) {
       Player.on(evt, function () {
         updateMini(evt);
-        if (evt === 'track') UI.refreshPlaying();
+        if (evt === 'track') { UI.refreshPlaying(); if (ssActive) ssFill(); }
         var top = stack[stack.length - 1];
         if (top && top.view.update) top.view.update(evt);
       });
