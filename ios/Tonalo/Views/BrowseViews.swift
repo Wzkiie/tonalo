@@ -467,6 +467,8 @@ struct LibraryView: View {
     @AppStorage("library.sort") private var sort: Sort = .recent
     @AppStorage("library.grid") private var grid = false
     @FocusState private var searchFocused: Bool
+    /// What you pinned to the top, newest first. Kept on this iPhone per account.
+    @State private var pins: [String] = []
 
     enum Filter { case playlists, albums, artists, downloads }
 
@@ -544,6 +546,32 @@ struct LibraryView: View {
         .statusBarBackground()
         .task(id: "\(app.currentId?.uuidString ?? "")\(app.playlistsVersion)") { await load() }
         .refreshable { await Task { await load() }.value }
+        .onAppear(perform: loadPins)
+        .onChange(of: app.currentId) { loadPins() }
+    }
+
+    // MARK: Pins
+
+    private var pinsKey: String { "library.pins." + (app.currentId?.uuidString ?? "") }
+
+    private func loadPins() { pins = UserDefaults.standard.stringArray(forKey: pinsKey) ?? [] }
+
+    private func togglePin(_ item: Item) {
+        withAnimation(.easeOut(duration: 0.25)) {
+            if let i = pins.firstIndex(of: item.id) { pins.remove(at: i) } else { pins.insert(item.id, at: 0) }
+        }
+        UserDefaults.standard.set(pins, forKey: pinsKey)
+    }
+
+    private func isPinned(_ item: Item) -> Bool { item.pinned || pins.contains(item.id) }
+
+    /// Long press: pin or unpin. Favorites and Downloads always stay on top.
+    @ViewBuilder private func pinMenu(_ item: Item) -> some View {
+        if !item.pinned {
+            Button { togglePin(item) } label: {
+                pins.contains(item.id) ? Label("Unpin", systemImage: "pin.slash") : Label("Pin to top", systemImage: "pin")
+            }
+        }
     }
 
     // MARK: Filter bar
@@ -660,7 +688,11 @@ struct LibraryView: View {
             pinned = [.downloads] + (downloadedFavorites > 0 ? [.favorites] : [])
             rest = dl.index.playlists.values.map(Item.playlist) + dl.index.albums.values.map(Item.album)
         }
-        return query.isEmpty ? pinned + sorted(rest) : matching(sorted(rest))
+        // Pinned ones first (newest pin on top), everything else in the chosen order
+        let all = sorted(rest)
+        let top = pins.compactMap { id in all.first { $0.id == id } }
+        let list = top + all.filter { !pins.contains($0.id) }
+        return query.isEmpty ? pinned + list : matching(list)
     }
 
     private func sorted(_ list: [Item]) -> [Item] {
@@ -729,9 +761,10 @@ struct LibraryView: View {
 
     private func row(_ item: Item) -> some View {
         NavigationLink(value: route(item)) {
-            ItemRow(title: title(item), subtitle: subtitle(item), pinned: item.pinned) { art(item, size: 160) }
+            ItemRow(title: title(item), subtitle: subtitle(item), pinned: isPinned(item)) { art(item, size: 160) }
         }
         .buttonStyle(.plain)
+        .contextMenu { pinMenu(item) }
     }
 
     private func tile(_ item: Item) -> some View {
@@ -739,11 +772,15 @@ struct LibraryView: View {
             VStack(alignment: .leading, spacing: 6) {
                 art(item, size: 300).aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity)
                 Text(title(item)).font(.system(size: 14, weight: .semibold)).lineLimit(1)
-                Text(subtitle(item)).font(.system(size: 12)).foregroundStyle(Color.subtle).lineLimit(1)
+                HStack(spacing: 4) {
+                    if isPinned(item) { Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(Color.accent).rotationEffect(.degrees(45)) }
+                    Text(subtitle(item)).font(.system(size: 12)).foregroundStyle(Color.subtle).lineLimit(1)
+                }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu { pinMenu(item) }
     }
 
     // MARK: Loading

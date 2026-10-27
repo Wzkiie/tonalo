@@ -1809,6 +1809,16 @@
         }
       }
     },
+    "Pin to top": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oben anheften"
+          }
+        }
+      }
+    },
     "Pink": {
       "localizations": {
         "de": {
@@ -2761,6 +2771,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Inoffizieller Client, nicht mit Navidrome verbunden."
+          }
+        }
+      }
+    },
+    "Unpin": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loslösen"
           }
         }
       }
