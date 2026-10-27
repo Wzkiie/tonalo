@@ -164,13 +164,17 @@ struct ItemRow<Art: View>: View {
 }
 
 extension AppModel {
+    /// Pages keep their own copy of a song – this also knows hearts set elsewhere since then.
+    func isFavorite(_ song: Song) -> Bool { favoriteChanges[song.id] ?? (song.starred != nil) }
+
     func toggleStar(_ song: Song) {
-        Task { await setFavorite(song, song.starred == nil) }
+        Task { await setFavorite(song, !isFavorite(song)) }
     }
 
     @discardableResult
     func setFavorite(_ song: Song, _ on: Bool) async -> Bool {
         guard let client, (try? await client.setStar(songId: song.id, on: on)) != nil else { return false }
+        favoriteChanges[song.id] = on
         player.setStarred(song, on)
         return true
     }

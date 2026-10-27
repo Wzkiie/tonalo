@@ -282,6 +282,16 @@
         }
       }
     },
+    "Added to favorites": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu Favoriten hinzugefügt"
+          }
+        }
+      }
+    },
     "Added “%@” to your favorite songs.": {
       "localizations": {
         "de": {
@@ -669,6 +679,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vom Server umgewandelt. Läuft überall und klingt bei gleicher Bitrate besser als MP3."
+          }
+        }
+      }
+    },
+    "Couldn’t change favorites. Check your connection.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favoriten konnten nicht geändert werden. Prüfe deine Verbindung."
           }
         }
       }
@@ -2085,6 +2105,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dieses Konto entfernen?"
+          }
+        }
+      }
+    },
+    "Removed from favorites": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus Favoriten entfernt"
           }
         }
       }

@@ -71,6 +71,10 @@ struct SongRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(song.title).font(.system(size: 16)).lineLimit(1).foregroundStyle(isCurrent ? Color.accent : .white)
                 HStack(spacing: 5) {
+                    if app.isFavorite(song) {
+                        Image(systemName: "heart.fill").font(.system(size: 11)).foregroundStyle(Color.accent)
+                            .accessibilityLabel("Favorite")
+                    }
                     if app.downloads.isDownloaded(song.id) {
                         Image(systemName: "arrow.down.circle.fill").font(.system(size: 12)).foregroundStyle(Color.accent)
                     } else if app.downloads.index.queued[song.id] != nil {
@@ -125,7 +129,7 @@ struct SongMenuItems: View {
             Button { app.downloads.download([song]) } label: { Label("Download", systemImage: "arrow.down.circle") }
         }
         Button { toggleStar() } label: {
-            song.starred == nil ? Label("Add to favorites", systemImage: "heart") : Label("Remove from favorites", systemImage: "heart.slash")
+            app.isFavorite(song) ? Label("Remove from favorites", systemImage: "heart.slash") : Label("Add to favorites", systemImage: "heart")
         }
     }
 
@@ -137,7 +141,17 @@ struct SongMenuItems: View {
         }
     }
 
-    private func toggleStar() { app.toggleStar(song) }
+    /// The menu closes right away, so say what happened
+    private func toggleStar() {
+        let on = !app.isFavorite(song)
+        Task {
+            if await app.setFavorite(song, on) {
+                app.notify(on ? String(localized: "Added to favorites") : String(localized: "Removed from favorites"))
+            } else {
+                app.notify(String(localized: "Couldn’t change favorites. Check your connection."))
+            }
+        }
+    }
 }
 
 /// Shuffle icon plus the round play button, right-aligned like on album pages.

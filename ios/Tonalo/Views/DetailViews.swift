@@ -248,7 +248,7 @@ struct FavoritesView: View {
     @State private var error: String?
 
     var body: some View {
-        let list = songs ?? []
+        let list = (songs ?? []).filter { app.isFavorite($0) } // a heart removed here leaves the list at once
         let context = PlayerModel.Context(kind: .favorites, name: String(localized: "Favorite songs"))
         let playing = app.player.isPlaying(from: .favorites, id: nil)
         DetailPage(coverId: nil, title: String(localized: "Favorite songs")) {

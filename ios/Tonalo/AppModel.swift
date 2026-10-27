@@ -37,6 +37,9 @@ final class AppModel {
         didSet { UserDefaults.standard.set(preloadCount, forKey: "preload"); player.preloadChanged() }
     }
 
+    /// Songs whose heart was changed in this session, by song id – see `isFavorite`.
+    var favoriteChanges: [String: Bool] = [:]
+
     /// Short confirmation shown above the player bar, e.g. "Added to Road trip".
     private(set) var notice: String?
 
@@ -190,6 +193,7 @@ final class AppModel {
         if id != currentId {
             player.detach()
             atHome = false
+            favoriteChanges = [:]
             currentId = id
             UserDefaults.standard.set(id.uuidString, forKey: "currentAccount")
             downloads.reload()
