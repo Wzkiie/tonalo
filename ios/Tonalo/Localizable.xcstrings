@@ -1,3141 +1,3142 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "": {
-      "shouldTranslate": false
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+      "shouldTranslate" : false
     },
-    " ": {
-      "shouldTranslate": false
+    " " : {
+      "shouldTranslate" : false
     },
-    "%@ radio": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@-Radio"
+    "“%@” is already in your favorite songs." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ ist schon in deinen Lieblingssongs."
           }
         }
       }
     },
-    "%@ · about %lld MB per hour": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ · ca. %2$lld MB pro Stunde"
+    "%@ · about %lld MB per hour" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · ca. %2$lld MB pro Stunde"
           }
         }
       }
     },
-    "%lld": {
-      "shouldTranslate": false
-    },
-    "%lld albums": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Alben"
+    "%@ radio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@-Radio"
           }
         }
       }
+    },
+    "%lld" : {
+      "shouldTranslate" : false
     },
-    "%lld downloaded": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld geladen"
+    "%lld albums" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Alben"
           }
         }
       }
     },
-    "%lld downloads failed. Open the album or playlist and tap the download button to retry.": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Downloads fehlgeschlagen. Öffne das Album oder die Playlist und tippe erneut auf den Download-Knopf."
+    "%lld downloaded" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld geladen"
           }
         }
       }
     },
-    "%lld h %lld min": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Std. %lld Min."
+    "%lld downloads failed. Open the album or playlist and tap the download button to retry." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Downloads fehlgeschlagen. Öffne das Album oder die Playlist und tippe erneut auf den Download-Knopf."
           }
         }
       }
     },
-    "%lld min": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Min."
+    "%lld h %lld min" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Std. %lld Min."
           }
         }
       }
     },
-    "%lld minutes": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Minuten"
+    "%lld min" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Min."
           }
         }
       }
     },
-    "%lld of %lld": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld von %2$lld"
+    "%lld minutes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Minuten"
           }
         }
       }
     },
-    "%lld of %lld downloaded": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld von %2$lld geladen"
+    "%lld of %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld von %2$lld"
           }
         }
       }
     },
-    "%lld of these songs are already in the playlist.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld dieser Songs sind schon in der Playlist."
+    "%lld of %lld downloaded" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld von %2$lld geladen"
           }
         }
       }
     },
-    "%lld songs": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Songs"
+    "%lld of these songs are already in the playlist." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dieser Songs sind schon in der Playlist."
           }
         }
       }
     },
-    "192.168.1.10:4533": {},
-    "About": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Info"
+    "%lld songs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Songs"
           }
         }
       }
     },
-    "Accent color": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Akzentfarbe"
+    "192.168.1.10:4533" : {
+
+    },
+    "A–Z" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A–Z"
           }
         }
       }
     },
-    "Accounts": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Konten"
+    "About" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Info"
           }
         }
       }
     },
-    "Add %lld songs": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Songs hinzufügen"
+    "Accent color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akzentfarbe"
           }
         }
       }
     },
-    "Add Cloudflare Access headers": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cloudflare-Access-Header hinzufügen"
+    "Accounts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konten"
           }
         }
       }
     },
-    "Add account": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Konto hinzufügen"
+    "Add %lld songs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Songs hinzufügen"
           }
         }
       }
     },
-    "Add anyway": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trotzdem hinzufügen"
+    "Add account" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto hinzufügen"
           }
         }
       }
     },
-    "Add header": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Header hinzufügen"
+    "Add anyway" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trotzdem hinzufügen"
           }
         }
       }
     },
-    "Add new ones only": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nur neue hinzufügen"
+    "Add Cloudflare Access headers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloudflare-Access-Header hinzufügen"
           }
         }
       }
     },
-    "Add song to favorites": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Song zu Lieblingssongs hinzufügen"
+    "Add header" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Header hinzufügen"
           }
         }
       }
     },
-    "Add to favorites": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zu Favoriten hinzufügen"
+    "Add new ones only" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur neue hinzufügen"
           }
         }
       }
     },
-    "Add to other playlist": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zu anderer Playlist hinzufügen"
+    "Add song to favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Song zu Lieblingssongs hinzufügen"
           }
         }
       }
     },
-    "Add to playlist": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zur Playlist hinzufügen"
+    "Add to favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu Favoriten hinzufügen"
           }
         }
       }
     },
-    "Add to queue": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zur Warteschlange hinzufügen"
+    "Add to other playlist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu anderer Playlist hinzufügen"
           }
         }
       }
     },
-    "Added to %@": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zu „%@“ hinzugefügt"
+    "Add to playlist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zur Playlist hinzufügen"
           }
         }
       }
     },
-    "Added to favorites": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zu Favoriten hinzugefügt"
+    "Add to queue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zur Warteschlange hinzufügen"
           }
         }
       }
     },
-    "Added “%@” to your favorite songs.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "„%@“ zu deinen Lieblingssongs hinzugefügt."
+    "Added “%@” to your favorite songs." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ zu deinen Lieblingssongs hinzugefügt."
           }
         }
       }
     },
-    "Address at home": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adresse im Heimnetz"
+    "Added to %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu „%@“ hinzugefügt"
           }
         }
       }
     },
-    "Adds the song that is playing in Tonalo to your favorite songs.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fügt den Song, der gerade in Tonalo läuft, zu deinen Lieblingssongs hinzu."
+    "Added to favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu Favoriten hinzugefügt"
           }
         }
       }
     },
-    "Advanced": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erweitert"
+    "Address at home" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse im Heimnetz"
           }
         }
       }
     },
-    "Album": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Album"
+    "Adds the song that is playing in Tonalo to your favorite songs." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fügt den Song, der gerade in Tonalo läuft, zu deinen Lieblingssongs hinzu."
           }
         }
       }
     },
-    "Album art, so it shows at once. At most 300 MB; the oldest go first.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Albumcover, damit sie sofort erscheinen. Höchstens 300 MB, die ältesten fliegen zuerst raus."
+    "Advanced" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erweitert"
           }
         }
       }
     },
-    "Albums": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alben"
+    "Album" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Album"
           }
         }
       }
     },
-    "Albums you haven’t heard in a while": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alben, die du länger nicht gehört hast"
+    "Album art, so it shows at once. At most 300 MB; the oldest go first." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Albumcover, damit sie sofort erscheinen. Höchstens 300 MB, die ältesten fliegen zuerst raus."
           }
         }
       }
     },
-    "All": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle"
+    "Albums" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alben"
           }
         }
       }
     },
-    "Alphabetical": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alphabetisch"
+    "Albums you haven’t heard in a while" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alben, die du länger nicht gehört hast"
           }
         }
       }
     },
-    "Already in “%@”": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schon in „%@“"
+    "All" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
           }
         }
       }
     },
-    "App icon": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "App-Icon"
+    "Alphabetical" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alphabetisch"
           }
         }
       }
     },
-    "Appearance": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Darstellung"
+    "Already in “%@”" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schon in „%@“"
           }
         }
       }
     },
-    "Artist": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Künstler"
+    "App icon" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App-Icon"
           }
         }
       }
     },
-    "Artist or creator": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Künstler oder Ersteller"
+    "Appearance" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Darstellung"
           }
         }
       }
     },
-    "Artist radio": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Künstler-Radio"
+    "Artist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Künstler"
           }
         }
       }
     },
-    "Artists": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Künstler"
+    "Artist or creator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Künstler oder Ersteller"
           }
         }
       }
     },
-    "Artists, albums or songs": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Künstler, Alben oder Songs"
+    "Artist radio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Künstler-Radio"
           }
         }
       }
     },
-    "Audio quality": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Audioqualität"
+    "Artists" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Künstler"
           }
         }
       }
     },
-    "A–Z": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A–Z"
+    "Artists, albums or songs" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Künstler, Alben oder Songs"
           }
         }
       }
     },
-    "Behavior": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verhalten"
+    "Audio quality" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audioqualität"
           }
         }
       }
     },
-    "Blue": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Blau"
+    "Behavior" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verhalten"
           }
         }
       }
     },
-    "Browse all": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alles durchsuchen"
+    "Blue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blau"
           }
         }
       }
     },
-    "Browse all albums on the server": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle Alben auf dem Server durchstöbern"
+    "Browse all" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alles durchsuchen"
           }
         }
       }
     },
-    "Browse all artists on the server": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle Künstler auf dem Server durchstöbern"
+    "Browse all albums on the server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Alben auf dem Server durchstöbern"
           }
         }
       }
     },
-    "Cancel": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abbrechen"
+    "Browse all artists on the server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Künstler auf dem Server durchstöbern"
           }
         }
       }
     },
-    "Cancel all": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle abbrechen"
+    "Cancel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
           }
         }
       }
     },
-    "Cancel download": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download abbrechen"
+    "Cancel all" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle abbrechen"
           }
         }
       }
     },
-    "Cancel download?": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download abbrechen?"
+    "Cancel download" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download abbrechen"
           }
         }
       }
     },
-    "Cellular": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mobilfunk"
+    "Cancel download?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download abbrechen?"
           }
         }
       }
     },
-    "Check the spelling, or try fewer words.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prüfe die Schreibweise oder versuch es mit weniger Wörtern."
+    "Cellular" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobilfunk"
           }
         }
       }
     },
-    "Clear": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Löschen"
+    "Check the spelling, or try fewer words." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prüfe die Schreibweise oder versuch es mit weniger Wörtern."
           }
         }
       }
     },
-    "Clear cover cache": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cover-Cache leeren"
+    "Clear" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löschen"
           }
         }
       }
     },
-    "Clear library cache": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bibliotheks-Cache leeren"
+    "Clear cover cache" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cover-Cache leeren"
           }
         }
       }
     },
-    "Close": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schließen"
+    "Clear library cache" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bibliotheks-Cache leeren"
           }
         }
       }
     },
-    "Connected at home": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zuhause verbunden"
+    "Close" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
           }
         }
       }
     },
-    "Continue from %@": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weiterhören von %@"
+    "Connected at home" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuhause verbunden"
           }
         }
       }
     },
-    "Continue here": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hier weiterhören"
+    "Continue from %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiterhören von %@"
           }
         }
       }
     },
-    "Converted by your server. Plays everywhere and sounds better than MP3 at the same bitrate.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vom Server umgewandelt. Läuft überall und klingt bei gleicher Bitrate besser als MP3."
+    "Continue here" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier weiterhören"
           }
         }
       }
     },
-    "Couldn’t change favorites. Check your connection.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Favoriten konnten nicht geändert werden. Prüfe deine Verbindung."
+    "Converted by your server. Plays everywhere and sounds better than MP3 at the same bitrate." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vom Server umgewandelt. Läuft überall und klingt bei gleicher Bitrate besser als MP3."
           }
         }
       }
     },
-    "Couldn’t reach your music server.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dein Musikserver ist nicht erreichbar."
+    "Couldn’t change favorites. Check your connection." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten konnten nicht geändert werden. Prüfe deine Verbindung."
           }
         }
       }
     },
-    "Covers": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cover"
+    "Couldn’t reach your music server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Musikserver ist nicht erreichbar."
           }
         }
       }
     },
-    "Create": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erstellen"
+    "Covers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cover"
           }
         }
       }
     },
-    "Crossfade": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Überblenden"
+    "Create" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstellen"
           }
         }
       }
     },
-    "Crossfade blends the end of a song into the next one.": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Überblenden lässt das Ende eines Songs in den nächsten übergehen."
+    "Crossfade" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überblenden"
           }
         }
       }
     },
-    "Custom color": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eigene Farbe"
+    "Crossfade blends the end of a song into the next one." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überblenden lässt das Ende eines Songs in den nächsten übergehen."
           }
         }
       }
     },
-    "Custom headers": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eigene Header"
+    "Custom color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigene Farbe"
           }
         }
       }
     },
-    "Dark": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dunkel"
+    "Custom headers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigene Header"
           }
         }
       }
     },
-    "Data saver": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Datensparend"
+    "Dark" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dunkel"
           }
         }
       }
     },
-    "Delete all downloads": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle Downloads löschen"
+    "Data saver" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datensparend"
           }
         }
       }
     },
-    "Delete all downloads?": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle Downloads löschen?"
+    "Delete “%@”?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ löschen?"
           }
         }
       }
     },
-    "Delete playlist": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playlist löschen"
+    "Delete all downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Downloads löschen"
           }
         }
       }
     },
-    "Delete “%@”?": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "„%@“ löschen?"
+    "Delete all downloads?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Downloads löschen?"
           }
         }
       }
     },
-    "Discography": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diskografie"
+    "Delete playlist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlist löschen"
           }
         }
       }
     },
-    "Discover": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entdecken"
+    "Discography" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diskografie"
           }
         }
       }
     },
-    "Done": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fertig"
+    "Discover" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entdecken"
           }
         }
       }
     },
-    "Download": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Herunterladen"
+    "Done" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fertig"
           }
         }
       }
     },
-    "Download albums and playlists on your iPhone to listen without network.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lade auf dem iPhone Alben und Playlists herunter, um ohne Netz zu hören."
+    "Download" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herunterladen"
           }
         }
       }
     },
-    "Download over cellular": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Über Mobilfunk herunterladen"
+    "Download albums and playlists on your iPhone to listen without network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lade auf dem iPhone Alben und Playlists herunter, um ohne Netz zu hören."
           }
         }
       }
     },
-    "Download quality": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download-Qualität"
+    "Download over cellular" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Über Mobilfunk herunterladen"
           }
         }
       }
     },
-    "Downloaded music": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Heruntergeladene Musik"
+    "Download quality" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download-Qualität"
           }
         }
       }
     },
-    "Downloading": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wird heruntergeladen"
+    "Downloaded music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heruntergeladene Musik"
           }
         }
       }
     },
-    "Downloading (%lld)": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wird geladen (%lld)"
+    "Downloading" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird heruntergeladen"
           }
         }
       }
     },
-    "Downloads": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Downloads"
+    "Downloading (%lld)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird geladen (%lld)"
           }
         }
       }
     },
-    "Downloads and everything Tonalo keeps for this account are deleted from this iPhone. Nothing changes on your server.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Downloads und alles, was Tonalo für dieses Konto speichert, werden von diesem iPhone gelöscht. Auf deinem Server ändert sich nichts."
+    "Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads"
           }
         }
       }
     },
-    "Downloads finished": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Downloads fertig"
+    "Downloads and everything Tonalo keeps for this account are deleted from this iPhone. Nothing changes on your server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads und alles, was Tonalo für dieses Konto speichert, werden von diesem iPhone gelöscht. Auf deinem Server ändert sich nichts."
           }
         }
       }
     },
-    "Downloads finished – %lld failed": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Downloads fertig – %lld fehlgeschlagen"
+    "Downloads finished" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads fertig"
           }
         }
       }
     },
-    "Downloads keep going in the background. Without cellular, they wait for Wi-Fi.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Downloads laufen im Hintergrund weiter. Ohne Mobilfunk warten sie auf WLAN."
+    "Downloads finished – %lld failed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads fertig – %lld fehlgeschlagen"
           }
         }
       }
     },
-    "Edit account": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Konto bearbeiten"
+    "Downloads keep going in the background. Without cellular, they wait for Wi-Fi." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads laufen im Hintergrund weiter. Ohne Mobilfunk warten sie auf WLAN."
           }
         }
       }
     },
-    "Edit songs": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Songs bearbeiten"
+    "Edit account" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto bearbeiten"
           }
         }
       }
     },
-    "End of song": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ende des Songs"
+    "Edit songs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songs bearbeiten"
           }
         }
       }
     },
-    "Fans also like": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fans mögen auch"
+    "End of song" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ende des Songs"
           }
         }
       }
     },
-    "Favorite": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lieblingssong"
+    "Fans also like" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fans mögen auch"
           }
         }
       }
     },
-    "Favorite albums": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lieblingsalben"
+    "Favorite" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lieblingssong"
           }
         }
       }
     },
-    "Favorite song": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lieblingssong"
+    "Favorite albums" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lieblingsalben"
           }
         }
       }
     },
-    "Favorite songs": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lieblingssongs"
+    "Favorite song" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lieblingssong"
           }
         }
       }
     },
-    "Favorites": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Favoriten"
+    "Favorite songs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lieblingssongs"
           }
         }
       }
     },
-    "Favorites mix": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lieblingsmix"
+    "Favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten"
           }
         }
       }
     },
-    "For example music.example.com or 192.168.1.10:4533. Works with Navidrome and other Subsonic servers. Your password isn’t stored – only a salted token, in the Keychain.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zum Beispiel musik.example.com oder 192.168.1.10:4533. Funktioniert mit Navidrome und anderen Subsonic-Servern. Dein Passwort wird nicht gespeichert – nur ein gesalzenes Token im Schlüsselbund."
+    "Favorites mix" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lieblingsmix"
           }
         }
       }
     },
-    "For servers that don’t convert to AAC or Opus.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Für Server, die nicht in AAC oder Opus umwandeln."
+    "For example music.example.com or 192.168.1.10:4533. Works with Navidrome and other Subsonic servers. Your password isn’t stored – only a salted token, in the Keychain." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Beispiel musik.example.com oder 192.168.1.10:4533. Funktioniert mit Navidrome und anderen Subsonic-Servern. Dein Passwort wird nicht gespeichert – nur ein gesalzenes Token im Schlüsselbund."
           }
         }
       }
     },
-    "Formats the iPhone can’t play, such as WMA or APE, are converted to AAC 256 by your server.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Formate, die das iPhone nicht abspielen kann (z. B. WMA oder APE), wandelt dein Server in AAC 256 um."
+    "For servers that don’t convert to AAC or Opus." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für Server, die nicht in AAC oder Opus umwandeln."
           }
         }
       }
     },
-    "Genres": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Genres"
+    "Formats the iPhone can’t play, such as WMA or APE, are converted to AAC 256 by your server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formate, die das iPhone nicht abspielen kann (z. B. WMA oder APE), wandelt dein Server in AAC 256 um."
           }
         }
       }
     },
-    "Go to album": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zum Album"
+    "Genres" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genres"
           }
         }
       }
     },
-    "Go to artist": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zum Künstler"
+    "Go to album" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Album"
           }
         }
       }
     },
-    "Good afternoon": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guten Tag"
+    "Go to artist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Künstler"
           }
         }
       }
     },
-    "Good evening": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guten Abend"
+    "Good afternoon" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guten Tag"
           }
         }
       }
     },
-    "Good morning": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guten Morgen"
+    "Good evening" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guten Abend"
           }
         }
       }
     },
-    "Good night": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gute Nacht"
+    "Good morning" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guten Morgen"
           }
         }
       }
     },
-    "Green": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Grün"
+    "Good night" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gute Nacht"
           }
         }
       }
     },
-    "Header name": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Header-Name"
+    "Green" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grün"
           }
         }
       }
     },
-    "High quality": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hohe Qualität"
+    "Header name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Header-Name"
           }
         }
       }
     },
-    "Highest quality": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Höchste Qualität"
+    "High quality" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hohe Qualität"
           }
         }
       }
     },
-    "Home": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start"
+    "Highest quality" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Höchste Qualität"
           }
         }
       }
     },
-    "Home screen rows": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reihen auf der Startseite"
+    "Home" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start"
           }
         }
       }
     },
-    "Its downloads and everything Tonalo keeps for it are deleted from this iPhone. Nothing changes on your server.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Seine Downloads und alles, was Tonalo dafür speichert, werden von diesem iPhone gelöscht. Auf deinem Server ändert sich nichts."
+    "Home screen rows" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reihen auf der Startseite"
           }
         }
       }
     },
-    "Keep downloading": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weiter laden"
+    "Its downloads and everything Tonalo keeps for it are deleted from this iPhone. Nothing changes on your server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seine Downloads und alles, was Tonalo dafür speichert, werden von diesem iPhone gelöscht. Auf deinem Server ändert sich nichts."
           }
         }
       }
     },
-    "Last sync": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Letzter Abgleich"
+    "Keep downloading" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter laden"
           }
         }
       }
     },
-    "Library": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bibliothek"
+    "Last sync" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letzter Abgleich"
           }
         }
       }
     },
-    "Library offline": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bibliothek offline"
+    "Library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bibliothek"
           }
         }
       }
     },
-    "Light": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hell"
+    "Library offline" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bibliothek offline"
           }
         }
       }
     },
-    "Load next songs ahead": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nächste Songs vorladen"
+    "Light" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hell"
           }
         }
       }
     },
-    "Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vorladen hält die Musik am Laufen, wenn die Verbindung kurz abreißt. Die Lautstärkeangleichung nutzt die ReplayGain-Tags deiner Dateien. Beim Scrobbeln erfährt dein Server, was du gehört hast."
+    "Load next songs ahead" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächste Songs vorladen"
           }
         }
       }
     },
-    "Loading albums, artists and playlists…": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alben, Künstler und Playlists werden geladen …"
+    "Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorladen hält die Musik am Laufen, wenn die Verbindung kurz abreißt. Die Lautstärkeangleichung nutzt die ReplayGain-Tags deiner Dateien. Beim Scrobbeln erfährt dein Server, was du gehört hast."
           }
         }
       }
     },
-    "Loading albums… %lld": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alben werden geladen … %lld"
+    "Loading albums, artists and playlists…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alben, Künstler und Playlists werden geladen …"
           }
         }
       }
     },
-    "Loading overview…": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Übersicht wird geladen …"
+    "Loading albums… %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alben werden geladen … %lld"
           }
         }
       }
     },
-    "Loading…": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wird geladen …"
+    "Loading overview…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übersicht wird geladen …"
           }
         }
       }
     },
-    "Loads every album, artist and playlist onto this iPhone once, so everything opens at once and without a connection. Large libraries take a few minutes. Repeat it now and then, about once a month, to pick up changes.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lädt alle Alben, Künstler und Playlists einmal auf dieses iPhone, damit sich alles sofort und auch ohne Verbindung öffnet. Große Bibliotheken brauchen ein paar Minuten. Wiederhole es ab und zu, etwa einmal im Monat, um Änderungen zu übernehmen."
+    "Loading…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird geladen …"
           }
         }
       }
     },
-    "Log out": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abmelden"
+    "Loads every album, artist and playlist onto this iPhone once, so everything opens at once and without a connection. Large libraries take a few minutes. Repeat it now and then, about once a month, to pick up changes." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lädt alle Alben, Künstler und Playlists einmal auf dieses iPhone, damit sich alles sofort und auch ohne Verbindung öffnet. Große Bibliotheken brauchen ein paar Minuten. Wiederhole es ab und zu, etwa einmal im Monat, um Änderungen zu übernehmen."
           }
         }
       }
     },
-    "Log out of %@?": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Von %@ abmelden?"
+    "Log out" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abmelden"
           }
         }
       }
     },
-    "Login": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anmeldung"
+    "Log out of %@?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von %@ abmelden?"
           }
         }
       }
     },
-    "Lossless · FLAC stays FLAC, largest files": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verlustfrei · FLAC bleibt FLAC, größte Dateien"
+    "Login" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anmeldung"
           }
         }
       }
     },
-    "Lyrics": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Songtext"
+    "Lossless · FLAC stays FLAC, largest files" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verlustfrei · FLAC bleibt FLAC, größte Dateien"
           }
         }
       }
     },
-    "Made for you": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Für dich"
+    "Lyrics" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songtext"
           }
         }
       }
     },
-    "Managed by your server · songs can’t be changed here": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vom Server verwaltet · Songs hier nicht änderbar"
+    "Made for you" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für dich"
           }
         }
       }
     },
-    "More options": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weitere Optionen"
+    "Managed by your server · songs can’t be changed here" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vom Server verwaltet · Songs hier nicht änderbar"
           }
         }
       }
     },
-    "Most played": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Häufig gespielt"
+    "More options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weitere Optionen"
           }
         }
       }
     },
-    "Name": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Name"
+    "Most played" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Häufig gespielt"
           }
         }
       }
     },
-    "New playlist": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neue Playlist"
+    "music.example.com or 192.168.1.10:4533" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "musik.example.com oder 192.168.1.10:4533"
           }
         }
       }
     },
-    "Next": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weiter"
+    "Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
           }
         }
       }
     },
-    "Next from: %@": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Als Nächstes aus: %@"
+    "New playlist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Playlist"
           }
         }
       }
     },
-    "Next in queue": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Als Nächstes in der Warteschlange"
+    "Next" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter"
           }
         }
       }
     },
-    "No downloads": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keine Downloads"
+    "Next from: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Nächstes aus: %@"
           }
         }
       }
     },
-    "No favorite albums yet. Tap the heart on an album to add it here.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine Lieblingsalben. Tippe bei einem Album auf das Herz, um es hier zu sammeln."
+    "Next in queue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Nächstes in der Warteschlange"
           }
         }
       }
     },
-    "No favorite artists yet. Tap the heart on an artist to add them here.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine Lieblingskünstler. Tippe bei einem Künstler auf das Herz, um ihn hier zu sammeln."
+    "No downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Downloads"
           }
         }
       }
     },
-    "No favorites yet.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine Favoriten."
+    "No favorite albums yet. Tap the heart on an album to add it here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Lieblingsalben. Tippe bei einem Album auf das Herz, um es hier zu sammeln."
           }
         }
       }
     },
-    "No lyrics for this song.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kein Songtext für diesen Song."
+    "No favorite artists yet. Tap the heart on an artist to add them here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Lieblingskünstler. Tippe bei einem Künstler auf das Herz, um ihn hier zu sammeln."
           }
         }
       }
     },
-    "No playlists yet.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine Playlists."
+    "No favorites yet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Favoriten."
           }
         }
       }
     },
-    "No results for “%@”": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keine Ergebnisse für „%@“"
+    "No lyrics for this song." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Songtext für diesen Song."
           }
         }
       }
     },
-    "None": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keine"
+    "No playlists yet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Playlists."
           }
         }
       }
     },
-    "Not now": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jetzt nicht"
+    "No results for “%@”" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Ergebnisse für „%@“"
           }
         }
       }
     },
-    "Not synced yet": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch nicht synchronisiert"
+    "None" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine"
           }
         }
       }
     },
-    "Nothing downloaded yet. Tap the arrow on an album, playlist or your favorites to listen offline.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch nichts heruntergeladen. Tippe auf den Pfeil bei einem Album, einer Playlist oder deinen Lieblingssongs, um offline zu hören."
+    "Not now" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jetzt nicht"
           }
         }
       }
     },
-    "Nothing downloaded yet. Use the download button on an album or playlist, or “Download” in a song’s menu.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch nichts heruntergeladen. Nutze den Download-Knopf bei einem Album oder einer Playlist oder „Herunterladen“ im Menü eines Songs."
+    "Not synced yet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nicht synchronisiert"
           }
         }
       }
     },
-    "Nothing here yet.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hier ist noch nichts."
+    "Nothing downloaded yet. Tap the arrow on an album, playlist or your favorites to listen offline." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nichts heruntergeladen. Tippe auf den Pfeil bei einem Album, einer Playlist oder deinen Lieblingssongs, um offline zu hören."
           }
         }
       }
     },
-    "Nothing in your library matches “%@”.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nichts in deiner Bibliothek passt zu „%@“."
+    "Nothing downloaded yet. Use the download button on an album or playlist, or “Download” in a song’s menu." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nichts heruntergeladen. Nutze den Download-Knopf bei einem Album oder einer Playlist oder „Herunterladen“ im Menü eines Songs."
           }
         }
       }
     },
-    "Nothing is playing in Tonalo.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In Tonalo läuft gerade nichts."
+    "Nothing here yet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier ist noch nichts."
           }
         }
       }
     },
-    "Nothing playing": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nichts in der Wiedergabe"
+    "Nothing in your library matches “%@”." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts in deiner Bibliothek passt zu „%@“."
           }
         }
       }
     },
-    "Now playing": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Läuft gerade"
+    "Nothing is playing in Tonalo." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Tonalo läuft gerade nichts."
           }
         }
       }
     },
-    "OK": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "OK"
+    "Nothing playing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts in der Wiedergabe"
           }
         }
       }
     },
-    "Off": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aus"
+    "Now playing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Läuft gerade"
           }
         }
       }
     },
-    "Offline": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Offline"
+    "Off" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus"
           }
         }
       }
     },
-    "On Wi-Fi, Tonalo uses this address whenever it answers – faster, and without your proxy. Custom headers aren’t sent to it. Leave it empty to always use the server address.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Im WLAN nutzt Tonalo diese Adresse, sobald sie antwortet – schneller und ohne deinen Proxy. Eigene Header werden an sie nicht gesendet. Leer lassen, um immer die Serveradresse zu nutzen."
+    "Offline" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline"
           }
         }
       }
     },
-    "On this iPhone": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Auf diesem iPhone"
+    "OK" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
           }
         }
       }
     },
-    "Only addresses in your home network work here, like 192.168.1.10 or nas.local.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hier gehen nur Adressen aus deinem Heimnetz, z. B. 192.168.1.10 oder nas.local."
+    "On this iPhone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf diesem iPhone"
           }
         }
       }
     },
-    "Orange": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Orange"
+    "On Wi-Fi, Tonalo uses this address whenever it answers – faster, and without your proxy. Custom headers aren’t sent to it. Leave it empty to always use the server address." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im WLAN nutzt Tonalo diese Adresse, sobald sie antwortet – schneller und ohne deinen Proxy. Eigene Header werden an sie nicht gesendet. Leer lassen, um immer die Serveradresse zu nutzen."
           }
         }
       }
     },
-    "Original": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Original"
+    "Only addresses in your home network work here, like 192.168.1.10 or nas.local." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier gehen nur Adressen aus deinem Heimnetz, z. B. 192.168.1.10 oder nas.local."
           }
         }
       }
     },
-    "Original files": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Originaldateien"
+    "Orange" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orange"
           }
         }
       }
     },
-    "Out of date": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Veraltet"
+    "Original" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original"
           }
         }
       }
     },
-    "PLAYING FROM ALBUM": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "WIRD VOM ALBUM ABGESPIELT"
+    "Original files" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Originaldateien"
           }
         }
       }
     },
-    "PLAYING FROM ARTIST": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "WIRD VOM KÜNSTLER ABGESPIELT"
+    "Out of date" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veraltet"
           }
         }
       }
     },
-    "PLAYING FROM DOWNLOADS": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "WIRD AUS DOWNLOADS ABGESPIELT"
+    "Password" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwort"
           }
         }
       }
     },
-    "PLAYING FROM FAVORITES": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "WIRD AUS LIEBLINGSSONGS ABGESPIELT"
+    "Password (leave empty to keep)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwort (leer lassen zum Behalten)"
           }
         }
       }
     },
-    "PLAYING FROM PLAYLIST": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "WIRD VON PLAYLIST ABGESPIELT"
+    "Pause" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
           }
         }
       }
     },
-    "PLAYING FROM SEARCH": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "WIRD AUS DER SUCHE ABGESPIELT"
+    "Pin to top" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oben anheften"
           }
         }
       }
     },
-    "PLAYING MIX": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MIX WIRD ABGESPIELT"
+    "Pink" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pink"
           }
         }
       }
     },
-    "Password": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Passwort"
+    "Play" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abspielen"
           }
         }
       }
     },
-    "Password (leave empty to keep)": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Passwort (leer lassen zum Behalten)"
+    "Play all" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle abspielen"
           }
         }
       }
     },
-    "Pause": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pause"
+    "Play next" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Nächstes abspielen"
           }
         }
       }
     },
-    "Pin to top": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Oben anheften"
+    "Playback" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabe"
           }
         }
       }
     },
-    "Pink": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pink"
+    "Playback error" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabefehler"
           }
         }
       }
     },
-    "Play": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abspielen"
+    "PLAYING FROM ALBUM" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WIRD VOM ALBUM ABGESPIELT"
           }
         }
       }
     },
-    "Play all": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle abspielen"
+    "PLAYING FROM ARTIST" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WIRD VOM KÜNSTLER ABGESPIELT"
           }
         }
       }
     },
-    "Play next": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Als Nächstes abspielen"
+    "PLAYING FROM DOWNLOADS" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WIRD AUS DOWNLOADS ABGESPIELT"
           }
         }
       }
     },
-    "Playback": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wiedergabe"
+    "PLAYING FROM FAVORITES" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WIRD AUS LIEBLINGSSONGS ABGESPIELT"
           }
         }
       }
     },
-    "Playback error": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wiedergabefehler"
+    "PLAYING FROM PLAYLIST" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WIRD VON PLAYLIST ABGESPIELT"
           }
         }
       }
     },
-    "Playlist": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playlist"
+    "PLAYING FROM SEARCH" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WIRD AUS DER SUCHE ABGESPIELT"
           }
         }
       }
     },
-    "Playlist deleted": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playlist gelöscht"
+    "PLAYING MIX" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MIX WIRD ABGESPIELT"
           }
         }
       }
     },
-    "Playlist • %lld songs": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playlist • %lld Songs"
+    "Playlist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlist"
           }
         }
       }
     },
-    "Playlists": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playlists"
+    "Playlist • %lld songs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlist • %lld Songs"
           }
         }
       }
     },
-    "Popular": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beliebt"
+    "Playlist deleted" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlist gelöscht"
           }
         }
       }
     },
-    "Position": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Position"
+    "Playlists" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlists"
           }
         }
       }
     },
-    "Previous": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zurück"
+    "Popular" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beliebt"
           }
         }
       }
     },
-    "Profile and settings": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Profil und Einstellungen"
+    "Position" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position"
           }
         }
       }
     },
-    "Purple": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lila"
+    "Previous" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück"
           }
         }
       }
     },
-    "Queue": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Warteschlange"
+    "Profile and settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profil und Einstellungen"
           }
         }
       }
     },
-    "Random": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zufällig"
+    "Purple" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lila"
           }
         }
       }
     },
-    "Random songs from your library": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zufällige Songs aus deiner Bibliothek"
+    "Queue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warteschlange"
           }
         }
       }
     },
-    "Recently added": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neu hinzugefügt"
+    "Random" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zufällig"
           }
         }
       }
     },
-    "Recently played": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zuletzt gespielt"
+    "Random songs from your library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zufällige Songs aus deiner Bibliothek"
           }
         }
       }
     },
-    "Red": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rot"
+    "Recently added" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neu hinzugefügt"
           }
         }
       }
     },
-    "Remove": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entfernen"
+    "Recently played" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuletzt gespielt"
           }
         }
       }
     },
-    "Remove account": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Konto entfernen"
+    "Red" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rot"
           }
         }
       }
     },
-    "Remove download": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download entfernen"
+    "Remove" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entfernen"
           }
         }
       }
     },
-    "Remove download?": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download entfernen?"
+    "Remove account" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto entfernen"
           }
         }
       }
     },
-    "Remove from favorites": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aus Favoriten entfernen"
+    "Remove download" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download entfernen"
           }
         }
       }
     },
-    "Remove this account?": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dieses Konto entfernen?"
+    "Remove download?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download entfernen?"
           }
         }
       }
     },
-    "Removed from favorites": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aus Favoriten entfernt"
+    "Remove from favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus Favoriten entfernen"
           }
         }
       }
     },
-    "Rename": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Umbenennen"
+    "Remove this account?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Konto entfernen?"
           }
         }
       }
     },
-    "Rename playlist": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playlist umbenennen"
+    "Removed from favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus Favoriten entfernt"
           }
         }
       }
     },
-    "Repeat": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wiederholen"
+    "Rename" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umbenennen"
           }
         }
       }
     },
-    "Reset to defaults": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Auf Standard zurücksetzen"
+    "Rename playlist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlist umbenennen"
           }
         }
       }
     },
-    "Retry %lld failed downloads": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld fehlgeschlagene Downloads wiederholen"
+    "Repeat" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen"
           }
         }
       }
     },
-    "Same volume for every album": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gleiche Lautstärke pro Album"
+    "Reset to defaults" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf Standard zurücksetzen"
           }
         }
       }
     },
-    "Same volume for every song": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gleiche Lautstärke für jeden Song"
+    "Retry %lld failed downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld fehlgeschlagene Downloads wiederholen"
           }
         }
       }
     },
-    "Save": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Speichern"
+    "Same volume for every album" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gleiche Lautstärke pro Album"
           }
         }
       }
     },
-    "Scrobble played songs": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gehörte Songs scrobbeln"
+    "Same volume for every song" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gleiche Lautstärke für jeden Song"
           }
         }
       }
     },
-    "Search": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suchen"
+    "Save" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speichern"
           }
         }
       }
     },
-    "Search your library": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In der Bibliothek suchen"
+    "Scrobble played songs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gehörte Songs scrobbeln"
           }
         }
       }
     },
-    "See more": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mehr anzeigen"
+    "Search" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suchen"
           }
         }
       }
     },
-    "Sent with every request, including streaming and cover art. For Cloudflare Access, create a service token in Zero Trust and paste its Client ID and Client Secret. Values are stored in the Keychain.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Werden bei jeder Anfrage mitgeschickt, auch beim Streamen und für Cover. Für Cloudflare Access in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen im Schlüsselbund."
+    "Search your library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In der Bibliothek suchen"
           }
         }
       }
     },
-    "Server": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Server"
+    "See more" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr anzeigen"
           }
         }
       }
     },
-    "Server address": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Serveradresse"
+    "Sent with every request, including streaming and cover art. For Cloudflare Access, create a service token in Zero Trust and paste its Client ID and Client Secret. Values are stored in the Keychain." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Werden bei jeder Anfrage mitgeschickt, auch beim Streamen und für Cover. Für Cloudflare Access in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen im Schlüsselbund."
           }
         }
       }
     },
-    "Server error (HTTP %lld).": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Serverfehler (HTTP %lld)."
+    "Server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server"
           }
         }
       }
     },
-    "Settings": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Einstellungen"
+    "Server address" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serveradresse"
           }
         }
       }
     },
-    "Show all": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle anzeigen"
+    "Server error (HTTP %lld)." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serverfehler (HTTP %lld)."
           }
         }
       }
     },
-    "Show as grid": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Als Raster anzeigen"
+    "Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
           }
         }
       }
     },
-    "Show as list": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Als Liste anzeigen"
+    "Show all" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle anzeigen"
           }
         }
       }
     },
-    "Show less": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weniger anzeigen"
+    "Show as grid" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Raster anzeigen"
           }
         }
       }
     },
-    "Show lyrics first in the player": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Im Player zuerst den Songtext zeigen"
+    "Show as list" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Liste anzeigen"
           }
         }
       }
     },
-    "Shuffle": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zufällig"
+    "Show less" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weniger anzeigen"
           }
         }
       }
     },
-    "Shuffle mix": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zufallsmix"
+    "Show lyrics first in the player" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im Player zuerst den Songtext zeigen"
           }
         }
       }
     },
-    "Sign in": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anmelden"
+    "Shuffle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zufällig"
           }
         }
       }
     },
-    "Sleep timer": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sleep-Timer"
+    "Shuffle mix" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zufallsmix"
           }
         }
       }
     },
-    "Songs": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Songs"
+    "Sign in" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anmelden"
           }
         }
       }
     },
-    "Songs loaded ahead": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vorgeladene Songs"
+    "Sleep timer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep-Timer"
           }
         }
       }
     },
-    "Songs that are already downloaded stay on your iPhone.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bereits geladene Songs bleiben auf deinem iPhone."
+    "Songs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songs"
           }
         }
       }
     },
-    "Songs you downloaded to listen offline.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Songs, die du zum Offline-Hören geladen hast."
+    "Songs loaded ahead" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorgeladene Songs"
           }
         }
       }
     },
-    "Sort": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sortieren"
+    "Songs that are already downloaded stay on your iPhone." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bereits geladene Songs bleiben auf deinem iPhone."
           }
         }
       }
     },
-    "Sort by": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sortieren nach"
+    "Songs you downloaded to listen offline." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songs, die du zum Offline-Hören geladen hast."
           }
         }
       }
     },
-    "Standard quality": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Standardqualität"
+    "Sort" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortieren"
           }
         }
       }
     },
-    "Start screen": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Startbildschirm"
+    "Sort by" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortieren nach"
           }
         }
       }
     },
-    "Start song radio": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Song-Radio starten"
+    "Standard quality" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standardqualität"
           }
         }
       }
     },
-    "Status": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Status"
+    "Start screen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Startbildschirm"
           }
         }
       }
     },
-    "Stop": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stoppen"
+    "Start song radio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Song-Radio starten"
           }
         }
       }
     },
-    "Storage": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Speicher"
+    "Status" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
           }
         }
       }
     },
-    "Storage used": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Belegter Speicher"
+    "Stop" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stoppen"
           }
         }
       }
     },
-    "Streaming on Wi-Fi": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Streaming im WLAN"
+    "Storage" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speicher"
           }
         }
       }
     },
-    "Streaming on cellular": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Streaming über Mobilfunk"
+    "Storage used" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Belegter Speicher"
           }
         }
       }
     },
-    "Streaming quality": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Streaming-Qualität"
+    "Streaming on cellular" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming über Mobilfunk"
           }
         }
       }
     },
-    "Swipe left to remove a header.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zum Entfernen eines Headers nach links wischen."
+    "Streaming on Wi-Fi" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming im WLAN"
           }
         }
       }
     },
-    "Switch": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wechseln"
+    "Streaming quality" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streaming-Qualität"
           }
         }
       }
     },
-    "Switch user": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Benutzer wechseln"
+    "Swipe left to remove a header." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Entfernen eines Headers nach links wischen."
           }
         }
       }
     },
-    "Sync again": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erneut synchronisieren"
+    "Switch" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wechseln"
           }
         }
       }
     },
-    "Sync library now": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bibliothek jetzt synchronisieren"
+    "Switch user" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzer wechseln"
           }
         }
       }
     },
-    "Syncing…": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wird synchronisiert …"
+    "Sync again" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut synchronisieren"
           }
         }
       }
     },
-    "Teal": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Türkis"
+    "Sync library now" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bibliothek jetzt synchronisieren"
           }
         }
       }
     },
-    "The last state of your albums, playlists and home page, so they open without waiting and offline. It fills up again as you browse.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Der letzte Stand deiner Alben, Playlists und Startseite, damit sie ohne Warten und offline öffnen. Füllt sich beim Stöbern wieder."
+    "Syncing…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird synchronisiert …"
           }
         }
       }
     },
-    "The last sync is more than a month old. Sync again to pick up new music.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Der letzte Abgleich ist über einen Monat her. Synchronisiere neu, um neue Musik zu übernehmen."
+    "Teal" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Türkis"
           }
         }
       }
     },
-    "The login couldn't be saved securely on this device.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Anmeldung konnte auf diesem Gerät nicht sicher gespeichert werden."
+    "The last state of your albums, playlists and home page, so they open without waiting and offline. It fills up again as you browse." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der letzte Stand deiner Alben, Playlists und Startseite, damit sie ohne Warten und offline öffnen. Füllt sich beim Stöbern wieder."
           }
         }
       }
     },
-    "The most efficient codec: the best sound for the least data. Converted by your server.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Der effizienteste Codec: bester Klang bei wenig Daten. Vom Server umgewandelt."
+    "The last sync is more than a month old. Sync again to pick up new music." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der letzte Abgleich ist über einen Monat her. Synchronisiere neu, um neue Musik zu übernehmen."
           }
         }
       }
     },
-    "The next songs of your queue. Swapped out by itself as you listen.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die nächsten Songs deiner Warteschlange. Werden beim Hören von selbst ausgetauscht."
+    "The login couldn't be saved securely on this device." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Anmeldung konnte auf diesem Gerät nicht sicher gespeichert werden."
           }
         }
       }
     },
-    "The playlist is removed from your server. The songs stay in your library.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Playlist wird von deinem Server gelöscht. Die Songs bleiben in deiner Bibliothek."
+    "The most efficient codec: the best sound for the least data. Converted by your server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der effizienteste Codec: bester Klang bei wenig Daten. Vom Server umgewandelt."
           }
         }
       }
     },
-    "The server address is not valid.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Serveradresse ist ungültig."
+    "The next songs of your queue. Swapped out by itself as you listen." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die nächsten Songs deiner Warteschlange. Werden beim Hören von selbst ausgetauscht."
           }
         }
       }
     },
-    "The server answered with something other than Subsonic (HTTP %lld). Check the address and your custom headers.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Der Server hat nicht wie ein Subsonic-Server geantwortet (HTTP %lld). Prüfe die Adresse und deine eigenen Header."
+    "The playlist is removed from your server. The songs stay in your library." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Playlist wird von deinem Server gelöscht. Die Songs bleiben in deiner Bibliothek."
           }
         }
       }
     },
-    "The server couldn’t be reached over https. If it really only runs on http, type the address with http:// at the start.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Der Server ist über https nicht erreichbar. Falls er wirklich nur http kann, gib die Adresse mit http:// am Anfang ein."
+    "The server address is not valid." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Serveradresse ist ungültig."
           }
         }
       }
     },
-    "This address uses http, so your custom headers would travel unencrypted over the internet. Use https.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diese Adresse nutzt http, deine eigenen Header würden also unverschlüsselt durchs Internet gehen. Nutze https."
+    "The server answered with something other than Subsonic (HTTP %lld). Check the address and your custom headers." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Server hat nicht wie ein Subsonic-Server geantwortet (HTTP %lld). Prüfe die Adresse und deine eigenen Header."
           }
         }
       }
     },
-    "This playlist is empty. Add songs with “Add to playlist” in a song’s menu.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diese Playlist ist leer. Füge Songs über „Zur Playlist hinzufügen“ im Menü eines Songs hinzu."
+    "The server couldn’t be reached over https. If it really only runs on http, type the address with http:// at the start." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Server ist über https nicht erreichbar. Falls er wirklich nur http kann, gib die Adresse mit http:// am Anfang ein."
           }
         }
       }
     },
-    "This song can't be played.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dieser Song kann nicht abgespielt werden."
+    "This address uses http, so your custom headers would travel unencrypted over the internet. Use https." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Adresse nutzt http, deine eigenen Header würden also unverschlüsselt durchs Internet gehen. Nutze https."
           }
         }
       }
     },
-    "This song is already in the playlist.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dieser Song ist schon in der Playlist."
+    "This playlist is empty. Add songs with “Add to playlist” in a song’s menu." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Playlist ist leer. Füge Songs über „Zur Playlist hinzufügen“ im Menü eines Songs hinzu."
           }
         }
       }
     },
-    "Tint backgrounds with cover colors": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hintergründe in Coverfarbe"
+    "This song can't be played." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Song kann nicht abgespielt werden."
           }
         }
       }
     },
-    "Tonalo": {
-      "shouldTranslate": false
-    },
-    "Tonalo on GitHub": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tonalo auf GitHub"
+    "This song is already in the playlist." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Song ist schon in der Playlist."
           }
         }
       }
     },
-    "Top songs": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Top-Songs"
+    "Tint backgrounds with cover colors" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hintergründe in Coverfarbe"
           }
         }
       }
+    },
+    "Tonalo" : {
+      "shouldTranslate" : false
     },
-    "Try again": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erneut versuchen"
+    "Tonalo on GitHub" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tonalo auf GitHub"
           }
         }
       }
     },
-    "Turn off timer": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Timer ausschalten"
+    "Top songs" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top-Songs"
           }
         }
       }
     },
-    "Unofficial client, not affiliated with Navidrome.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inoffizieller Client, nicht mit Navidrome verbunden."
+    "Try again" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut versuchen"
           }
         }
       }
     },
-    "Unpin": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Loslösen"
+    "Turn off timer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timer ausschalten"
           }
         }
       }
     },
-    "Up next": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Als Nächstes"
+    "Unofficial client, not affiliated with Navidrome." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inoffizieller Client, nicht mit Navidrome verbunden."
           }
         }
       }
     },
-    "Up to date": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aktuell"
+    "Unpin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loslösen"
           }
         }
       }
     },
-    "Username": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Benutzername"
+    "Up next" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Nächstes"
           }
         }
       }
     },
-    "Value": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wert"
+    "Up to date" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuell"
           }
         }
       }
     },
-    "Version": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Version"
+    "Username" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzername"
           }
         }
       }
     },
-    "Volume leveling": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lautstärke angleichen"
+    "Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wert"
           }
         }
       }
     },
-    "Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to.": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Lautstärkeangleichung nutzt die ReplayGain-Tags deiner Dateien. Beim Scrobbeln erfährt dein Server, was du gehört hast."
+    "Version" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version"
           }
         }
       }
     },
-    "Waiting for Wi-Fi": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Warte auf WLAN"
+    "Volume leveling" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lautstärke angleichen"
           }
         }
       }
     },
-    "Waiting for Wi-Fi. Songs that are already downloaded stay on your iPhone.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wartet auf WLAN. Bereits geladene Songs bleiben auf deinem iPhone."
+    "Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Lautstärkeangleichung nutzt die ReplayGain-Tags deiner Dateien. Beim Scrobbeln erfährt dein Server, was du gehört hast."
           }
         }
       }
     },
-    "Waiting…": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wartet …"
+    "Waiting for Wi-Fi" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warte auf WLAN"
           }
         }
       }
     },
-    "What do you want to listen to?": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Was willst du hören?"
+    "Waiting for Wi-Fi. Songs that are already downloaded stay on your iPhone." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wartet auf WLAN. Bereits geladene Songs bleiben auf deinem iPhone."
           }
         }
       }
     },
-    "Who’s listening?": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wer hört gerade?"
+    "Waiting…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wartet …"
           }
         }
       }
     },
-    "Wi-Fi": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "WLAN"
+    "What do you want to listen to?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was willst du hören?"
           }
         }
       }
     },
-    "Wrong username or password.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Benutzername oder Passwort falsch."
+    "Who’s listening?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wer hört gerade?"
           }
         }
       }
     },
-    "Yellow": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gelb"
+    "Wi-Fi" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WLAN"
           }
         }
       }
     },
-    "Your Library": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bibliothek"
+    "Wrong username or password." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzername oder Passwort falsch."
           }
         }
       }
     },
-    "Your downloads still work.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deine Downloads funktionieren trotzdem."
+    "Yellow" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gelb"
           }
         }
       }
     },
-    "Your favorite songs, shuffled": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deine Lieblingssongs, gemischt"
+    "You’re offline" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du bist offline"
           }
         }
       }
     },
-    "Your most played": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deine meistgehörten Songs"
+    "You’re on mobile data. Downloads start as soon as you’re on Wi-Fi, or right away if you allow cellular." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du bist im Mobilfunknetz. Die Downloads starten, sobald du im WLAN bist – oder sofort, wenn du Mobilfunk erlaubst."
           }
         }
       }
     },
-    "Your music, from your own server.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deine Musik, von deinem eigenen Server."
+    "Your downloads still work." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Downloads funktionieren trotzdem."
           }
         }
       }
     },
-    "Your playlists": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deine Playlists"
+    "Your favorite songs, shuffled" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Lieblingssongs, gemischt"
           }
         }
       }
     },
-    "Your server doesn’t allow this change.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dein Server erlaubt diese Änderung nicht."
+    "Your Library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bibliothek"
           }
         }
       }
     },
-    "You’re offline": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Du bist offline"
+    "Your most played" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine meistgehörten Songs"
           }
         }
       }
     },
-    "You’re on mobile data. Downloads start as soon as you’re on Wi-Fi, or right away if you allow cellular.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Du bist im Mobilfunknetz. Die Downloads starten, sobald du im WLAN bist – oder sofort, wenn du Mobilfunk erlaubst."
+    "Your music, from your own server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Musik, von deinem eigenen Server."
           }
         }
       }
     },
-    "music.example.com or 192.168.1.10:4533": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "musik.example.com oder 192.168.1.10:4533"
+    "Your playlists" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Playlists"
           }
         }
       }
     },
-    "your TV": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "deinem TV"
+    "Your server doesn’t allow this change." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Server erlaubt diese Änderung nicht."
           }
         }
       }
     },
-    "“%@” is already in your favorite songs.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "„%@“ ist schon in deinen Lieblingssongs."
+    "your TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "deinem TV"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }
