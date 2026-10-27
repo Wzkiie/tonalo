@@ -266,7 +266,7 @@ struct FavoritesView: View {
             Text("\(list.count) songs").font(.system(size: 13)).foregroundStyle(Color.subtle)
         } actions: {
             HStack(spacing: 24) {
-                DownloadButton(songs: list, download: { app.downloads.download(list) }, remove: { app.downloads.remove(list.map(\.id)) })
+                DownloadButton(songs: list, download: { app.downloads.download(list) }, remove: { app.downloads.removeLoose(list.map(\.id)) })
                     .font(.system(size: 22)).foregroundStyle(Color.subtle)
                 PlayButtons(playing: playing,
                             play: { playing ? app.player.toggle() : app.player.play(list, context: context) },

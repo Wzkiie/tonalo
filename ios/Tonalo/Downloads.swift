@@ -14,6 +14,20 @@ struct DownloadIndex: Codable {
     var queued: [String: Song] = [:]
     var albums: [String: Album] = [:]
     var playlists: [String: Playlist] = [:]
+    /// Songs downloaded on their own (from a song's menu or the favorites), so removing an album keeps them.
+    var loose: Set<String> = []
+
+    init() {}
+
+    /// Missing parts are fine: an index written by an older version must never come back empty.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        songs = try c.decodeIfPresent([String: DownloadedSong].self, forKey: .songs) ?? [:]
+        queued = (try? c.decodeIfPresent([String: Song].self, forKey: .queued)) ?? [:]
+        albums = (try? c.decodeIfPresent([String: Album].self, forKey: .albums)) ?? [:]
+        playlists = (try? c.decodeIfPresent([String: Playlist].self, forKey: .playlists)) ?? [:]
+        loose = (try? c.decodeIfPresent(Set<String>.self, forKey: .loose)) ?? []
+    }
 }
 
 enum DownloadState: Equatable {
@@ -83,8 +97,15 @@ final class DownloadStore {
 
     func reload() {
         progress = [:]; failed = [:]
-        guard let key = accountKey, let data = try? Data(contentsOf: Self.folder(key).appendingPathComponent("index.json")),
-              let idx = try? JSONDecoder().decode(DownloadIndex.self, from: data) else { index = DownloadIndex(); return }
+        let file = accountKey.map { Self.folder($0).appendingPathComponent("index.json") }
+        guard let file, let data = try? Data(contentsOf: file) else { index = DownloadIndex(); return }
+        guard let idx = try? JSONDecoder().decode(DownloadIndex.self, from: data) else {
+            // Unreadable (shouldn't happen): keep it aside instead of overwriting it with an empty list on the next save
+            let aside = file.deletingLastPathComponent().appendingPathComponent("index-unreadable-\(Int(Date().timeIntervalSince1970)).json")
+            try? FileManager.default.moveItem(at: file, to: aside)
+            index = DownloadIndex()
+            return
+        }
         index = idx
         // iOS may have dropped transfers in the meantime – don't leave those stuck as "downloading"
         DownloadSession.shared.session.getAllTasks { tasks in
@@ -163,7 +184,13 @@ final class DownloadStore {
 
     // MARK: Downloading
 
+    /// Songs on their own – from a song's menu or the favorites. They stay when an album or playlist with them is removed.
     func download(_ songs: [Song]) {
+        index.loose.formUnion(songs.map(\.id))
+        start(songs)
+    }
+
+    private func start(_ songs: [Song]) {
         guard let client = app?.client, let key = accountKey else { return }
         Self.prepareRoot()
         for song in songs where index.songs[song.id] == nil && index.queued[song.id] == nil {
@@ -187,13 +214,13 @@ final class DownloadStore {
     func downloadAlbum(_ album: Album) {
         index.albums[album.id] = album
         saveCover(album.coverArt ?? album.id, client: app?.client, account: accountKey)
-        download(album.song ?? [])
+        start(album.song ?? [])
     }
 
     func downloadPlaylist(_ playlist: Playlist) {
         index.playlists[playlist.id] = playlist
         saveCover(playlist.coverArt ?? playlist.id, client: app?.client, account: accountKey)
-        download(playlist.entry ?? [])
+        start(playlist.entry ?? [])
     }
 
     /// Cover art is stored next to the songs so downloaded music looks right offline.
@@ -223,11 +250,12 @@ final class DownloadStore {
 
     func cancelAll() { cancel(Array(index.queued.keys)) }
 
-    func retryFailed() { download(Array(failed.values)) }
+    func retryFailed() { start(Array(failed.values)) }
 
-    /// Cancels a collection's pending songs and forgets the collection if nothing of it is downloaded yet.
+    /// Cancels a collection's pending songs – not those another album, playlist or single download still waits for –
+    /// and forgets the collection if nothing of it is downloaded yet.
     func cancelCollection(_ songs: [Song], album: String? = nil, playlist: String? = nil) {
-        cancel(songs.map(\.id))
+        cancel(songs.map(\.id).filter { !index.loose.contains($0) && !neededByAlbums($0, except: album) && !neededByPlaylists($0, except: playlist) })
         if !songs.contains(where: { isDownloaded($0.id) }) {
             if let album { index.albums.removeValue(forKey: album) }
             if let playlist { index.playlists.removeValue(forKey: playlist) }
@@ -261,7 +289,7 @@ final class DownloadStore {
                 self.cancelTasks(ids) {
                     Task { @MainActor in
                         for s in songs { self.index.queued.removeValue(forKey: s.id) }
-                        self.download(songs)
+                        self.start(songs)
                     }
                 }
             }
@@ -283,7 +311,7 @@ final class DownloadStore {
         cancelTasks(Set(songs.map(\.id))) {
             Task { @MainActor in
                 for s in songs { self.index.queued.removeValue(forKey: s.id) }
-                self.download(songs)
+                self.start(songs)
             }
         }
     }
@@ -299,24 +327,35 @@ final class DownloadStore {
                 try? FileManager.default.removeItem(at: Self.lyricsFile(account: key, id: id))
             }
             index.queued.removeValue(forKey: id)
+            index.loose.remove(id)
             progress.removeValue(forKey: id)
         }
         save()
     }
 
-    /// Removes an album's songs, except those that a downloaded playlist still needs.
+    /// Removes songs downloaded on their own (the favorites), but keeps those a downloaded album or playlist needs.
+    func removeLoose(_ songIds: [String]) {
+        index.loose.subtract(songIds)
+        remove(songIds.filter { !neededByAlbums($0) && !neededByPlaylists($0) })
+    }
+
+    /// Removes an album's songs, except those that a downloaded playlist or a single download still needs.
     func removeAlbum(_ id: String) {
         guard let album = index.albums.removeValue(forKey: id) else { return }
-        remove((album.song ?? []).map(\.id).filter { !neededByPlaylists($0) })
+        remove((album.song ?? []).map(\.id).filter { !index.loose.contains($0) && !neededByAlbums($0) && !neededByPlaylists($0) })
     }
 
     func removePlaylist(_ id: String) {
         guard let pl = index.playlists.removeValue(forKey: id) else { return }
-        remove((pl.entry ?? []).map(\.id).filter { !neededByAlbums($0) && !neededByPlaylists($0) })
+        remove((pl.entry ?? []).map(\.id).filter { !index.loose.contains($0) && !neededByAlbums($0) && !neededByPlaylists($0) })
     }
 
-    private func neededByPlaylists(_ id: String) -> Bool { index.playlists.values.contains { ($0.entry ?? []).contains { $0.id == id } } }
-    private func neededByAlbums(_ id: String) -> Bool { index.albums.values.contains { ($0.song ?? []).contains { $0.id == id } } }
+    private func neededByPlaylists(_ id: String, except: String? = nil) -> Bool {
+        index.playlists.contains { $0.key != except && ($0.value.entry ?? []).contains { $0.id == id } }
+    }
+    private func neededByAlbums(_ id: String, except: String? = nil) -> Bool {
+        index.albums.contains { $0.key != except && ($0.value.song ?? []).contains { $0.id == id } }
+    }
 
     func removeAll() {
         cancelTasks(Set(index.queued.keys))
@@ -352,7 +391,8 @@ final class DownloadStore {
             }
             return
         }
-        if let song = index.queued.removeValue(forKey: songId) {
+        // Also when it was marked failed meanwhile: iOS finished it in the background before telling us
+        if let song = index.queued.removeValue(forKey: songId) ?? failed.removeValue(forKey: songId) {
             index.songs[songId] = DownloadedSong(song: song, file: file, size: size)
         } else if index.songs[songId] == nil {
             // Cancelled while the last bytes were arriving: don't leave an orphaned file behind
@@ -382,6 +422,7 @@ final class DownloadSession: NSObject, URLSessionDownloadDelegate {
         config.sessionSendsLaunchEvents = true
         config.isDiscretionary = false
         config.httpMaximumConnectionsPerHost = 3
+        config.httpCookieStorage = nil // no proxy cookies on disk, see ServerSession
         return URLSession(configuration: config, delegate: self, delegateQueue: nil)
     }()
 
@@ -432,7 +473,7 @@ final class DownloadSession: NSObject, URLSessionDownloadDelegate {
     /// Custom headers (secrets) must not follow a redirect to another host.
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
-        completionHandler(task.originalRequest?.url?.host == request.url?.host ? request : nil)
+        completionHandler(ServerSession.allowsRedirect(from: task.originalRequest?.url, to: request.url) ? request : nil)
     }
 
     func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
