@@ -25,8 +25,8 @@ final class WatchBridge: NSObject {
             let p = app.player
             _ = (p.current?.id, p.current?.starred, p.isPlaying, p.shuffle, p.repeatMode, p.duration, p.context)
             _ = Theme.shared.accentHex
-        } onChange: {
-            Task { @MainActor [weak self] in
+        } onChange: { [weak self] in
+            Task { @MainActor in
                 self?.push()
                 self?.watchPlayer()
             }

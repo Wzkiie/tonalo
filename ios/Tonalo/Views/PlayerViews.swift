@@ -218,8 +218,7 @@ struct NowPlayingView: View {
     }
 
     private func page(_ song: Song) -> some View {
-        let p = app.player
-        return VStack(spacing: 0) {
+        VStack(spacing: 0) {
             topBar(song)
             Spacer(minLength: 16)
             CoverView(id: song.coverArt ?? song.albumId, size: 800, corner: 8)

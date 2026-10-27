@@ -234,8 +234,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             _ = app.player.shuffle
             _ = app.player.repeatMode
             _ = app.downloads.index.songs.count
-        } onChange: {
-            Task { @MainActor [weak self] in
+        } onChange: { [weak self] in
+            Task { @MainActor in
                 guard let self, self.interface != nil else { return }
                 self.updateButtons()
                 if let d = self.downloads { self.fillDownloads(d) }
