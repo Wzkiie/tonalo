@@ -1,36 +1,39 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "Add song to favorites": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Song zu Lieblingssongs hinzufügen"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "Add song to favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Song zu Lieblingssongs hinzufügen"
           }
         }
       }
     },
-    "Adds the song that is playing in Tonalo to your favorite songs.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fügt den Song, der gerade in Tonalo läuft, zu deinen Lieblingssongs hinzu."
+    "Adds the song that is playing in Tonalo to your favorite songs." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fügt den Song, der gerade in Tonalo läuft, zu deinen Lieblingssongs hinzu."
           }
         }
       }
     },
-    "Favorite song": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lieblingssong"
+    "Favorite song" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lieblingssong"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

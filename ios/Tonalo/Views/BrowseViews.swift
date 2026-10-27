@@ -426,37 +426,107 @@ struct LibraryView: View {
     @State private var albums: [Album] = []
     @State private var albumsDone = false
     @State private var artists: [Artist] = []
+    @State private var query = ""
+    @State private var searching = false
+    @State private var foundAlbums: [Album] = []
+    @AppStorage("library.sort") private var sort: Sort = .recent
+    @AppStorage("library.grid") private var grid = false
+    @FocusState private var searchFocused: Bool
 
     enum Filter { case playlists, albums, artists, downloads }
+
+    enum Sort: String, CaseIterable {
+        case recent, name, creator
+        var title: LocalizedStringKey {
+            switch self {
+            case .recent: "Recently added"
+            case .name: "Alphabetical"
+            case .creator: "Artist or creator"
+            }
+        }
+        /// The album list the server sorts this way.
+        var albumListType: String {
+            switch self {
+            case .recent: "newest"
+            case .name: "alphabeticalByName"
+            case .creator: "alphabeticalByArtist"
+            }
+        }
+    }
+
+    /// One entry of the library, whatever it is.
+    enum Item: Identifiable {
+        case favorites, downloads, playlist(Playlist), album(Album), artist(Artist)
+        var id: String {
+            switch self {
+            case .favorites: "favorites"
+            case .downloads: "downloads"
+            case .playlist(let p): "p" + p.id
+            case .album(let a): "a" + a.id
+            case .artist(let a): "r" + a.id
+            }
+        }
+        var name: String {
+            switch self {
+            case .favorites, .downloads: ""
+            case .playlist(let p): p.name
+            case .album(let a): a.name
+            case .artist(let a): a.name
+            }
+        }
+        var creator: String {
+            switch self {
+            case .playlist(let p): p.owner ?? ""
+            case .album(let a): a.artist ?? ""
+            case .artist(let a): a.name
+            default: ""
+            }
+        }
+        /// When it was added or changed (ISO date from the server, sorts as text).
+        var date: String {
+            switch self {
+            case .playlist(let p): p.changed ?? ""
+            case .album(let a): a.starred ?? ""
+            case .artist(let a): a.starred ?? ""
+            default: ""
+            }
+        }
+        var pinned: Bool { if case .favorites = self { true } else if case .downloads = self { true } else { false } }
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 TabHeader(title: "Your Library").padding(.top, 8)
                 chips
-                LazyVStack(alignment: .leading, spacing: 12) { content }
+                toolbar
+                if grid {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], alignment: .leading, spacing: 18) {
+                        ForEach(items) { tile($0) }
+                    }
+                } else {
+                    LazyVStack(alignment: .leading, spacing: 12) { ForEach(items) { row($0) } }
+                }
+                footer
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
+        .scrollDismissesKeyboard(.immediately)
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
         .task(id: "\(app.currentId?.uuidString ?? "")\(app.playlistsVersion)") { await load() }
-        .task(id: filter) { await loadFilter() }
-        .refreshable { await Task { await load(); await loadFilter() }.value }
+        .task(id: "\(filter.map { "\($0)" } ?? "")\(sort.rawValue)") { await loadFilter() }
+        .task(id: query) { await searchAlbums() }
+        .refreshable { await Task { await load(); albums = []; albumsDone = false; await loadFilter() }.value }
     }
 
+    // MARK: Filter bar
+
+    /// All chips stay where they are; the chosen one lights up, tapping it again shows everything.
     private var chips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                if filter != nil {
-                    Button { filter = nil } label: {
-                        Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
-                            .frame(width: 32, height: 32).background(Color.elevated, in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Clear filter")
-                }
                 chip("Playlists", .playlists)
                 chip("Albums", .albums)
                 chip("Artists", .artists)
@@ -465,69 +535,182 @@ struct LibraryView: View {
         }
     }
 
-    @ViewBuilder private func chip(_ title: LocalizedStringKey, _ f: Filter) -> some View {
-        if filter == nil || filter == f {
-            Chip(title: title, selected: filter == f) { filter = filter == f ? nil : f }
+    private func chip(_ title: LocalizedStringKey, _ f: Filter) -> some View {
+        Chip(title: title, selected: filter == f) {
+            withAnimation(.easeOut(duration: 0.15)) { filter = filter == f ? nil : f }
         }
     }
 
-    @ViewBuilder private var content: some View {
+    /// Sort order on the left, search and list/grid on the right – or the search field while searching.
+    private var toolbar: some View {
+        HStack(spacing: 14) {
+            if searching {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(Color.subtle)
+                    TextField("Search your library", text: $query)
+                        .focused($searchFocused).submitLabel(.search)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                }
+                .padding(.horizontal, 12).frame(height: 36)
+                .background(Color.elevated, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                Button("Cancel") { withAnimation(.easeOut(duration: 0.15)) { query = ""; searching = false } }
+                    .foregroundStyle(.white)
+            } else {
+                if filter != .artists {
+                    Menu {
+                        Picker("Sort by", selection: $sort) {
+                            ForEach(Sort.allCases, id: \.self) { Text($0.title).tag($0) }
+                        }
+                    } label: {
+                        Label { Text(sort.title) } icon: { Image(systemName: "arrow.up.arrow.down") }
+                            .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                    }
+                }
+                Spacer()
+                Button { withAnimation(.easeOut(duration: 0.15)) { searching = true }; searchFocused = true } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .accessibilityLabel("Search your library")
+                Button { withAnimation(.easeOut(duration: 0.2)) { grid.toggle() } } label: {
+                    Image(systemName: grid ? "list.bullet" : "square.grid.2x2")
+                }
+                .accessibilityLabel(grid ? "Show as list" : "Show as grid")
+            }
+        }
+        .font(.system(size: 17, weight: .semibold))
+        .foregroundStyle(.white)
+        .frame(height: 36)
+    }
+
+    @ViewBuilder private var footer: some View {
+        if filter == .albums && query.isEmpty && !albumsDone {
+            ProgressView().frame(maxWidth: .infinity).padding()
+        } else if items.isEmpty {
+            Text(emptyText).font(.subheadline).foregroundStyle(Color.subtle)
+                .frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 40)
+        }
+    }
+
+    private var emptyText: LocalizedStringKey {
+        if !query.isEmpty { return "Nothing in your library matches “\(query)”." }
+        return filter == .downloads ? "Nothing downloaded yet. Tap the arrow on an album, playlist or your favorites to listen offline." : "Nothing here yet."
+    }
+
+    // MARK: Items
+
+    private var downloadedFavorites: Int {
+        (starred?.song ?? []).filter { app.downloads.localURL($0.id) != nil }.count
+    }
+
+    private var items: [Item] {
+        let dl = app.downloads
+        var pinned: [Item] = []
+        var rest: [Item]
         switch filter {
         case nil:
-            NavigationLink(value: Route.favorites) {
-                ItemRow(title: String(localized: "Favorite songs"),
-                        subtitle: String(localized: "Playlist • \(starred?.song?.count ?? 0) songs"), pinned: true) { FavoritesArt() }
-            }
-            .buttonStyle(.plain)
-            NavigationLink(value: Route.downloads) {
-                ItemRow(title: String(localized: "Downloads"),
-                        subtitle: String(localized: "\(app.downloads.downloadedSongs.count) songs"), pinned: true) { DownloadsArt() }
-            }
-            .buttonStyle(.plain)
-            ForEach(playlists) { playlistRow($0) }
-            ForEach(starred?.album ?? []) { albumRow($0) }
-            ForEach(starred?.artist ?? []) { artistRow($0) }
+            pinned = [.favorites, .downloads]
+            rest = playlists.map(Item.playlist) + (starred?.album ?? []).map(Item.album) + (starred?.artist ?? []).map(Item.artist)
         case .playlists:
-            ForEach(playlists) { playlistRow($0) }
+            rest = playlists.map(Item.playlist)
         case .albums:
-            ForEach(albums) { a in
-                albumRow(a).onAppear { if a.id == albums.last?.id { Task { await moreAlbums() } } }
-            }
-            if !albumsDone { ProgressView().frame(maxWidth: .infinity).padding() }
+            // The server already sorts the album list; a search asks the server, so all albums are found
+            return (query.isEmpty ? albums : foundAlbums).map(Item.album)
         case .artists:
-            ForEach(artists) { artistRow($0) }
+            rest = artists.map(Item.artist)
+            return matching(rest)
         case .downloads:
-            ForEach(app.downloads.index.playlists.values.sorted { $0.name < $1.name }) { playlistRow($0) }
-            ForEach(app.downloads.index.albums.values.sorted { $0.name < $1.name }) { albumRow($0) }
+            pinned = [.downloads] + (downloadedFavorites > 0 ? [.favorites] : [])
+            rest = dl.index.playlists.values.map(Item.playlist) + dl.index.albums.values.map(Item.album)
+        }
+        return query.isEmpty ? pinned + sorted(rest) : matching(sorted(rest))
+    }
+
+    private func sorted(_ list: [Item]) -> [Item] {
+        switch sort {
+        case .recent:
+            // Newest first; things without a date keep the server's order behind them
+            return list.enumerated().sorted { a, b in
+                a.element.date != b.element.date ? a.element.date > b.element.date : a.offset < b.offset
+            }.map(\.element)
+        case .name:
+            return list.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        case .creator:
+            return list.sorted {
+                let c = $0.creator.localizedStandardCompare($1.creator)
+                return c == .orderedSame ? $0.name.localizedStandardCompare($1.name) == .orderedAscending : c == .orderedAscending
+            }
         }
     }
 
-    private func playlistRow(_ p: Playlist) -> some View {
-        NavigationLink(value: Route.playlist(p.id)) {
-            ItemRow(title: p.name, subtitle: [String(localized: "Playlist"), p.owner].compactMap { $0 }.joined(separator: " • ")) {
-                CoverView(id: p.coverArt ?? p.id, size: 160, corner: 2)
-            }
-        }
-        .buttonStyle(.plain)
+    private func matching(_ list: [Item]) -> [Item] {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return list }
+        return list.filter { $0.name.localizedStandardContains(q) || $0.creator.localizedStandardContains(q) }
     }
 
-    private func albumRow(_ a: Album) -> some View {
-        NavigationLink(value: Route.album(a.id)) {
-            ItemRow(title: a.name, subtitle: [String(localized: "Album"), a.artist].compactMap { $0 }.joined(separator: " • ")) {
-                CoverView(id: a.coverArt ?? a.id, size: 160, corner: 2)
-            }
+    private func route(_ item: Item) -> Route {
+        switch item {
+        case .favorites: .favorites
+        case .downloads: .downloads
+        case .playlist(let p): .playlist(p.id)
+        case .album(let a): .album(a.id)
+        case .artist(let a): .artist(a.id)
         }
-        .buttonStyle(.plain)
     }
 
-    private func artistRow(_ a: Artist) -> some View {
-        NavigationLink(value: Route.artist(a.id)) {
-            ItemRow(title: a.name, subtitle: String(localized: "Artist")) {
-                CoverView(id: a.coverArt ?? a.id, size: 160, round: true)
-            }
+    private func subtitle(_ item: Item) -> String {
+        switch item {
+        case .favorites:
+            filter == .downloads
+                ? String(localized: "\(downloadedFavorites) of \(starred?.song?.count ?? 0) downloaded")
+                : String(localized: "Playlist • \(starred?.song?.count ?? 0) songs")
+        case .downloads: String(localized: "\(app.downloads.downloadedSongs.count) songs")
+        case .playlist(let p): [String(localized: "Playlist"), p.owner].compactMap { $0 }.joined(separator: " • ")
+        case .album(let a): [String(localized: "Album"), a.artist].compactMap { $0 }.joined(separator: " • ")
+        case .artist: String(localized: "Artist")
+        }
+    }
+
+    private func title(_ item: Item) -> String {
+        switch item {
+        case .favorites: String(localized: "Favorite songs")
+        case .downloads: String(localized: "Downloads")
+        default: item.name
+        }
+    }
+
+    @ViewBuilder private func art(_ item: Item, size: Int) -> some View {
+        switch item {
+        case .favorites: FavoritesArt()
+        case .downloads: DownloadsArt()
+        case .playlist(let p): CoverView(id: p.coverArt ?? p.id, size: size, corner: 2)
+        case .album(let a): CoverView(id: a.coverArt ?? a.id, size: size, corner: 2)
+        case .artist(let a): CoverView(id: a.coverArt ?? a.id, size: size, round: true)
+        }
+    }
+
+    private func row(_ item: Item) -> some View {
+        NavigationLink(value: route(item)) {
+            ItemRow(title: title(item), subtitle: subtitle(item), pinned: item.pinned) { art(item, size: 160) }
         }
         .buttonStyle(.plain)
+        .onAppear { if case .album(let a) = item, a.id == albums.last?.id { Task { await moreAlbums() } } }
     }
+
+    private func tile(_ item: Item) -> some View {
+        NavigationLink(value: route(item)) {
+            VStack(alignment: .leading, spacing: 6) {
+                art(item, size: 300).aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity)
+                Text(title(item)).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+                Text(subtitle(item)).font(.system(size: 12)).foregroundStyle(Color.subtle).lineLimit(1)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onAppear { if case .album(let a) = item, a.id == albums.last?.id { Task { await moreAlbums() } } }
+    }
+
+    // MARK: Loading
 
     private func load() async {
         guard let client = app.client else { return }
@@ -542,17 +725,30 @@ struct LibraryView: View {
     private func loadFilter() async {
         guard let client = app.client else { return }
         switch filter {
-        case .albums where albums.isEmpty: await moreAlbums()
+        case .albums:
+            albums = []; albumsDone = false
+            await moreAlbums()
         case .artists where artists.isEmpty: artists = (try? await client.artists()) ?? []
         default: break
         }
     }
 
     private func moreAlbums() async {
-        guard !albumsDone, let client = app.client else { return }
-        guard let page = try? await client.albumList("alphabeticalByName", size: 60, offset: albums.count) else { albumsDone = true; return }
+        guard filter == .albums, !albumsDone, let client = app.client else { return }
+        let type = sort.albumListType
+        guard let page = try? await client.albumList(type, size: 60, offset: albums.count) else { albumsDone = true; return }
+        guard type == sort.albumListType else { return } // the sort changed meanwhile
         albums += page.filter { a in !albums.contains { $0.id == a.id } }
         if page.count < 60 { albumsDone = true }
+    }
+
+    /// Searching among albums asks the server, since only part of a large album list is loaded.
+    private func searchAlbums() async {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        guard filter == .albums, !q.isEmpty, let client = app.client else { foundAlbums = []; return }
+        try? await Task.sleep(for: .milliseconds(300))
+        guard !Task.isCancelled, let found = try? await client.search(q).album else { return }
+        foundAlbums = found
     }
 }
 

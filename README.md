@@ -93,7 +93,7 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 
 ### What it does
 
-- Home, search with genre tiles, and a library with playlists, albums, artists and downloads
+- Home, search with genre tiles, and a library with playlists, albums, artists and downloads – sortable, searchable and as a list or grid
 - Player with synced lyrics, a queue, swipe gestures, colors taken from the cover and a sleep timer
 - **Continue on another device**: started on the TV, finished on the iPhone – the app offers to pick up the queue another device left on your server
 - **Playlists**: create, rename and delete them, add songs from any menu (with a warning for duplicates), remove and reorder songs

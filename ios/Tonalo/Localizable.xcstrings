@@ -91,6 +91,16 @@
         }
       }
     },
+    "%lld of %lld downloaded": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld von %2$lld geladen"
+          }
+        }
+      }
+    },
     "%lld of these songs are already in the playlist.": {
       "localizations": {
         "de": {
@@ -352,6 +362,16 @@
         }
       }
     },
+    "Alphabetical": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alphabetisch"
+          }
+        }
+      }
+    },
     "Already in “%@”": {
       "localizations": {
         "de": {
@@ -388,6 +408,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Künstler"
+          }
+        }
+      }
+    },
+    "Artist or creator": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Künstler oder Ersteller"
           }
         }
       }
@@ -549,16 +579,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cover-Cache leeren"
-          }
-        }
-      }
-    },
-    "Clear filter": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filter entfernen"
           }
         }
       }
@@ -1479,12 +1499,42 @@
         }
       }
     },
+    "Nothing downloaded yet. Tap the arrow on an album, playlist or your favorites to listen offline.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch nichts heruntergeladen. Tippe auf den Pfeil bei einem Album, einer Playlist oder deinen Lieblingssongs, um offline zu hören."
+          }
+        }
+      }
+    },
     "Nothing downloaded yet. Use the download button on an album or playlist, or “Download” in a song’s menu.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Noch nichts heruntergeladen. Nutze den Download-Knopf bei einem Album oder einer Playlist oder „Herunterladen“ im Menü eines Songs."
+          }
+        }
+      }
+    },
+    "Nothing here yet.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier ist noch nichts."
+          }
+        }
+      }
+    },
+    "Nothing in your library matches “%@”.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nichts in deiner Bibliothek passt zu „%@“."
           }
         }
       }
@@ -2079,6 +2129,16 @@
         }
       }
     },
+    "Search your library": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In der Bibliothek suchen"
+          }
+        }
+      }
+    },
     "See more": {
       "localizations": {
         "de": {
@@ -2145,6 +2205,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Alle anzeigen"
+          }
+        }
+      }
+    },
+    "Show as grid": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Raster anzeigen"
+          }
+        }
+      }
+    },
+    "Show as list": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Liste anzeigen"
           }
         }
       }
@@ -2255,6 +2335,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sortieren"
+          }
+        }
+      }
+    },
+    "Sort by": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortieren nach"
           }
         }
       }
@@ -2686,6 +2776,7 @@
       }
     },
     "Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to.": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {

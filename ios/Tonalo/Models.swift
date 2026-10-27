@@ -93,6 +93,7 @@ struct Playlist: Codable, Hashable, Identifiable {
     var owner: String?
     var comment: String?
     var `public`: Bool?
+    var changed: String?
     var entry: [Song]?
 }
 
