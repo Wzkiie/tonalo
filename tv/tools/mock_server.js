@@ -86,7 +86,9 @@ function wav(sec) {
 }
 const WAV = wav(180);
 
-const ok = o => ({ 'subsonic-response': Object.assign({ status: 'ok', version: '1.16.1', type: 'demo', serverVersion: '1.0', openSubsonic: true }, o) });
+// MOCK_VERSION pretends to be another server version – a second instance with a different one stands in for a foreign server
+const SERVER = { version: '1.16.1', type: 'demo', serverVersion: process.env.MOCK_VERSION || '1.0', openSubsonic: true };
+const ok = o => ({ 'subsonic-response': Object.assign({ status: 'ok' }, SERVER, o) });
 const byId = (list, id) => list.find(x => x.id === id);
 const sorters = {
   alphabeticalByName: (a, b) => a.name.localeCompare(b.name), alphabeticalByArtist: (a, b) => a.artist.localeCompare(b.artist),
@@ -118,7 +120,12 @@ function handle(req, res, u) {
   const q = u.query;
   if (u.pathname.startsWith('/rest/')) {
     const m = u.pathname.slice(6).replace('.view', '');
-    if (process.env.MOCK_LOG) console.log(req.method, req.headers.host, Object.keys(req.headers).filter(h => h.startsWith('x-')).join(',') || '-', m, Object.entries(q).filter(([k]) => !'utscvf'.includes(k) || k.length > 1).map(([k, v]) => `${k}=${v}`).join(' '));
+    if (process.env.MOCK_LOG) console.log(req.method, req.headers.host, Object.keys(req.headers).filter(h => h.startsWith('x-')).join(',') || '-', m, q.u ? '' : 'NOLOGIN', Object.entries(q).filter(([k]) => !'utscvf'.includes(k) || k.length > 1).map(([k, v]) => `${k}=${v}`).join(' '));
+    // Like Navidrome: without a login only an error comes back – but with the server's type and version
+    if (!q.u && m !== 'getCoverArt' && m !== 'stream' && m !== 'download') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ 'subsonic-response': Object.assign({ status: 'failed' }, SERVER, { error: { code: 10, message: 'Missing parameter: u' } }) }));
+    }
     if (m === 'getCoverArt' && COVERS && fs.existsSync(path.join(COVERS, (q.id || '') + '.png'))) {
       res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(fs.readFileSync(path.join(COVERS, q.id + '.png')));
     }

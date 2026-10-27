@@ -134,6 +134,8 @@ final class AppModel {
 
     private func pathChanged(online: Bool, cellular: Bool, network: NWInterface.InterfaceType?) async {
         if cellularOnly != cellular { cellularOnly = cellular }
+        let cameOnline = online && !isOnline
+        if isOnline != online { isOnline = online } // before checkRoute, which only looks for home while online
         checkRoute() // also when switching between Wi-Fi networks
         if networkKnown, self.network != network {
             // After checkRoute, so cancelled requests are sent again to the right address
@@ -142,9 +144,7 @@ final class AppModel {
         }
         self.network = network
         networkKnown = true
-        guard isOnline != online else { return }
-        isOnline = online
-        if online { await player.flushScrobbles() }
+        if cameOnline { await player.flushScrobbles() }
     }
 
     /// Checks the login, then stores the account. Replaces an existing one for the same server and user.
@@ -171,7 +171,17 @@ final class AppModel {
         routeCheck?.cancel()
         guard let account = current, account.localURL != nil, isOnline, !cellularOnly else { setAtHome(false); return }
         routeCheck = Task {
-            let ok = await SubsonicClient(account: account, atHome: true).reachable()
+            // Asked without the login on both sides: the home address only counts if the same server answers there
+            async let home = SubsonicClient(account: account, atHome: true).identity()
+            async let outside = SubsonicClient(account: account).identity()
+            let key = "server." + account.id.uuidString
+            var ok = false
+            if let found = await home {
+                if let known = await outside { UserDefaults.standard.set(known, forKey: key) }
+                // Outside not reachable from inside (no hairpin NAT): the last answer from there; the very first time, trust it
+                let known = UserDefaults.standard.string(forKey: key)
+                ok = known == nil || known == found
+            }
             guard !Task.isCancelled, account.id == currentId else { return }
             setAtHome(ok)
         }
@@ -192,6 +202,7 @@ final class AppModel {
     func select(_ id: UUID) {
         if id != currentId {
             player.detach()
+            ServerSession.shared.networkChanged() // drops the old account's proxy cookies
             atHome = false
             favoriteChanges = [:]
             currentId = id
@@ -210,6 +221,8 @@ final class AppModel {
         UserDefaults.standard.removeObject(forKey: "queue." + account.id.uuidString)
         UserDefaults.standard.removeObject(forKey: "scrobbles." + account.id.uuidString)
         UserDefaults.standard.removeObject(forKey: "queue.dismissed." + account.id.uuidString)
+        UserDefaults.standard.removeObject(forKey: "server." + account.id.uuidString)
+        ServerSession.shared.networkChanged()
         DownloadStore.deleteAccount(account.id)
         LibraryCache.deleteAccount(account.id)
         librarySync.forget(account.id)

@@ -159,6 +159,9 @@ struct LyricsListBody: Codable { var structuredLyrics: [StructuredLyrics]? }
 /// Everything a Subsonic call can return – each endpoint fills one of these fields.
 struct Payload: Codable {
     let status: String
+    /// Server software and version (OpenSubsonic) – also sent with errors, so it tells servers apart without the login.
+    var type: String?
+    var serverVersion: String?
     var error: SubsonicErrorBody?
     var albumList2: AlbumList?
     var album: Album?

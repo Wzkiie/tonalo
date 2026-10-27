@@ -25,6 +25,16 @@ enum SubsonicError: LocalizedError {
     case notSubsonic(status: Int)
     case http(Int)
 
+    /// The server didn't take the form body: no POST support, or it didn't read the parameters ("missing parameter").
+    /// Nothing was changed then, so the address version is safe to send.
+    var formPostRefused: Bool {
+        switch self {
+        case .server(let code, _): return code == 10
+        case .http(let status), .notSubsonic(let status): return [404, 405, 415, 501].contains(status)
+        case .badURL: return false
+        }
+    }
+
     var errorDescription: String? {
         switch self {
         case .badURL: return String(localized: "The server address is not valid.")
@@ -43,6 +53,7 @@ enum SubsonicError: LocalizedError {
 /// Network session for everything that talks to the server.
 /// - No disk cache: Subsonic puts the login token into every address, and iOS would otherwise keep
 ///   those addresses (and the responses) in a plain database in the app's Caches folder.
+/// - No cookies on disk, and a fresh session (without the old cookies) for each account.
 /// - No redirects to other hosts: custom headers (e.g. a Cloudflare Access secret) must only reach the server itself.
 /// - A new network (Wi-Fi to mobile data, say) drops all running requests: they would otherwise wait on the old
 ///   connection until they time out, and the app looks frozen. `fetch` then asks once more on the new one.
@@ -54,7 +65,9 @@ final class ServerSession: NSObject, URLSessionTaskDelegate {
     var session: URLSession {
         lock.lock(); defer { lock.unlock() }
         if let current { return current }
-        let config = URLSessionConfiguration.default
+        // Ephemeral: cookies a proxy sets (Cloudflare Access, Authelia) stay in memory and go with the session,
+        // instead of landing on disk and outliving a logout
+        let config = URLSessionConfiguration.ephemeral
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         let s = URLSession(configuration: config, delegate: self, delegateQueue: nil)
@@ -84,7 +97,13 @@ final class ServerSession: NSObject, URLSessionTaskDelegate {
 
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest) async -> URLRequest? {
-        task.originalRequest?.url?.host == request.url?.host ? request : nil
+        Self.allowsRedirect(from: task.originalRequest?.url, to: request.url) ? request : nil
+    }
+
+    /// Same host, and never from https down to http – that would carry the headers and token in the clear.
+    static func allowsRedirect(from: URL?, to: URL?) -> Bool {
+        guard let from, let to, from.host == to.host else { return false }
+        return !(from.scheme == "https" && to.scheme != "https")
     }
 }
 
@@ -170,7 +189,9 @@ struct SubsonicClient {
             return p[0] == 10 || p[0] == 127 || (p[0] == 192 && p[1] == 168) || (p[0] == 172 && (16...31).contains(p[1]))
                 || (p[0] == 169 && p[1] == 254) || (p[0] == 100 && (64...127).contains(p[1])) // last: Tailscale & co.
         }
+        // IPv6 only for real addresses – "fcmusic.example.com" starts with "fc" too
         let v6 = host.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+        guard v6.contains(":"), v6.allSatisfy({ $0.isHexDigit || $0 == ":" || $0 == "." || $0 == "%" }) else { return false }
         return v6.hasPrefix("fd") || v6.hasPrefix("fc") || v6.hasPrefix("fe80") || v6 == "::1"
     }
 
@@ -262,11 +283,11 @@ struct SubsonicClient {
         r.httpBody = Data(query.utf8) // "+" is already escaped by url(), see there
         do {
             return try await send(r)
-        } catch SubsonicError.server(let code, let message) {
-            throw SubsonicError.server(code: code, message: message)
-        } catch {
+        } catch let e as SubsonicError where e.formPostRefused {
             return try await send(request(full))
         }
+        // Anything else (a timeout, say) is not asked again: the change may already have been made,
+        // and doing it twice would remove the wrong song or create the playlist twice
     }
 
     private func send(_ r: URLRequest, retry: Bool = true) async throws -> Payload {
@@ -301,12 +322,20 @@ struct SubsonicClient {
 
     func ping() async throws { _ = try await call("ping") }
 
-    /// Quick check whether this address answers at all – used for the home address.
-    func reachable() async -> Bool {
-        guard let u = url("ping") else { return false }
+    /// Which server software answers at this address ("navidrome|0.58.0"), asked without the login – for the home address.
+    /// In someone else's network the same private IP may belong to anything, so the token is only sent once
+    /// the answer matches the server outside. Any Subsonic answer counts, even "parameter missing".
+    func identity() async -> String? {
+        guard var comps = URLComponents(string: base + "/rest/ping") else { return nil }
+        comps.queryItems = [URLQueryItem(name: "v", value: Self.apiVersion), URLQueryItem(name: "c", value: Self.clientName),
+                            URLQueryItem(name: "f", value: "json")]
+        guard let u = comps.url else { return nil }
         var r = request(u)
         r.timeoutInterval = 3
-        return (try? await send(r, retry: false)) != nil
+        guard let (data, resp) = try? await ServerSession.shared.fetch(r, retry: nil),
+              (resp as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type")?.contains("json") == true,
+              let env = try? JSONDecoder().decode(Envelope.self, from: data) else { return nil }
+        return "\(env.response.type ?? "")|\(env.response.serverVersion ?? "")"
     }
 
     func albumList(_ type: String, size: Int = 30, offset: Int = 0, genre: String? = nil) async throws -> [Album] {
