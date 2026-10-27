@@ -37,7 +37,8 @@ actor ImageLoader {
             var req = URLRequest(url: url)
             req.timeoutInterval = 20
             for (k, v) in headers { req.setValue(v, forHTTPHeaderField: k) }
-            guard let (data, resp) = try? await ServerSession.shared.fetch(req),
+            // Not sent again after a network change: it may have been meant for the home address
+            guard let (data, resp) = try? await ServerSession.shared.fetch(req, retry: nil),
                   (resp as? HTTPURLResponse)?.statusCode == 200, let img = UIImage(data: data) else { return nil }
             if let file { try? data.write(to: file, options: .atomic) }
             return img

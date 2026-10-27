@@ -531,6 +531,7 @@ final class PlayerModel {
 
     /// The server address changed (arriving home or leaving): a stream continues from the new one at the same spot.
     func addressChanged() {
+        prefetcher.stop() // playing again below starts it anew, from the new address
         guard current != nil, player.currentItem != nil, !playingDownload, !playingPreloaded else { return }
         if isPlaying {
             load(autoplay: true, startAt: position)

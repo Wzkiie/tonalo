@@ -70,6 +70,8 @@ final class AppModel {
     /// On Wi-Fi at home with a home address set and answering: requests go there directly.
     private(set) var atHome = false
     @ObservationIgnored private var routeCheck: Task<Void, Never>?
+    /// The network (see LocalNetwork.fingerprint) in which the home address was last confirmed.
+    @ObservationIgnored private var homeNetwork: String?
 
     var current: Account? { accounts.first { $0.id == currentId } }
     var client: SubsonicClient? { current.map { SubsonicClient(account: $0, atHome: atHome) } }
@@ -166,23 +168,35 @@ final class AppModel {
         checkRoute() // the home address may have changed
     }
 
-    /// Picks the home address or the normal one: the home address only on Wi-Fi, and only if it answers.
+    /// Picks the home address or the normal one: the home address only on Wi-Fi, and only if the same server answers there.
+    /// Fails closed: in another network than the one home was confirmed in, the outside address is used at once,
+    /// and home only again after the check – a plain-http home address must never get the login in a stranger's network.
     func checkRoute() {
         routeCheck?.cancel()
-        guard let account = current, account.localURL != nil, isOnline, !cellularOnly else { setAtHome(false); return }
+        let network = LocalNetwork.fingerprint(monitor.currentPath)
+        if atHome, network != homeNetwork {
+            setAtHome(false)
+            ServerSession.shared.networkChanged() // running requests to the home address go outside instead
+        }
+        guard let account = current, let local = account.localURL, isOnline, !cellularOnly,
+              let host = URL(string: local)?.host, SubsonicClient.isLocal(local),
+              LocalNetwork.sameSubnet(host) != false else { setAtHome(false); return }
         routeCheck = Task {
             // Asked without the login on both sides: the home address only counts if the same server answers there
             async let home = SubsonicClient(account: account, atHome: true).identity()
             async let outside = SubsonicClient(account: account).identity()
             let key = "server." + account.id.uuidString
             var ok = false
-            if let found = await home {
-                if let known = await outside { UserDefaults.standard.set(known, forKey: key) }
-                // Outside not reachable from inside (no hairpin NAT): the last answer from there; the very first time, trust it
-                let known = UserDefaults.standard.string(forKey: key)
-                ok = known == nil || known == found
+            if let found = await home, !found.hasPrefix("|") {
+                if let known = await outside, !known.hasPrefix("|") { UserDefaults.standard.set(known, forKey: key) }
+                // Outside not reachable from inside (no hairpin NAT): the last answer from there.
+                // Never seen the server from outside yet: no trust – anything could answer at a private address.
+                ok = UserDefaults.standard.string(forKey: key) == found
             }
             guard !Task.isCancelled, account.id == currentId else { return }
+            // The network mustn't have changed while asking
+            ok = ok && LocalNetwork.fingerprint(monitor.currentPath) == network
+            homeNetwork = ok ? network : nil
             setAtHome(ok)
         }
     }

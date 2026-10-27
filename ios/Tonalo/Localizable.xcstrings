@@ -1699,6 +1699,16 @@
         }
       }
     },
+    "Only addresses in your home network work here, like 192.168.1.10 or nas.local.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier gehen nur Adressen aus deinem Heimnetz, z. B. 192.168.1.10 oder nas.local."
+          }
+        }
+      }
+    },
     "Orange": {
       "localizations": {
         "de": {

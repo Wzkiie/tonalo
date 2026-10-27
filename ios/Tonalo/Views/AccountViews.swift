@@ -233,6 +233,11 @@ struct AccountEditorView: View {
     }
 
     private func save() async {
+        // A public name here would get the login over plain http from anywhere
+        if !localServer.trimmingCharacters(in: .whitespaces).isEmpty && !SubsonicClient.isLocal(localServer) {
+            error = String(localized: "Only addresses in your home network work here, like 192.168.1.10 or nas.local.")
+            return
+        }
         saving = true; error = nil
         var acc = account ?? Account(serverURL: "", username: "", salt: "", token: "")
         acc.serverURL = SubsonicClient.normalize(server)
@@ -350,6 +355,10 @@ private struct HomeAddressView: View {
             Section {
                 TextField("192.168.1.10:4533", text: $address)
                     .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                if !address.trimmingCharacters(in: .whitespaces).isEmpty && !SubsonicClient.isLocal(address) {
+                    Label("Only addresses in your home network work here, like 192.168.1.10 or nas.local.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote).foregroundStyle(.orange)
+                }
             } footer: {
                 Text("On Wi-Fi, Tonalo uses this address whenever it answers – faster, and without your proxy. Custom headers aren’t sent to it. Leave it empty to always use the server address.")
             }

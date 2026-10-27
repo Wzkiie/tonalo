@@ -230,7 +230,7 @@ final class DownloadStore {
         Task.detached {
             var req = URLRequest(url: url)
             for (k, v) in client.headers { req.setValue(v, forHTTPHeaderField: k) }
-            guard let (data, resp) = try? await ServerSession.shared.fetch(req),
+            guard let (data, resp) = try? await ServerSession.shared.fetch(req, retry: nil), // see ImageLoader
                   (resp as? HTTPURLResponse)?.statusCode == 200 else { return }
             try? FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? data.write(to: dest, options: .atomic)

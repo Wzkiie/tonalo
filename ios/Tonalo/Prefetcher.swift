@@ -60,6 +60,12 @@ import CryptoKit
         }
     }
 
+    /// Stops loading ahead, keeps what's there – e.g. when leaving home, the running download used the home address.
+    func stop() {
+        runner?.cancel()
+        runner = nil
+    }
+
     func clear() {
         runner?.cancel()
         runner = nil
