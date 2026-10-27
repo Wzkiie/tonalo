@@ -8,7 +8,14 @@ struct SongBatch: Identifiable {
 
 extension Playlist {
     /// Only the owner can change a playlist; other users' public playlists are read-only.
-    @MainActor func isOwned(by app: AppModel) -> Bool { owner == nil || owner == app.current?.username }
+    /// Navidrome keeps user names case-insensitive, so "Alice" and "alice" are the same person.
+    @MainActor func isOwned(by app: AppModel) -> Bool {
+        guard let owner else { return true }
+        return owner.caseInsensitiveCompare(app.current?.username ?? "") == .orderedSame
+    }
+
+    /// Songs can be added, removed and moved – not in smart playlists, which the server fills itself.
+    @MainActor func songsEditable(by app: AppModel) -> Bool { isOwned(by: app) && readonly != true }
 }
 
 /// Pick one of your playlists – or make a new one – for one or more songs.
@@ -83,7 +90,7 @@ struct AddToPlaylistSheet: View {
 
     private func load() async {
         do {
-            playlists = (try await app.client?.playlists() ?? []).filter { $0.isOwned(by: app) }
+            playlists = (try await app.client?.playlists() ?? []).filter { $0.songsEditable(by: app) }
         } catch {
             self.error = error.userMessage
         }

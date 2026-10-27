@@ -51,6 +51,7 @@ const playlists = [['Late Night Drive', 40], ['Sunday Coffee', 25], ['Deep Focus
   .map(([name, n], i) => ({ id: 'pl' + i, name, owner: 'demo', public: i % 2 === 0, coverArt: albums[(i * 7) % albums.length].id,
     entry: Array.from({ length: n }, (_, k) => songs[(i * 37 + k * 11) % songs.length]) }))
   .map(p => Object.assign(p, { songCount: p.entry.length, duration: p.entry.reduce((s, x) => s + x.duration, 0) }));
+playlists[5].readonly = true; // a smart playlist, like Navidrome's .nsp ones: songs can't be changed by hand
 const starred = { album: albums.filter((_, i) => i % 6 === 1), artist: artists.filter((_, i) => i % 5 === 2),
   song: songs.filter((_, i) => i % 13 === 4).map(s => Object.assign({}, s, { starred: '2026-01-01T00:00:00Z' })) };
 const coverTitle = id => (albums.find(a => a.id === id) || {}).name || '';
@@ -182,6 +183,9 @@ function handle(req, res, u) {
       case 'updatePlaylist': {
         const pl = byId(playlists, q.playlistId);
         if (!pl) { body = { 'subsonic-response': { status: 'failed', version: '1.16.1', error: { code: 70, message: 'Playlist not found' } } }; break; }
+        if (pl.readonly && (q.songIdToAdd || q.songIndexToRemove)) {
+          body = { 'subsonic-response': { status: 'failed', version: '1.16.1', error: { code: 50, message: 'User is not authorized for the given operation' } } }; break;
+        }
         if (q.name) pl.name = q.name;
         const drop = new Set(list(q.songIndexToRemove).map(Number));
         pl.entry = pl.entry.filter((_, i) => !drop.has(i)).concat(list(q.songIdToAdd).map(id => byId(songs, id)).filter(Boolean));

@@ -155,6 +155,10 @@ struct PlaylistView: View {
                 if let owner = p.owner {
                     HStack(spacing: 8) { Avatar(name: owner, size: 24); Text(owner).font(.system(size: 13, weight: .bold)) }
                 }
+                if p.readonly == true {
+                    Label("Smart playlist · filled by your server", systemImage: "sparkles")
+                        .font(.system(size: 13)).foregroundStyle(Color.subtle)
+                }
                 Text([String(localized: "\(songs.count) songs"), formatDuration(p.duration ?? 0)].joined(separator: " • "))
                     .font(.system(size: 13)).foregroundStyle(Color.subtle)
             } actions: {
@@ -167,7 +171,9 @@ struct PlaylistView: View {
                         Button { ui.addToPlaylist(songs) } label: { Label("Add to other playlist", systemImage: "text.badge.plus") }
                         if p.isOwned(by: app) {
                             Divider()
-                            Button { editing = true } label: { Label("Edit songs", systemImage: "list.bullet") }
+                            if p.songsEditable(by: app) {
+                                Button { editing = true } label: { Label("Edit songs", systemImage: "list.bullet") }
+                            }
                             Button { newName = p.name; renaming = true } label: { Label("Rename", systemImage: "pencil") }
                             Button(role: .destructive) { confirmDelete = true } label: { Label("Delete playlist", systemImage: "trash") }
                         }

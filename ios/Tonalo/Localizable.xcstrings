@@ -2379,6 +2379,16 @@
         }
       }
     },
+    "Smart playlist · filled by your server": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intelligente Playlist · dein Server stellt sie zusammen"
+          }
+        }
+      }
+    },
     "Songs": {
       "localizations": {
         "de": {
@@ -3012,6 +3022,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deine Playlists"
+          }
+        }
+      }
+    },
+    "Your server doesn’t allow this change.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Server erlaubt diese Änderung nicht."
           }
         }
       }

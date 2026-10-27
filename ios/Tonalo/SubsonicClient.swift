@@ -29,7 +29,9 @@ enum SubsonicError: LocalizedError {
         switch self {
         case .badURL: return String(localized: "The server address is not valid.")
         case .server(let code, let message):
-            return code == 40 ? String(localized: "Wrong username or password.") : message
+            if code == 40 { return String(localized: "Wrong username or password.") }
+            if code == 50 { return String(localized: "Your server doesn’t allow this change.") }
+            return message
         case .notSubsonic(let status):
             // Typical when Cloudflare Access (or another proxy) answers instead of Navidrome
             return String(localized: "The server answered with something other than Subsonic (HTTP \(status)). Check the address and your custom headers.")

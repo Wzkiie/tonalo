@@ -94,6 +94,8 @@ struct Playlist: Codable, Hashable, Identifiable {
     var comment: String?
     var `public`: Bool?
     var changed: String?
+    /// Navidrome: a smart playlist – the server picks its songs by rules, so they can't be changed by hand.
+    var readonly: Bool?
     var entry: [Song]?
 }
 
