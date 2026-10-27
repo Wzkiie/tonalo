@@ -42,6 +42,7 @@ ARTISTS.forEach((name, a) => {
       const dur = 150 + Math.floor(rnd() * 120);
       songs.push({ id: `s${a}_${b}_${t}`, title: pick(ADJ) + ' ' + pick(NOUN), album: al.name, albumId: id, artist: name,
         artistId: ar.id, track: t, duration: dur, coverArt: id, suffix: 'flac', bitRate: 900 + Math.floor(rnd() * 300), year, genre });
+      songs[songs.length - 1].playCount = hash(songs[songs.length - 1].id) % 40;
       al.songCount++; al.duration += dur;
     }
     albums.push(al); ar.albumCount++;
@@ -160,7 +161,8 @@ function handle(req, res, u) {
           similarArtist: artists.filter(x => x.id !== q.id).slice(hash(q.id) % 10, hash(q.id) % 10 + 6) } });
         break;
       }
-      case 'getTopSongs': body = ok({ topSongs: { song: songs.filter(s => s.artist === q.artist).slice(0, 10) } }); break;
+      // MOCK_NO_TOPSONGS=1: like Navidrome without Last.fm, which has no top songs
+      case 'getTopSongs': body = ok({ topSongs: process.env.MOCK_NO_TOPSONGS ? {} : { song: songs.filter(s => s.artist === q.artist).slice(0, 10) } }); break;
       case 'getSimilarSongs2': body = ok({ similarSongs2: { song: songs.slice(20, 60) } }); break;
       case 'getPlaylists': body = ok({ playlists: { playlist: playlists.map(p => Object.assign({}, p, { entry: undefined })) } }); break;
       case 'getPlaylist': body = ok({ playlist: byId(playlists, q.id) }); break;

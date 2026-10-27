@@ -58,7 +58,12 @@ struct AlbumView: View {
     @State private var album: Album?
     @State private var error: String?
 
+    // Loading hangs on the page: the saved copy shows at once and would otherwise cancel asking the server
     var body: some View {
+        content.task { await load() }
+    }
+
+    @ViewBuilder private var content: some View {
         if let album {
             let songs = album.song ?? []
             let context = PlayerModel.Context(kind: .album, id: album.id, name: album.name)
@@ -105,7 +110,7 @@ struct AlbumView: View {
                     .font(.system(size: 13)).foregroundStyle(Color.subtle).padding(.top, 12)
             }
         } else {
-            LoadState(loading: error == nil, error: error).task { await load() }
+            LoadState(loading: error == nil, error: error)
         }
     }
 
@@ -141,7 +146,12 @@ struct PlaylistView: View {
     @State private var newName = ""
     @State private var confirmDelete = false
 
+    // Loading hangs on the page: the saved copy shows at once and would otherwise cancel asking the server
     var body: some View {
+        content.task { await load() }
+    }
+
+    @ViewBuilder private var content: some View {
         if let p = playlist {
             let songs = p.entry ?? []
             let context = PlayerModel.Context(kind: .playlist, id: p.id, name: p.name)
@@ -205,7 +215,7 @@ struct PlaylistView: View {
                 Text("The playlist is removed from your server. The songs stay in your library.")
             }
         } else {
-            LoadState(loading: error == nil, error: error).task { await load() }
+            LoadState(loading: error == nil, error: error)
         }
     }
 
@@ -297,11 +307,20 @@ struct ArtistView: View {
     let id: String
     @State private var artist: Artist?
     @State private var top: [Song] = []
+    /// No top songs from the server (Navidrome needs Last.fm for them): the ones you played most instead
+    @State private var topIsOwn = false
+    @State private var similar: [Artist] = []
     @State private var bio: String?
     @State private var error: String?
     @State private var showAllTop = false
 
+    // Loading hangs on the page, not on the spinner: the spinner goes away as soon as the artist is there,
+    // which would cancel the rest (popular songs, similar artists, biography)
     var body: some View {
+        content.task { if artist == nil { await load() } }
+    }
+
+    @ViewBuilder private var content: some View {
         if let artist {
             let albums = (artist.album ?? []).sorted { ($0.year ?? 0) > ($1.year ?? 0) }
             let context = PlayerModel.Context(kind: .artist, id: artist.id, name: artist.name)
@@ -322,7 +341,7 @@ struct ArtistView: View {
                                         shuffle: { playAll(shuffled: true) })
                         }
                         if !top.isEmpty {
-                            Text("Popular").font(.system(size: 22, weight: .bold)).padding(.top, 4)
+                            Text(topIsOwn ? "Your most played" : "Popular").font(.system(size: 22, weight: .bold)).padding(.top, 4)
                             LazyVStack(spacing: 10) {
                                 ForEach(Array(top.prefix(showAllTop ? 10 : 5).enumerated()), id: \.element.id) { i, s in
                                     SongRow(song: s, number: i + 1, showCover: true) { app.player.play(top, from: i, context: context) }
@@ -336,6 +355,16 @@ struct ArtistView: View {
                     }
                     .padding(.horizontal, 16)
                     if !albums.isEmpty { AlbumRow(title: "Discography", albums: albums).padding(.top, 8) }
+                    if !similar.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ShelfHeader(title: "Fans also like")
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                LazyHStack(alignment: .top, spacing: 14) { ForEach(similar) { ArtistCard(artist: $0) } }
+                                    .padding(.horizontal, 16)
+                            }
+                        }
+                        .padding(.top, 8)
+                    }
                     if let bio, !bio.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("About").font(.system(size: 22, weight: .bold))
@@ -354,7 +383,7 @@ struct ArtistView: View {
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
         } else {
-            LoadState(loading: error == nil, error: error).task { await load() }
+            LoadState(loading: error == nil, error: error)
         }
     }
 
@@ -384,11 +413,33 @@ struct ArtistView: View {
         do {
             let a = try await client.artist(id)
             artist = a
+            async let info = client.artistInfo(id)
             top = await client.topSongs(a.name)
-            bio = await client.artistInfo(id)?.biography?
+            if top.isEmpty {
+                top = await mostPlayed(a, client: client)
+                topIsOwn = !top.isEmpty
+            }
+            let i = await info
+            // Only artists that are in the library can be opened
+            similar = (i?.similarArtist ?? []).filter { !$0.id.isEmpty && $0.id != id }
+            bio = i?.biography?
                 .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
         } catch { self.error = error.userMessage }
+    }
+
+    /// The artist's songs you played most, from the first albums – what "Popular" shows without Last.fm.
+    private func mostPlayed(_ artist: Artist, client: SubsonicClient) async -> [Song] {
+        var songs: [Song] = []
+        await withTaskGroup(of: [Song].self) { group in
+            for album in (artist.album ?? []).prefix(12) {
+                group.addTask { (try? await client.album(album.id).song) ?? [] }
+            }
+            for await list in group { songs += list }
+        }
+        return Array(songs.filter { ($0.playCount ?? 0) > 0 }
+            .sorted { ($0.playCount ?? 0) > ($1.playCount ?? 0) }
+            .prefix(10))
     }
 
     private func playAll(shuffled: Bool) {

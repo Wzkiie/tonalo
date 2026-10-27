@@ -1005,6 +1005,16 @@
         }
       }
     },
+    "Fans also like": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fans mögen auch"
+          }
+        }
+      }
+    },
     "Favorite": {
       "localizations": {
         "de": {
@@ -3032,6 +3042,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deine Lieblingssongs, gemischt"
+          }
+        }
+      }
+    },
+    "Your most played": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine meistgehörten Songs"
           }
         }
       }

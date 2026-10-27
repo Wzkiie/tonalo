@@ -51,6 +51,7 @@ struct Song: Codable, Hashable, Identifiable {
     var suffix: String?
     var bitRate: Int?
     var replayGain: ReplayGain?
+    var playCount: Int?
 }
 
 /// Loudness values from the file tags (OpenSubsonic). Navidrome sends 0 dB when a file has none.
@@ -130,6 +131,20 @@ struct Genre: Codable, Hashable {
 struct ArtistInfo: Codable {
     var biography: String?
     var similarArtist: [Artist]?
+
+    /// Some servers also list similar artists that aren't in the library, without an id – those are
+    /// skipped instead of losing the whole answer (and the biography with it).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        biography = try? c.decodeIfPresent(String.self, forKey: .biography)
+        similarArtist = (try? c.decodeIfPresent([Lenient<Artist>].self, forKey: .similarArtist))?.compactMap(\.value)
+    }
+}
+
+/// Decodes to nil instead of failing, for single broken entries in a list.
+struct Lenient<T: Decodable>: Decodable {
+    let value: T?
+    init(from decoder: Decoder) throws { value = try? T(from: decoder) }
 }
 
 struct LyricLine: Codable, Hashable {
