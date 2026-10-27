@@ -557,10 +557,14 @@ struct LibraryView: View {
     private func loadPins() { pins = UserDefaults.standard.stringArray(forKey: pinsKey) ?? [] }
 
     private func togglePin(_ item: Item) {
-        withAnimation(.easeOut(duration: 0.25)) {
-            if let i = pins.firstIndex(of: item.id) { pins.remove(at: i) } else { pins.insert(item.id, at: 0) }
+        var next = pins
+        if let i = next.firstIndex(of: item.id) { next.remove(at: i) } else { next.insert(item.id, at: 0) }
+        UserDefaults.standard.set(next, forKey: pinsKey)
+        // Wait until the long-press menu has closed and the row is back in place – moving it while the
+        // menu's own animation still runs makes the row fly across the screen
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            withAnimation(.snappy(duration: 0.35)) { pins = next }
         }
-        UserDefaults.standard.set(pins, forKey: pinsKey)
     }
 
     private func isPinned(_ item: Item) -> Bool { item.pinned || pins.contains(item.id) }
