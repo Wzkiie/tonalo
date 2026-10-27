@@ -647,9 +647,10 @@ struct LibraryView: View {
         var rest: [Item]
         switch filter {
         case nil:
-            pinned = [.favorites, .downloads]
+            pinned = [.favorites]
             rest = playlists.map(Item.playlist) + (starred?.album ?? []).map(Item.album) + (starred?.artist ?? []).map(Item.artist)
         case .playlists:
+            pinned = [.favorites]
             rest = playlists.map(Item.playlist)
         case .albums:
             rest = (starred?.album ?? []).map(Item.album)
