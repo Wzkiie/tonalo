@@ -462,12 +462,8 @@ struct LibraryView: View {
     @State private var filter: Filter?
     @State private var playlists: [Playlist] = []
     @State private var starred: SearchBody?
-    @State private var albums: [Album] = []
-    @State private var albumsDone = false
-    @State private var artists: [Artist] = []
     @State private var query = ""
     @State private var searching = false
-    @State private var foundAlbums: [Album] = []
     @AppStorage("library.sort") private var sort: Sort = .recent
     @AppStorage("library.grid") private var grid = false
     @FocusState private var searchFocused: Bool
@@ -481,14 +477,6 @@ struct LibraryView: View {
             case .recent: "Recently added"
             case .name: "Alphabetical"
             case .creator: "Artist or creator"
-            }
-        }
-        /// The album list the server sorts this way.
-        var albumListType: String {
-            switch self {
-            case .recent: "newest"
-            case .name: "alphabeticalByName"
-            case .creator: "alphabeticalByArtist"
             }
         }
     }
@@ -555,9 +543,7 @@ struct LibraryView: View {
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
         .task(id: "\(app.currentId?.uuidString ?? "")\(app.playlistsVersion)") { await load() }
-        .task(id: "\(filter.map { "\($0)" } ?? "")\(sort.rawValue)") { await loadFilter() }
-        .task(id: query) { await searchAlbums() }
-        .refreshable { await Task { await load(); albums = []; albumsDone = false; await loadFilter() }.value }
+        .refreshable { await Task { await load() }.value }
     }
 
     // MARK: Filter bar
@@ -595,15 +581,13 @@ struct LibraryView: View {
                 Button("Cancel") { withAnimation(.easeOut(duration: 0.15)) { query = ""; searching = false } }
                     .foregroundStyle(.white)
             } else {
-                if filter != .artists {
-                    Menu {
-                        Picker("Sort by", selection: $sort) {
-                            ForEach(Sort.allCases, id: \.self) { Text($0.title).tag($0) }
-                        }
-                    } label: {
-                        Label { Text(sort.title) } icon: { Image(systemName: "arrow.up.arrow.down") }
-                            .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                Menu {
+                    Picker("Sort by", selection: $sort) {
+                        ForEach(Sort.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
+                } label: {
+                    Label { Text(sort.title) } icon: { Image(systemName: "arrow.up.arrow.down") }
+                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
                 }
                 Spacer()
                 Button { withAnimation(.easeOut(duration: 0.15)) { searching = true }; searchFocused = true } label: {
@@ -622,16 +606,32 @@ struct LibraryView: View {
     }
 
     @ViewBuilder private var footer: some View {
-        if filter == .albums && query.isEmpty && !albumsDone {
-            ProgressView().frame(maxWidth: .infinity).padding()
-        } else if items.isEmpty {
+        if items.isEmpty {
             Text(emptyText).font(.subheadline).foregroundStyle(Color.subtle)
                 .frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 40)
+        }
+        // The library holds what you saved; the whole server is one tap away
+        if filter == .albums || filter == .artists {
+            NavigationLink(value: filter == .albums ? Route.albums("alphabeticalByName") : Route.artists) {
+                HStack {
+                    Image(systemName: filter == .albums ? "square.stack" : "music.mic").foregroundStyle(Color.accent).frame(width: 28)
+                    Text(filter == .albums ? "Browse all albums on the server" : "Browse all artists on the server")
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.subtle)
+                }
+                .font(.system(size: 15, weight: .semibold))
+                .padding(.horizontal, 16).frame(height: 52)
+                .background(Color.elevated, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 8)
         }
     }
 
     private var emptyText: LocalizedStringKey {
         if !query.isEmpty { return "Nothing in your library matches “\(query)”." }
+        if filter == .albums { return "No favorite albums yet. Tap the heart on an album to add it here." }
+        if filter == .artists { return "No favorite artists yet. Tap the heart on an artist to add them here." }
         return filter == .downloads ? "Nothing downloaded yet. Tap the arrow on an album, playlist or your favorites to listen offline." : "Nothing here yet."
     }
 
@@ -652,11 +652,9 @@ struct LibraryView: View {
         case .playlists:
             rest = playlists.map(Item.playlist)
         case .albums:
-            // The server already sorts the album list; a search asks the server, so all albums are found
-            return (query.isEmpty ? albums : foundAlbums).map(Item.album)
+            rest = (starred?.album ?? []).map(Item.album)
         case .artists:
-            rest = artists.map(Item.artist)
-            return matching(rest)
+            rest = (starred?.artist ?? []).map(Item.artist)
         case .downloads:
             pinned = [.downloads] + (downloadedFavorites > 0 ? [.favorites] : [])
             rest = dl.index.playlists.values.map(Item.playlist) + dl.index.albums.values.map(Item.album)
@@ -733,7 +731,6 @@ struct LibraryView: View {
             ItemRow(title: title(item), subtitle: subtitle(item), pinned: item.pinned) { art(item, size: 160) }
         }
         .buttonStyle(.plain)
-        .onAppear { if case .album(let a) = item, a.id == albums.last?.id { Task { await moreAlbums() } } }
     }
 
     private func tile(_ item: Item) -> some View {
@@ -746,7 +743,6 @@ struct LibraryView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .onAppear { if case .album(let a) = item, a.id == albums.last?.id { Task { await moreAlbums() } } }
     }
 
     // MARK: Loading
@@ -759,35 +755,6 @@ struct LibraryView: View {
         async let s = try? client.starred()
         if let p = await p { playlists = p }
         if let s = await s { starred = s }
-    }
-
-    private func loadFilter() async {
-        guard let client = app.client else { return }
-        switch filter {
-        case .albums:
-            albums = []; albumsDone = false
-            await moreAlbums()
-        case .artists where artists.isEmpty: artists = (try? await client.artists()) ?? []
-        default: break
-        }
-    }
-
-    private func moreAlbums() async {
-        guard filter == .albums, !albumsDone, let client = app.client else { return }
-        let type = sort.albumListType
-        guard let page = try? await client.albumList(type, size: 60, offset: albums.count) else { albumsDone = true; return }
-        guard type == sort.albumListType else { return } // the sort changed meanwhile
-        albums += page.filter { a in !albums.contains { $0.id == a.id } }
-        if page.count < 60 { albumsDone = true }
-    }
-
-    /// Searching among albums asks the server, since only part of a large album list is loaded.
-    private func searchAlbums() async {
-        let q = query.trimmingCharacters(in: .whitespaces)
-        guard filter == .albums, !q.isEmpty, let client = app.client else { foundAlbums = []; return }
-        try? await Task.sleep(for: .milliseconds(300))
-        guard !Task.isCancelled, let found = try? await client.search(q).album else { return }
-        foundAlbums = found
     }
 }
 

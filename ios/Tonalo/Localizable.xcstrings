@@ -513,6 +513,26 @@
         }
       }
     },
+    "Browse all albums on the server": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Alben auf dem Server durchstöbern"
+          }
+        }
+      }
+    },
+    "Browse all artists on the server": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Künstler auf dem Server durchstöbern"
+          }
+        }
+      }
+    },
     "Cancel": {
       "localizations": {
         "de": {
@@ -1435,6 +1455,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Keine Downloads"
+          }
+        }
+      }
+    },
+    "No favorite albums yet. Tap the heart on an album to add it here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Lieblingsalben. Tippe bei einem Album auf das Herz, um es hier zu sammeln."
+          }
+        }
+      }
+    },
+    "No favorite artists yet. Tap the heart on an artist to add them here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Lieblingskünstler. Tippe bei einem Künstler auf das Herz, um ihn hier zu sammeln."
           }
         }
       }
