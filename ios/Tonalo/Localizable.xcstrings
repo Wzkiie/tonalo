@@ -1399,6 +1399,16 @@
         }
       }
     },
+    "Managed by your server · songs can’t be changed here": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vom Server verwaltet · Songs hier nicht änderbar"
+          }
+        }
+      }
+    },
     "More options": {
       "localizations": {
         "de": {
@@ -2375,16 +2385,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sleep-Timer"
-          }
-        }
-      }
-    },
-    "Smart playlist · filled by your server": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Intelligente Playlist · dein Server stellt sie zusammen"
           }
         }
       }

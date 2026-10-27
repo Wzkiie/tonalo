@@ -155,8 +155,8 @@ struct PlaylistView: View {
                 if let owner = p.owner {
                     HStack(spacing: 8) { Avatar(name: owner, size: 24); Text(owner).font(.system(size: 13, weight: .bold)) }
                 }
-                if p.readonly == true {
-                    Label("Smart playlist · filled by your server", systemImage: "sparkles")
+                if p.readonly == true && p.isOwned(by: app) {
+                    Label("Managed by your server · songs can’t be changed here", systemImage: "lock")
                         .font(.system(size: 13)).foregroundStyle(Color.subtle)
                 }
                 Text([String(localized: "\(songs.count) songs"), formatDuration(p.duration ?? 0)].joined(separator: " • "))

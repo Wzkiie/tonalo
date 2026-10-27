@@ -14,7 +14,7 @@ extension Playlist {
         return owner.caseInsensitiveCompare(app.current?.username ?? "") == .orderedSame
     }
 
-    /// Songs can be added, removed and moved – not in smart playlists, which the server fills itself.
+    /// Songs can be added, removed and moved – not in smart playlists or auto-imported .m3u ones.
     @MainActor func songsEditable(by app: AppModel) -> Bool { isOwned(by: app) && readonly != true }
 }
 
