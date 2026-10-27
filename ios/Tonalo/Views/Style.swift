@@ -138,6 +138,7 @@ struct ItemRow<Art: View>: View {
     let title: String
     let subtitle: String
     var pinned = false
+    var download: DownloadState = .none
     @ViewBuilder let art: () -> Art
     var body: some View {
         HStack(spacing: 12) {
@@ -146,6 +147,7 @@ struct ItemRow<Art: View>: View {
                 Text(title).font(.system(size: 16, weight: .medium)).lineLimit(1)
                 HStack(spacing: 4) {
                     if pinned { Image(systemName: "pin.fill").font(.system(size: 10)).foregroundStyle(Color.accent).rotationEffect(.degrees(45)) }
+                    DownloadMark(state: download)
                     Text(subtitle).font(.system(size: 13)).foregroundStyle(Color.subtle).lineLimit(1)
                 }
             }

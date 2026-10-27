@@ -193,6 +193,24 @@ struct DownloadsView: View {
     }
 }
 
+/// Small sign next to a subtitle: downloaded (like on songs) or the progress while it loads.
+struct DownloadMark: View {
+    let state: DownloadState
+
+    var body: some View {
+        switch state {
+        case .complete:
+            Image(systemName: "arrow.down.circle.fill").font(.system(size: 12)).foregroundStyle(Color.accent)
+                .accessibilityLabel("Downloaded")
+        case .downloading(let done, let total):
+            ProgressRing(value: Double(done) / Double(max(total, 1)), lineWidth: 2).frame(width: 11, height: 11)
+                .accessibilityLabel("Downloading")
+        default:
+            EmptyView()
+        }
+    }
+}
+
 /// Thin line under the status bar while downloads run, on every page – so an album keeps showing
 /// how far it is after you went somewhere else.
 struct DownloadBar: View {

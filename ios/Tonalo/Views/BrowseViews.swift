@@ -753,6 +753,17 @@ struct LibraryView: View {
         }
     }
 
+    /// Whether an album, playlist or the favorites are on the phone – from what was downloaded, not the server's list.
+    private func download(_ item: Item) -> DownloadState {
+        let store = app.downloads
+        switch item {
+        case .album(let a): return store.index.albums[a.id].map { store.state($0.song ?? []) } ?? .none
+        case .playlist(let p): return store.index.playlists[p.id].map { store.state($0.entry ?? []) } ?? .none
+        case .favorites: return store.state(starred?.song ?? [])
+        default: return .none
+        }
+    }
+
     private func title(_ item: Item) -> String {
         switch item {
         case .favorites: String(localized: "Favorite songs")
@@ -773,7 +784,7 @@ struct LibraryView: View {
 
     private func row(_ item: Item) -> some View {
         NavigationLink(value: route(item)) {
-            ItemRow(title: title(item), subtitle: subtitle(item), pinned: isPinned(item)) { art(item, size: 160) }
+            ItemRow(title: title(item), subtitle: subtitle(item), pinned: isPinned(item), download: download(item)) { art(item, size: 160) }
         }
         .buttonStyle(.plain)
         .contextMenu { pinMenu(item) }
@@ -792,6 +803,7 @@ struct LibraryView: View {
                 Text(title(item)).font(.system(size: 14, weight: .semibold)).lineLimit(1)
                 HStack(spacing: 4) {
                     if isPinned(item) { Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(Color.accent).rotationEffect(.degrees(45)) }
+                    DownloadMark(state: download(item))
                     Text(subtitle(item)).font(.system(size: 12)).foregroundStyle(Color.subtle).lineLimit(1)
                 }
             }
