@@ -22,8 +22,7 @@ struct HomeView: View {
                 case .all: allContent
                 case .playlists: grid(playlists.map { .playlist($0) }, empty: "No playlists yet.")
                 case .downloads:
-                    grid(app.downloads.index.playlists.values.sorted { $0.name < $1.name }.map { .playlist($0) }
-                         + app.downloads.index.albums.values.sorted { $0.name < $1.name }.map { .album($0) },
+                    grid(downloadItems,
                          empty: "Nothing downloaded yet. Use the download button on an album or playlist, or “Download” in a song’s menu.")
                 }
             }
@@ -66,6 +65,16 @@ struct HomeView: View {
         ForEach(sections) { s in
             if !s.albums.isEmpty { AlbumRow(title: s.title, albums: s.albums, more: .albums(s.id)) }
         }
+    }
+
+    /// Everything downloaded: all songs first (single songs and favorites aren't an album or playlist), then collections.
+    private var downloadItems: [QuickItem] {
+        let dl = app.downloads
+        guard !dl.index.songs.isEmpty else { return [] }
+        let favorites = dl.index.songs.values.contains { $0.song.starred != nil }
+        return [.downloads] + (favorites ? [.favorites] : [])
+            + dl.index.playlists.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }.map { .playlist($0) }
+            + dl.index.albums.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }.map { .album($0) }
     }
 
     /// Two columns of small tiles at the top: favorites, a few playlists, recently played albums.
@@ -115,7 +124,12 @@ struct HomeView: View {
                         switch item {
                         case .playlist(let p): PlaylistCard(playlist: p, width: nil)
                         case .album(let a): AlbumCard(album: a, width: nil)
-                        case .favorites: EmptyView()
+                        case .favorites:
+                            CollectionCard(title: String(localized: "Favorite songs"), subtitle: String(localized: "\(favoriteDownloads) downloaded"),
+                                           route: .favorites) { FavoritesArt() }
+                        case .downloads:
+                            CollectionCard(title: String(localized: "Downloads"), subtitle: String(localized: "\(app.downloads.index.songs.count) songs"),
+                                           route: .downloads) { DownloadsArt() }
                         }
                     }
                 }
@@ -123,6 +137,8 @@ struct HomeView: View {
             }
         }
     }
+
+    private var favoriteDownloads: Int { app.downloads.index.songs.values.filter { $0.song.starred != nil }.count }
 
     private func load() async {
         guard let client = app.client else { return }
@@ -164,12 +180,14 @@ struct HomeView: View {
 
 enum QuickItem: Identifiable {
     case favorites
+    case downloads
     case playlist(Playlist)
     case album(Album)
 
     var id: String {
         switch self {
         case .favorites: "fav"
+        case .downloads: "dl"
         case .playlist(let p): "p" + p.id
         case .album(let a): "a" + a.id
         }
@@ -197,6 +215,7 @@ struct QuickTile: View {
     private var route: Route {
         switch item {
         case .favorites: .favorites
+        case .downloads: .downloads
         case .playlist(let p): .playlist(p.id)
         case .album(let a): .album(a.id)
         }
@@ -205,6 +224,7 @@ struct QuickTile: View {
     private var title: String {
         switch item {
         case .favorites: String(localized: "Favorite songs")
+        case .downloads: String(localized: "Downloads")
         case .playlist(let p): p.name
         case .album(let a): a.name
         }
@@ -213,9 +233,28 @@ struct QuickTile: View {
     @ViewBuilder private var art: some View {
         switch item {
         case .favorites: FavoritesArt()
+        case .downloads: DownloadsArt()
         case .playlist(let p): CoverView(id: p.coverArt ?? p.id, size: 120, corner: 0)
         case .album(let a): CoverView(id: a.coverArt ?? a.id, size: 120, corner: 0)
         }
+    }
+}
+
+/// Big tile like a playlist card, for the built-in collections (favorites, downloads).
+struct CollectionCard<Art: View>: View {
+    let title: String
+    let subtitle: String
+    let route: Route
+    @ViewBuilder let art: () -> Art
+    var body: some View {
+        NavigationLink(value: route) {
+            VStack(alignment: .leading, spacing: 6) {
+                art().aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity).clipShape(RoundedRectangle(cornerRadius: 4))
+                Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                Text(subtitle).font(.system(size: 12)).foregroundStyle(Color.subtle).lineLimit(1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 

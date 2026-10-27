@@ -40,6 +40,16 @@
         }
       }
     },
+    "%lld downloaded": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld geladen"
+          }
+        }
+      }
+    },
     "%lld downloads failed. Open the album or playlist and tap the download button to retry.": {
       "extractionState": "stale",
       "localizations": {
