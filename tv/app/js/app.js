@@ -468,7 +468,7 @@ var App = (function () {
       var m = UI.modal(null, [
         { icon: 'play', label: T('Hier weiterhören'), action: function () { Player.take(o, true); } },
         { icon: 'close', label: T('Nein, danke'), action: function () { Player.dismissRemote(o); } }
-      ], { head: { coverId: s.coverArt || s.albumId, title: T('Weiterhören vom {device}?', { device: o.device }),
+      ], { head: { coverId: s.coverArt || s.albumId, title: T('Von {device} weiterhören?', { device: o.device }),
         sub: s.title + (s.artist ? ' · ' + s.artist : '') } });
       offerModal = m;
       // Egal wie es zugeht (Knopf, Zurück-Taste, ersetzt): danach gilt es als geschlossen

@@ -150,7 +150,7 @@ var UI = (function () {
     return card({
       coverId: p.coverArt || p.id,
       title: p.name,
-      sub: (p.owner ? T('Von {name}', { name: p.owner }) + ' • ' : '') + T('{n} Songs', { n: p.songCount || 0 }),
+      sub: (p.owner ? T('Von {name}', { name: p.owner }) + ' • ' : '') + T.n(p.songCount || 0, '{n} Song', '{n} Songs'),
       onClick: function () { App.go('playlist', { id: p.id }); }
     });
   }

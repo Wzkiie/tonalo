@@ -29,8 +29,8 @@ var I18N = (function () {
     var d = dicts[lang];
     return fill((d && d[s]) || s.replace(/\|.*$/, ''), params);
   }
-  // Einzahl/Mehrzahl: T.n(3, '{n} Album', '{n} Alben')
-  T.n = function (n, one, other) { return T(n === 1 ? one : other, { n: n }); };
+  // Einzahl/Mehrzahl: T.n(3, '{n} Album', '{n} Alben'), weitere Platzhalter optional
+  T.n = function (n, one, other, params) { return T(n === 1 ? one : other, Object.assign({ n: n }, params)); };
 
   lang = detect();
   document.documentElement.lang = lang;

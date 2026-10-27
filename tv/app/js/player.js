@@ -53,7 +53,7 @@ var Player = (function () {
 
   function playList(songs, start, opts) {
     songs = (songs || []).filter(Boolean);
-    if (!songs.length) { U.toast(T('Keine Titel zum Abspielen')); return; }
+    if (!songs.length) { U.toast(T('Keine Songs zum Abspielen')); return; }
     start = start || 0;
     shuffleOn = !!(opts && opts.shuffle);
     if (shuffleOn) {
@@ -79,7 +79,7 @@ var Player = (function () {
     Array.prototype.splice.apply(queue, [index + 1, 0].concat(songs));
     if (original) original = original.concat(songs);
     emit('queue', queue); persist();
-    U.toast(T.n(songs.length, 'Wird als Nächstes gespielt', '{n} Titel als Nächstes'));
+    U.toast(T.n(songs.length, 'Wird als Nächstes gespielt', '{n} Songs als Nächstes'));
   }
 
   function enqueue(songs) {
@@ -88,7 +88,7 @@ var Player = (function () {
     queue = queue.concat(songs);
     if (original) original = original.concat(songs);
     emit('queue', queue); persist();
-    U.toast(T.n(songs.length, 'Zur Warteschlange hinzugefügt', '{n} Titel hinzugefügt'));
+    U.toast(T.n(songs.length, 'Zur Warteschlange hinzugefügt', '{n} Songs hinzugefügt'));
   }
 
   function jump(i) {
@@ -302,7 +302,7 @@ var Player = (function () {
     if (!audio.src || !current()) return;
     errorStreak++;
     var code = audio.error ? audio.error.code : '?';
-    U.toast(T(errorStreak < 4 ? 'Wiedergabefehler ({code}) – überspringe Titel' : 'Wiedergabefehler ({code}) – gestoppt', { code: code }));
+    U.toast(T(errorStreak < 4 ? 'Wiedergabefehler ({code}) – Song wird übersprungen' : 'Wiedergabefehler ({code}) – gestoppt', { code: code }));
     if (errorStreak < 4 && queue.length > 1) setTimeout(function () { next(true); }, 1200);
     emit('state');
   });

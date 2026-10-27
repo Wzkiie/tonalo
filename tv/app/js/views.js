@@ -88,7 +88,7 @@ var Views = (function () {
 
   function greeting() {
     var hr = new Date().getHours();
-    return hr < 5 ? T('Gute Nacht') : hr < 11 ? T('Guten Morgen') : hr < 18 ? T('Guten Tag') : T('Guten Abend');
+    return hr < 5 ? T('Gute Nacht') : hr < 12 ? T('Guten Morgen') : hr < 18 ? T('Guten Tag') : T('Guten Abend');
   }
 
   // ---------------- Alben
@@ -178,7 +178,7 @@ var Views = (function () {
       var artistLink = h('button.link.focusable', { text: al.artist || '', onclick: function () { if (al.artistId) App.go('artist', { id: al.artistId }); } });
       el.appendChild(hero({
         type: T('Album'), title: al.name, coverId: al.coverArt || al.id,
-        meta: [artistLink, al.year ? String(al.year) : null, T('{n} Songs, {dur}', { n: songs.length, dur: U.fmtDuration(al.duration) })]
+        meta: [artistLink, al.year ? String(al.year) : null, T.n(songs.length, '{n} Song, {dur}', '{n} Songs, {dur}', { dur: U.fmtDuration(al.duration) })]
       }));
       el.appendChild(h('div.action-bar.nav-container', null,
         UI.playBig(function () { Player.playList(songs, 0); }, true),
@@ -218,7 +218,7 @@ var Views = (function () {
       UI.heroBg(el, API.cover(pl.coverArt || pl.id, 120));
       el.appendChild(hero({
         type: pl.public ? T('Öffentliche Playlist') : T('Playlist'), title: pl.name, coverId: pl.coverArt || pl.id, desc: pl.comment,
-        meta: [pl.owner ? h('span', { style: 'color:#fff;font-weight:700', text: pl.owner }) : null, T('{n} Songs, {dur}', { n: songs.length, dur: U.fmtDuration(pl.duration) })]
+        meta: [pl.owner ? h('span', { style: 'color:#fff;font-weight:700', text: pl.owner }) : null, T.n(songs.length, '{n} Song, {dur}', '{n} Songs, {dur}', { dur: U.fmtDuration(pl.duration) })]
       }));
       el.appendChild(h('div.action-bar.nav-container', null,
         UI.playBig(function () { Player.playList(songs, 0); }, true),
@@ -278,7 +278,7 @@ var Views = (function () {
       var art = h('div.tile-art.liked', { style: 'width:100%;height:100%' }, Icon.el('heartFill', 120));
       var me = App.account();
       el.appendChild(hero({ type: T('Sammlung'), title: T('Favoriten'), art: art,
-        meta: [me ? h('span', { style: 'color:#fff;font-weight:700', text: me.user }) : null, T('{n} Songs', { n: s.songs.length })] }));
+        meta: [me ? h('span', { style: 'color:#fff;font-weight:700', text: me.user }) : null, T.n(s.songs.length, '{n} Song', '{n} Songs')] }));
       if (s.songs.length) {
         el.appendChild(h('div.action-bar.nav-container', null,
           UI.playBig(function () { Player.playList(s.songs, 0); }, true),
@@ -366,7 +366,7 @@ var Views = (function () {
     var bar = h('div.np-bar-fill');
     var progress = h('button.np-progress.focusable', null, h('div.np-bar', null, bar));
     var tCur = h('span'), tDur = h('span');
-    var btnShuffle = UI.iconBtn('shuffle', function () { Player.setShuffle(!Player.shuffle()); }, T('Zufall'));
+    var btnShuffle = UI.iconBtn('shuffle', function () { Player.setShuffle(!Player.shuffle()); }, T('Zufällig'));
     var btnPrev = UI.iconBtn('prev', Player.prev, T('Zurück'));
     var btnPlay = h('button.np-play.focusable', { onclick: Player.toggle, title: T('Play/Pause'), 'data-autofocus': true });
     var btnNext = UI.iconBtn('next', Player.next, T('Weiter'));
@@ -535,7 +535,7 @@ var Views = (function () {
       }
       var rest = q.slice(idx + 1);
       if (rest.length) {
-        holder.appendChild(h('h2.section-title', { text: T('Als Nächstes · {n} Songs, {dur}', { n: rest.length, dur: U.fmtDuration(rest.reduce(function (a, s) { return a + (s.duration || 0); }, 0)) }) }));
+        holder.appendChild(h('h2.section-title', { text: T.n(rest.length, 'Als Nächstes · {n} Song, {dur}', 'Als Nächstes · {n} Songs, {dur}', { dur: U.fmtDuration(rest.reduce(function (a, s) { return a + (s.duration || 0); }, 0)) }) }));
         holder.appendChild(UI.trackList(rest, { showCover: true, showAlbum: true, header: false,
           onPlay: function (i) { Player.jump(idx + 1 + i); }, menuExtra: function (i) { return extra(idx + 1 + i); } }));
       }
