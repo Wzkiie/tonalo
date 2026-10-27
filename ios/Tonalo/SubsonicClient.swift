@@ -313,7 +313,7 @@ struct SubsonicClient {
             throw status >= 400 ? SubsonicError.http(status) : SubsonicError.notSubsonic(status: status)
         }
         if env.response.status != "ok" {
-            throw SubsonicError.server(code: env.response.error?.code ?? 0, message: env.response.error?.message ?? "Unknown error")
+            throw SubsonicError.server(code: env.response.error?.code ?? 0, message: env.response.error?.message ?? String(localized: "Unknown error"))
         }
         return (env.response, data)
     }

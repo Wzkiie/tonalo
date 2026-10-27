@@ -43,9 +43,39 @@
     "%lld albums" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Alben"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Album"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Alben"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld album"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld albums"
+                }
+              }
+            }
           }
         }
       }
@@ -55,18 +85,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld geladen"
-          }
-        }
-      }
-    },
-    "%lld downloads failed. Open the album or playlist and tap the download button to retry." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Downloads fehlgeschlagen. Öffne das Album oder die Playlist und tippe erneut auf den Download-Knopf."
+            "value" : "%lld heruntergeladen"
           }
         }
       }
@@ -116,7 +135,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld von %2$lld geladen"
+            "value" : "%1$lld von %2$lld heruntergeladen"
           }
         }
       }
@@ -124,9 +143,39 @@
     "%lld of these songs are already in the playlist." : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld dieser Songs sind schon in der Playlist."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Einer dieser Songs ist schon in der Playlist."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dieser Songs sind schon in der Playlist."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "One of these songs is already in the playlist."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld of these songs are already in the playlist."
+                }
+              }
+            }
           }
         }
       }
@@ -134,15 +183,45 @@
     "%lld songs" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Songs"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Song"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Songs"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld song"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld songs"
+                }
+              }
+            }
           }
         }
       }
     },
     "192.168.1.10:4533" : {
-
+      "shouldTranslate" : false
     },
     "A–Z" : {
       "localizations" : {
@@ -484,17 +563,6 @@
         }
       }
     },
-    "Artists, albums or songs" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Künstler, Alben oder Songs"
-          }
-        }
-      }
-    },
     "Audio quality" : {
       "localizations" : {
         "de" : {
@@ -620,7 +688,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Löschen"
+            "value" : "Suche leeren"
           }
         }
       }
@@ -741,17 +809,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Überblenden"
-          }
-        }
-      }
-    },
-    "Crossfade blends the end of a song into the next one." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Überblenden lässt das Ende eines Songs in den nächsten übergehen."
           }
         }
       }
@@ -941,7 +998,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wird geladen (%lld)"
+            "value" : "Wird heruntergeladen (%lld)"
           }
         }
       }
@@ -1156,50 +1213,6 @@
         }
       }
     },
-    "Good afternoon" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guten Tag"
-          }
-        }
-      }
-    },
-    "Good evening" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guten Abend"
-          }
-        }
-      }
-    },
-    "Good morning" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guten Morgen"
-          }
-        }
-      }
-    },
-    "Good night" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gute Nacht"
-          }
-        }
-      }
-    },
     "Green" : {
       "localizations" : {
         "de" : {
@@ -1265,7 +1278,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seine Downloads und alles, was Tonalo dafür speichert, werden von diesem iPhone gelöscht. Auf deinem Server ändert sich nichts."
+            "value" : "Die Downloads dieses Kontos und alles, was Tonalo dafür speichert, werden von diesem iPhone gelöscht. Auf deinem Server ändert sich nichts."
           }
         }
       }
@@ -1275,7 +1288,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Weiter laden"
+            "value" : "Weiter herunterladen"
           }
         }
       }
@@ -1285,7 +1298,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Letzter Abgleich"
+            "value" : "Letzte Synchronisierung"
           }
         }
       }
@@ -1825,7 +1838,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Passwort (leer lassen zum Behalten)"
+            "value" : "Passwort (leer lassen, um es zu behalten)"
           }
         }
       }
@@ -1915,7 +1928,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WIRD VOM ALBUM ABGESPIELT"
+            "value" : "WIEDERGABE AUS ALBUM"
           }
         }
       }
@@ -1925,7 +1938,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WIRD VOM KÜNSTLER ABGESPIELT"
+            "value" : "WIEDERGABE VON KÜNSTLER"
           }
         }
       }
@@ -1935,7 +1948,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WIRD AUS DOWNLOADS ABGESPIELT"
+            "value" : "WIEDERGABE AUS DOWNLOADS"
           }
         }
       }
@@ -1945,7 +1958,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WIRD AUS LIEBLINGSSONGS ABGESPIELT"
+            "value" : "WIEDERGABE AUS LIEBLINGSSONGS"
           }
         }
       }
@@ -1955,7 +1968,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WIRD VON PLAYLIST ABGESPIELT"
+            "value" : "WIEDERGABE AUS PLAYLIST"
           }
         }
       }
@@ -1965,7 +1978,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WIRD AUS DER SUCHE ABGESPIELT"
+            "value" : "WIEDERGABE AUS SUCHE"
           }
         }
       }
@@ -1975,7 +1988,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MIX WIRD ABGESPIELT"
+            "value" : "MIX-WIEDERGABE"
           }
         }
       }
@@ -1993,9 +2006,39 @@
     "Playlist • %lld songs" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Playlist • %lld Songs"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Playlist • %lld Song"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Playlist • %lld Songs"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Playlist • %lld song"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Playlist • %lld songs"
+                }
+              }
+            }
           }
         }
       }
@@ -2243,9 +2286,39 @@
     "Retry %lld failed downloads" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld fehlgeschlagene Downloads wiederholen"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld fehlgeschlagenen Download wiederholen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld fehlgeschlagene Downloads wiederholen"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Retry %lld failed download"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Retry %lld failed downloads"
+                }
+              }
+            }
           }
         }
       }
@@ -2255,7 +2328,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gleiche Lautstärke pro Album"
+            "value" : "Gleiche Lautstärke für jedes Album"
           }
         }
       }
@@ -2485,7 +2558,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bereits geladene Songs bleiben auf deinem iPhone."
+            "value" : "Bereits heruntergeladene Songs bleiben auf deinem iPhone."
           }
         }
       }
@@ -2495,7 +2568,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Songs, die du zum Offline-Hören geladen hast."
+            "value" : "Songs, die du zum Offline-Hören heruntergeladen hast."
           }
         }
       }
@@ -2610,17 +2683,6 @@
         }
       }
     },
-    "Streaming quality" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Streaming-Qualität"
-          }
-        }
-      }
-    },
     "Swipe left to remove a header." : {
       "localizations" : {
         "de" : {
@@ -2637,17 +2699,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wechseln"
-          }
-        }
-      }
-    },
-    "Switch user" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Benutzer wechseln"
           }
         }
       }
@@ -2697,7 +2748,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der letzte Stand deiner Alben, Playlists und Startseite, damit sie ohne Warten und offline öffnen. Füllt sich beim Stöbern wieder."
+            "value" : "Der letzte Stand deiner Alben, Playlists und Startseite, damit sie sich ohne Warten und offline öffnen. Füllt sich beim Stöbern wieder."
           }
         }
       }
@@ -2707,7 +2758,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der letzte Abgleich ist über einen Monat her. Synchronisiere neu, um neue Musik zu übernehmen."
+            "value" : "Die letzte Synchronisierung ist über einen Monat her. Synchronisiere erneut, um neue Musik zu übernehmen."
           }
         }
       }
@@ -2845,17 +2896,6 @@
         }
       }
     },
-    "Top songs" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Top-Songs"
-          }
-        }
-      }
-    },
     "Try again" : {
       "localizations" : {
         "de" : {
@@ -2876,12 +2916,22 @@
         }
       }
     },
+    "Unknown error" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbekannter Fehler"
+          }
+        }
+      }
+    },
     "Unofficial client, not affiliated with Navidrome." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inoffizieller Client, nicht mit Navidrome verbunden."
+            "value" : "Inoffizieller Client, steht in keiner Verbindung zu Navidrome."
           }
         }
       }
@@ -2891,7 +2941,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Loslösen"
+            "value" : "Nicht mehr anheften"
           }
         }
       }
@@ -2956,23 +3006,12 @@
         }
       }
     },
-    "Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Lautstärkeangleichung nutzt die ReplayGain-Tags deiner Dateien. Beim Scrobbeln erfährt dein Server, was du gehört hast."
-          }
-        }
-      }
-    },
     "Waiting for Wi-Fi" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Warte auf WLAN"
+            "value" : "Wartet auf WLAN"
           }
         }
       }
@@ -2982,7 +3021,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wartet auf WLAN. Bereits geladene Songs bleiben auf deinem iPhone."
+            "value" : "Wartet auf WLAN. Bereits heruntergeladene Songs bleiben auf deinem iPhone."
           }
         }
       }

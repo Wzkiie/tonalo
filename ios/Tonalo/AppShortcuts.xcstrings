@@ -5,9 +5,12 @@
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Füg diesen Song in ${applicationName} zu meinen Lieblingssongs hinzu"
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Füg diesen Song in ${applicationName} zu meinen Lieblingssongs hinzu",
+              "Markier diesen Song in ${applicationName} als Lieblingssong"
+            ]
           }
         },
         "en" : {
@@ -17,17 +20,6 @@
               "Add this song to my favorites in ${applicationName}",
               "Like this song in ${applicationName}"
             ]
-          }
-        }
-      }
-    },
-    "Like this song in ${applicationName}" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Markier diesen Song in ${applicationName} als Lieblingssong"
           }
         }
       }
