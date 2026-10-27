@@ -35,8 +35,9 @@ actor ImageLoader {
             let file = Self.diskFile(for: url)
             if let file, let data = try? Data(contentsOf: file), let img = UIImage(data: data) { return img }
             var req = URLRequest(url: url)
+            req.timeoutInterval = 20
             for (k, v) in headers { req.setValue(v, forHTTPHeaderField: k) }
-            guard let (data, resp) = try? await ServerSession.shared.session.data(for: req),
+            guard let (data, resp) = try? await ServerSession.shared.fetch(req),
                   (resp as? HTTPURLResponse)?.statusCode == 200, let img = UIImage(data: data) else { return nil }
             if let file { try? data.write(to: file, options: .atomic) }
             return img
@@ -79,6 +80,7 @@ struct CoverView: View {
     var round = false
     var corner: CGFloat = 6
     @State private var image: UIImage?
+    @State private var shown: String?
 
     var body: some View {
         ZStack {
@@ -93,8 +95,11 @@ struct CoverView: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .clipShape(round ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: corner)))
-        .task(id: id) {
+        // Again when leaving home: a cover that was on its way from the home address won't arrive
+        .task(id: "\(id ?? "")|\(app.atHome)") {
+            if image != nil, shown == id { return }
             image = nil
+            shown = id
             // Downloaded covers first, so offline music keeps its artwork
             if let local = app.downloads.localCover(id), let img = UIImage(contentsOfFile: local.path) { image = img; return }
             guard let client = app.client, let url = client.coverURL(id, size: size) else { return }

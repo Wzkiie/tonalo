@@ -42,14 +42,43 @@ enum SubsonicError: LocalizedError {
 /// - No disk cache: Subsonic puts the login token into every address, and iOS would otherwise keep
 ///   those addresses (and the responses) in a plain database in the app's Caches folder.
 /// - No redirects to other hosts: custom headers (e.g. a Cloudflare Access secret) must only reach the server itself.
+/// - A new network (Wi-Fi to mobile data, say) drops all running requests: they would otherwise wait on the old
+///   connection until they time out, and the app looks frozen. `fetch` then asks once more on the new one.
 final class ServerSession: NSObject, URLSessionTaskDelegate {
     static let shared = ServerSession()
-    private(set) lazy var session: URLSession = {
+    private let lock = NSLock()
+    private var current: URLSession?
+
+    var session: URLSession {
+        lock.lock(); defer { lock.unlock() }
+        if let current { return current }
         let config = URLSessionConfiguration.default
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        return URLSession(configuration: config, delegate: self, delegateQueue: nil)
-    }()
+        let s = URLSession(configuration: config, delegate: self, delegateQueue: nil)
+        current = s
+        return s
+    }
+
+    /// The device switched networks: cancel what's running, new requests go out on a fresh session.
+    func networkChanged() {
+        lock.lock()
+        let old = current
+        current = nil
+        lock.unlock()
+        old?.invalidateAndCancel()
+    }
+
+    /// A request that a network change cancelled is sent once more – through `retry`, which may point it elsewhere
+    /// (away from the home address). One the caller cancelled itself stays cancelled.
+    func fetch(_ r: URLRequest, retry: ((URLRequest) -> URLRequest)? = { $0 }) async throws -> (Data, URLResponse) {
+        do {
+            return try await session.data(for: r)
+        } catch let e as URLError where e.code == .cancelled && !Task.isCancelled {
+            guard let retry else { throw e }
+            return try await session.data(for: retry(r))
+        }
+    }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest) async -> URLRequest? {
@@ -238,12 +267,22 @@ struct SubsonicClient {
         }
     }
 
-    private func send(_ r: URLRequest) async throws -> Payload {
-        try await sendRaw(r).0
+    private func send(_ r: URLRequest, retry: Bool = true) async throws -> Payload {
+        try await sendRaw(r, retry: retry).0
     }
 
-    private func sendRaw(_ r: URLRequest) async throws -> (Payload, Data) {
-        let (data, resp) = try await ServerSession.shared.session.data(for: r)
+    /// The same request to the outside address, with the custom headers – after leaving home, the home address is gone.
+    private func outside(_ r: URLRequest) -> URLRequest {
+        guard atHome, let url = r.url?.absoluteString, url.hasPrefix(base),
+              let moved = URL(string: account.serverURL + url.dropFirst(base.count)) else { return r }
+        var o = r
+        o.url = moved
+        for (k, v) in account.httpHeaders { o.setValue(v, forHTTPHeaderField: k) }
+        return o
+    }
+
+    private func sendRaw(_ r: URLRequest, retry: Bool = true) async throws -> (Payload, Data) {
+        let (data, resp) = try await ServerSession.shared.fetch(r, retry: retry ? outside : nil)
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         let type = (resp as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type") ?? ""
         guard type.contains("json") else { throw SubsonicError.notSubsonic(status: status) }
@@ -265,7 +304,7 @@ struct SubsonicClient {
         guard let u = url("ping") else { return false }
         var r = request(u)
         r.timeoutInterval = 3
-        return (try? await send(r)) != nil
+        return (try? await send(r, retry: false)) != nil
     }
 
     func albumList(_ type: String, size: Int = 30, offset: Int = 0, genre: String? = nil) async throws -> [Album] {

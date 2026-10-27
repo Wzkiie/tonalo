@@ -60,6 +60,9 @@ final class AppModel {
     /// Online, but only over mobile data – downloads wait for Wi-Fi unless cellular is allowed.
     private(set) var cellularOnly = false
     @ObservationIgnored private let monitor = NWPathMonitor()
+    /// Wi-Fi, cellular, other or nil when offline – to notice a switch between networks.
+    @ObservationIgnored private var network: NWInterface.InterfaceType?
+    @ObservationIgnored private var networkKnown = false
 
     /// On Wi-Fi at home with a home address set and answering: requests go there directly.
     private(set) var atHome = false
@@ -108,19 +111,37 @@ final class AppModel {
             let online = path.status == .satisfied
             let cellular = online && path.usesInterfaceType(.cellular)
                 && !path.usesInterfaceType(.wifi) && !path.usesInterfaceType(.wiredEthernet)
-            Task { @MainActor in
-                guard let self else { return }
-                if self.cellularOnly != cellular { self.cellularOnly = cellular }
-                self.checkRoute() // also when switching between Wi-Fi networks
-                guard self.isOnline != online else { return }
-                self.isOnline = online
-                if online { await self.player.flushScrobbles() }
-            }
+            let network: NWInterface.InterfaceType? = online ? path.availableInterfaces.first?.type ?? .other : nil
+            Task { @MainActor in await self?.pathChanged(online: online, cellular: cellular, network: network) }
         }
+        #if DEBUG
+        // Test hook: the simulator can't switch to mobile data – `notifyutil -p io.github.wzkiie.tonalo.cellular` pretends to
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        CFNotificationCenterAddObserver(center, Unmanaged.passUnretained(self).toOpaque(), { _, observer, _, _, _ in
+            guard let observer else { return }
+            let app = Unmanaged<AppModel>.fromOpaque(observer).takeUnretainedValue()
+            Task { @MainActor in await app.pathChanged(online: true, cellular: true, network: .cellular) }
+        }, "io.github.wzkiie.tonalo.cellular" as CFString, nil, .deliverImmediately)
+        #endif
         monitor.start(queue: DispatchQueue(label: "network-monitor"))
         // Several accounts: ask who is listening on start, like the TV app
         showsAccountPicker = accounts.count > 1
         librarySync.show(currentId)
+    }
+
+    private func pathChanged(online: Bool, cellular: Bool, network: NWInterface.InterfaceType?) async {
+        if cellularOnly != cellular { cellularOnly = cellular }
+        checkRoute() // also when switching between Wi-Fi networks
+        if networkKnown, self.network != network {
+            // After checkRoute, so cancelled requests are sent again to the right address
+            ServerSession.shared.networkChanged()
+            if player.isPlaying { player.preloadChanged() } // its download was among them
+        }
+        self.network = network
+        networkKnown = true
+        guard isOnline != online else { return }
+        isOnline = online
+        if online { await player.flushScrobbles() }
     }
 
     /// Checks the login, then stores the account. Replaces an existing one for the same server and user.
