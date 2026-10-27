@@ -524,31 +524,39 @@ struct LibraryView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                TabHeader(title: "Your Library").padding(.top, 8)
-                chips
-                toolbar
-                if grid {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], alignment: .leading, spacing: 18) {
-                        ForEach(items) { tile($0) }
+        ScrollViewReader { scroller in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    TabHeader(title: "Your Library").padding(.top, 8).id(Self.top)
+                    chips
+                    toolbar
+                    if grid {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], alignment: .leading, spacing: 18) {
+                            ForEach(keyed, id: \.key) { tile($0.item) }
+                        }
+                    } else {
+                        LazyVStack(alignment: .leading, spacing: 12) { ForEach(keyed, id: \.key) { row($0.item) } }
                     }
-                } else {
-                    LazyVStack(alignment: .leading, spacing: 12) { ForEach(items) { row($0) } }
+                    footer
                 }
-                footer
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 24)
+            .scrollDismissesKeyboard(.immediately)
+            .toolbar(.hidden, for: .navigationBar)
+            .statusBarBackground()
+            .task(id: "\(app.currentId?.uuidString ?? "")\(app.playlistsVersion)") { await load() }
+            .refreshable { await Task { await load() }.value }
+            .onAppear(perform: loadPins)
+            .onChange(of: app.currentId) { loadPins() }
+            .onChange(of: pins.first) { old, new in
+                // Something new pinned: go up to where it lands, so it doesn't vanish from where it was
+                if let new, new != old { withAnimation(.snappy(duration: 0.35)) { scroller.scrollTo(Self.top, anchor: .top) } }
+            }
         }
-        .scrollDismissesKeyboard(.immediately)
-        .toolbar(.hidden, for: .navigationBar)
-        .statusBarBackground()
-        .task(id: "\(app.currentId?.uuidString ?? "")\(app.playlistsVersion)") { await load() }
-        .refreshable { await Task { await load() }.value }
-        .onAppear(perform: loadPins)
-        .onChange(of: app.currentId) { loadPins() }
     }
+
+    private static let top = "library.top"
 
     // MARK: Pins
 
@@ -560,10 +568,10 @@ struct LibraryView: View {
         var next = pins
         if let i = next.firstIndex(of: item.id) { next.remove(at: i) } else { next.insert(item.id, at: 0) }
         UserDefaults.standard.set(next, forKey: pinsKey)
-        // Wait until the long-press menu has closed and the row is back in place – moving it while the
-        // menu's own animation still runs makes the row fly across the screen
+        // Wait until the long-press menu has closed and the row is back in place. The row then fades out
+        // where it was and in where it goes – sliding it across a long list makes it fly through everything
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            withAnimation(.snappy(duration: 0.35)) { pins = next }
+            withAnimation(.easeInOut(duration: 0.3)) { pins = next }
         }
     }
 
@@ -769,6 +777,12 @@ struct LibraryView: View {
         }
         .buttonStyle(.plain)
         .contextMenu { pinMenu(item) }
+        .transition(.opacity)
+    }
+
+    /// Pinning gives a row a new identity, so it fades instead of sliding to its new place.
+    private var keyed: [(key: String, item: Item)] {
+        items.map { ((pins.contains($0.id) ? "pin." : "") + $0.id, $0) }
     }
 
     private func tile(_ item: Item) -> some View {
@@ -785,6 +799,7 @@ struct LibraryView: View {
         }
         .buttonStyle(.plain)
         .contextMenu { pinMenu(item) }
+        .transition(.opacity)
     }
 
     // MARK: Loading

@@ -945,6 +945,26 @@
         }
       }
     },
+    "Downloads finished": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloads fertig"
+          }
+        }
+      }
+    },
+    "Downloads finished – %lld failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloads fertig – %lld fehlgeschlagen"
+          }
+        }
+      }
+    },
     "Downloads keep going in the background. Without cellular, they wait for Wi-Fi.": {
       "localizations": {
         "de": {

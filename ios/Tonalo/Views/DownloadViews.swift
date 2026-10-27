@@ -193,6 +193,29 @@ struct DownloadsView: View {
     }
 }
 
+/// Thin line under the status bar while downloads run, on every page – so an album keeps showing
+/// how far it is after you went somewhere else.
+struct DownloadBar: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        if let value = app.downloads.batchProgress {
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Rectangle().fill(Color.white.opacity(0.12))
+                    Rectangle().fill(Color.accent).frame(width: g.size.width * value)
+                }
+            }
+            .frame(height: 3)
+            .animation(.linear(duration: 0.3), value: value)
+            .transition(.opacity)
+            .accessibilityElement()
+            .accessibilityLabel("Downloading")
+            .accessibilityValue(Text(value, format: .percent.precision(.fractionLength(0))))
+        }
+    }
+}
+
 /// Shown at the top of the home screen when there is no network.
 struct OfflineBanner: View {
     var body: some View {

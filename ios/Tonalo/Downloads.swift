@@ -51,6 +51,17 @@ final class DownloadStore {
     private(set) var failed: [String: Song] = [:]
     /// Bytes received so far, for the "downloading" list
     private(set) var bytes: [String: Int64] = [:]
+    /// The songs of the current run – all downloads started since nothing was loading – for the bar at the top.
+    private(set) var batch: Set<String> = []
+
+    /// How far the current run is, 0…1; nil when nothing is loading (or it waits for Wi-Fi).
+    var batchProgress: Double? {
+        guard !index.queued.isEmpty, !waitingForWiFi, !batch.isEmpty else { return nil }
+        let done = batch.reduce(0.0) { sum, id in
+            sum + (index.queued[id] != nil ? progress[id] ?? 0 : 1)
+        }
+        return done / Double(batch.count)
+    }
 
     var quality = AudioQuality.stored("quality.download", legacy: "downloadBitRate", default: .aac256) {
         didSet { UserDefaults.standard.set(quality.rawValue, forKey: "quality.download") }
@@ -96,7 +107,7 @@ final class DownloadStore {
     // MARK: Index
 
     func reload() {
-        progress = [:]; failed = [:]
+        progress = [:]; failed = [:]; batch = []
         let file = accountKey.map { Self.folder($0).appendingPathComponent("index.json") }
         guard let file, let data = try? Data(contentsOf: file) else { index = DownloadIndex(); return }
         guard let idx = try? JSONDecoder().decode(DownloadIndex.self, from: data) else {
@@ -107,6 +118,7 @@ final class DownloadStore {
             return
         }
         index = idx
+        batch = Set(idx.queued.keys)
         // iOS may have dropped transfers in the meantime – don't leave those stuck as "downloading"
         DownloadSession.shared.session.getAllTasks { tasks in
             let running = Set(tasks.compactMap { $0.taskDescription?.components(separatedBy: "|").dropFirst().first })
@@ -115,6 +127,7 @@ final class DownloadStore {
                 guard !stale.isEmpty else { return }
                 for id in stale { self.failed[id] = self.index.queued.removeValue(forKey: id) }
                 self.save()
+                self.batchEnded()
             }
         }
     }
@@ -202,6 +215,7 @@ final class DownloadStore {
             let task = DownloadSession.shared.session.downloadTask(with: req)
             task.taskDescription = [key, song.id, ext].joined(separator: "|")
             index.queued[song.id] = song
+            batch.insert(song.id)
             failed.removeValue(forKey: song.id)
             progress[song.id] = 0
             task.resume()
@@ -245,6 +259,8 @@ final class DownloadStore {
         guard !ids.isEmpty else { return }
         cancelTasks(ids)
         for id in ids { index.queued.removeValue(forKey: id); progress.removeValue(forKey: id); bytes.removeValue(forKey: id) }
+        batch.subtract(ids)
+        if index.queued.isEmpty { batch = [] }
         save()
     }
 
@@ -329,7 +345,9 @@ final class DownloadStore {
             index.queued.removeValue(forKey: id)
             index.loose.remove(id)
             progress.removeValue(forKey: id)
+            batch.remove(id)
         }
+        if index.queued.isEmpty { batch = [] }
         save()
     }
 
@@ -360,7 +378,7 @@ final class DownloadStore {
     func removeAll() {
         cancelTasks(Set(index.queued.keys))
         if let key = accountKey { try? FileManager.default.removeItem(at: Self.folder(key)) }
-        index = DownloadIndex(); progress = [:]; failed = [:]
+        index = DownloadIndex(); progress = [:]; failed = [:]; batch = []
     }
 
     nonisolated static func deleteAccount(_ id: UUID) {
@@ -401,6 +419,7 @@ final class DownloadStore {
         progress.removeValue(forKey: songId)
         bytes.removeValue(forKey: songId)
         save()
+        batchEnded()
     }
 
     func didFail(account: String, songId: String) {
@@ -409,6 +428,16 @@ final class DownloadStore {
         progress.removeValue(forKey: songId)
         bytes.removeValue(forKey: songId)
         save()
+        batchEnded()
+    }
+
+    /// The last song of a run is through: say so, since the page that started it may be long gone.
+    private func batchEnded() {
+        guard index.queued.isEmpty, !batch.isEmpty else { return }
+        let failures = batch.filter { failed[$0] != nil }.count
+        batch = []
+        app?.notify(failures == 0 ? String(localized: "Downloads finished")
+                                  : String(localized: "Downloads finished – \(failures) failed"))
     }
 }
 

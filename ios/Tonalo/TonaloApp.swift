@@ -116,6 +116,7 @@ struct RootView: View {
             }
         }
         .id(app.currentId) // fresh views when switching accounts
+        .overlay(alignment: .top) { DownloadBar() }
         // Every scrolling page (plain scroll views and system lists alike) ends above the floating bar
         .contentMargins(.bottom, barHeight, for: .scrollContent)
         .contentMargins(.bottom, barHeight, for: .scrollIndicators)
