@@ -17,7 +17,7 @@ There are two apps in this repository. They share the name, the icon and the ide
 |---|---|---|
 | Runs on | LG TVs with webOS 5 or newer | iPhone with iOS 17 or newer, plus Apple Watch |
 | Code | [`tv/`](tv) – plain HTML, CSS and JavaScript | [`ios/`](ios) – Swift and SwiftUI |
-| Install | `.ipk` from the [releases](../../releases/latest) | Build it yourself with Xcode (no App Store version yet) |
+| Install | `.ipk` from the [releases](../../releases/latest) | Public beta on [TestFlight](https://testflight.apple.com/join/vKkNhNZJ), or build it with Xcode |
 
 ## TV app
 
@@ -124,7 +124,11 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 
 ### Installing
 
-There's no App Store build yet (see [`docs/APP_STORE.md`](docs/APP_STORE.md) for what's needed). To put it on your own phone:
+**TestFlight (easiest):** join the public beta at [testflight.apple.com/join/vKkNhNZJ](https://testflight.apple.com/join/vKkNhNZJ). Install Apple's TestFlight app, open the link on your iPhone and tap *Install*. The Apple Watch app comes along if your iPhone is paired with a watch. Each beta build runs for 90 days; TestFlight offers the next one when it's out. An App Store version will follow.
+
+Feedback is very welcome – as a [GitHub issue](../../issues/new/choose), or with a screenshot straight from TestFlight. Note that TestFlight itself passes crash reports and basic usage data to the developer; the app collects nothing (see the [privacy policy](PRIVACY.md)).
+
+**Build it yourself:** to put your own build on your phone:
 
 1. Open `ios/Tonalo.xcodeproj` in Xcode.
 2. Create `ios/Local.xcconfig` with your team ID, `DEVELOPMENT_TEAM = ABCDE12345` (git ignores this file). Alternatively, pick your Apple ID as the team under *Signing & Capabilities* for the Tonalo, TonaloControls and TonaloWatch targets.
