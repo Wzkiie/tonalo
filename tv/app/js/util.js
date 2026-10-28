@@ -1,5 +1,5 @@
 /* Hilfsfunktionen. Zielplattform: webOS 5 (Chromium 68) -> kein ?. / ?? / Array.flat */
-var APP_VERSION = '1.6.0'; // muss zu appinfo.json passen (build_ipk.py prüft das)
+var APP_VERSION = '1.7.0'; // muss zu appinfo.json passen (build_ipk.py prüft das)
 var U = (function () {
   'use strict';
 
