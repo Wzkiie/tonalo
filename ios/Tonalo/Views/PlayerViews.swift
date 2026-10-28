@@ -485,8 +485,8 @@ struct QueueView: View {
                     } header: { header("Now playing") }
                 }
                 Section {
-                    ForEach(Array(p.upNext.enumerated()), id: \.offset) { i, s in
-                        SongRow(song: s, showCover: true) { p.jump(to: p.index + 1 + i) }
+                    ForEach(rows(p.upNext)) { row in
+                        SongRow(song: row.song, showCover: true) { p.jump(to: p.index + 1 + row.offset) }
                     }
                     .onDelete { set in set.sorted(by: >).forEach { p.remove(at: p.index + 1 + $0) } }
                     .onMove { from, to in p.moveUpNext(from: from, to: to) }
@@ -507,5 +507,21 @@ struct QueueView: View {
 
     private func header(_ title: LocalizedStringKey) -> some View {
         Text(title).font(.system(size: 16, weight: .bold)).foregroundStyle(.white).textCase(nil)
+    }
+
+    /// A row keeps its identity when it moves (song id, plus a count for songs that are queued twice).
+    /// Named by position instead, every row in between would turn into another one while dragging.
+    private struct Row: Identifiable {
+        let id: String
+        let offset: Int
+        let song: Song
+    }
+
+    private func rows(_ songs: [Song]) -> [Row] {
+        var count: [String: Int] = [:]
+        return songs.enumerated().map { i, song in
+            count[song.id, default: 0] += 1
+            return Row(id: "\(song.id)#\(count[song.id]!)", offset: i, song: song)
+        }
     }
 }

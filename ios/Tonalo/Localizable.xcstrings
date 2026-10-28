@@ -1116,6 +1116,16 @@
         }
       }
     },
+    "Endless radio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endlos-Radio"
+          }
+        }
+      }
+    },
     "Fans also like" : {
       "localizations" : {
         "de" : {
@@ -2765,6 +2775,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Website des Senders"
+          }
+        }
+      }
+    },
+    "Stations" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sender"
           }
         }
       }

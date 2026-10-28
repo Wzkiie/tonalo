@@ -78,42 +78,96 @@ struct LiveBadge: View {
     }
 }
 
-/// All stations set up on the server.
+/// Genres with enough songs for a radio that doesn't repeat itself, biggest first.
+func radioGenres(_ all: [Genre]) -> [Genre] {
+    all.filter { ($0.songCount ?? 0) >= 20 }.sorted { ($0.songCount ?? 0) > ($1.songCount ?? 0) }
+}
+
+/// The endless radios: your favorites, the artist playing now, and one per genre.
+struct SmartRadioCards: View {
+    @Environment(AppModel.self) private var app
+    let genres: [Genre]
+    let size: CGFloat
+
+    var body: some View {
+        let song = app.player.station == nil ? app.player.current : nil
+        MixCard(title: "Your radio", subtitle: "Endless, based on your favorites", icon: "dot.radiowaves.left.and.right", hue: 0.52, size: size) {
+            let favorites = ((try? await app.client?.starred().song) ?? []).shuffled()
+            await app.player.radio.start(String(localized: "Your radio"), seedId: favorites.first?.id, seeds: Array(favorites.prefix(8)))
+        }
+        if let song, let name = song.artist {
+            MixCard(title: "More like \(name)", subtitle: "Radio from the song playing now", icon: "music.mic", hue: 0.75, size: size) {
+                await app.player.radio.start(String(localized: "\(name) radio"), seedId: song.artistId ?? song.id, seeds: [song])
+            }
+        }
+        ForEach(genres, id: \.value) { g in
+            MixCard(title: "\(g.value)", subtitle: "Genre radio", icon: "guitars", hue: stableHue(g.value), size: size) {
+                await app.player.radio.start(String(localized: "\(g.value) radio"), genre: g.value)
+            }
+        }
+    }
+}
+
+/// Everything radio: the endless radios (all genres here, not just the biggest) and the stations set up on the server.
 struct StationsView: View {
     @Environment(AppModel.self) private var app
     @State private var stations: [Station] = []
+    @State private var genres: [Genre] = []
     @State private var error: String?
     @State private var loaded = false
+    @State private var width: CGFloat = 390
 
     var body: some View {
+        // Two columns: the cards have a fixed size, so it comes from the screen width
+        let size = max(120, (width - 32 - 14) / 2)
+        let columns = [GridItem(.fixed(size), spacing: 14), GridItem(.fixed(size), spacing: 14)]
         ScrollView {
-            if loaded, error == nil, stations.isEmpty {
-                Text("No radio stations yet. They are added on the server, in Navidrome under Radio.")
-                    .foregroundStyle(Color.subtle).multilineTextAlignment(.center).padding(32)
-            }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
-                ForEach(stations) { s in
-                    Button { app.player.station == s ? app.player.toggle() : app.player.play(s, in: stations) } label: {
-                        StationArt(station: s)
-                            .overlay(alignment: .topLeading) {
-                                if app.player.station == s { LiveBadge(playing: app.player.isPlaying).padding(8) }
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+            VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Endless radio").font(.system(size: 22, weight: .bold)).padding(.horizontal, 16)
+                    LazyVGrid(columns: columns, alignment: .leading, spacing: 18) {
+                        SmartRadioCards(genres: genres, size: size)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(s.name)
+                    .padding(.horizontal, 16)
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Stations").font(.system(size: 22, weight: .bold)).padding(.horizontal, 16)
+                    if loaded, error == nil, stations.isEmpty {
+                        Text("No radio stations yet. They are added on the server, in Navidrome under Radio.")
+                            .foregroundStyle(Color.subtle).padding(.horizontal, 16)
+                    }
+                    if let error { Text(error).foregroundStyle(Color.subtle).padding(.horizontal, 16) }
+                    LazyVGrid(columns: columns, alignment: .leading, spacing: 14) {
+                        ForEach(stations) { s in
+                            Button { app.player.station == s ? app.player.toggle() : app.player.play(s, in: stations) } label: {
+                                StationArt(station: s)
+                                    .overlay(alignment: .topLeading) {
+                                        if app.player.station == s { LiveBadge(playing: app.player.isPlaying).padding(8) }
+                                    }
+                                    .frame(width: size, height: size)
+                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(s.name)
+                        }
+                    }
+                    .padding(.horizontal, 16)
                 }
             }
-            .padding(16)
+            .padding(.vertical, 16)
         }
-        .overlay { LoadState(loading: !loaded, error: error) }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .navigationTitle("Radio")
         .task { await load() }
         .refreshable { await load() }
     }
 
     private func load() async {
-        do { stations = try await app.client?.stations() ?? [] } catch { self.error = error.userMessage }
+        guard let client = app.client else { return }
+        if let saved = client.cached("getGenres")?.genres?.genre { genres = radioGenres(saved) }
+        async let g = try? client.genres()
+        do { stations = try await client.stations() } catch { self.error = error.userMessage }
+        if let g = await g { genres = radioGenres(g) }
         loaded = true
     }
 }
