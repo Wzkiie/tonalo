@@ -213,5 +213,8 @@ I18N.add('pt', {
   '{n} Songs sind schon in „{name}“': '{n} músicas já estão em “{name}”',
   '„{name}“ gelöscht': '“{name}” excluída',
   '„{name}“ löschen?': 'Excluir “{name}”?',
-  '▲ ▼ verschieben · OK ablegen': '▲ ▼ mover · OK para soltar'
+  '▲ ▼ verschieben · OK ablegen': '▲ ▼ mover · OK para soltar',
+  'Songs gehen weich ineinander über': 'As músicas se misturam suavemente',
+  '{n} s': '{n} s',
+  'Überblenden': 'Transição suave'
 });

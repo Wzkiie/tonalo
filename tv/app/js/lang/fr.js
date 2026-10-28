@@ -213,5 +213,8 @@ I18N.add('fr', {
   '{n} Songs sind schon in „{name}“': '{n} titres sont déjà dans « {name} »',
   '„{name}“ gelöscht': '« {name} » supprimée',
   '„{name}“ löschen?': 'Supprimer « {name} » ?',
-  '▲ ▼ verschieben · OK ablegen': '▲ ▼ déplacer · OK pour poser'
+  '▲ ▼ verschieben · OK ablegen': '▲ ▼ déplacer · OK pour poser',
+  'Songs gehen weich ineinander über': 'Les titres s’enchaînent en douceur',
+  '{n} s': '{n} s',
+  'Überblenden': 'Fondu enchaîné'
 });

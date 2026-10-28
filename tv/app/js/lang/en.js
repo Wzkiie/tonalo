@@ -213,5 +213,8 @@ I18N.add('en', {
   '{n} Songs sind schon in „{name}“': '{n} songs are already in “{name}”',
   '„{name}“ gelöscht': '“{name}” deleted',
   '„{name}“ löschen?': 'Delete “{name}”?',
-  '▲ ▼ verschieben · OK ablegen': '▲ ▼ move · OK to drop'
+  '▲ ▼ verschieben · OK ablegen': '▲ ▼ move · OK to drop',
+  'Songs gehen weich ineinander über': 'Songs blend smoothly into each other',
+  '{n} s': '{n} s',
+  'Überblenden': 'Crossfade'
 });

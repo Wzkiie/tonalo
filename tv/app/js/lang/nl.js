@@ -213,5 +213,8 @@ I18N.add('nl', {
   '{n} Songs sind schon in „{name}“': '{n} nummers staan al in ‘{name}’',
   '„{name}“ gelöscht': '‘{name}’ verwijderd',
   '„{name}“ löschen?': '‘{name}’ verwijderen?',
-  '▲ ▼ verschieben · OK ablegen': '▲ ▼ verplaatsen · OK om neer te zetten'
+  '▲ ▼ verschieben · OK ablegen': '▲ ▼ verplaatsen · OK om neer te zetten',
+  'Songs gehen weich ineinander über': 'Nummers lopen vloeiend in elkaar over',
+  '{n} s': '{n} s',
+  'Überblenden': 'Overvloeien'
 });

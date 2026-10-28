@@ -4,7 +4,7 @@ var App = (function () {
   var K = Nav.KEY;
   var APP_ID = 'tonalo';
 
-  var DEFAULTS = { maxBitRate: 0, format: 'mp3', scrobble: true, screensaver: 3, startView: 'home', autoplay: true, leveling: 'off' };
+  var DEFAULTS = { maxBitRate: 0, format: 'mp3', scrobble: true, screensaver: 3, startView: 'home', autoplay: true, leveling: 'off', crossfade: 0 };
   var settings = Object.assign({}, DEFAULTS);
   var account = null;   // aktives Konto {id, url, user, salt, token}
 

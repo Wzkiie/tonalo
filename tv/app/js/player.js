@@ -2,8 +2,10 @@
 var Player = (function () {
   'use strict';
 
-  var audio = new Audio();
-  audio.preload = 'auto';
+  // Zwei Player, damit beim Überblenden der nächste Song schon anlaufen kann. audio = der, der gerade spielt.
+  var players = [new Audio(), new Audio()];
+  players.forEach(function (el) { el.preload = 'auto'; });
+  var audio = players[0];
 
   var queue = [];        // Songs in Abspielreihenfolge
   var original = null;   // Originalreihenfolge, wenn Shuffle aktiv
@@ -19,6 +21,7 @@ var Player = (function () {
   var station = null;    // Radiosender, der gerade live läuft – die Warteschlange wartet so lange
   var stations = [], stationSeq = 0;
   var sleepAt = 0, sleepEnd = false, fade = 1;
+  var xf = null, xfIn = 1, xfBroken = false, xfStarting = false; // laufendes Überblenden, Lautstärke des neuen Songs dabei
 
   function on(evt, fn) { (listeners[evt] = listeners[evt] || []).push(fn); }
   function emit(evt, data) { (listeners[evt] || []).forEach(function (fn) { try { fn(data); } catch (e) { console.error(e); } }); }
@@ -43,13 +46,73 @@ var Player = (function () {
       var gain = album ? rg.albumGain : rg.trackGain, peak = album ? rg.albumPeak : rg.trackPeak;
       if (gain != null) { g = Math.pow(10, gain / 20); if (peak) g = Math.min(g, 1 / peak); }
     }
-    audio.volume = Math.max(0, Math.min(1, g * fade));
+    audio.volume = Math.max(0, Math.min(1, g * fade * xfIn));
+  }
+
+  function clear(el) {
+    el.pause();
+    el.removeAttribute('src');
+    try { el.load(); } catch (e) { /* egal */ }
+  }
+
+  // ---- Überblenden: kurz vor Songende startet der nächste leise im zweiten Player, der alte wird leiser
+  function crossfadeSecs() { return +settings().crossfade || 0; }
+
+  function maybeCrossfade() {
+    var cf = crossfadeSecs();
+    if (!cf || xf || xfBroken || station || repeat === 'one' || sleepEnd || audio.paused) return;
+    var d = duration(), left = d - position();
+    if (!d || d < cf * 3 || left > cf || left < 0.5) return;
+    var ni = index < queue.length - 1 ? index + 1 : (repeat === 'all' ? 0 : -1);
+    if (ni < 0) return;
+    var cur = current();
+    if (cur && radioOn()) Radio.listened(cur);
+    var from = audio, fromIndex = index, fromVol = from.volume, t0 = Date.now(), started = false;
+    audio = players[from === players[0] ? 1 : 0];
+    index = ni;
+    xfIn = 0;
+    xfStarting = true;
+    load(0, true);
+    xfStarting = false;
+    emit('queue', queue);
+    var mine = xf = {
+      from: from,
+      timer: setInterval(function () {
+        var t = Math.min(1, (Date.now() - t0) / (cf * 1000));
+        if (!started && !audio.paused && audio.currentTime > 0) started = true;
+        // Der Fernseher bekommt den zweiten Player nicht zum Laufen: zurück zum normalen Songwechsel
+        if (!started && Date.now() - t0 > 4000) { giveUp(); return; }
+        xfIn = started ? t : 0;
+        applyVolume();
+        from.volume = Math.max(0, fromVol * (1 - t));
+        if (t >= 1 && started) stopFade();
+      }, 100)
+    };
+    function giveUp() {
+      if (xf !== mine) return;
+      clearInterval(mine.timer); xf = null; xfIn = 1; xfBroken = true;
+      clear(audio);
+      audio = from; index = fromIndex;
+      from.volume = fromVol;
+      emit('track', current()); emit('queue', queue); emit('state');
+      console.warn('Überblenden geht hier nicht – normaler Songwechsel');
+    }
+  }
+
+  // Überblenden sofort beenden: der alte Song verstummt, der neue läuft mit voller Lautstärke
+  function stopFade() {
+    if (!xf) return;
+    clearInterval(xf.timer);
+    clear(xf.from);
+    xf = null; xfIn = 1;
+    applyVolume();
   }
   function transcoding() { return !!settings().maxBitRate; }
 
   function load(startAt, autoplay) {
     var s = current();
     if (!s) return;
+    if (!xfStarting) stopFade();
     if (station) { station = null; stationSeq++; }
     scrobbled = false;
     offset = 0;
@@ -184,15 +247,17 @@ var Player = (function () {
   }
 
   function toggle() {
+    stopFade();
     if (station) { if (audio.paused) playStation(station); else audio.pause(); return; }
     if (!current()) return;
     if (!audio.src) { load(U.ustore.get('pos', 0), true); return; }
     if (audio.paused) audio.play(); else audio.pause();
   }
   function play() { if (audio.paused) toggle(); }
-  function pause() { if (!audio.paused) audio.pause(); }
+  function pause() { stopFade(); if (!audio.paused) audio.pause(); }
 
   function stop() {
+    stopFade();
     station = null; stationSeq++; context = null;
     audio.pause();
     audio.removeAttribute('src');
@@ -204,6 +269,7 @@ var Player = (function () {
 
   function seek(sec) {
     if (station) return;
+    stopFade();
     var d = duration();
     sec = Math.max(0, d ? Math.min(sec, d - 1) : sec);
     if (transcoding()) {
@@ -257,6 +323,7 @@ var Player = (function () {
   function playStation(st, list) {
     if (list) stations = list;
     if (!station && audio.src && current()) U.ustore.set('pos', Math.floor(position()));
+    stopFade();
     station = st; offset = 0; pendingSeek = 0; errorStreak = 0;
     var my = ++stationSeq;
     audio.pause();
@@ -297,6 +364,7 @@ var Player = (function () {
     emit('sleep');
   }
   function sleepDone() {
+    stopFade();
     sleepAt = 0; sleepEnd = false;
     audio.pause();
     fade = 1; applyVolume();
@@ -393,6 +461,7 @@ var Player = (function () {
     if (queue.length) persistNow(true);
     remoteSig = '';
     clearTimeout(persistTimer);
+    stopFade();
     audio.pause();
     audio.removeAttribute('src');
     try { audio.load(); } catch (e) { /* egal */ }
@@ -411,36 +480,40 @@ var Player = (function () {
     if (current()) { emit('track', current()); emit('queue', queue); emit('mode'); }
   }
 
-  // ---- Audio-Events
-  audio.addEventListener('loadedmetadata', function () {
-    if (pendingSeek) { try { audio.currentTime = pendingSeek; } catch (e) { /* egal */ } pendingSeek = 0; }
-  });
-  audio.addEventListener('playing', function () { errorStreak = 0; emit('state'); });
-  audio.addEventListener('pause', function () {
-    emit('state');
-    if (station) return;
-    persist(); setTimeout(function () { syncRemote(true); }, 400);
-  });
-  audio.addEventListener('waiting', function () { emit('state'); });
-  audio.addEventListener('ended', function () { if (station) emit('state'); else next(true); });
-  audio.addEventListener('timeupdate', function () {
-    emit('time');
-    if (station) return;
-    var s = current(), d = duration(), p = position();
-    if (s && !scrobbled && settings().scrobble && d && (p > d / 2 || p > 240)) {
-      scrobbled = true;
-      API.scrobble(s.id, true);
-    }
-    if (Math.floor(p) % 5 === 0) persist();
-  });
-  audio.addEventListener('error', function () {
-    if (station) { U.toast(T('Dieser Sender kann gerade nicht abgespielt werden.')); emit('state'); return; }
-    if (!audio.src || !current()) return;
-    errorStreak++;
-    var code = audio.error ? audio.error.code : '?';
-    U.toast(T(errorStreak < 4 ? 'Wiedergabefehler ({code}) – Song wird übersprungen' : 'Wiedergabefehler ({code}) – gestoppt', { code: code }));
-    if (errorStreak < 4 && queue.length > 1) setTimeout(function () { next(true); }, 1200);
-    emit('state');
+  // ---- Audio-Events (nur vom Player, der gerade spielt – der ausblendende zählt nicht mehr)
+  players.forEach(function (el) {
+    function listen(name, fn) { el.addEventListener(name, function () { if (el === audio) fn(); }); }
+    listen('loadedmetadata', function () {
+      if (pendingSeek) { try { audio.currentTime = pendingSeek; } catch (e) { /* egal */ } pendingSeek = 0; }
+    });
+    listen('playing', function () { errorStreak = 0; emit('state'); });
+    listen('pause', function () {
+      emit('state');
+      if (station) return;
+      persist(); setTimeout(function () { syncRemote(true); }, 400);
+    });
+    listen('waiting', function () { emit('state'); });
+    listen('ended', function () { if (station) emit('state'); else next(true); });
+    listen('timeupdate', function () {
+      emit('time');
+      if (station) return;
+      maybeCrossfade();
+      var s = current(), d = duration(), p = position();
+      if (s && !scrobbled && settings().scrobble && d && (p > d / 2 || p > 240)) {
+        scrobbled = true;
+        API.scrobble(s.id, true);
+      }
+      if (Math.floor(p) % 5 === 0) persist();
+    });
+    listen('error', function () {
+      if (station) { U.toast(T('Dieser Sender kann gerade nicht abgespielt werden.')); emit('state'); return; }
+      if (!audio.src || !current()) return;
+      errorStreak++;
+      var code = audio.error ? audio.error.code : '?';
+      U.toast(T(errorStreak < 4 ? 'Wiedergabefehler ({code}) – Song wird übersprungen' : 'Wiedergabefehler ({code}) – gestoppt', { code: code }));
+      if (errorStreak < 4 && queue.length > 1) setTimeout(function () { next(true); }, 1200);
+      emit('state');
+    });
   });
 
   return {

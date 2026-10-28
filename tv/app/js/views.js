@@ -748,6 +748,7 @@ var Views = (function () {
     el.appendChild(option(T('Streaming-Qualität'), T('Original spielt die Datei unverändert ab'), [[0, T('Original')], [320, '320 kbps'], [192, '192 kbps'], [128, '128 kbps']], 'maxBitRate', function () { Player.reloadCurrent(); }));
     el.appendChild(option(T('Format bei Umwandlung'), T('Nur relevant, wenn nicht „Original“'), [['mp3', 'MP3'], ['opus', 'Opus'], ['aac', 'AAC']], 'format', function () { Player.reloadCurrent(); }));
     el.appendChild(option(T('Scrobbeln'), T('Gehörte Songs an den Server melden'), [[true, T('An')], [false, T('Aus')]], 'scrobble'));
+    el.appendChild(option(T('Überblenden'), T('Songs gehen weich ineinander über'), [[0, T('Aus')], [3, T('{n} s', { n: 3 })], [6, T('{n} s', { n: 6 })], [9, T('{n} s', { n: 9 })], [12, T('{n} s', { n: 12 })]], 'crossfade'));
     el.appendChild(option(T('Autoplay'), T('Wenn ein Album oder eine Playlist endet, laufen ähnliche Songs weiter'), [[true, T('An')], [false, T('Aus')]], 'autoplay'));
     el.appendChild(option(T('Lautstärke angleichen'), T('Mit den ReplayGain-Angaben deiner Dateien'), [['off', T('Aus')], ['track', T('Pro Song')], ['album', T('Pro Album')]], 'leveling', function () { Player.applyVolume(); }));
 

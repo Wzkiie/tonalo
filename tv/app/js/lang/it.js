@@ -213,5 +213,8 @@ I18N.add('it', {
   '{n} Songs sind schon in „{name}“': '{n} brani sono già in “{name}”',
   '„{name}“ gelöscht': '“{name}” eliminata',
   '„{name}“ löschen?': 'Eliminare “{name}”?',
-  '▲ ▼ verschieben · OK ablegen': '▲ ▼ sposta · OK per rilasciare'
+  '▲ ▼ verschieben · OK ablegen': '▲ ▼ sposta · OK per rilasciare',
+  'Songs gehen weich ineinander über': 'I brani sfumano l’uno nell’altro',
+  '{n} s': '{n} s',
+  'Überblenden': 'Dissolvenza'
 });

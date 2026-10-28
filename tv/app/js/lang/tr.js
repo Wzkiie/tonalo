@@ -214,5 +214,8 @@ I18N.add('tr', {
   '{n} Songs sind schon in „{name}“': '{n} şarkı zaten “{name}” içinde',
   '„{name}“ gelöscht': '“{name}” silindi',
   '„{name}“ löschen?': '“{name}” silinsin mi?',
-  '▲ ▼ verschieben · OK ablegen': '▲ ▼ taşı · bırakmak için OK'
+  '▲ ▼ verschieben · OK ablegen': '▲ ▼ taşı · bırakmak için OK',
+  'Songs gehen weich ineinander über': 'Şarkılar birbirine yumuşakça geçer',
+  '{n} s': '{n} sn',
+  'Überblenden': 'Geçiş efekti'
 });

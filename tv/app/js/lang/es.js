@@ -213,5 +213,8 @@ I18N.add('es', {
   '{n} Songs sind schon in „{name}“': '{n} canciones ya están en «{name}»',
   '„{name}“ gelöscht': '«{name}» eliminada',
   '„{name}“ löschen?': '¿Eliminar «{name}»?',
-  '▲ ▼ verschieben · OK ablegen': '▲ ▼ mover · OK para soltar'
+  '▲ ▼ verschieben · OK ablegen': '▲ ▼ mover · OK para soltar',
+  'Songs gehen weich ineinander über': 'Las canciones se funden suavemente',
+  '{n} s': '{n} s',
+  'Überblenden': 'Fundido'
 });

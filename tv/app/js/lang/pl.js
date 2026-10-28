@@ -214,5 +214,8 @@ I18N.add('pl', {
   '{n} Songs sind schon in „{name}“': 'Utwory już w „{name}”: {n}',
   '„{name}“ gelöscht': 'Usunięto „{name}”',
   '„{name}“ löschen?': 'Usunąć „{name}”?',
-  '▲ ▼ verschieben · OK ablegen': '▲ ▼ przenieś · OK, aby upuścić'
+  '▲ ▼ verschieben · OK ablegen': '▲ ▼ przenieś · OK, aby upuścić',
+  'Songs gehen weich ineinander über': 'Utwory płynnie przechodzą jeden w drugi',
+  '{n} s': '{n} s',
+  'Überblenden': 'Płynne przejście'
 });
