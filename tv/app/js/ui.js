@@ -155,6 +155,60 @@ var UI = (function () {
     });
   }
 
+  // Bild für Radiosender und Endlos-Radios: Farbverlauf (fest pro Name) mit Symbol, als Bild-Adresse
+  function radioArt(name, iconName) {
+    var hue = parseInt(md5(String(name || '').toLowerCase()).slice(0, 6), 16) % 360;
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0" stop-color="hsl(' + hue + ',62%,46%)"/><stop offset="1" stop-color="hsl(' + ((hue + 40) % 360) + ',68%,22%)"/>' +
+      '</linearGradient></defs><rect width="120" height="120" fill="url(#g)"/>' +
+      '<g color="#fff" transform="translate(38 38)">' + Icon.svg(iconName || 'radio', 44) + '</g></svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  function radioCard(o) {
+    var el = h('button.card.radio-card.focusable', { onclick: o.onClick },
+      h('div.cover', null, h('img.loaded', { alt: '', src: radioArt(o.artName || o.title, o.icon) }), o.live ? h('span.live-badge', { text: 'LIVE' }) : null),
+      h('span.card-play', null, icon('play')),
+      h('div.card-title.ellipsis', { text: o.title }),
+      h('div.card-sub', { text: o.sub || '' })
+    );
+    if (o.playing) el.classList.add('playing');
+    return el;
+  }
+
+  function stationCard(st, list) {
+    var cur = Player.station();
+    return radioCard({ title: st.name, sub: T('Live-Radio'), live: true, playing: cur && cur.id === st.id,
+      onClick: function () { Player.playStation(st, list); App.go('nowplaying'); } });
+  }
+
+  // Endlos-Radios: aus den Favoriten, aus dem laufenden Song und je Genre
+  function smartRadioCards(genres) {
+    var cards = [radioCard({ title: T('Dein Radio'), sub: T('Endlos, nach deinen Lieblingssongs'), icon: 'heartFill', artName: 'your radio',
+      onClick: function () {
+        API.starred().then(function (s) {
+          var seeds = U.shuffle(s.songs).slice(0, 10);
+          return Radio.start(T('Dein Radio'), { seeds: seeds, seedId: seeds[0] && seeds[0].id, first: seeds[0] });
+        }).then(function (ok) { if (ok) App.go('nowplaying'); }).catch(App.error);
+      } })];
+    var cur = Player.current();
+    if (cur && cur.artist) {
+      cards.push(radioCard({ title: T('Mehr wie {name}', { name: cur.artist }), sub: T('Radio zum Song, der gerade läuft'), artName: cur.artist,
+        onClick: function () { Menus.radio(cur.id, cur); } }));
+    }
+    genres.forEach(function (g) {
+      cards.push(radioCard({ title: g.value, sub: T('Genre-Radio'), icon: 'genre', artName: g.value,
+        onClick: function () { Radio.start(g.value, { genre: g.value }).then(function (ok) { if (ok) App.go('nowplaying'); }); } }));
+    });
+    return cards;
+  }
+
+  // Genres mit genug Songs für ein Radio, die größten zuerst
+  function radioGenres(list) {
+    return list.filter(function (g) { return (g.songCount || 0) >= 20; })
+      .sort(function (a, b) { return (b.songCount || 0) - (a.songCount || 0); });
+  }
+
   // Schnellzugriff-Kachel (Startseite)
   function shortcut(opts) {
     var art = opts.art ? h('div.tile-art.' + opts.art.cls, null, icon(opts.art.icon)) : cover(opts.coverId, 120);
@@ -309,12 +363,34 @@ var UI = (function () {
     modal(title, [{ label: okLabel, icon: okIcon || 'close', action: onOk, danger: true }, { label: T('Abbrechen'), icon: 'prev' }]);
   }
 
+  // Texteingabe im Fenster (z. B. Playlist umbenennen)
+  function prompt(title, value, okLabel, onOk) {
+    var m = modal(title, [{ label: T('Abbrechen'), icon: 'prev' }]);
+    var input = h('input.modal-input.focusable', { type: 'text', autocomplete: 'off' });
+    input.value = value || '';
+    function done() {
+      var v = input.value.trim();
+      if (!v) return;
+      m.close();
+      onOk(v);
+    }
+    input.addEventListener('submit', done);
+    input.addEventListener('keydown', function (e) { if (e.keyCode === 13) { e.preventDefault(); e.stopPropagation(); input.blur(); done(); } });
+    var ok = h('button.modal-item.focusable', { onclick: done }, icon('edit'), h('span', { text: okLabel }));
+    var list = U.$('.modal-list', m.box);
+    list.insertBefore(ok, list.firstChild);
+    list.insertBefore(input, ok);
+    Nav.focus(input, { noInputFocus: true });
+    return m;
+  }
+
   return {
     icon: icon, cover: cover, coverColor: coverColor, heroBg: heroBg, rgb: rgb,
     card: card, albumCard: albumCard, artistCard: artistCard, playlistCard: playlistCard, shortcut: shortcut,
     row: row, grid: grid, staticGrid: staticGrid, trackList: trackList, refreshPlaying: refreshPlaying,
     button: button, chip: chip, iconBtn: iconBtn, playBig: playBig, setIcon: setIcon, header: header, loading: loading,
-    modal: modal, closeModal: closeModal, modalOpen: modalOpen, confirm: confirm
+    modal: modal, closeModal: closeModal, modalOpen: modalOpen, confirm: confirm, prompt: prompt,
+    radioArt: radioArt, radioCard: radioCard, stationCard: stationCard, smartRadioCards: smartRadioCards, radioGenres: radioGenres
   };
 })();
 
@@ -348,17 +424,34 @@ var Menus = (function () {
             .then(function () { U.toast(T('„{name}“ erstellt', { name: name })); }).catch(App.error);
         }
       }];
-      pls.forEach(function (p) {
-        items.push({
-          icon: 'playlist', label: p.name,
-          action: function () {
-            API.addToPlaylist(p.id, songs.map(function (s) { return s.id; }))
-              .then(function () { U.toast(T('Zu „{name}“ hinzugefügt', { name: p.name })); }).catch(App.error);
-          }
-        });
+      pls.filter(ownPlaylist).forEach(function (p) {
+        items.push({ icon: 'playlist', label: p.name, action: function () { addChecked(p, songs); } });
       });
       UI.modal(T('Zur Playlist hinzufügen'), items);
     }).catch(App.error);
+  }
+
+  // Nur eigene Playlists lassen sich ändern (fremde, auch öffentliche, nicht)
+  function ownPlaylist(p) { return !p.readonly && (!p.owner || p.owner === API.getConfig().user); }
+
+  // Vorher nachsehen, ob Songs schon in der Playlist sind – dann fragen statt doppelt einfügen
+  function addChecked(p, songs) {
+    function add(list) {
+      API.addToPlaylist(p.id, list.map(function (s) { return s.id; }))
+        .then(function () { U.toast(T('Zu „{name}“ hinzugefügt', { name: p.name })); }).catch(App.error);
+    }
+    API.playlist(p.id).then(function (pl) {
+      var have = {};
+      U.asArray(pl.entry).forEach(function (s) { have[s.id] = true; });
+      var fresh = songs.filter(function (s) { return !have[s.id]; });
+      var dupes = songs.length - fresh.length;
+      if (!dupes) { add(songs); return; }
+      UI.modal(songs.length === 1 ? T('Schon in „{name}“', { name: p.name }) : T.n(dupes, '{n} Song ist schon in „{name}“', '{n} Songs sind schon in „{name}“', { name: p.name }), [
+        fresh.length ? { icon: 'plus', label: T('Nur neue hinzufügen'), action: function () { add(fresh); } } : null,
+        { icon: 'addQueue', label: T('Trotzdem hinzufügen'), action: function () { add(songs); } },
+        { icon: 'prev', label: T('Abbrechen') }
+      ]);
+    }).catch(function () { add(songs); });
   }
 
   function song(s, extra) {
@@ -396,14 +489,11 @@ var Menus = (function () {
     ], { head: { coverId: a.coverArt || a.id, title: a.name, sub: T('Künstler|Einzahl'), round: true } });
   }
 
+  // Endlos-Radio aus einem Song (läuft zuerst) oder einem Künstler
   function radio(id, seed) {
-    U.toast(T('Radio wird erstellt …'));
-    API.similarSongs(id, 60).then(function (songs) {
-      if (seed && seed.title) songs = [seed].concat(songs.filter(function (x) { return x.id !== seed.id; }));
-      if (!songs.length) { U.toast(T('Keine ähnlichen Songs gefunden')); return; }
-      Player.playList(songs, 0);
-      App.go('nowplaying');
-    });
+    var song = seed && seed.title ? seed : null;
+    Radio.start((seed && (seed.title || seed.name)) || T('Radio'), { seedId: id, first: song })
+      .then(function (ok) { if (ok) App.go('nowplaying'); });
   }
 
   function artistShuffle(id) {
@@ -416,5 +506,5 @@ var Menus = (function () {
     }).catch(App.error);
   }
 
-  return { song: song, album: album, artist: artist, radio: radio, artistShuffle: artistShuffle, addToPlaylist: addToPlaylist };
+  return { song: song, album: album, artist: artist, radio: radio, artistShuffle: artistShuffle, addToPlaylist: addToPlaylist, ownPlaylist: ownPlaylist };
 })();

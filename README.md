@@ -28,7 +28,10 @@ Navidrome's web UI technically works in the TV browser, but it's made for a mous
 - Home screen with recently played, recently added, most played and a shuffle mix
 - Albums, artists, playlists, genres, favorites and search
 - Full-screen player with synced lyrics (if your server has them)
-- Queue that survives restarts, plus "play next", artist/song radio and adding to playlists
+- Queue that survives restarts, plus "play next" and adding to playlists (with a warning for duplicates). Songs in the queue can be moved with ▲▼
+- **Endless radio** from a song, an artist, a genre or your favorites – it tops itself up and learns from skips and hearts. Autoplay keeps going with similar songs when an album or playlist ends
+- **Radio stations** set up on your server (Navidrome: Radio) play live
+- Rename and delete your playlists and remove songs from them; a sleep timer and volume leveling with ReplayGain
 - **Continue on another device**: the queue is kept on your server, so the TV offers to pick up where the iPhone left off (and the other way round)
 - Several people on one TV: everyone signs in once, then picks their profile on start. Queues and settings stay separate.
 - Transcoding options for weaker Wi-Fi, scrobbling, and a moving screensaver so the OLED doesn't burn in

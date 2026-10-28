@@ -1,4 +1,4 @@
-/* Audio-Player mit Warteschlange, Shuffle, Repeat, Scrobbling und Resume */
+/* Audio-Player mit Warteschlange, Shuffle, Repeat, Scrobbling und Resume, Radiosendern und Sleep-Timer */
 var Player = (function () {
   'use strict';
 
@@ -15,6 +15,10 @@ var Player = (function () {
   var errorStreak = 0;
   var pendingSeek = 0;
   var listeners = {};
+  var context = null;    // woher die Warteschlange kommt: { kind: 'radio', name } beim Endlos-Radio
+  var station = null;    // Radiosender, der gerade live läuft – die Warteschlange wartet so lange
+  var stations = [], stationSeq = 0;
+  var sleepAt = 0, sleepEnd = false, fade = 1;
 
   function on(evt, fn) { (listeners[evt] = listeners[evt] || []).push(fn); }
   function emit(evt, data) { (listeners[evt] || []).forEach(function (fn) { try { fn(data); } catch (e) { console.error(e); } }); }
@@ -23,16 +27,30 @@ var Player = (function () {
 
   function current() { return queue[index] || null; }
   function duration() {
+    if (station) return 0;
     var s = current();
     if (s && s.duration) return s.duration;
     return isFinite(audio.duration) ? audio.duration : 0;
   }
-  function position() { return offset + (audio.currentTime || 0); }
+  function position() { return station ? (audio.currentTime || 0) : offset + (audio.currentTime || 0); }
+  function radioOn() { return typeof Radio !== 'undefined'; }
+
+  // Lautstärke angleichen (ReplayGain-Tags) und Ausblenden beim Sleep-Timer
+  function applyVolume() {
+    var g = 1, s = current(), mode = settings().leveling, rg = s && s.replayGain;
+    if (!station && rg && mode && mode !== 'off') {
+      var album = mode === 'album' && rg.albumGain != null;
+      var gain = album ? rg.albumGain : rg.trackGain, peak = album ? rg.albumPeak : rg.trackPeak;
+      if (gain != null) { g = Math.pow(10, gain / 20); if (peak) g = Math.min(g, 1 / peak); }
+    }
+    audio.volume = Math.max(0, Math.min(1, g * fade));
+  }
   function transcoding() { return !!settings().maxBitRate; }
 
   function load(startAt, autoplay) {
     var s = current();
     if (!s) return;
+    if (station) { station = null; stationSeq++; }
     scrobbled = false;
     offset = 0;
     pendingSeek = 0;
@@ -42,6 +60,7 @@ var Player = (function () {
       else pendingSeek = startAt;
     }
     audio.src = API.streamUrl(s.id, opts);
+    applyVolume();
     if (autoplay !== false) {
       var p = audio.play();
       if (p && p.catch) p.catch(function (e) { console.warn('play()', e); });
@@ -49,12 +68,14 @@ var Player = (function () {
     if (settings().scrobble && autoplay !== false) API.scrobble(s.id, false);
     emit('track', s);
     persist();
+    if (context && context.kind === 'radio' && radioOn()) Radio.refillIfNeeded();
   }
 
   function playList(songs, start, opts) {
     songs = (songs || []).filter(Boolean);
     if (!songs.length) { U.toast(T('Keine Songs zum Abspielen')); return; }
     start = start || 0;
+    context = (opts && opts.context) || null;
     shuffleOn = !!(opts && opts.shuffle);
     if (shuffleOn) {
       var first = (opts && opts.shuffle && start === 0 && !(opts && opts.keepStart)) ? null : songs[start];
@@ -82,13 +103,20 @@ var Player = (function () {
     U.toast(T.n(songs.length, 'Wird als Nächstes gespielt', '{n} Songs als Nächstes'));
   }
 
-  function enqueue(songs) {
+  function enqueue(songs, quiet) {
     songs = U.asArray(songs);
     if (!queue.length) return playList(songs, 0);
     queue = queue.concat(songs);
     if (original) original = original.concat(songs);
     emit('queue', queue); persist();
-    U.toast(T.n(songs.length, 'Zur Warteschlange hinzugefügt', '{n} Songs hinzugefügt'));
+    if (!quiet) U.toast(T.n(songs.length, 'Zur Warteschlange hinzugefügt', '{n} Songs hinzugefügt'));
+  }
+
+  // Einen kommenden Song an eine andere Stelle schieben (beide Stellen nach dem laufenden Song)
+  function move(from, to) {
+    if (from === to || from <= index || to <= index || from >= queue.length || to >= queue.length) return;
+    queue.splice(to, 0, queue.splice(from, 1)[0]);
+    emit('queue', queue); persist();
   }
 
   function jump(i) {
@@ -110,16 +138,44 @@ var Player = (function () {
   }
 
   function next(auto) {
+    if (station) { switchStation(1); return; }
     if (!queue.length) return;
+    var cur = current();
+    // Das Radio lernt mit: zu Ende gehört = mehr davon, früh übersprungen = weniger
+    if (cur && radioOn()) {
+      if (auto) Radio.listened(cur);
+      else if (context && context.kind === 'radio' && position() < 30) Radio.skipped(cur);
+    }
+    if (auto && sleepEnd) {
+      sleepDone();
+      if (index < queue.length - 1) { index++; load(0, false); emit('queue', queue); }
+      return;
+    }
     if (auto && repeat === 'one') { load(0, true); return; }
     if (index < queue.length - 1) index++;
     else if (repeat === 'all' || !auto) index = 0;
-    else { audio.pause(); emit('state'); return; }
+    else { audio.pause(); emit('state'); autoplay(); return; }
     load(0, true);
     emit('queue', queue);
   }
 
+  // Warteschlange zu Ende: mit ähnlichen Songs weiterspielen (Einstellung „Autoplay“)
+  function autoplay() {
+    if (!settings().autoplay || !radioOn()) return;
+    var at = queue.length;
+    Radio.continueAfter(queue).then(function (songs) {
+      if (!songs.length || station || queue.length !== at || index !== at - 1 || !audio.paused) return;
+      queue = queue.concat(songs);
+      if (original) original = original.concat(songs);
+      index = at;
+      context = { kind: 'radio', name: 'Autoplay' };
+      load(0, true);
+      emit('queue', queue); emit('mode');
+    });
+  }
+
   function prev() {
+    if (station) { switchStation(-1); return; }
     if (!queue.length) return;
     if (position() > 3) { seek(0); return; }
     index = index > 0 ? index - 1 : (repeat === 'all' ? queue.length - 1 : 0);
@@ -128,6 +184,7 @@ var Player = (function () {
   }
 
   function toggle() {
+    if (station) { if (audio.paused) playStation(station); else audio.pause(); return; }
     if (!current()) return;
     if (!audio.src) { load(U.ustore.get('pos', 0), true); return; }
     if (audio.paused) audio.play(); else audio.pause();
@@ -136,6 +193,7 @@ var Player = (function () {
   function pause() { if (!audio.paused) audio.pause(); }
 
   function stop() {
+    station = null; stationSeq++; context = null;
     audio.pause();
     audio.removeAttribute('src');
     try { audio.load(); } catch (e) { /* egal */ }
@@ -145,6 +203,7 @@ var Player = (function () {
   }
 
   function seek(sec) {
+    if (station) return;
     var d = duration();
     sec = Math.max(0, d ? Math.min(sec, d - 1) : sec);
     if (transcoding()) {
@@ -181,8 +240,76 @@ var Player = (function () {
 
   function setStarred(song, on) {
     queue.forEach(function (s) { if (s.id === song.id) s.starred = on ? new Date().toISOString() : undefined; });
+    if (on && radioOn()) Radio.liked(song);
     emit('track', current());
   }
+
+  // ---- Radiosender (live): die Warteschlange bleibt stehen und geht danach an derselben Stelle weiter
+  // .m3u/.pls sind nur Listen mit der eigentlichen Adresse
+  function resolveStream(url) {
+    if (!/\.(m3u|pls)(\?|$)/i.test(url)) return Promise.resolve(url);
+    return fetch(url).then(function (r) { return r.text(); }).then(function (t) {
+      var m = t.match(/^File\d+=(.+)$/mi) || t.match(/^(https?:\/\/\S+)/m);
+      return m ? m[1].trim() : url;
+    }).catch(function () { return url; });
+  }
+
+  function playStation(st, list) {
+    if (list) stations = list;
+    if (!station && audio.src && current()) U.ustore.set('pos', Math.floor(position()));
+    station = st; offset = 0; pendingSeek = 0; errorStreak = 0;
+    var my = ++stationSeq;
+    audio.pause();
+    fade = sleepAt ? fade : 1;
+    emit('track', current()); emit('state');
+    resolveStream(st.streamUrl).then(function (u) {
+      if (my !== stationSeq) return;
+      audio.src = u;
+      applyVolume();
+      var p = audio.play();
+      if (p && p.catch) p.catch(function (e) { console.warn('play()', e); });
+    });
+  }
+
+  // Zurück zur Warteschlange – pausiert an der Stelle, an der sie unterbrochen wurde
+  function stopStation() {
+    if (!station) return;
+    station = null; stationSeq++;
+    audio.pause();
+    audio.removeAttribute('src');
+    try { audio.load(); } catch (e) { /* egal */ }
+    applyVolume();
+    emit('track', current()); emit('queue', queue); emit('state');
+  }
+
+  function switchStation(d) {
+    var n = stations.length, i = -1;
+    for (var k = 0; k < n; k++) if (stations[k].id === station.id) i = k;
+    if (n < 2 || i < 0) return;
+    playStation(stations[(i + d + n) % n]);
+  }
+
+  // ---- Sleep-Timer: min > 0 Minuten, -1 = am Ende des Songs, 0 = aus
+  function setSleep(min) {
+    sleepAt = min > 0 ? Date.now() + min * 60000 : 0;
+    sleepEnd = min === -1;
+    fade = 1; applyVolume();
+    emit('sleep');
+  }
+  function sleepDone() {
+    sleepAt = 0; sleepEnd = false;
+    audio.pause();
+    fade = 1; applyVolume();
+    emit('sleep'); emit('state');
+    U.toast(T('Sleep-Timer: Wiedergabe angehalten'));
+  }
+  setInterval(function () {
+    if (!sleepAt) return;
+    var left = sleepAt - Date.now();
+    if (left <= 0) { sleepDone(); return; }
+    // Die letzten 15 Sekunden langsam leiser werden
+    if (left < 15000) { fade = left / 15000; applyVolume(); }
+  }, 500);
 
   // ---- Persistenz (Warteschlange beim nächsten Start wiederherstellen)
   var persistTimer;
@@ -194,8 +321,9 @@ var Player = (function () {
     U.ustore.set('index', index);
     U.ustore.set('repeat', repeat);
     U.ustore.set('shuffle', shuffleOn);
+    U.ustore.set('context', context);
     // Ohne geladenen Stream ist die Position 0 – gespeicherte Position dann nicht überschreiben
-    if (audio.src) U.ustore.set('pos', Math.floor(position()));
+    if (audio.src && !station) U.ustore.set('pos', Math.floor(position()));
   }
   function persist() {
     clearTimeout(persistTimer);
@@ -207,13 +335,13 @@ var Player = (function () {
   // Sofort, wenn sich Titel oder Warteschlange geändert haben, sonst (nur Position) höchstens alle 30 s
   function syncRemote(force) {
     var s = current();
-    if (!s) return;
+    if (!s || station) return;
     var start = Math.max(0, index - 100);
     var ids = queue.slice(start, start + 500).map(function (x) { return x.id; });
     var sig = ids.join(',') + '|' + s.id;
     if (!force && sig === remoteSig && Date.now() - remoteAt < 30000) return;
     remoteSig = sig; remoteAt = Date.now();
-    API.savePlayQueue(ids, s.id, position());
+    API.savePlayQueue(ids, s.id, audio.src ? position() : U.ustore.get('pos', 0) || 0);
   }
 
   function parseDate(iso) {
@@ -242,7 +370,7 @@ var Player = (function () {
   }
 
   function take(offer, autoplay) {
-    queue = offer.songs.slice(); original = null; shuffleOn = false; index = offer.index;
+    queue = offer.songs.slice(); original = null; shuffleOn = false; index = offer.index; context = null;
     errorStreak = 0;
     if (autoplay) {
       load(offer.pos, true);
@@ -269,6 +397,7 @@ var Player = (function () {
     audio.removeAttribute('src');
     try { audio.load(); } catch (e) { /* egal */ }
     queue = []; original = null; index = -1; offset = 0;
+    station = null; stationSeq++; context = null; setSleep(0);
     emit('track', null); emit('queue', queue); emit('state');
   }
 
@@ -277,6 +406,7 @@ var Player = (function () {
     index = U.ustore.get('index', -1);
     repeat = U.ustore.get('repeat', 'off');
     shuffleOn = U.ustore.get('shuffle', false);
+    context = U.ustore.get('context', null);
     if (index >= queue.length) index = queue.length ? 0 : -1;
     if (current()) { emit('track', current()); emit('queue', queue); emit('mode'); }
   }
@@ -286,11 +416,16 @@ var Player = (function () {
     if (pendingSeek) { try { audio.currentTime = pendingSeek; } catch (e) { /* egal */ } pendingSeek = 0; }
   });
   audio.addEventListener('playing', function () { errorStreak = 0; emit('state'); });
-  audio.addEventListener('pause', function () { emit('state'); persist(); setTimeout(function () { syncRemote(true); }, 400); });
+  audio.addEventListener('pause', function () {
+    emit('state');
+    if (station) return;
+    persist(); setTimeout(function () { syncRemote(true); }, 400);
+  });
   audio.addEventListener('waiting', function () { emit('state'); });
-  audio.addEventListener('ended', function () { next(true); });
+  audio.addEventListener('ended', function () { if (station) emit('state'); else next(true); });
   audio.addEventListener('timeupdate', function () {
     emit('time');
+    if (station) return;
     var s = current(), d = duration(), p = position();
     if (s && !scrobbled && settings().scrobble && d && (p > d / 2 || p > 240)) {
       scrobbled = true;
@@ -299,6 +434,7 @@ var Player = (function () {
     if (Math.floor(p) % 5 === 0) persist();
   });
   audio.addEventListener('error', function () {
+    if (station) { U.toast(T('Dieser Sender kann gerade nicht abgespielt werden.')); emit('state'); return; }
     if (!audio.src || !current()) return;
     errorStreak++;
     var code = audio.error ? audio.error.code : '?';
@@ -312,6 +448,7 @@ var Player = (function () {
     playList: playList,
     playNext: playNext,
     enqueue: enqueue,
+    move: move,
     jump: jump,
     removeAt: removeAt,
     next: function () { next(false); },
@@ -339,6 +476,15 @@ var Player = (function () {
     checkRemote: checkRemote,
     take: take,
     dismissRemote: dismissRemote,
-    reloadCurrent: function () { if (current() && audio.src) load(position(), !audio.paused); }
+    reloadCurrent: function () { if (current() && audio.src && !station) load(position(), !audio.paused); },
+    applyVolume: applyVolume,
+    context: function () { return context; },
+    playStation: playStation,
+    stopStation: stopStation,
+    station: function () { return station; },
+    stations: function () { return stations; },
+    setSleep: setSleep,
+    // Restzeit in ms, -1 = am Ende des Songs, 0 = aus
+    sleepLeft: function () { return sleepEnd ? -1 : sleepAt ? Math.max(1, sleepAt - Date.now()) : 0; }
   };
 })();

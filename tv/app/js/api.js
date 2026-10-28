@@ -141,6 +141,13 @@ var API = (function () {
       return call('updatePlaylist', { playlistId: playlistId, songIdToAdd: songIds });
     },
     createPlaylist: function (name, songIds) { return call('createPlaylist', { name: name, songId: songIds }); },
+    renamePlaylist: function (id, name) { return call('updatePlaylist', { playlistId: id, name: name }); },
+    removeFromPlaylist: function (id, index) { return call('updatePlaylist', { playlistId: id, songIndexToRemove: index }); },
+    deletePlaylist: function (id) { return call('deletePlaylist', { id: id }); },
+    // Radiosender, die auf dem Server eingerichtet sind (Navidrome: Radio)
+    stations: function () {
+      return call('getInternetRadioStations').then(function (r) { return A(r.internetRadioStations && r.internetRadioStations.internetRadioStation); });
+    },
     genres: function () {
       return call('getGenres').then(function (r) {
         return A(r.genres && r.genres.genre).sort(function (a, b) { return (b.albumCount || 0) - (a.albumCount || 0); });

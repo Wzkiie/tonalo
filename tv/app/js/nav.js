@@ -15,6 +15,18 @@ var Nav = (function () {
   var scopeFn = function () { return document.body; };
   var handlers = []; // globale Tasten-Handler (Mediatasten etc.)
   var lastPointerFocus = 0;
+  // Bildschirmtastatur von webOS: offen, solange ein Eingabefeld tippt. Meldet webOS sich nie (Browser),
+  // zählt nur, ob ein Eingabefeld den Fokus hat.
+  var kbKnown = false, kbOpen = false;
+  document.addEventListener('keyboardStateChange', function (e) {
+    kbKnown = true;
+    kbOpen = !!(e.detail && e.detail.visibility);
+  });
+  function typing() {
+    var a = document.activeElement;
+    var inInput = !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA');
+    return inInput && (kbKnown ? kbOpen : true);
+  }
 
   function isVisible(el) {
     if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') return false;
@@ -171,6 +183,8 @@ var Nav = (function () {
     var dir = dirOf(code);
     var inInput = current && (current.tagName === 'INPUT') && document.activeElement === current;
     if (dir) {
+      // Die Pfeiltasten gehören dann der Bildschirmtastatur – nicht aus dem Feld wegspringen
+      if (inInput && kbKnown && kbOpen) return;
       if (inInput && (dir === 'left' || dir === 'right')) {
         var pos = current.selectionStart, len = current.value.length;
         if ((dir === 'left' && pos > 0) || (dir === 'right' && pos < len)) return; // Cursor bewegen
@@ -195,15 +209,23 @@ var Nav = (function () {
     }
   }, true);
 
-  // Magic-Remote-Zeiger: Hover setzt den Fokus
+  // Magic-Remote-Zeiger: Hover setzt den Fokus – außer beim Tippen. Sonst nimmt schon das Überfahren
+  // eines Knopfs auf dem Weg zur Bildschirmtastatur dem Eingabefeld den Fokus, und die Tastatur geht zu.
   document.addEventListener('mouseover', function (e) {
     var el = e.target.closest && e.target.closest('.focusable');
     if (!el || el === current) return;
     var scope = scopeFn();
     if (scope && !scope.contains(el)) return;
+    if (typing()) return;
     lastPointerFocus = Date.now();
     focus(el, { noScroll: true, noInputFocus: true });
   });
+
+  // Beim Tippen bekommt erst ein echter Klick mit dem Zeiger den Fokus
+  document.addEventListener('mousedown', function (e) {
+    var el = e.target.closest && e.target.closest('.focusable');
+    if (el && el !== current && typing()) focus(el, { noScroll: true, noInputFocus: true });
+  }, true);
 
   return {
     KEY: KEY,

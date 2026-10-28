@@ -4,7 +4,7 @@ var App = (function () {
   var K = Nav.KEY;
   var APP_ID = 'tonalo';
 
-  var DEFAULTS = { maxBitRate: 0, format: 'mp3', scrobble: true, screensaver: 3, startView: 'home' };
+  var DEFAULTS = { maxBitRate: 0, format: 'mp3', scrobble: true, screensaver: 3, startView: 'home', autoplay: true, leveling: 'off' };
   var settings = Object.assign({}, DEFAULTS);
   var account = null;   // aktives Konto {id, url, user, salt, token}
 
@@ -249,8 +249,13 @@ var App = (function () {
     if (!top || top.view.el !== el || !top.pendingFocus) return;
     var cur = Nav.current();
     // Nur übernehmen, wenn der Nutzer nicht schon selbst navigiert hat
-    if (!cur || !el.contains(cur) || cur === U.$('.focusable', el)) {
-      if (U.$('.focusable[data-autofocus]', el) && top.view.noAutoInput) { /* Suchfeld: keine Tastatur aufpoppen */ }
+    if (top.keep) {
+      // Neu geladen (z. B. Song aus der Playlist entfernt): an derselben Stelle weitermachen
+      var all = U.$$('.focusable', el);
+      el.scrollTop = top.keep.scroll;
+      if (all.length) Nav.focus(all[Math.min(top.keep.focus, all.length - 1)]);
+      top.keep = null;
+    } else if (!cur || !el.contains(cur) || cur === U.$('.focusable', el)) {
       Nav.focusFirst(el);
     }
     top.pendingFocus = false;
@@ -280,7 +285,11 @@ var App = (function () {
 
   function reload() {
     var top = stack.pop();
-    if (top) go(top.name, top.params);
+    if (!top) return;
+    var keep = { scroll: top.view.el.scrollTop, focus: Math.max(0, U.$$('.focusable', top.view.el).indexOf(Nav.current())) };
+    go(top.name, top.params);
+    var now = stack[stack.length - 1];
+    if (now && now.name === top.name) now.keep = keep;
   }
 
   function confirmExit() { UI.confirm(T('Tonalo beenden?'), T('Beenden'), exit); }
@@ -298,12 +307,17 @@ var App = (function () {
 
   // ---------------- Mini-Player
   function updateMini(evt) {
-    var s = Player.current();
+    var s = Player.current(), st = Player.station();
     var mp = U.$('#miniplayer');
-    mp.classList.toggle('hidden', !s);
+    mp.classList.toggle('hidden', !s && !st);
+    mp.classList.toggle('live', !!st);
     syncMiniLayout();
-    if (!s) return;
-    if (evt === 'track' || evt === 'init') {
+    if (!s && !st) return;
+    if (st && (evt === 'track' || evt === 'init')) {
+      U.$('#mp-cover').src = UI.radioArt(st.name);
+      U.$('#mp-title').textContent = st.name;
+      U.$('#mp-artist').textContent = T('Live-Radio');
+    } else if (evt === 'track' || evt === 'init') {
       U.$('#mp-cover').src = API.cover(s.coverArt || s.albumId, 120);
       U.$('#mp-title').textContent = s.title;
       U.$('#mp-artist').textContent = s.artist || '';
@@ -353,11 +367,12 @@ var App = (function () {
   }
   // Cover und Titel des laufenden Songs – auch bei jedem Songwechsel, solange der Schoner läuft
   function ssFill() {
-    var s = Player.current();
-    U.$('#ss-cover').style.display = s ? '' : 'none';
-    if (s) U.$('#ss-cover').src = API.cover(s.coverArt || s.albumId, 400);
-    U.$('#ss-title').textContent = s ? s.title : '';
-    U.$('#ss-artist').textContent = s ? (s.artist || '') : '';
+    var s = Player.current(), st = Player.station();
+    U.$('#ss-cover').style.display = s || st ? '' : 'none';
+    if (st) U.$('#ss-cover').src = UI.radioArt(st.name);
+    else if (s) U.$('#ss-cover').src = API.cover(s.coverArt || s.albumId, 400);
+    U.$('#ss-title').textContent = st ? st.name : s ? s.title : '';
+    U.$('#ss-artist').textContent = st ? T('Live-Radio') : s ? (s.artist || '') : '';
   }
   function ssMove() {
     var box = U.$('#ss-box');
@@ -532,7 +547,7 @@ var App = (function () {
       });
     });
 
-    ['track', 'state', 'time', 'queue', 'mode'].forEach(function (evt) {
+    ['track', 'state', 'time', 'queue', 'mode', 'sleep'].forEach(function (evt) {
       Player.on(evt, function () {
         updateMini(evt);
         if (evt === 'track') { UI.refreshPlaying(); if (ssActive) ssFill(); }
