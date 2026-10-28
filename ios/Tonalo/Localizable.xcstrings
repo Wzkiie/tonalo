@@ -17,6 +17,9 @@
         }
       }
     },
+    "%@" : {
+      "shouldTranslate" : false
+    },
     "%@ · about %lld MB per hour" : {
       "localizations" : {
         "de" : {
@@ -222,6 +225,16 @@
     },
     "192.168.1.10:4533" : {
       "shouldTranslate" : false
+    },
+    "Autoplay" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autoplay"
+          }
+        }
+      }
     },
     "A–Z" : {
       "localizations" : {
@@ -1093,6 +1106,16 @@
         }
       }
     },
+    "Endless, based on your favorites" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endlos, nach deinen Lieblingssongs"
+          }
+        }
+      }
+    },
     "Fans also like" : {
       "localizations" : {
         "de" : {
@@ -1189,6 +1212,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Formate, die das iPhone nicht abspielen kann (z. B. WMA oder APE), wandelt dein Server in AAC 256 um."
+          }
+        }
+      }
+    },
+    "Genre radio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genre-Radio"
           }
         }
       }
@@ -1376,12 +1409,12 @@
         }
       }
     },
-    "Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to." : {
+    "Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Autoplay continues with similar songs when the queue ends. Scrobbling tells your server what you listened to." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vorladen hält die Musik am Laufen, wenn die Verbindung kurz abreißt. Die Lautstärkeangleichung nutzt die ReplayGain-Tags deiner Dateien. Beim Scrobbeln erfährt dein Server, was du gehört hast."
+            "value" : "Vorladen hält die Musik am Laufen, wenn die Verbindung kurz abreißt. Die Lautstärkeangleichung nutzt die ReplayGain-Tags deiner Dateien. Autoplay spielt passende Songs weiter, wenn die Warteschlange zu Ende ist. Beim Scrobbeln erfährt dein Server, was du gehört hast."
           }
         }
       }
@@ -1502,6 +1535,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vom Server verwaltet · Songs hier nicht änderbar"
+          }
+        }
+      }
+    },
+    "More like %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr wie %@"
           }
         }
       }
@@ -2202,6 +2245,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Radio"
+          }
+        }
+      }
+    },
+    "Radio from the song playing now" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Radio zum Song, der gerade läuft"
           }
         }
       }
@@ -3185,6 +3238,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gelb"
+          }
+        }
+      }
+    },
+    "Your radio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Radio"
           }
         }
       }

@@ -492,11 +492,12 @@ struct SettingsView: View {
                     Text("Off").tag(0)
                     ForEach([1, 2, 3, 5], id: \.self) { Text("\($0)").tag($0) }
                 }
+                Toggle("Autoplay", isOn: $app.autoplay)
                 Toggle("Scrobble played songs", isOn: $app.scrobble)
             } header: {
                 Text("Playback")
             } footer: {
-                Text("Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Scrobbling tells your server what you listened to.")
+                Text("Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Autoplay continues with similar songs when the queue ends. Scrobbling tells your server what you listened to.")
             }
             Section {
                 NavigationLink { DownloadsView() } label: {

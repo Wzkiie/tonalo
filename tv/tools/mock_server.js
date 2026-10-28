@@ -195,7 +195,8 @@ function handle(req, res, u) {
       }
       // MOCK_NO_TOPSONGS=1: like Navidrome without Last.fm, which has no top songs
       case 'getTopSongs': body = ok({ topSongs: process.env.MOCK_NO_TOPSONGS ? {} : { song: songs.filter(s => s.artist === q.artist).slice(0, 10) } }); break;
-      case 'getSimilarSongs2': body = ok({ similarSongs2: { song: songs.slice(20, 60) } }); break;
+      // Different songs per seed, like Last.fm would; MOCK_NO_SIMILAR=1 is a server without Last.fm
+      case 'getSimilarSongs2': body = ok({ similarSongs2: process.env.MOCK_NO_SIMILAR ? {} : { song: songs.slice().sort((a, b) => hash(a.id + q.id) - hash(b.id + q.id)).slice(0, +q.count || 50) } }); break;
       case 'getPlaylists': body = ok({ playlists: { playlist: playlists.map(p => Object.assign({}, p, { entry: undefined })) } }); break;
       case 'getPlaylist': body = ok({ playlist: byId(playlists, q.id) }); break;
       case 'getGenres': body = ok({ genres: { genre: GENRES.map(g => ({ value: g, albumCount: albums.filter(a => a.genre === g).length, songCount: songs.filter(s => s.genre === g).length })) } }); break;

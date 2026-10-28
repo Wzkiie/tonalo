@@ -11,7 +11,7 @@ final class PlayerModel {
 
     /// Where the queue came from, shown as "Playing from …" in the player.
     struct Context: Codable, Hashable {
-        enum Kind: String, Codable { case album, playlist, artist, favorites, search, mix, downloads }
+        enum Kind: String, Codable { case album, playlist, artist, favorites, search, mix, downloads, radio }
         var kind: Kind
         var id: String?
         var name: String
@@ -59,6 +59,8 @@ final class PlayerModel {
     /// Playing a song that was loaded ahead: a file on the device, so a new server address doesn't matter.
     @ObservationIgnored private var playingPreloaded = false
     @ObservationIgnored private let prefetcher = Prefetcher()
+    /// Keeps a radio (and autoplay after the end of the queue) going with fitting songs.
+    @ObservationIgnored let radio = SmartRadio()
     /// The station list it was started from – next and previous switch stations.
     @ObservationIgnored private var stations: [Station] = []
     @ObservationIgnored private var stationLoad: Task<Void, Never>?
@@ -102,6 +104,7 @@ final class PlayerModel {
             }
         }
         setupRemoteCommands()
+        radio.player = self
     }
 
     /// Time and play state always come from the player of the current song.
@@ -195,7 +198,14 @@ final class PlayerModel {
         guard !queue.isEmpty else { return }
         if auto && sleepAfterSong { sleepAfterSong = false; player.pause(); persist(); syncToServer(force: true); return }
         if auto && repeatMode == .one { seek(to: 0); player.play(); return }
-        guard let i = nextIndex(auto: auto) else { player.pause(); return }
+        // What the radio learns: played to the end, or skipped within the first 30 seconds
+        if let cur = current {
+            if auto { radio.listened(cur) } else if position < 30, context?.kind == .radio { radio.skipped(cur) }
+        }
+        guard let i = nextIndex(auto: auto) else {
+            if auto, app?.autoplay == true { autoplay() } else { player.pause() }
+            return
+        }
         index = i
         load(autoplay: true)
     }
@@ -260,6 +270,7 @@ final class PlayerModel {
     }
 
     func setStarred(_ song: Song, _ on: Bool) {
+        if on { radio.liked(song) }
         for i in queue.indices where queue[i].id == song.id { queue[i].starred = on ? "1" : nil }
         persist(sync: false) // not a change to the queue – mustn't replace what another device saved
         updateNowPlaying() // the heart on the lock screen
@@ -503,6 +514,22 @@ final class PlayerModel {
         loadArtwork(for: song, client: client)
         persist()
         if autoplay { preload() } // not for a queue restored on start that may never be played
+        if autoplay, context?.kind == .radio { radio.refillIfNeeded() }
+    }
+
+    /// The queue played to its end: similar songs follow, as a radio – unless nothing fitting comes back.
+    private func autoplay() {
+        let played = queue
+        Task {
+            let songs = await radio.continueAfter(played)
+            guard queue == played, station == nil, !songs.isEmpty else { player.pause(); return }
+            context = .init(kind: .radio, name: String(localized: "Autoplay"))
+            original = nil
+            shuffle = false
+            queue.append(contentsOf: songs)
+            index += 1
+            load(autoplay: true)
+        }
     }
 
     // MARK: Loading ahead
@@ -521,6 +548,7 @@ final class PlayerModel {
 
     private func startCrossfade() {
         guard let i = nextIndex(auto: true) else { return }
+        if let cur = current { radio.listened(cur) }
         index = i
         errorStreak = 0
         load(autoplay: true, fadeIn: Double(app?.crossfade ?? 0))

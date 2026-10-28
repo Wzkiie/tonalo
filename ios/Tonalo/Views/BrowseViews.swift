@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var sections: [HomeSection] = []
     @State private var playlists: [Playlist] = []
     @State private var stations: [Station] = []
+    @State private var genres: [Genre] = []
     @State private var loading = true
     @State private var error: String?
 
@@ -51,17 +52,7 @@ struct HomeView: View {
     @ViewBuilder private var allContent: some View {
         quickGrid
         mixes
-        if !stations.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                ShelfHeader(title: "Radio", more: .stations)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(alignment: .top, spacing: 14) {
-                        ForEach(stations) { StationCard(station: $0, all: stations) }
-                    }
-                    .padding(.horizontal, 16)
-                }
-            }
-        }
+        radioShelf
         LoadState(loading: loading && sections.allSatisfy { $0.albums.isEmpty }, error: error) { await load() }
         if !playlists.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
@@ -126,6 +117,34 @@ struct HomeView: View {
         }
     }
 
+    /// Endless radios first (your favorites, the artist playing now, the biggest genres), then the server's stations.
+    private var radioShelf: some View {
+        let artist = app.player.station == nil ? app.player.current : nil
+        return VStack(alignment: .leading, spacing: 12) {
+            ShelfHeader(title: "Radio", more: stations.isEmpty ? nil : .stations)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(alignment: .top, spacing: 14) {
+                    MixCard(title: "Your radio", subtitle: "Endless, based on your favorites", icon: "dot.radiowaves.left.and.right", hue: 0.52, size: 130) {
+                        let favorites = ((try? await app.client?.starred().song) ?? []).shuffled()
+                        await app.player.radio.start(String(localized: "Your radio"), seedId: favorites.first?.id, seeds: Array(favorites.prefix(8)))
+                    }
+                    if let song = artist, let name = song.artist {
+                        MixCard(title: "More like \(name)", subtitle: "Radio from the song playing now", icon: "music.mic", hue: 0.75, size: 130) {
+                            await app.player.radio.start(String(localized: "\(name) radio"), seedId: song.artistId ?? song.id, seeds: [song])
+                        }
+                    }
+                    ForEach(genres, id: \.value) { g in
+                        MixCard(title: "\(g.value)", subtitle: "Genre radio", icon: "guitars", hue: stableHue(g.value), size: 130) {
+                            await app.player.radio.start(String(localized: "\(g.value) radio"), genre: g.value)
+                        }
+                    }
+                    ForEach(stations) { StationCard(station: $0, all: stations) }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+
     private func grid(_ items: [QuickItem], empty: LocalizedStringKey) -> some View {
         Group {
             if items.isEmpty {
@@ -152,6 +171,11 @@ struct HomeView: View {
 
     private var favoriteDownloads: Int { app.downloads.index.songs.values.filter { $0.song.starred != nil }.count }
 
+    /// The genres with the most songs – enough for a radio that doesn't repeat itself.
+    private static func topGenres(_ all: [Genre]) -> [Genre] {
+        Array(all.filter { ($0.songCount ?? 0) >= 20 }.sorted { ($0.songCount ?? 0) > ($1.songCount ?? 0) }.prefix(4))
+    }
+
     private func load() async {
         guard let client = app.client else { return }
         let rows = Theme.homeRows.filter { !Theme.shared.hiddenHomeRows.contains($0.id) }
@@ -159,6 +183,7 @@ struct HomeView: View {
         if sections.isEmpty {
             if let saved = client.cached("getPlaylists")?.playlists?.playlist { playlists = saved }
             if let saved = client.cached("getInternetRadioStations")?.internetRadioStations?.internetRadioStation { stations = saved }
+            if let saved = client.cached("getGenres")?.genres?.genre { genres = Self.topGenres(saved) }
             sections = rows.map { row in
                 HomeSection(id: row.id, title: row.name,
                             albums: client.cached("getAlbumList2", ["type": row.id, "size": "20", "offset": "0"])?.albumList2?.album ?? [])
@@ -168,6 +193,7 @@ struct HomeView: View {
         // All rows at the same time – faster, and one slow or failing row doesn't hold up the others
         async let freshPlaylists = try? client.playlists()
         async let freshStations = try? client.stations()
+        async let freshGenres = try? client.genres()
         var fresh: [String: [Album]] = [:]
         var failure: Error?
         await withTaskGroup(of: (String, Result<[Album], Error>).self) { group in
@@ -185,6 +211,7 @@ struct HomeView: View {
         }
         if let p = await freshPlaylists { playlists = p }
         if let s = await freshStations { stations = s }
+        if let g = await freshGenres { genres = Self.topGenres(g) }
         let old = Dictionary(uniqueKeysWithValues: sections.map { ($0.id, $0.albums) })
         sections = rows.map { HomeSection(id: $0.id, title: $0.name, albums: fresh[$0.id] ?? old[$0.id] ?? []) }
         // Only worth a message when there's nothing to show at all
@@ -295,6 +322,7 @@ struct MixCard: View {
     let subtitle: LocalizedStringKey
     let icon: String
     let hue: Double
+    var size: CGFloat = 150
     let action: () async -> Void
     @State private var busy = false
 
@@ -308,16 +336,18 @@ struct MixCard: View {
                 ZStack(alignment: .bottomLeading) {
                     LinearGradient(colors: [Color(hue: hue, saturation: 0.55, brightness: 0.75), Color(hue: hue + 0.06, saturation: 0.7, brightness: 0.35)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
-                    Image(systemName: icon).font(.system(size: 44, weight: .semibold)).foregroundStyle(.white.opacity(0.9))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Small cards: the icon moves to the corner, so longer titles have room
+                    Image(systemName: icon).font(.system(size: size < 150 ? 22 : 44, weight: .semibold)).foregroundStyle(.white.opacity(0.9))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: size < 150 ? .topTrailing : .center)
+                        .padding(size < 150 ? 10 : 0)
                     if busy { ProgressView().tint(.white).padding(10) }
                     Text(title).font(.system(size: 15, weight: .heavy)).foregroundStyle(.white).padding(10)
                         .opacity(busy ? 0 : 1)
                 }
-                .frame(width: 150, height: 150)
+                .frame(width: size, height: size)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 Text(subtitle).font(.system(size: 13)).foregroundStyle(Color.subtle).lineLimit(2)
-                    .frame(width: 150, alignment: .leading)
+                    .frame(width: size, alignment: .leading)
             }
         }
         .buttonStyle(.plain)

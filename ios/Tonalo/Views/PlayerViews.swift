@@ -312,6 +312,7 @@ struct NowPlayingView: View {
         case .favorites: String(localized: "PLAYING FROM FAVORITES")
         case .downloads: String(localized: "PLAYING FROM DOWNLOADS")
         case .mix: String(localized: "PLAYING MIX")
+        case .radio: String(localized: "PLAYING RADIO")
         default: String(localized: "PLAYING FROM ALBUM")
         }
     }

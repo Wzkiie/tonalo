@@ -370,8 +370,10 @@ struct SubsonicClient {
         (try? await call("getSimilarSongs2", ["id": id, "count": "50"]).similarSongs2?.song) ?? []
     }
 
-    func randomSongs(_ size: Int = 100) async throws -> [Song] {
-        try await call("getRandomSongs", ["size": "\(size)"]).randomSongs?.song ?? []
+    func randomSongs(_ size: Int = 100, genre: String? = nil) async throws -> [Song] {
+        var p = ["size": "\(size)"]
+        if let genre { p["genre"] = genre }
+        return try await call("getRandomSongs", p).randomSongs?.song ?? []
     }
 
     func stations() async throws -> [Station] {

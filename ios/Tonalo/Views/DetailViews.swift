@@ -452,10 +452,10 @@ struct ArtistView: View {
     }
 
     private func radio() {
-        guard let client = app.client, let artist else { return }
+        guard let artist else { return }
         Task {
-            let s = await client.similarSongs(id)
-            if !s.isEmpty { app.player.play(s, context: .init(kind: .mix, name: String(localized: "\(artist.name) radio"))) }
+            let own = top.isEmpty ? [] : Array(top.prefix(5))
+            await app.player.radio.start(String(localized: "\(artist.name) radio"), seedId: id, seeds: own)
         }
     }
 }

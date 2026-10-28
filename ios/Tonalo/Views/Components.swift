@@ -134,11 +134,7 @@ struct SongMenuItems: View {
     }
 
     private func startRadio() {
-        guard let client = app.client else { return }
-        Task {
-            let similar = await client.similarSongs(song.id)
-            app.player.play([song] + similar.filter { $0.id != song.id })
-        }
+        Task { await app.player.radio.start(String(localized: "\(song.title) radio"), seedId: song.id, first: song) }
     }
 
     /// The menu closes right away, so say what happened

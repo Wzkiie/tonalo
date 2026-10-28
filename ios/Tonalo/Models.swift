@@ -52,6 +52,7 @@ struct Song: Codable, Hashable, Identifiable {
     var bitRate: Int?
     var replayGain: ReplayGain?
     var playCount: Int?
+    var genre: String?
 }
 
 /// Loudness values from the file tags (OpenSubsonic). Navidrome sends 0 dB when a file has none.

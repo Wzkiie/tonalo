@@ -95,6 +95,7 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 
 - Home, search with genre tiles, and a library with playlists, albums, artists and downloads – sortable, searchable, with pinning (long press) and as a list or grid
 - Player with synced lyrics, a queue you can reorder by dragging, swipe gestures, colors taken from the cover and a sleep timer
+- **Endless radio**: from a song, an artist, a genre or your favorites. It tops itself up, plays more like what you hear to the end or give a heart, and less of what you skip. Without Last.fm it stays in the genre. When an album or playlist ends, Autoplay keeps going with similar songs (can be turned off)
 - **Radio stations**: the stations set up on your server (Navidrome: Radio) play live, with the song on air when the station sends it. If that song is in your library, one tap plays it from there
 - **Artist pages** with popular songs, the discography, "Fans also like" and a biography. Without Last.fm on the server, the artist's songs you played most stand in for the popular ones – see [Server tips](#server-tips)
 - **Continue on another device**: started on the TV, finished on the iPhone – the app offers to pick up the queue another device left on your server

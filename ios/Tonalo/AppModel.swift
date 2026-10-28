@@ -32,6 +32,10 @@ final class AppModel {
     var scrobble: Bool = UserDefaults.standard.object(forKey: "scrobble") as? Bool ?? true {
         didSet { UserDefaults.standard.set(scrobble, forKey: "scrobble") }
     }
+    /// When the queue ends, similar songs keep playing (like a radio).
+    var autoplay: Bool = UserDefaults.standard.object(forKey: "autoplay") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(autoplay, forKey: "autoplay") }
+    }
     /// How many of the next songs in the queue are loaded ahead (0 = off).
     var preloadCount: Int = UserDefaults.standard.object(forKey: "preload") as? Int ?? 2 {
         didSet { UserDefaults.standard.set(preloadCount, forKey: "preload"); player.preloadChanged() }
@@ -107,6 +111,27 @@ final class AppModel {
         downloads.reload()
         player.restore()
         #if DEBUG
+        // Test hook: -demoRadio <genre> starts a genre radio, -demoRadio song one from a random song
+        if let i = ProcessInfo.processInfo.arguments.firstIndex(of: "-demoRadio"), i + 1 < ProcessInfo.processInfo.arguments.count, let client {
+            let what = ProcessInfo.processInfo.arguments[i + 1]
+            Task {
+                if what == "song", let song = try? await client.randomSongs(1).first {
+                    await player.radio.start("Demo radio", seedId: song.id, first: song)
+                } else if what == "end" {
+                    // Two songs, the last one almost over: autoplay should take over
+                    if let songs = try? await client.randomSongs(2) {
+                        player.play(songs, from: 1, context: .init(kind: .mix, name: "Demo"))
+                        try? await Task.sleep(for: .seconds(2))
+                        player.seek(to: Double(songs[1].duration ?? 180) - 4)
+                    }
+                    return
+                } else {
+                    await player.radio.start("Demo radio", genre: what)
+                }
+                // -demoRadioLow: jump near the end of the radio, so it has to top up the queue
+                if ProcessInfo.processInfo.arguments.contains("-demoRadioLow") { player.jump(to: player.queue.count - 3) }
+            }
+        }
         // Test hook: -demoQueue fills an empty queue with a few songs, paused – for testing the watch silently
         if ProcessInfo.processInfo.arguments.contains("-demoQueue"), player.current == nil, let client {
             Task { if let songs = try? await client.randomSongs(8) { player.cue(songs, context: .init(kind: .mix, name: "Demo")) } }

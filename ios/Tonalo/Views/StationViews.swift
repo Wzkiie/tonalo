@@ -1,15 +1,18 @@
 import SwiftUI
 
+/// A color for a name that stays the same on every start (Swift's own hash changes each time).
+func stableHue(_ name: String) -> Double {
+    let seed = name.unicodeScalars.reduce(UInt32(2166136261)) { ($0 ^ $1.value) &* 16777619 }
+    return Double((seed ^ seed >> 16) % 360) / 360
+}
+
 /// Stations have no cover on the server: a gradient in a color of their own with the name on it.
 struct StationArt: View {
     let station: Station
     var big = false
 
-    /// The name's hash picks the color, so a station always keeps its own.
-    private var hue: Double {
-        let seed = station.name.unicodeScalars.reduce(UInt32(2166136261)) { ($0 ^ $1.value) &* 16777619 }
-        return Double((seed ^ seed >> 16) % 360) / 360
-    }
+    /// The name picks the color, so a station always keeps its own.
+    private var hue: Double { stableHue(station.name) }
 
     var body: some View {
         GeometryReader { g in
