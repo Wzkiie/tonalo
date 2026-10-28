@@ -46,6 +46,15 @@ let steps: [(shot: String?, wait: Double, js: String)] = [
   ("search", 0, ""),
   (nil, 3.0, "App.go('nowplaying'); "),
   ("nowplaying", 0, ""),
+  (nil, 2.5, "App.go('radio', null, { root: true });"),
+  ("radio", 0, ""),
+  (nil, 2.5, """
+    // Show a live station without streaming it
+    const st = await API.stations();
+    Player.station = () => st[0]; Player.stations = () => st;
+    App.go('nowplaying');
+    """),
+  ("station", 0, ""),
 ]
 
 final class Runner: NSObject, WKNavigationDelegate {

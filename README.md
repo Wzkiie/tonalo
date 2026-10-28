@@ -41,6 +41,7 @@ Navidrome's web UI technically works in the TV browser, but it's made for a mous
 |---|---|
 | ![Now playing with lyrics](assets/screenshots/tv/nowplaying.jpg) | ![Album](assets/screenshots/tv/album.jpg) |
 | ![Artist](assets/screenshots/tv/artist.jpg) | ![Search](assets/screenshots/tv/search.jpg) |
+| ![Endless radio and genre radios](assets/screenshots/tv/radio.jpg) | ![A radio station playing live](assets/screenshots/tv/station.jpg) |
 
 <p align="center"><img src="assets/screenshots/tv/users.jpg" width="49%" alt="Profile picker"></p>
 
@@ -92,6 +93,10 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 <p align="center">
   <img src="assets/screenshots/ios/search.jpg" width="30%" alt="Search with genres">
   <img src="assets/screenshots/ios/library.jpg" width="30%" alt="Your library">
+  <img src="assets/screenshots/ios/radio.jpg" width="30%" alt="Endless radio">
+</p>
+<p align="center">
+  <img src="assets/screenshots/ios/station.jpg" width="30%" alt="A radio station playing live, with the song on air found in your library">
 </p>
 
 ### What it does

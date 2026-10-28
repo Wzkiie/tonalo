@@ -96,6 +96,19 @@ struct RootView: View {
             },
             addToPlaylist: { songs in if !songs.isEmpty { addBatch = SongBatch(songs: songs) } }))
         .sheet(item: $addBatch) { AddToPlaylistSheet(songs: $0.songs) }
+        #if DEBUG
+        // Screenshot hook: -demoOpen stations opens the radio page, -demoOpen station plays a station in the player
+        .task {
+            let args = ProcessInfo.processInfo.arguments
+            guard let i = args.firstIndex(of: "-demoOpen"), i + 1 < args.count else { return }
+            try? await Task.sleep(for: .seconds(1.5))
+            if args[i + 1] == "stations" { paths[0].append(Route.stations) }
+            if args[i + 1] == "station", let list = try? await app.client?.stations(), let first = list.first {
+                app.player.play(first, in: list)
+                showNowPlaying = true
+            }
+        }
+        #endif
         .tint(.accent) // reads Theme, so a new accent color applies everywhere at once
         .onChange(of: app.currentId) {
             paths = [NavigationPath(), NavigationPath(), NavigationPath()]

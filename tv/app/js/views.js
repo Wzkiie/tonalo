@@ -514,7 +514,7 @@ var Views = (function () {
       if (list.length < 2) return;
       var box = h('div.tracklist.np-upnext.nav-container');
       list.forEach(function (x) {
-        box.appendChild(h('div.track-row', null, h('button.track.focusable' + (x.id === st.id ? '.playing' : ''), { onclick: function () { Player.playStation(x); } },
+        box.appendChild(h('div.track-row', null, h('button.track.focusable' + (x.id === st.id ? '.on-air' : ''), { onclick: function () { Player.playStation(x); } },
           h('span.t-main', null, h('div.cover.tiny', null, h('img.loaded', { alt: '', src: UI.radioArt(x.name) })),
             h('span.t-text', null, h('span.t-title.ellipsis', { text: x.name }), h('span.t-artist.ellipsis', { text: T('Live-Radio') }))))));
       });
