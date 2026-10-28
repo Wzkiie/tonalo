@@ -9,7 +9,9 @@ struct MiniPlayer: View {
 
     var body: some View {
         let p = app.player
-        if let song = p.current {
+        if let station = p.station {
+            StationMiniBar(station: station)
+        } else if let song = p.current {
             HStack(spacing: 10) {
                 CoverView(id: song.coverArt ?? song.albumId, size: 120, corner: 4).frame(width: 40)
                 VStack(alignment: .leading, spacing: 1) {
@@ -139,7 +141,12 @@ struct NowPlayingView: View {
         let p = app.player
         ZStack {
             background
-            if let song = p.current {
+            if let station = p.station {
+                StationPage(station: station, close: close)
+                    .padding(.horizontal, 24)
+                    .contentShape(Rectangle())
+                    .gesture(dismissDrag())
+            } else if let song = p.current {
                 if showLyrics {
                     lyricsScreen(song)
                 } else {
@@ -179,7 +186,7 @@ struct NowPlayingView: View {
     private var background: some View {
         ZStack {
             Color.black
-            (Theme.shared.coverTint ? tint : Color(white: 0.22))
+            (Theme.shared.coverTint && app.player.station == nil ? tint : Color(white: 0.22))
             LinearGradient(colors: [.clear, .black.opacity(0.65)], startPoint: .top, endPoint: .bottom)
         }
         .ignoresSafeArea()
@@ -481,6 +488,7 @@ struct QueueView: View {
                         SongRow(song: s, showCover: true) { p.jump(to: p.index + 1 + i) }
                     }
                     .onDelete { set in set.sorted(by: >).forEach { p.remove(at: p.index + 1 + $0) } }
+                    .onMove { from, to in p.moveUpNext(from: from, to: to) }
                 } header: { header(p.context.map { "Next from: \($0.name)" } ?? "Next in queue") }
             }
             .listStyle(.plain)
@@ -489,6 +497,8 @@ struct QueueView: View {
             .background(Color(white: 0.07))
             .navigationTitle("Queue")
             .navigationBarTitleDisplayMode(.inline)
+            // Sort mode: handles to drag songs up and down, and delete buttons
+            .toolbar { if p.upNext.count > 1 { EditButton().foregroundStyle(Color.accent) } }
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(Color(white: 0.07))

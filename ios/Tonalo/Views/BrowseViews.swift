@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var filter = Filter.all
     @State private var sections: [HomeSection] = []
     @State private var playlists: [Playlist] = []
+    @State private var stations: [Station] = []
     @State private var loading = true
     @State private var error: String?
 
@@ -50,6 +51,17 @@ struct HomeView: View {
     @ViewBuilder private var allContent: some View {
         quickGrid
         mixes
+        if !stations.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                ShelfHeader(title: "Radio", more: .stations)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(alignment: .top, spacing: 14) {
+                        ForEach(stations) { StationCard(station: $0, all: stations) }
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+        }
         LoadState(loading: loading && sections.allSatisfy { $0.albums.isEmpty }, error: error) { await load() }
         if !playlists.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
@@ -146,6 +158,7 @@ struct HomeView: View {
         // The last known state first: the page is there at once, even before (or without) the network
         if sections.isEmpty {
             if let saved = client.cached("getPlaylists")?.playlists?.playlist { playlists = saved }
+            if let saved = client.cached("getInternetRadioStations")?.internetRadioStations?.internetRadioStation { stations = saved }
             sections = rows.map { row in
                 HomeSection(id: row.id, title: row.name,
                             albums: client.cached("getAlbumList2", ["type": row.id, "size": "20", "offset": "0"])?.albumList2?.album ?? [])
@@ -154,6 +167,7 @@ struct HomeView: View {
         loading = true; error = nil
         // All rows at the same time – faster, and one slow or failing row doesn't hold up the others
         async let freshPlaylists = try? client.playlists()
+        async let freshStations = try? client.stations()
         var fresh: [String: [Album]] = [:]
         var failure: Error?
         await withTaskGroup(of: (String, Result<[Album], Error>).self) { group in
@@ -170,6 +184,7 @@ struct HomeView: View {
             }
         }
         if let p = await freshPlaylists { playlists = p }
+        if let s = await freshStations { stations = s }
         let old = Dictionary(uniqueKeysWithValues: sections.map { ($0.id, $0.albums) })
         sections = rows.map { HomeSection(id: $0.id, title: $0.name, albums: fresh[$0.id] ?? old[$0.id] ?? []) }
         // Only worth a message when there's nothing to show at all

@@ -374,6 +374,10 @@ struct SubsonicClient {
         try await call("getRandomSongs", ["size": "\(size)"]).randomSongs?.song ?? []
     }
 
+    func stations() async throws -> [Station] {
+        try await call("getInternetRadioStations").internetRadioStations?.internetRadioStation ?? []
+    }
+
     func playlists() async throws -> [Playlist] {
         try await call("getPlaylists").playlists?.playlist ?? []
     }

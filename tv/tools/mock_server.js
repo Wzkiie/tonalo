@@ -117,8 +117,40 @@ http.createServer((req, res) => {
   handle(req, res, url.parse(req.url, true));
 }).listen(PORT, () => console.log(`Demo server: http://localhost:${PORT}`));
 
+// Radio stations: an endless stream of MOCK_RADIO (an ADTS .aac file, 20 seconds) that names a song
+// from the library every 20 seconds (ICY metadata, like Icecast/Shoutcast). Without MOCK_RADIO they're only listed.
+const RADIO = process.env.MOCK_RADIO ? fs.readFileSync(process.env.MOCK_RADIO) : null;
+function radio(req, res, u) {
+  const host = 'http://' + req.headers.host, n = u.pathname.split('/')[2].replace(/\..*/, '');
+  if (u.pathname.endsWith('.m3u')) { res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' }); return res.end(`#EXTM3U\n#EXTINF:-1,Station\n${host}/radio/${n}\n`); }
+  if (u.pathname.endsWith('.pls')) { res.writeHead(200, { 'Content-Type': 'audio/x-scpls' }); return res.end(`[playlist]\nNumberOfEntries=1\nFile1=${host}/radio/${n}\n`); }
+  if (!RADIO) { res.writeHead(404); return res.end(); }
+  const metaint = 400, icy = req.headers['icy-metadata'] === '1';
+  res.writeHead(200, Object.assign({ 'Content-Type': 'audio/aac', 'icy-name': 'Demo ' + n }, icy ? { 'icy-metaint': String(metaint) } : {}));
+  const perSecond = Math.ceil(RADIO.length / 20), started = Date.now();
+  let at = 0, sinceMeta = 0;
+  const title = () => { const s = songs[(Math.floor((Date.now() - started) / 20000) + hash(n)) % songs.length]; return `${s.artist} - ${s.title}`; };
+  const meta = () => {
+    const text = Buffer.from(`StreamTitle='${title().replace(/'/g, '')}';`), len = Math.ceil(text.length / 16);
+    const b = Buffer.alloc(1 + len * 16); b[0] = len; text.copy(b, 1); return b;
+  };
+  const send = bytes => {
+    const out = [];
+    while (bytes > 0) {
+      const take = Math.min(bytes, RADIO.length - at, icy ? metaint - sinceMeta : Infinity);
+      out.push(RADIO.subarray(at, at + take)); at = (at + take) % RADIO.length; bytes -= take; sinceMeta += take;
+      if (icy && sinceMeta === metaint) { out.push(meta()); sinceMeta = 0; }
+    }
+    res.write(Buffer.concat(out));
+  };
+  send(perSecond * 4); // a few seconds ahead, so playback starts right away
+  const timer = setInterval(() => send(perSecond), 1000);
+  res.on('close', () => clearInterval(timer));
+}
+
 function handle(req, res, u) {
   const q = u.query;
+  if (u.pathname.startsWith('/radio/')) return radio(req, res, u);
   if (u.pathname.startsWith('/rest/')) {
     const m = u.pathname.slice(6).replace('.view', '');
     if (process.env.MOCK_LOG) console.log(req.method, req.headers.host, Object.keys(req.headers).filter(h => h.startsWith('x-')).join(',') || '-', m, q.u ? '' : 'NOLOGIN', Object.entries(q).filter(([k]) => !'utscvf'.includes(k) || k.length > 1).map(([k, v]) => `${k}=${v}`).join(' '));
@@ -168,6 +200,14 @@ function handle(req, res, u) {
       case 'getPlaylist': body = ok({ playlist: byId(playlists, q.id) }); break;
       case 'getGenres': body = ok({ genres: { genre: GENRES.map(g => ({ value: g, albumCount: albums.filter(a => a.genre === g).length, songCount: songs.filter(s => s.genre === g).length })) } }); break;
       case 'getRandomSongs': body = ok({ randomSongs: { song: songs.filter(s => !q.genre || s.genre === q.genre).sort(() => Math.random() - 0.5).slice(0, +q.size || 10) } }); break;
+      case 'getInternetRadioStations': {
+        const host = 'http://' + req.headers.host;
+        body = ok({ internetRadioStations: { internetRadioStation: [
+          { id: 'r1', name: 'Demo FM', streamUrl: `${host}/radio/1`, homePageUrl: 'https://example.org' },
+          { id: 'r2', name: 'Night Lounge', streamUrl: `${host}/radio/2.m3u` },
+          { id: 'r3', name: 'Morning Drive', streamUrl: `${host}/radio/3.pls` },
+        ] } }); break;
+      }
       case 'getStarred2': body = ok({ starred2: starred }); break;
       case 'search3': {
         const s = (q.query || '').toLowerCase(), has = x => x.toLowerCase().includes(s);

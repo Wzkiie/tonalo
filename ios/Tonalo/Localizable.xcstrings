@@ -573,6 +573,16 @@
         }
       }
     },
+    "Back to queue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück zur Warteschlange"
+          }
+        }
+      }
+    },
     "Behavior" : {
       "localizations" : {
         "de" : {
@@ -1273,6 +1283,16 @@
         }
       }
     },
+    "In your library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In deiner Bibliothek"
+          }
+        }
+      }
+    },
     "Its downloads and everything Tonalo keeps for it are deleted from this iPhone. Nothing changes on your server." : {
       "localizations" : {
         "de" : {
@@ -1329,6 +1349,19 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hell"
+          }
+        }
+      }
+    },
+    "LIVE" : {
+      "shouldTranslate" : false
+    },
+    "Live radio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live-Radio"
           }
         }
       }
@@ -1553,6 +1586,16 @@
         }
       }
     },
+    "Next station" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächster Sender"
+          }
+        }
+      }
+    },
     "No downloads" : {
       "localizations" : {
         "de" : {
@@ -1609,6 +1652,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Noch keine Playlists."
+          }
+        }
+      }
+    },
+    "No radio stations yet. They are added on the server, in Navidrome under Radio." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Radiosender. Sie werden auf dem Server eingerichtet, in Navidrome unter „Radio“."
           }
         }
       }
@@ -1993,6 +2046,16 @@
         }
       }
     },
+    "PLAYING RADIO" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RADIO-WIEDERGABE"
+          }
+        }
+      }
+    },
     "Playlist" : {
       "localizations" : {
         "de" : {
@@ -2093,6 +2156,16 @@
         }
       }
     },
+    "Previous station" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorheriger Sender"
+          }
+        }
+      }
+    },
     "Profile and settings" : {
       "localizations" : {
         "de" : {
@@ -2119,6 +2192,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Warteschlange"
+          }
+        }
+      }
+    },
+    "Radio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Radio"
           }
         }
       }
@@ -2623,6 +2706,16 @@
         }
       }
     },
+    "Station website" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Website des Senders"
+          }
+        }
+      }
+    },
     "Status" : {
       "localizations" : {
         "de" : {
@@ -2869,6 +2962,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dieser Song ist schon in der Playlist."
+          }
+        }
+      }
+    },
+    "This station can't be played right now." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Sender kann gerade nicht abgespielt werden."
           }
         }
       }

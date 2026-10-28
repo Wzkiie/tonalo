@@ -157,6 +157,14 @@ struct Lyrics: Codable {
     var lines: [LyricLine]
 }
 
+/// A radio station set up on the server (Navidrome: Radio). It streams from the station itself, not from the server.
+struct Station: Codable, Identifiable, Hashable {
+    var id: String
+    var name: String
+    var streamUrl: String
+    var homePageUrl: String?
+}
+
 // MARK: - Response envelope
 
 struct SubsonicErrorBody: Codable { let code: Int; let message: String? }
@@ -167,6 +175,7 @@ struct ArtistIndex: Codable { var name: String; var artist: [Artist]? }
 struct ArtistsBody: Codable { var index: [ArtistIndex]? }
 struct PlaylistsBody: Codable { var playlist: [Playlist]? }
 struct GenresBody: Codable { var genre: [Genre]? }
+struct StationsBody: Codable { var internetRadioStation: [Station]? }
 struct SearchBody: Codable { var artist: [Artist]?; var album: [Album]?; var song: [Song]? }
 struct StructuredLyrics: Codable { var synced: Bool?; var line: [LyricLine]? }
 struct LyricsListBody: Codable { var structuredLyrics: [StructuredLyrics]? }
@@ -193,6 +202,7 @@ struct Payload: Codable {
     var lyricsList: LyricsListBody?
     var genres: GenresBody?
     var playQueue: PlayQueue?
+    var internetRadioStations: StationsBody?
 }
 
 struct Envelope: Codable {

@@ -43,6 +43,7 @@ enum Route: Hashable {
     case playlists
     case favorites
     case downloads
+    case stations
     case settings
 }
 
@@ -59,6 +60,7 @@ extension View {
             case .playlists: PlaylistsView()
             case .favorites: FavoritesView()
             case .downloads: DownloadsView()
+            case .stations: StationsView()
             case .settings: SettingsView()
             }
         }

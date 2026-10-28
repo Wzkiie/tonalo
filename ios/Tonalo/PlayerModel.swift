@@ -28,6 +28,10 @@ final class PlayerModel {
     private(set) var repeatMode: RepeatMode = .off
     private(set) var context: Context?
     var lastError: String?
+    /// A radio station playing instead of the queue. The queue stays as it was and continues afterwards.
+    private(set) var station: Station?
+    /// What the station says it's playing, usually "Artist - Title". Not every station sends it.
+    private(set) var stationTitle: String?
 
     var current: Song? { queue.indices.contains(index) ? queue[index] : nil }
     var upNext: [Song] { index + 1 < queue.count ? Array(queue[(index + 1)...]) : [] }
@@ -55,6 +59,12 @@ final class PlayerModel {
     /// Playing a song that was loaded ahead: a file on the device, so a new server address doesn't matter.
     @ObservationIgnored private var playingPreloaded = false
     @ObservationIgnored private let prefetcher = Prefetcher()
+    /// The station list it was started from – next and previous switch stations.
+    @ObservationIgnored private var stations: [Station] = []
+    @ObservationIgnored private var stationLoad: Task<Void, Never>?
+    @ObservationIgnored private var stationMetadata: StationMetadata?
+    /// Where the queue's song was when the station started – `position` counts the station's time meanwhile.
+    @ObservationIgnored private var queuePosition: Double = 0
 
     /// A queue another device (the TV, for example) left on the server, offered as "Continue listening".
     struct RemoteQueue: Equatable {
@@ -139,7 +149,7 @@ final class PlayerModel {
 
     /// True while this album/playlist/… is what the queue was started from.
     func isPlaying(from kind: Context.Kind, id: String?) -> Bool {
-        isPlaying && context?.kind == kind && context?.id == id
+        isPlaying && station == nil && context?.kind == kind && context?.id == id
     }
 
     func playNext(_ songs: [Song]) {
@@ -164,6 +174,14 @@ final class PlayerModel {
         load(autoplay: true)
     }
 
+    /// Drag and drop in the queue: positions count from the song after the current one.
+    func moveUpNext(from source: IndexSet, to destination: Int) {
+        let base = index + 1
+        queue.move(fromOffsets: IndexSet(source.map { $0 + base }), toOffset: destination + base)
+        persist()
+        if isPlaying { preload() }
+    }
+
     func remove(at i: Int) {
         guard queue.indices.contains(i), i != index else { return }
         queue.remove(at: i)
@@ -173,6 +191,7 @@ final class PlayerModel {
     }
 
     func next(auto: Bool = false) {
+        if station != nil { if !auto { switchStation(by: 1) }; return }
         guard !queue.isEmpty else { return }
         if auto && sleepAfterSong { sleepAfterSong = false; player.pause(); persist(); syncToServer(force: true); return }
         if auto && repeatMode == .one { seek(to: 0); player.play(); return }
@@ -188,6 +207,7 @@ final class PlayerModel {
     }
 
     func previous() {
+        if station != nil { switchStation(by: -1); return }
         guard !queue.isEmpty else { return }
         if position > 3 { seek(to: 0); return }
         index = index > 0 ? index - 1 : (repeatMode == .all ? queue.count - 1 : 0)
@@ -195,12 +215,18 @@ final class PlayerModel {
     }
 
     func toggle() {
+        if let station {
+            // Live: after a pause it starts again from now, not from where it stopped
+            if isPlaying { player.pause() } else { play(station, in: stations) }
+            return
+        }
         guard current != nil else { return }
         if player.currentItem == nil { load(autoplay: true, startAt: position); return }
         if isPlaying { endFade(); player.pause(); persist(); syncToServer(force: true) } else { remoteOffer = nil; activateSession(); player.play(); preload() }
     }
 
     func seek(to seconds: Double) {
+        guard station == nil else { return }
         endFade()
         position = max(0, seconds)
         if streamQuality?.format != nil {
@@ -293,6 +319,7 @@ final class PlayerModel {
 
     /// Saves the current queue and empties the player, without touching the saved queue.
     func detach() {
+        leaveStation()
         persist()
         endFade()
         player.pause()
@@ -328,7 +355,7 @@ final class PlayerModel {
     private func persist(sync: Bool = true) {
         guard let key = storageKey else { return }
         if sync { localChange = .now }
-        let s = Saved(queue: Array(queue.prefix(1000)), index: index, position: position, repeatMode: repeatMode, shuffle: shuffle,
+        let s = Saved(queue: Array(queue.prefix(1000)), index: index, position: station == nil ? position : queuePosition, repeatMode: repeatMode, shuffle: shuffle,
                       context: context, changed: localChange)
         UserDefaults.standard.set(try? JSONEncoder().encode(s), forKey: key)
         if sync { syncToServer() }
@@ -339,7 +366,7 @@ final class PlayerModel {
     /// Sends the queue to the server: right away when the songs or the current song changed,
     /// otherwise (only the position moved) at most every 30 seconds.
     func syncToServer(force: Bool = false) {
-        guard let song = current, let client = app?.client, app?.isOnline != false else { return }
+        guard station == nil, let song = current, let client = app?.client, app?.isOnline != false else { return }
         // A window around the current song keeps the request small for huge queues
         let start = max(0, index - 100)
         let ids = queue[start..<min(queue.count, start + 500)].map(\.id)
@@ -412,6 +439,7 @@ final class PlayerModel {
 
     private func load(autoplay: Bool, startAt: Double = 0, fadeIn: Double = 0) {
         guard let song = current, let client = app?.client else { return }
+        leaveStation()
         endFade()
         let asset: AVURLAsset
         timeOffset = 0
@@ -525,6 +553,7 @@ final class PlayerModel {
 
     /// The leveling setting changed: apply it to the song that's playing right away.
     func levelingChanged() {
+        guard station == nil else { return }
         gain = app?.volumeLeveling.factor(for: current) ?? 1
         if fading == nil { player.volume = gain }
     }
@@ -532,7 +561,7 @@ final class PlayerModel {
     /// The server address changed (arriving home or leaving): a stream continues from the new one at the same spot.
     func addressChanged() {
         prefetcher.stop() // playing again below starts it anew, from the new address
-        guard current != nil, player.currentItem != nil, !playingDownload, !playingPreloaded else { return }
+        guard station == nil, current != nil, player.currentItem != nil, !playingDownload, !playingPreloaded else { return }
         if isPlaying {
             load(autoplay: true, startAt: position)
         } else {
@@ -543,6 +572,7 @@ final class PlayerModel {
     }
 
     private func handleFailure(_ message: String?) {
+        if station != nil { lastError = String(localized: "This station can't be played right now."); return }
         errorStreak += 1
         lastError = message ?? String(localized: "This song can't be played.")
         if errorStreak < 3 && queue.count > 1 { next(auto: true) }
@@ -552,6 +582,7 @@ final class PlayerModel {
 
     private func tick(_ clock: Double) {
         guard clock.isFinite, player.currentItem != nil else { return }
+        if station != nil { position = clock; return } // live: no scrobbles, crossfade or saving the position
         let seconds = clock + timeOffset
         position = seconds
         if duration <= 0, let d = player.currentItem?.duration.seconds, d.isFinite { duration = d }
@@ -597,6 +628,83 @@ final class PlayerModel {
         savePending(left)
     }
 
+    // MARK: Radio stations
+
+    func play(_ station: Station, in list: [Station]) {
+        stationLoad?.cancel()
+        if self.station == nil, current != nil {
+            // Remember where the queue was, it continues there later
+            queuePosition = position
+            persist()
+            syncToServer(force: true)
+        }
+        endFade()
+        prefetcher.stop()
+        player.pause()
+        if self.station != station { stationTitle = nil }
+        self.station = station
+        stations = list
+        remoteOffer = nil
+        position = 0; duration = 0
+        updateNowPlaying()
+        stationLoad = Task {
+            guard let url = await StationStream.resolve(station.streamUrl) else {
+                lastError = String(localized: "This station can't be played right now.")
+                return
+            }
+            guard !Task.isCancelled, self.station == station else { return }
+            let item = AVPlayerItem(url: url)
+            itemObservation = item.observe(\.status) { [weak self] item, _ in
+                guard item.status == .failed else { return }
+                Task { @MainActor in self?.handleFailure(nil) }
+            }
+            let metadata = StationMetadata { [weak self] title in
+                guard let self, self.station == station, title != self.stationTitle else { return }
+                self.stationTitle = title
+                self.updateNowPlaying()
+            }
+            item.add(metadata.output)
+            stationMetadata = metadata
+            gain = 1
+            player.volume = 1
+            player.replaceCurrentItem(with: item)
+            activateSession()
+            player.play()
+        }
+    }
+
+    /// Back to the queue, paused where it was.
+    func stopStation() {
+        guard station != nil else { return }
+        leaveStation()
+        player.pause()
+        player.replaceCurrentItem(with: nil)
+        position = queuePosition
+        duration = Double(current?.duration ?? 0)
+        updateNowPlaying()
+    }
+
+    private func switchStation(by step: Int) {
+        guard let station, let i = stations.firstIndex(of: station), stations.count > 1 else { return }
+        play(stations[(i + step + stations.count) % stations.count], in: stations)
+    }
+
+    private func leaveStation() {
+        stationLoad?.cancel()
+        stationLoad = nil
+        stationMetadata = nil
+        station = nil
+        stationTitle = nil
+    }
+
+    /// "Artist - Title" as most stations send it; otherwise all of it is the title.
+    static func split(_ text: String) -> (artist: String?, title: String) {
+        guard let r = text.range(of: " - ") else { return (nil, text) }
+        let artist = text[..<r.lowerBound].trimmingCharacters(in: .whitespaces)
+        let title = text[r.upperBound...].trimmingCharacters(in: .whitespaces)
+        return artist.isEmpty || title.isEmpty ? (nil, text) : (artist, title)
+    }
+
     // MARK: Lock screen / Control Center
 
     private func loadArtwork(for song: Song, client: SubsonicClient) {
@@ -616,6 +724,18 @@ final class PlayerModel {
     }
 
     private func updateNowPlaying() {
+        if let station {
+            let parts = stationTitle.map(Self.split)
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+                MPMediaItemPropertyTitle: parts?.title ?? station.name,
+                MPMediaItemPropertyArtist: parts?.artist ?? String(localized: "Radio"),
+                MPMediaItemPropertyAlbumTitle: station.name,
+                MPNowPlayingInfoPropertyIsLiveStream: true,
+                MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
+            ]
+            MPRemoteCommandCenter.shared().likeCommand.isActive = false
+            return
+        }
         guard let song = current else { MPNowPlayingInfoCenter.default().nowPlayingInfo = nil; return }
         var info: [String: Any] = [
             MPMediaItemPropertyTitle: song.title,
@@ -645,7 +765,7 @@ final class PlayerModel {
         c.likeCommand.isEnabled = true
         c.likeCommand.addTarget { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, let song = self.current, let app = self.app else { return }
+                guard let self, self.station == nil, let song = self.current, let app = self.app else { return }
                 Task { await app.setFavorite(song, song.starred == nil) }
             }
             return .success
@@ -655,5 +775,50 @@ final class PlayerModel {
             MainActor.assumeIsolated { self?.seek(to: e.positionTime) }
             return .success
         }
+    }
+}
+
+/// The title a station sends along with the stream (ICY metadata, or tags in HLS streams).
+final class StationMetadata: NSObject, AVPlayerItemMetadataOutputPushDelegate {
+    let output = AVPlayerItemMetadataOutput(identifiers: nil)
+    private let changed: @MainActor (String) -> Void
+
+    init(changed: @escaping @MainActor (String) -> Void) {
+        self.changed = changed
+        super.init()
+        output.setDelegate(self, queue: .main)
+    }
+
+    func metadataOutput(_ output: AVPlayerItemMetadataOutput, didOutputTimedMetadataGroups groups: [AVTimedMetadataGroup], from track: AVPlayerItemTrack?) {
+        let items = groups.flatMap(\.items)
+        guard let item = items.first(where: { $0.commonKey == .commonKeyTitle || $0.identifier == .icyMetadataStreamTitle }) ?? items.first else { return }
+        let changed = changed
+        Task { @MainActor in
+            guard let text = try? await item.load(.stringValue)?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return }
+            changed(text)
+        }
+    }
+}
+
+/// Station addresses are often a small playlist file (.m3u, .pls) that names the actual stream.
+enum StationStream {
+    static func resolve(_ address: String) async -> URL? {
+        guard let url = URL(string: address.trimmingCharacters(in: .whitespaces)), url.scheme?.hasPrefix("http") == true else { return nil }
+        let ext = url.pathExtension.lowercased()
+        guard ext == "m3u" || ext == "pls" else { return url }
+        // Only the station's own address is asked, nothing from the server (no login or extra headers)
+        var request = URLRequest(url: url, timeoutInterval: 10)
+        request.setValue("Tonalo", forHTTPHeaderField: "User-Agent")
+        guard let (data, _) = try? await URLSession.shared.data(for: request), data.count < 100_000,
+              let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else { return url }
+        for line in text.split(whereSeparator: \.isNewline) {
+            var entry = line.trimmingCharacters(in: .whitespaces)
+            if ext == "pls" {
+                guard entry.lowercased().hasPrefix("file"), let eq = entry.firstIndex(of: "=") else { continue }
+                entry = String(entry[entry.index(after: eq)...])
+            }
+            if entry.hasPrefix("http"), let stream = URL(string: entry) { return stream }
+        }
+        return url
     }
 }
