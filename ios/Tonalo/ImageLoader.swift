@@ -84,18 +84,20 @@ struct CoverView: View {
     @State private var shown: String?
 
     var body: some View {
-        ZStack {
-            Rectangle().fill(Color(white: 0.16))
-            if let image {
-                Image(uiImage: image).resizable().scaledToFill()
-            } else {
-                Image(systemName: round ? "person.fill" : "music.note")
-                    .font(.system(size: 28, weight: .regular))
-                    .foregroundStyle(Color(white: 0.45))
+        // The square sets the size and the image only fills it – inside a ZStack a portrait or landscape
+        // image would grow the view past the square (a whole-screen artist photo, overlapping artist cards)
+        Rectangle().fill(Color(white: 0.16))
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                if let image {
+                    Image(uiImage: image).resizable().scaledToFill()
+                } else {
+                    Image(systemName: round ? "person.fill" : "music.note")
+                        .font(.system(size: 28, weight: .regular))
+                        .foregroundStyle(Color(white: 0.45))
+                }
             }
-        }
-        .aspectRatio(1, contentMode: .fit)
-        .clipShape(round ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: corner)))
+            .clipShape(round ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: corner)))
         // Again when leaving home: a cover that was on its way from the home address won't arrive
         .task(id: "\(id ?? "")|\(app.atHome)") {
             if image != nil, shown == id { return }
