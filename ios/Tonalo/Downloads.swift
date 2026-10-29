@@ -52,7 +52,10 @@ final class DownloadStore {
     /// Bytes received so far, for the "downloading" list
     private(set) var bytes: [String: Int64] = [:]
     /// The songs of the current run – all downloads started since nothing was loading – for the bar at the top.
-    private(set) var batch: Set<String> = []
+    /// Kept across launches, so "10 of 40" doesn't turn into "0 of 30" when the app was closed in between.
+    private(set) var batch: Set<String> = [] {
+        didSet { if let key = accountKey { UserDefaults.standard.set(Array(batch), forKey: "downloadBatch." + key) } }
+    }
 
     /// How far the current run is, 0…1; nil when nothing is loading (or it waits for Wi-Fi).
     var batchProgress: Double? {
@@ -112,6 +115,7 @@ final class DownloadStore {
     // MARK: Index
 
     func reload() {
+        let storedBatch = accountKey.flatMap { UserDefaults.standard.stringArray(forKey: "downloadBatch." + $0) } ?? []
         progress = [:]; failed = [:]; batch = []
         let file = accountKey.map { Self.folder($0).appendingPathComponent("index.json") }
         guard let file, let data = try? Data(contentsOf: file) else { index = DownloadIndex(); return }
@@ -123,7 +127,8 @@ final class DownloadStore {
             return
         }
         index = idx
-        batch = Set(idx.queued.keys)
+        // The run goes on with what is still loading, plus what of it already finished
+        batch = idx.queued.isEmpty ? [] : Set(idx.queued.keys).union(storedBatch.filter { idx.songs[$0] != nil })
         // iOS may have dropped transfers in the meantime – don't leave those stuck as "downloading"
         DownloadSession.shared.session.getAllTasks { tasks in
             let running = Set(tasks.compactMap { $0.taskDescription?.components(separatedBy: "|").dropFirst().first })
