@@ -1162,6 +1162,16 @@
         }
       }
     },
+    "Faster downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnellere Downloads"
+          }
+        }
+      }
+    },
     "Favorite" : {
       "localizations" : {
         "de" : {
@@ -1218,6 +1228,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lieblingsmix"
+          }
+        }
+      }
+    },
+    "Five songs load at once, and a small counter above the player shows how far they are on every page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fünf Songs laden gleichzeitig, und ein kleiner Zähler über dem Player zeigt auf jeder Seite, wie weit sie sind."
           }
         }
       }

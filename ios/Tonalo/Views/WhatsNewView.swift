@@ -27,6 +27,8 @@ enum WhatsNew {
                   text: "When an album or playlist ends, similar songs keep playing. You can turn it off in Settings."),
             .init(icon: "line.3.horizontal", color: .blue, title: "Reorder the queue",
                   text: "Tap Edit in the queue and drag songs to where you want them."),
+            .init(icon: "arrow.down.circle.fill", color: .teal, title: "Faster downloads",
+                  text: "Five songs load at once, and a small counter above the player shows how far they are on every page."),
             .init(icon: "car.fill", color: .green, title: "CarPlay",
                   text: "Your music, playlists and downloads on the car screen, with a heart for your favorites."),
             .init(icon: "applewatch", color: .pink, title: "Apple Watch",
