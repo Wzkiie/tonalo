@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tonalo – Navidrome on your LG TV and iPhone</title>
+<meta name="description" content="A free, open-source music player for Navidrome and other Subsonic servers. Made for the LG TV remote and the iPhone, with Apple Watch and CarPlay. No tracking.">
+<meta name="theme-color" content="#0c0c0e">
+<meta property="og:title" content="Tonalo – Navidrome on your LG TV and iPhone">
+<meta property="og:description" content="A free, open-source music player for your own music server. LG webOS, iPhone, Apple Watch and CarPlay.">
+<meta property="og:image" content="img/tv/home.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css?v=10">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-github" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol>
+    <symbol id="i-apple" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.1 2.5-1.8 3.1-.5 7.6 1.3 10.1.8 1.2 1.8 2.6 3.1 2.5 1.3-.1 1.7-.8 3.2-.8s1.9.8 3.3.8c1.4 0 2.2-1.2 3-2.5 1-1.4 1.4-2.8 1.4-2.8 0 0-2.6-1-2.6-4zM14 5.2c.7-.8 1.1-1.9 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z"/></symbol>
+    <symbol id="i-tv" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></g></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></g></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="6.5" rx="1.5"/><rect x="3.5" y="13.5" width="17" height="6.5" rx="1.5"/><path d="M7 7.2h.01M7 16.8h.01"/></g></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 12h15M14 7l5 5-5 5"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-remote" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="4"/><circle cx="12" cy="9" r="2.2"/><path d="M10 15h.01M14 15h.01M10 18h.01M14 18h.01"/></g></symbol>
+    <symbol id="i-lyrics" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M4 10.5h11M4 15h16M4 19.5h8"/></g></symbol>
+    <symbol id="i-radio" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="1.8"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/></g></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.3"/><path d="M3 20c.6-3.4 3-5.3 6-5.3s5.4 1.9 6 5.3"/><path d="M16 4.9a3.3 3.3 0 010 6.3M17.6 14.9c1.9.6 3.1 2.4 3.4 5.1"/></g></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></g></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z"/></g></symbol>
+    <symbol id="i-watch" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="3.5"/><path d="M9 6l.6-3.5h4.8L15 6M9 18l.6 3.5h4.8L15 18M18 10.5h1"/></g></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V12l2-5.2A2 2 0 017.9 5.5h8.2a2 2 0 011.9 1.3L20 12v4.5"/><path d="M3 12h18v4.5H3zM6 16.5V19M18 16.5V19"/><path d="M7 14.2h.01M17 14.2h.01"/></g></symbol>
+  </defs>
+</svg>
+
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="favicon.svg" alt="">Tonalo</a>
+    <nav aria-label="Main">
+      <a href="#tv">TV</a>
+      <a href="#iphone">iPhone</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#get">Download</a>
+      <a class="gh" href="https://github.com/Wzkiie/tonalo"><svg><use href="#i-github"/></svg>GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">For Navidrome &amp; Subsonic servers</p>
+      <h1>Your music server.<br><span>On the TV and in your pocket.</span></h1>
+      <p class="lede">Tonalo plays your own music library on <strong>LG TVs</strong> and the <strong>iPhone</strong>, with an Apple Watch app and CarPlay. Free, open source, and it talks to nobody but your server.</p>
+      <div class="actions">
+        <a class="btn primary" href="https://testflight.apple.com/join/vKkNhNZJ"><svg><use href="#i-apple"/></svg>iPhone beta on TestFlight</a>
+        <a class="btn" href="https://github.com/Wzkiie/tonalo/releases/latest"><svg><use href="#i-tv"/></svg>LG TV app</a>
+      </div>
+      <p class="small">MIT licensed. Source code on <a href="https://github.com/Wzkiie/tonalo">GitHub</a>.</p>
+    </div>
+    <div class="devices">
+      <div class="tv-frame"><img src="img/tv/home.jpg" width="1600" height="900" alt="Tonalo on an LG TV: home screen with favorites, playlists and radio"></div>
+      <div class="phone"><img src="img/ios/player.jpg" width="600" height="1304" alt="Tonalo on the iPhone: the player"></div>
+    </div>
+  </div>
+
+  <div class="facts">
+    <div class="wrap">
+      <div style="--c:#5a9bff"><b>Your server only</b><span>No account, no cloud. The apps connect to your Navidrome and nothing else.</span></div>
+      <div style="--c:#22a35a"><b>Free and open source</b><span>MIT license. No ads, no in-app purchases, no premium tier.</span></div>
+      <div style="--c:#ec4899"><b>Nothing collected</b><span>No analytics, no tracking, no crash reporter inside the apps.</span></div>
+      <div style="--c:#f97316"><b>Picks up where you left</b><span>Pause on the phone, open the TV, keep listening.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- TV -->
+<section id="tv" class="tint-plum">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="label">LG webOS TV</p>
+      <h2>Made for the remote, not a mouse.</h2>
+      <p>Navidrome's web player technically opens in the TV browser, but it is built for a mouse. Tonalo is a real webOS app: arrows and OK to get around, Back to go back, and the play, pause and skip buttons do what you would expect.</p>
+    </div>
+
+    <figure class="tv-main reveal"><img class="shot" src="img/tv/nowplaying.jpg" width="1600" height="900" alt="Full-screen player with synced lyrics" loading="lazy"></figure>
+
+    <div class="bento">
+      <article class="feat wide reveal">
+        <div class="vis v-lyrics" aria-hidden="true">
+          <p>We were running out of time</p>
+          <p>Hold the moment, let it go</p>
+          <p class="on">Every street I used to know</p>
+          <p>Turn the volume up tonight</p>
+        </div>
+        <div class="txt"><h3>Synced lyrics</h3><p>The full-screen player follows the song line by line, when your server has lyrics in the file or as an .lrc next to it.</p></div>
+      </article>
+      <article class="feat reveal">
+        <div class="vis v-radio" aria-hidden="true">
+          <div class="covers"><i style="--g:linear-gradient(135deg,#ffd36e,#ff6b6b)"></i><i style="--g:linear-gradient(135deg,#5ac8fa,#3b5bdb)"></i><i style="--g:linear-gradient(135deg,#c084fc,#6d28d9)"></i><i style="--g:linear-gradient(135deg,#34d399,#0f766e)"></i><i style="--g:linear-gradient(135deg,#f9a8d4,#be185d)"></i></div>
+          <span class="chip">+ 5 songs like these</span>
+        </div>
+        <div class="txt"><h3>Endless radio</h3><p>From a song, an artist, a genre or your favorites. It tops itself up and learns from skips and hearts.</p></div>
+      </article>
+      <article class="feat reveal">
+        <div class="vis v-users" aria-hidden="true">
+          <div><b style="background:#3b82f6">A</b><span>Alex</span></div>
+          <div><b style="background:#22a35a">S</b><span>Sam</span></div>
+          <div><b class="add">+</b><span>Add</span></div>
+        </div>
+        <div class="txt"><h3>A profile for everyone</h3><p>Everyone signs in once and picks their name on start. Queues, favorites and settings stay apart.</p></div>
+      </article>
+      <article class="feat reveal">
+        <div class="vis v-fade" aria-hidden="true">
+          <svg viewBox="0 0 280 96" preserveAspectRatio="none"><defs><linearGradient id="fa" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f97316" stop-opacity=".35"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></linearGradient><linearGradient id="fb" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5a9bff" stop-opacity=".35"/><stop offset="1" stop-color="#5a9bff" stop-opacity="0"/></linearGradient></defs><path d="M0 18H130C160 18 170 86 210 86V96H0z" fill="url(#fa)"/><path d="M0 18H130C160 18 170 86 210 86" fill="none" stroke="#f97316" stroke-width="2.5"/><path d="M130 86C170 86 180 18 210 18H280V96H130z" fill="url(#fb)"/><path d="M130 86C170 86 180 18 210 18H280" fill="none" stroke="#5a9bff" stroke-width="2.5"/></svg>
+          <span class="tag">6 s</span>
+        </div>
+        <div class="txt"><h3>Crossfade and leveling</h3><p>Fade 3 to 12 seconds between songs, and even out loud and quiet albums with ReplayGain.</p></div>
+      </article>
+      <article class="feat reveal">
+        <div class="vis v-sleep" aria-hidden="true">
+          <div class="pills"><span>15</span><span class="on">30</span><span>45</span><span>60</span><span>90</span></div>
+          <small>Music fades out in 28 min</small>
+        </div>
+        <div class="txt"><h3>Sleep timer</h3><p>Stop after 15 to 90 minutes or at the end of the song. The music fades out gently.</p></div>
+      </article>
+      <article class="feat reveal">
+        <div class="vis v-saver" aria-hidden="true">
+          <div class="saver"><i></i><div><b>Faded Heart</b><span>Marlow Keys</span></div><time>22:47</time></div>
+        </div>
+        <div class="txt"><h3>Kind to OLEDs</h3><p>A slowly moving screensaver with the cover and a clock, so nothing burns into the panel.</p></div>
+      </article>
+      <article class="feat wide reveal">
+        <div class="vis v-lang" aria-hidden="true">
+          <span>EN</span><span class="on">DE</span><span>ES</span><span>FR</span><span>IT</span><span>PT</span><span>NL</span><span>PL</span><span>TR</span>
+        </div>
+        <div class="txt"><h3>Nine languages</h3><p>English, German, Spanish, French, Italian, Portuguese, Dutch, Polish and Turkish. It follows the TV.</p></div>
+      </article>
+    </div>
+
+    <div class="gallery">
+      <figure class="reveal"><img class="shot" src="img/tv/album.jpg" width="1600" height="900" alt="An album" loading="lazy"><figcaption>Albums</figcaption></figure>
+      <figure class="reveal"><img class="shot" src="img/tv/artist.jpg" width="1600" height="900" alt="An artist page" loading="lazy"><figcaption>Artist pages with popular songs</figcaption></figure>
+      <figure class="reveal"><img class="shot" src="img/tv/search.jpg" width="1600" height="900" alt="Search" loading="lazy"><figcaption>Search</figcaption></figure>
+      <figure class="reveal"><img class="shot" src="img/tv/radio.jpg" width="1600" height="900" alt="Endless radio and genre radios" loading="lazy"><figcaption>Radio from your library</figcaption></figure>
+      <figure class="reveal"><img class="shot" src="img/tv/station.jpg" width="1600" height="900" alt="A radio station playing live" loading="lazy"><figcaption>Your server's radio stations, live</figcaption></figure>
+      <figure class="reveal"><img class="shot" src="img/tv/users.jpg" width="1600" height="900" alt="Profile picker" loading="lazy"><figcaption>Profiles</figcaption></figure>
+    </div>
+
+    <div class="remote">
+      <div class="reveal">
+        <h3>Every button has a job.</h3>
+        <p>The Magic Remote pointer works too, but you never need it. The queue survives a restart, songs move up and down with the arrows, and playlists can be renamed, cleaned up or deleted right from the couch.</p>
+      </div>
+      <ul class="keys reveal">
+        <li><span class="cap"><kbd>▲&#xFE0E;</kbd><kbd>▼&#xFE0E;</kbd><kbd>◀&#xFE0E;</kbd><kbd>▶&#xFE0E;</kbd><kbd>OK</kbd></span><span>Move around and select</span></li>
+        <li><span class="cap"><kbd>Back</kbd></span><span>Go back, then to the sidebar, then ask before quitting</span></li>
+        <li><span class="cap"><kbd>▶&#xFE0E;</kbd><kbd>❚❚</kbd><kbd>■&#xFE0E;</kbd></span><span>Play, pause, stop</span></li>
+        <li><span class="cap"><kbd>◀◀&#xFE0E;</kbd><kbd>▶▶&#xFE0E;</kbd></span><span>Skip 10 seconds, hold to change the song</span></li>
+        <li><span class="cap"><kbd>CH +</kbd><kbd>CH –</kbd></span><span>Scroll a page at a time</span></li>
+        <li><span class="cap"><kbd class="dot" style="--c:var(--red)" aria-label="Red"></kbd><kbd class="dot" style="--c:var(--green)" aria-label="Green"></kbd><kbd class="dot" style="--c:var(--yellow)" aria-label="Yellow"></kbd><kbd class="dot" style="--c:var(--blue)" aria-label="Blue"></kbd></span><span>Now playing, search, options, play/pause</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- iPhone -->
+<section id="iphone" class="tint-amber">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="label">iPhone</p>
+      <h2>Feels like the big streaming apps. Plays your files.</h2>
+      <p>A native SwiftUI app with a home screen, search, a library and a player that takes its colors from the cover. Lossless stays lossless, and the whole library works offline if you want it to.</p>
+    </div>
+  </div>
+
+  <div class="strip" id="strip">
+    <figure><div class="phone"><img class="shot" src="img/ios/home.jpg" width="600" height="1304" alt="Home" loading="lazy"></div><figcaption>Home</figcaption></figure>
+    <figure><div class="phone"><img class="shot" src="img/ios/player.jpg" width="600" height="1304" alt="Player" loading="lazy"></div><figcaption>Player</figcaption></figure>
+    <figure><div class="phone"><img class="shot" src="img/ios/lyrics.jpg" width="600" height="1304" alt="Synced lyrics" loading="lazy"></div><figcaption>Synced lyrics</figcaption></figure>
+    <figure><div class="phone"><img class="shot" src="img/ios/album.jpg" width="600" height="1304" alt="Album" loading="lazy"></div><figcaption>Album</figcaption></figure>
+    <figure><div class="phone"><img class="shot" src="img/ios/library.jpg" width="600" height="1304" alt="Your library" loading="lazy"></div><figcaption>Your library</figcaption></figure>
+    <figure><div class="phone"><img class="shot" src="img/ios/search.jpg" width="600" height="1304" alt="Search with genres" loading="lazy"></div><figcaption>Search and genres</figcaption></figure>
+    <figure><div class="phone"><img class="shot" src="img/ios/radio.jpg" width="600" height="1304" alt="Endless radio" loading="lazy"></div><figcaption>Radio</figcaption></figure>
+    <figure><div class="phone"><img class="shot" src="img/ios/station.jpg" width="600" height="1304" alt="A radio station playing live" loading="lazy"></div><figcaption>A station, live</figcaption></figure>
+  </div>
+  <div class="wrap">
+    <div class="strip-nav">
+      <button type="button" data-dir="-1" aria-label="Previous screenshots"><svg><use href="#i-left"/></svg></button>
+      <button type="button" data-dir="1" aria-label="Next screenshots"><svg><use href="#i-right"/></svg></button>
+    </div>
+
+    <div class="groups">
+      <div class="group reveal" style="--c:#8b5cf6">
+        <h3>Listening</h3>
+        <ul>
+          <li><b>Endless radio</b> from a song, artist, genre or your favorites. It plays more of what you finish or like and less of what you skip.</li>
+          <li><b>Autoplay</b> keeps going with similar songs when an album or playlist ends.</li>
+          <li><b>Crossfade</b> of up to 12 seconds, a sleep timer that fades out, and volume leveling per song or album.</li>
+          <li>A queue you reorder by dragging, swipe gestures in the player, synced lyrics.</li>
+          <li><b>Artist pages</b> with popular songs, the discography, “Fans also like” and a biography.</li>
+        </ul>
+      </div>
+      <div class="group reveal" style="--c:#14b8a6">
+        <h3>Offline</h3>
+        <ul>
+          <li><b>Downloads</b> of songs, albums and playlists, five at a time in the background, optionally on Wi-Fi only.</li>
+          <li><b>Library sync</b> puts every album, artist and playlist on the phone, so it opens instantly, even in a tunnel.</li>
+          <li><b>Loading ahead</b>: the next one to five songs are fetched early, so a dead spot doesn't stop the music.</li>
+          <li>Lyrics come along, and scrobbles made offline are sent later.</li>
+        </ul>
+      </div>
+      <div class="group reveal" style="--c:#f97316">
+        <h3>Sound quality</h3>
+        <ul>
+          <li>Set separately for <b>Wi-Fi, cellular and downloads</b>.</li>
+          <li><b>Original files</b>: FLAC stays FLAC. Or let your server convert to AAC, Opus or MP3.</li>
+          <li>Each level shows how much data an hour of music takes.</li>
+          <li>Formats the iPhone can't play are converted automatically.</li>
+        </ul>
+      </div>
+      <div class="group reveal" style="--c:#3b82f6">
+        <h3>Your server, your way</h3>
+        <ul>
+          <li><b>Home address</b>: on your Wi-Fi the app talks to the server directly and switches back outside, mid-song and without a gap.</li>
+          <li><b>Custom HTTP headers</b> per account, for Cloudflare Access, Authelia and similar. Secrets stay in the Keychain.</li>
+          <li>Several accounts, with a “Who's listening?” picker on start.</li>
+          <li>A heart for the lock screen and Control Center, and a Siri shortcut to like the current song.</li>
+        </ul>
+      </div>
+      <div class="group reveal" style="--c:#ec4899">
+        <h3>Make it yours</h3>
+        <ul>
+          <li>Eight accent colors or your own, and nine app icons.</li>
+          <li>Choose the start screen and which rows the home screen shows.</li>
+          <li>Backgrounds tinted with the cover, or plain black.</li>
+          <li>Pin playlists to the top of your library with a long press.</li>
+        </ul>
+      </div>
+      <div class="group reveal" style="--c:#eab308">
+        <h3>Small things</h3>
+        <ul>
+          <li>The quality badge in the player shows what is playing, like FLAC or AAC 256.</li>
+          <li>Swipe the mini player to skip, swipe up to open the player.</li>
+          <li>Smart playlists from your server are marked and kept read-only.</li>
+          <li>Logging out removes that account's downloads and cache from the phone.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Radio -->
+<section id="radio" class="tint-teal">
+  <div class="wrap split">
+    <div class="reveal">
+      <p class="label">Radio</p>
+      <h2>Endless radio, and your stations live.</h2>
+      <p>Pick a song and Tonalo keeps playing music like it, straight from your library, for as long as you listen. It gets better the more you skip and like.</p>
+      <p>The internet radio stations set up in Navidrome play live on both apps. On the iPhone you see the song on air, and if it's in your library, one tap plays it from there.</p>
+    </div>
+    <div class="pair reveal">
+      <figure class="tv-main"><img class="shot" src="img/tv/station.jpg" width="1600" height="900" alt="A radio station on the TV" loading="lazy"></figure>
+      <div class="phone"><img class="shot" src="img/ios/station.jpg" width="600" height="1304" alt="A radio station on the iPhone" loading="lazy"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Handoff -->
+<section id="continue" class="tint-blue">
+  <div class="wrap split">
+    <div class="reveal">
+      <p class="label">Between devices</p>
+      <h2>Start on the train, finish on the couch.</h2>
+      <p>Your queue and position are kept on your Navidrome server. Pause on the iPhone, open Tonalo on the TV, and it offers to carry on with the same song at the same second. It works the other way round too.</p>
+      <p>No extra service and no pairing. It uses Navidrome's own play queue, so there is nothing to set up.</p>
+    </div>
+    <div class="reveal">
+      <div class="flow" aria-label="iPhone saves the queue to your server, the TV picks it up">
+        <div class="node"><svg><use href="#i-phone"/></svg><b>iPhone</b><span>pause</span></div>
+        <div class="arrow"><svg><use href="#i-arrow"/></svg></div>
+        <div class="node"><svg><use href="#i-server"/></svg><b>Your server</b><span>keeps the queue</span></div>
+        <div class="arrow"><svg><use href="#i-arrow"/></svg></div>
+        <div class="node"><svg><use href="#i-tv"/></svg><b>TV</b><span>continue</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Watch + CarPlay -->
+<section id="watch" class="tint-rose">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="label">Apple Watch &amp; CarPlay</p>
+      <h2>On your wrist and in the car.</h2>
+    </div>
+    <div class="cards">
+      <div class="card reveal warm-rose wcard">
+        <div class="dev-vis watches">
+          <div class="watch-case"><img class="shot" src="img/watch/player.jpg" width="368" height="448" alt="Tonalo on the Apple Watch: the player" loading="lazy"></div>
+          <div class="watch-case"><img class="shot" src="img/watch/library.jpg" width="368" height="448" alt="Tonalo on the Apple Watch: playlists and favorites" loading="lazy"></div>
+        </div>
+        <div class="wtxt"><h3>Apple Watch</h3>
+        <p>A remote for the iPhone that comes along with the app. It never talks to your server and stores no login.</p>
+        <ul>
+          <li>Player with the cover, play, skip, shuffle and a heart</li>
+          <li>The iPhone's volume on the Digital Crown</li>
+          <li>Start your playlists and favorites from the wrist</li>
+        </ul></div>
+      </div>
+      <div class="card reveal warm-green ccard">
+        <div><h3>CarPlay</h3>
+        <p>Your library on the car screen, made to be used at a glance.</p></div>
+        <ul>
+          <li>Home, library and downloads</li>
+          <li>Shuffle, repeat and a heart in the player</li>
+          <li>No search, because Apple doesn't allow a keyboard in CarPlay music apps</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Privacy -->
+<section id="privacy" class="tint-green">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="label">Privacy</p>
+      <h2>Your music stays between you and your server.</h2>
+      <p>Tonalo has no backend of its own. There is no account to create and nothing to opt out of.</p>
+    </div>
+    <div class="privacy reveal">
+      <div><h3>No password stored</h3><p>Only the salted token the Subsonic API uses is kept, never the password itself.</p></div>
+      <div><h3>Keychain on the iPhone</h3><p>The token and any custom headers live in the iOS Keychain, on that one device.</p></div>
+      <div><h3>No analytics</h3><p>No tracking, no ad SDKs, no third-party code at all in the iPhone app.</p></div>
+      <div><h3>Headers stay put</h3><p>Custom headers never follow a redirect to another host.</p></div>
+      <div><h3>https by default</h3><p>Plain http is only used for addresses in your home network.</p></div>
+      <div><h3>Open code</h3><p>Every line is on GitHub, so you can check what the apps do.</p></div>
+    </div>
+    <p class="more">The only other connection: a radio station's own server while you listen to it. Details in the <a href="https://github.com/Wzkiie/tonalo/blob/main/PRIVACY.md">privacy policy</a>.</p>
+  </div>
+</section>
+
+<!-- Install -->
+<section id="get" class="tint-blue">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="label">Download</p>
+      <h2>Try it.</h2>
+      <p>Both apps are free. Bring a Navidrome server, or any other server that speaks the Subsonic API.</p>
+    </div>
+    <div class="install">
+      <div class="card reveal warm-blue">
+        <p class="req">iOS 17 or newer · watchOS 10 or newer</p>
+        <h3>iPhone, Apple Watch, CarPlay</h3>
+        <ol class="steps">
+          <li>Install Apple's <b>TestFlight</b> app from the App Store.</li>
+          <li>Open the invite link on your iPhone and tap <b>Install</b>. The watch app comes along if your iPhone is paired with one.</li>
+          <li>Sign in with your server address, user name and password.</li>
+        </ol>
+        <div class="actions"><a class="btn primary" href="https://testflight.apple.com/join/vKkNhNZJ"><svg><use href="#i-apple"/></svg>Join the beta</a></div>
+      </div>
+      <div class="card reveal warm-amber">
+        <p class="req">LG TV · webOS 5 or newer</p>
+        <h3>LG TV</h3>
+        <ol class="steps">
+          <li>Download the <b>.ipk</b> from the latest release.</li>
+          <li>Install it on a rooted TV with the <a href="https://www.webosbrew.org/">Homebrew Channel</a>, or in Developer Mode with <a href="https://github.com/webosbrew/dev-manager-desktop">webOS Dev Manager</a>.</li>
+          <li>Enter your server address, for example <code>http://192.168.1.10:4533</code>, and sign in.</li>
+        </ol>
+        <div class="actions"><a class="btn" href="https://github.com/Wzkiie/tonalo/releases/latest"><svg><use href="#i-tv"/></svg>Latest release</a><a class="btn" href="https://github.com/Wzkiie/tonalo#installing">Install guide</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="label">Questions</p>
+      <h2>Good to know</h2>
+    </div>
+    <div class="faq reveal">
+      <details><summary>Which servers does it work with?</summary><p>Tonalo is built and tested with Navidrome. Other servers with the Subsonic API, like Gonic or Airsonic-Advanced, should work but haven't been tried yet. Reports are very welcome.</p></details>
+      <details><summary>Does it cost anything?</summary><p>No. Both apps are free and MIT licensed, without ads, subscriptions or in-app purchases.</p></details>
+      <details><summary>When will it be in the App Store and the Homebrew Channel?</summary><p>The iPhone app is in public beta on TestFlight right now; the App Store comes next. The TV app is planned for the Homebrew Channel. Until then, the .ipk from the GitHub releases works on any rooted TV or one in Developer Mode.</p></details>
+      <details><summary>Why are artist pages empty on my server?</summary><p>Popular songs, similar artists and biographies come from Navidrome, which gets them from Last.fm. Adding a free Last.fm API key to Navidrome takes two minutes; the <a href="https://github.com/Wzkiie/tonalo#server-tips">server tips</a> show how. Without it, the iPhone app shows your own most played songs instead.</p></details>
+      <details><summary>Is there an Android or Samsung TV version?</summary><p>Not at the moment. Tonalo is made for LG webOS and the iPhone.</p></details>
+      <details><summary>Was AI involved?</summary><p>A good part of the code was written together with an AI coding assistant. Everything is tested on a real LG OLED and iPhone, and the code is public, so you can see exactly what it does.</p></details>
+      <details><summary>I found a bug or have an idea.</summary><p>Open an <a href="https://github.com/Wzkiie/tonalo/issues/new/choose">issue on GitHub</a>; there are forms for both. On the iPhone you can also send a screenshot as TestFlight feedback. Security problems please <a href="https://github.com/Wzkiie/tonalo/security">report privately</a>.</p></details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <a class="brand" href="#"><img src="favicon.svg" alt="">Tonalo</a>
+      <p>A free music player for your own server. Not affiliated with Navidrome, LG or Apple.</p>
+    </div>
+    <div>
+      <h4>Apps</h4>
+      <ul>
+        <li><a href="https://testflight.apple.com/join/vKkNhNZJ">iPhone beta</a></li>
+        <li><a href="https://github.com/Wzkiie/tonalo/releases/latest">LG TV release</a></li>
+        <li><a href="https://github.com/Wzkiie/tonalo#readme">Install guide</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Project</h4>
+      <ul>
+        <li><a href="https://github.com/Wzkiie/tonalo">Source code</a></li>
+        <li><a href="https://github.com/Wzkiie/tonalo/issues/new/choose">Report a bug</a></li>
+        <li><a href="https://github.com/Wzkiie/tonalo/blob/main/LICENSE">MIT license</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="https://github.com/Wzkiie/tonalo/blob/main/PRIVACY.md">Privacy policy</a></li>
+        <li><a href="https://github.com/Wzkiie/tonalo/blob/main/SECURITY.md">Security</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<dialog class="lb" id="lb"><button type="button" aria-label="Close">×</button><img alt=""></dialog>
+
+<script src="main.js?v=8"></script>
+</body>
+</html>
