@@ -2,4 +2,9 @@
 // Put your team ID into Local.xcconfig next to this file (git ignores it), for example:
 //   DEVELOPMENT_TEAM = ABCDE12345
 // Or just pick your team in Xcode under Signing & Capabilities – then don't commit that change.
+//
+// CarPlay needs an entitlement Apple grants per developer account. Without it (for example with a
+// free Apple ID) signing fails – then switch it off in Local.xcconfig:
+//   TONALO_APP_ENTITLEMENTS =
+TONALO_APP_ENTITLEMENTS = Tonalo-CarPlay.entitlements
 #include? "Local.xcconfig"
