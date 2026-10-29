@@ -226,6 +226,9 @@
     "192.168.1.10:4533" : {
       "shouldTranslate" : false
     },
+    "Apple Watch" : {
+      "shouldTranslate" : false
+    },
     "Autoplay" : {
       "localizations" : {
         "de" : {
@@ -686,6 +689,9 @@
         }
       }
     },
+    "CarPlay" : {
+      "shouldTranslate" : false
+    },
     "Cellular" : {
       "localizations" : {
         "de" : {
@@ -752,6 +758,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zuhause verbunden"
+          }
+        }
+      }
+    },
+    "Continue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter"
           }
         }
       }
@@ -2009,6 +2025,16 @@
         }
       }
     },
+    "Play, skip, like and change the volume from your wrist, and start your playlists there." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abspielen, weiterspringen, liken und die Lautstärke ändern direkt am Handgelenk – und deine Playlists dort starten."
+          }
+        }
+      }
+    },
     "Playback" : {
       "localizations" : {
         "de" : {
@@ -2269,6 +2295,16 @@
         }
       }
     },
+    "Radio stations" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Radiosender"
+          }
+        }
+      }
+    },
     "Random" : {
       "localizations" : {
         "de" : {
@@ -2405,6 +2441,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Playlist umbenennen"
+          }
+        }
+      }
+    },
+    "Reorder the queue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warteschlange sortieren"
           }
         }
       }
@@ -2749,6 +2795,16 @@
         }
       }
     },
+    "Start a radio from a song, an artist, a genre or your favorites. It plays more of what you listen to and like, and less of what you skip." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starte ein Radio aus einem Song, einem Künstler, einem Genre oder deinen Lieblingssongs. Es spielt mehr von dem, was du hörst und magst, und weniger von dem, was du überspringst."
+          }
+        }
+      }
+    },
     "Start screen" : {
       "localizations" : {
         "de" : {
@@ -2899,6 +2955,16 @@
         }
       }
     },
+    "Tap Edit in the queue and drag songs to where you want them." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tippe in der Warteschlange auf „Bearbeiten“ und zieh die Songs dahin, wo du sie haben willst."
+          }
+        }
+      }
+    },
     "Teal" : {
       "localizations" : {
         "de" : {
@@ -2995,6 +3061,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Der Server ist über https nicht erreichbar. Falls er wirklich nur http kann, gib die Adresse mit http:// am Anfang ein."
+          }
+        }
+      }
+    },
+    "The stations set up on your server play live, with the song on air. If it's in your library, one tap plays it from there." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sender auf deinem Server laufen live, mit dem Song, der gerade läuft. Ist er in deiner Bibliothek, spielst du ihn mit einem Tipp von dort."
           }
         }
       }
@@ -3172,6 +3248,16 @@
         }
       }
     },
+    "Version %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@"
+          }
+        }
+      }
+    },
     "Volume leveling" : {
       "localizations" : {
         "de" : {
@@ -3222,6 +3308,36 @@
         }
       }
     },
+    "What's New" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuigkeiten"
+          }
+        }
+      }
+    },
+    "What's New in Tonalo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neu in Tonalo"
+          }
+        }
+      }
+    },
+    "When an album or playlist ends, similar songs keep playing. You can turn it off in Settings." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endet ein Album oder eine Playlist, laufen ähnliche Songs weiter. Das lässt sich in den Einstellungen ausschalten."
+          }
+        }
+      }
+    },
     "Who’s listening?" : {
       "localizations" : {
         "de" : {
@@ -3258,6 +3374,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gelb"
+          }
+        }
+      }
+    },
+    "Your music, playlists and downloads on the car screen, with a heart for your favorites." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Musik, Playlists und Downloads auf dem Bildschirm im Auto, mit Herz für deine Lieblingssongs."
           }
         }
       }

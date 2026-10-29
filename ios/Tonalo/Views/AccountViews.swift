@@ -517,6 +517,7 @@ struct SettingsView: View {
             }
             Section {
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–")
+                NavigationLink("What's New") { VersionHistoryView() }
                 Link(destination: URL(string: "https://github.com/Wzkiie/tonalo")!) {
                     HStack { Text("Tonalo on GitHub").foregroundStyle(.white); Spacer(); Image(systemName: "arrow.up.right").foregroundStyle(.secondary) }
                 }

@@ -75,6 +75,7 @@ struct RootView: View {
     @State private var showMenu = false
     @State private var barHeight: CGFloat = 0
     @State private var addBatch: SongBatch?
+    @State private var whatsNew: AppRelease?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -96,6 +97,10 @@ struct RootView: View {
             },
             addToPlaylist: { songs in if !songs.isEmpty { addBatch = SongBatch(songs: songs) } }))
         .sheet(item: $addBatch) { AddToPlaylistSheet(songs: $0.songs) }
+        // After an update: what's new, once – but not on top of the account picker
+        .sheet(item: $whatsNew, onDismiss: WhatsNew.markSeen) { WhatsNewSheet(release: $0) }
+        .task { try? await Task.sleep(for: .seconds(1)); checkWhatsNew() }
+        .onChange(of: app.showsAccountPicker) { _, shown in if !shown { checkWhatsNew() } }
         #if DEBUG
         // Screenshot hook: -demoOpen stations opens the radio page, -demoOpen station plays a station in the player
         .task {
@@ -119,6 +124,11 @@ struct RootView: View {
             if phase == .active { app.checkRoute(); Task { await app.player.checkServerQueue() } }
             if phase == .background { app.player.syncBeforeLeaving() }
         }
+    }
+
+    private func checkWhatsNew() {
+        guard whatsNew == nil, !app.showsAccountPicker, WhatsNew.shouldShow(hasAccounts: !app.accounts.isEmpty) else { return }
+        whatsNew = WhatsNew.current
     }
 
     private var tabs: some View {
