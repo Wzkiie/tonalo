@@ -56,7 +56,7 @@ struct PlayerPage: View {
     }
 
     private func player(_ n: WatchNowPlaying) -> some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             HStack(spacing: 8) {
                 cover(n).frame(width: 40, height: 40).clipShape(RoundedRectangle(cornerRadius: 6))
                 VStack(alignment: .leading, spacing: 1) {
@@ -97,7 +97,12 @@ struct PlayerPage: View {
                 }
                 .accessibilityLabel(n.starred ? Text("Remove from favorites") : Text("Add to favorites"))
                 Spacer()
-                VolumeControl().frame(width: 30, height: 30)
+                // Apple's control ignores the frame and draws itself as big as the play button: scale it down,
+                // so it sits in the row like the heart and shuffle. It still follows the Digital Crown.
+                VolumeControl()
+                    .frame(width: 44, height: 44)
+                    .scaleEffect(0.62)
+                    .frame(width: 28, height: 28)
                 Spacer()
                 Button { c.send("shuffle") } label: {
                     Image(systemName: "shuffle").foregroundStyle(n.shuffle ? c.accent : .white)
