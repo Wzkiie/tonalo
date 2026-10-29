@@ -1042,6 +1042,16 @@
         }
       }
     },
+    "Downloading %lld of %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lädt %lld von %lld"
+          }
+        }
+      }
+    },
     "Downloads" : {
       "localizations" : {
         "de" : {

@@ -78,7 +78,12 @@ struct SongRow: View {
                     if app.downloads.isDownloaded(song.id) {
                         Image(systemName: "arrow.down.circle.fill").font(.system(size: 12)).foregroundStyle(Color.accent)
                     } else if app.downloads.index.queued[song.id] != nil {
-                        ProgressRing(value: app.downloads.progress[song.id] ?? 0, lineWidth: 2).frame(width: 11, height: 11)
+                        // Waiting its turn: a quiet arrow; loading: the filling ring
+                        if let p = app.downloads.progress[song.id], p > 0 {
+                            ProgressRing(value: p, lineWidth: 2).frame(width: 11, height: 11)
+                        } else {
+                            Image(systemName: "arrow.down.circle").font(.system(size: 12)).foregroundStyle(Color.subtle)
+                        }
                     }
                     if let artist = song.artist {
                         Text(artist).font(.system(size: 13)).foregroundStyle(Color.subtle).lineLimit(1)

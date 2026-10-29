@@ -211,25 +211,32 @@ struct DownloadMark: View {
     }
 }
 
-/// Thin line under the status bar while downloads run, on every page – so an album keeps showing
-/// how far it is after you went somewhere else.
+/// Small floating note above the player while downloads run, on every page – so an album keeps showing
+/// how far it is after you went somewhere else. Tapping it opens the downloads.
 struct DownloadBar: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.ui) private var ui
 
     var body: some View {
         if let value = app.downloads.batchProgress {
-            GeometryReader { g in
-                ZStack(alignment: .leading) {
-                    Rectangle().fill(Color.white.opacity(0.12))
-                    Rectangle().fill(Color.accent).frame(width: g.size.width * value)
+            let counts = app.downloads.batchCounts
+            Button { ui.open(.downloads) } label: {
+                HStack(spacing: 8) {
+                    ProgressRing(value: value, lineWidth: 2.5).frame(width: 16, height: 16)
+                    Text("Downloading \(counts.done) of \(counts.total)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .monospacedDigit()
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().stroke(Color.white.opacity(0.08)))
+                .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
             }
-            .frame(height: 3)
-            .animation(.linear(duration: 0.3), value: value)
-            .transition(.opacity)
-            .accessibilityElement()
+            .buttonStyle(.plain)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
             .accessibilityLabel("Downloading")
-            .accessibilityValue(Text(value, format: .percent.precision(.fractionLength(0))))
+            .accessibilityValue(Text("\(counts.done) of \(counts.total)"))
         }
     }
 }

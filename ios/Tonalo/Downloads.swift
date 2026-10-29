@@ -63,6 +63,11 @@ final class DownloadStore {
         return done / Double(batch.count)
     }
 
+    /// Finished and total songs of the current run, for the label next to the progress.
+    var batchCounts: (done: Int, total: Int) {
+        (batch.filter { index.queued[$0] == nil }.count, batch.count)
+    }
+
     var quality = AudioQuality.stored("quality.download", legacy: "downloadBitRate", default: .aac256) {
         didSet { UserDefaults.standard.set(quality.rawValue, forKey: "quality.download") }
     }
@@ -450,7 +455,9 @@ final class DownloadSession: NSObject, URLSessionDownloadDelegate {
         let config = URLSessionConfiguration.background(withIdentifier: "io.github.wzkiie.tonalo.downloads")
         config.sessionSendsLaunchEvents = true
         config.isDiscretionary = false
-        config.httpMaximumConnectionsPerHost = 3
+        // A few songs at once: the server converts each one separately (AAC, Opus …), so more in parallel
+        // uses its other cores. More than that only splits the same bandwidth.
+        config.httpMaximumConnectionsPerHost = 5
         config.httpCookieStorage = nil // no proxy cookies on disk, see ServerSession
         return URLSession(configuration: config, delegate: self, delegateQueue: nil)
     }()

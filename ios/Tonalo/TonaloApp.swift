@@ -103,13 +103,18 @@ struct RootView: View {
         .onChange(of: app.showsAccountPicker) { _, shown in if !shown { checkWhatsNew() } }
         #if DEBUG
         // Screenshot hook: -demoOpen stations opens the radio page, -demoOpen station plays a station in the player,
-        // -demoOpen artist:<id> opens an artist
+        // -demoOpen artist:<id> opens an artist, -demoOpen download downloads the first playlist and opens it
         .task {
             let args = ProcessInfo.processInfo.arguments
             guard let i = args.firstIndex(of: "-demoOpen"), i + 1 < args.count else { return }
             try? await Task.sleep(for: .seconds(1.5))
             if args[i + 1] == "stations" { paths[0].append(Route.stations) }
             if args[i + 1].hasPrefix("artist:") { paths[0].append(Route.artist(String(args[i + 1].dropFirst(7)))) }
+            if args[i + 1] == "download", let first = try? await app.client?.playlists().first,
+               let list = try? await app.client?.playlist(first.id) {
+                app.downloads.downloadPlaylist(list)
+                paths[0].append(Route.playlist(list.id))
+            }
             if args[i + 1] == "station", let list = try? await app.client?.stations(), let first = list.first {
                 app.player.play(first, in: list)
                 showNowPlaying = true
@@ -143,12 +148,15 @@ struct RootView: View {
             }
         }
         .id(app.currentId) // fresh views when switching accounts
-        .overlay(alignment: .top) { DownloadBar() }
         // Every scrolling page (plain scroll views and system lists alike) ends above the floating bar
         .contentMargins(.bottom, barHeight, for: .scrollContent)
         .contentMargins(.bottom, barHeight, for: .scrollIndicators)
         .overlay(alignment: .bottom) {
             bottomBar.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
+        }
+        .overlay(alignment: .bottom) {
+            DownloadBar().padding(.bottom, barHeight + 10)
+                .animation(.spring(duration: 0.35), value: app.downloads.batchProgress == nil)
         }
         .overlay {
             if showNowPlaying {
