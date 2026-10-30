@@ -58,6 +58,9 @@ final class PlayerModel {
     private(set) var playingDownload = false
     /// Playing a song that was loaded ahead: a file on the device, so a new server address doesn't matter.
     @ObservationIgnored private var playingPreloaded = false
+    /// The song that already continued once after ending too early – it isn't tried again.
+    @ObservationIgnored private var resumedId: String?
+    @ObservationIgnored private var stationArt: (name: String, image: UIImage)?
     @ObservationIgnored private let prefetcher = Prefetcher()
     /// Keeps a radio (and autoplay after the end of the queue) going with fitting songs.
     @ObservationIgnored let radio = SmartRadio()
@@ -100,7 +103,7 @@ final class PlayerModel {
         NotificationCenter.default.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification, object: nil, queue: .main) { [weak self] note in
             MainActor.assumeIsolated {
                 guard let self, (note.object as? AVPlayerItem) === self.player.currentItem else { return }
-                self.next(auto: true)
+                self.ended()
             }
         }
         setupRemoteCommands()
@@ -210,6 +213,22 @@ final class PlayerModel {
         load(autoplay: true)
     }
 
+    /// The player reached the end of what it had. A stream that broke off, or a file loaded ahead that is
+    /// incomplete, ends before the song does: continue from there once, instead of skipping (or, with
+    /// repeat one, starting the song over).
+    private func ended() {
+        if let song = current, station == nil, !playingDownload, resumedId != song.id,
+           duration > 0, position > 5, duration - position > 10, let client = app?.client {
+            resumedId = song.id
+            if playingPreloaded {
+                prefetcher.remove(account: client.account.id, song: song, quality: (app?.streamingQuality ?? .lossless).resolved(for: song))
+            }
+            load(autoplay: true, startAt: position)
+            return
+        }
+        next(auto: true)
+    }
+
     /// The song that follows the current one, or nil at the end of the queue.
     private func nextIndex(auto: Bool) -> Int? {
         if index < queue.count - 1 { return index + 1 }
@@ -262,11 +281,21 @@ final class PlayerModel {
         }
         shuffle.toggle()
         persist()
+        updateNowPlaying()
+    }
+
+    func setShuffle(_ on: Bool) {
+        if on != shuffle { toggleShuffle() }
     }
 
     func cycleRepeat() {
-        repeatMode = repeatMode == .off ? .all : repeatMode == .all ? .one : .off
+        setRepeat(repeatMode == .off ? .all : repeatMode == .all ? .one : .off)
+    }
+
+    func setRepeat(_ mode: RepeatMode) {
+        repeatMode = mode
         persist()
+        updateNowPlaying()
     }
 
     func setStarred(_ song: Song, _ on: Bool) {
@@ -450,6 +479,7 @@ final class PlayerModel {
 
     private func load(autoplay: Bool, startAt: Double = 0, fadeIn: Double = 0) {
         guard let song = current, let client = app?.client else { return }
+        if resumedId != song.id { resumedId = nil }
         leaveStation()
         endFade()
         let asset: AVURLAsset
@@ -752,16 +782,28 @@ final class PlayerModel {
     }
 
     private func updateNowPlaying() {
+        let commands = MPRemoteCommandCenter.shared()
+        commands.changeShuffleModeCommand.currentShuffleType = shuffle ? .items : .off
+        commands.changeRepeatModeCommand.currentRepeatType = repeatMode == .one ? .one : repeatMode == .all ? .all : .off
+        // Only while sound comes out: waiting for a slow connection mustn't let the clock in the car run ahead
+        let rate = player.timeControlStatus == .playing ? 1.0 : 0.0
         if let station {
             let parts = stationTitle.map(Self.split)
-            MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+            if stationArt?.name != station.name {
+                stationArt = (station.name, ArtTile.image(symbol: "dot.radiowaves.left.and.right", hue: stableHue(station.name), size: 600))
+            }
+            var info: [String: Any] = [
                 MPMediaItemPropertyTitle: parts?.title ?? station.name,
                 MPMediaItemPropertyArtist: parts?.artist ?? String(localized: "Radio"),
                 MPMediaItemPropertyAlbumTitle: station.name,
                 MPNowPlayingInfoPropertyIsLiveStream: true,
-                MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
+                MPNowPlayingInfoPropertyPlaybackRate: rate,
             ]
-            MPRemoteCommandCenter.shared().likeCommand.isActive = false
+            if let art = stationArt?.image {
+                info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: art.size) { _ in art }
+            }
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+            commands.likeCommand.isActive = false
             return
         }
         guard let song = current else { MPNowPlayingInfoCenter.default().nowPlayingInfo = nil; return }
@@ -771,13 +813,13 @@ final class PlayerModel {
             MPMediaItemPropertyAlbumTitle: song.album ?? "",
             MPMediaItemPropertyPlaybackDuration: duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
-            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
+            MPNowPlayingInfoPropertyPlaybackRate: rate,
         ]
         if let artwork {
             info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artwork.size) { _ in artwork }
         }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        MPRemoteCommandCenter.shared().likeCommand.isActive = song.starred != nil
+        commands.likeCommand.isActive = song.starred != nil
     }
 
     private func setupRemoteCommands() {
@@ -796,6 +838,17 @@ final class PlayerModel {
                 guard let self, self.station == nil, let song = self.current, let app = self.app else { return }
                 Task { await app.setFavorite(song, song.starred == nil) }
             }
+            return .success
+        }
+        // Siri and the car ask for a mode, not a toggle
+        c.changeShuffleModeCommand.addTarget { [weak self] e in
+            guard let e = e as? MPChangeShuffleModeCommandEvent else { return .commandFailed }
+            MainActor.assumeIsolated { self?.setShuffle(e.shuffleType != .off) }
+            return .success
+        }
+        c.changeRepeatModeCommand.addTarget { [weak self] e in
+            guard let e = e as? MPChangeRepeatModeCommandEvent else { return .commandFailed }
+            MainActor.assumeIsolated { self?.setRepeat(e.repeatType == .one ? .one : e.repeatType == .all ? .all : .off) }
             return .success
         }
         c.changePlaybackPositionCommand.addTarget { [weak self] e in

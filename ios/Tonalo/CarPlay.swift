@@ -1,10 +1,11 @@
 import CarPlay
 import MediaPlayer
 import Observation
+import SwiftUI
 import UIKit
 
-/// CarPlay: tabs for Home, Library and Downloads, song lists, and the system Now Playing screen with
-/// shuffle, repeat and a heart. iOS only connects this scene when the app has Apple's CarPlay audio
+/// CarPlay: tabs for Home, Radio, Library and Downloads, song lists, and the system Now Playing screen with
+/// shuffle, a heart and repeat. iOS only connects this scene when the app has Apple's CarPlay audio
 /// entitlement (see docs/CARPLAY.md) – without it nothing here runs.
 @MainActor
 final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPNowPlayingTemplateObserver {
@@ -16,7 +17,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         interface = interfaceController
         let downloads = downloadsTab()
         self.downloads = downloads
-        let tabs = CPTabBarTemplate(templates: [homeTab(), libraryTab(), downloads])
+        let tabs = CPTabBarTemplate(templates: [homeTab(), radioTab(), libraryTab(), downloads])
         interfaceController.setRootTemplate(tabs, animated: false, completion: nil)
         CPNowPlayingTemplate.shared.add(self)
         CPNowPlayingTemplate.shared.isUpNextButtonEnabled = true
@@ -45,15 +46,23 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         guard let client = app.client else { return }
         var sections: [CPListSection] = []
 
+        // The same mixes as on the phone, in the same colors
         let mixes = [
-            item(String(localized: "Shuffle mix"), detail: String(localized: "Random songs from your library"), symbol: "shuffle") { [weak self] in
+            item(String(localized: "Shuffle mix"), detail: String(localized: "Random songs from your library"), image: ArtTile.image(symbol: "shuffle", hue: 0.62)) { [weak self] in
                 guard let songs = try? await client.randomSongs(150) else { return }
                 self?.play(songs, context: .init(kind: .mix, name: String(localized: "Shuffle mix")))
             },
-            item(String(localized: "Favorites mix"), detail: String(localized: "Your favorite songs, shuffled"), symbol: "heart.fill") { [weak self] in
+            item(String(localized: "Favorites mix"), detail: String(localized: "Your favorite songs, shuffled"), image: ArtTile.image(symbol: "heart.fill", hue: 0.92)) { [weak self] in
                 guard let songs = try? await client.starred().song, !songs.isEmpty else { return }
                 self?.play(songs, shuffled: true, context: .init(kind: .favorites, name: String(localized: "Favorite songs")))
             },
+            item(String(localized: "Discover"), detail: String(localized: "Albums you haven’t heard in a while"), image: ArtTile.image(symbol: "sparkles", hue: 0.12)) { [weak self] in
+                guard let albums = try? await client.albumList("random", size: 6) else { return }
+                var songs: [Song] = []
+                for a in albums { songs += ((try? await client.album(a.id).song) ?? []).shuffled().prefix(4) }
+                self?.play(songs.shuffled(), context: .init(kind: .mix, name: String(localized: "Discover")))
+            },
+            yourRadio(),
         ]
         sections.append(CPListSection(items: mixes, header: String(localized: "Made for you"), sectionIndexTitle: nil))
 
@@ -70,20 +79,74 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         if sections.count == 1 && !app.isOnline { t.emptyViewSubtitleVariants = [String(localized: "You’re offline")] }
     }
 
+    /// The endless radios and the stations set up on the server – like the Radio page on the phone.
+    private func radioTab() -> CPListTemplate {
+        let t = CPListTemplate(title: String(localized: "Radio"), sections: [])
+        t.tabTitle = String(localized: "Radio")
+        t.tabImage = UIImage(systemName: "dot.radiowaves.left.and.right")
+        t.emptyViewSubtitleVariants = [String(localized: "Loading…")]
+        Task { await fillRadio(t) }
+        return t
+    }
+
+    private func fillRadio(_ t: CPListTemplate) async {
+        guard let client = app.client else { return }
+        async let loadStations = try? client.stations()
+        async let loadGenres = try? client.genres()
+        let stations = await loadStations ?? []
+        let genres = radioGenres(await loadGenres ?? [])
+
+        var radios = [yourRadio()]
+        if let song = app.player.station == nil ? app.player.current : nil, let name = song.artist {
+            radios.append(item(String(localized: "More like \(name)"), detail: String(localized: "Radio from the song playing now"),
+                               image: ArtTile.image(symbol: "music.mic", hue: 0.75)) { [weak self] in
+                await self?.app.player.radio.start(String(localized: "\(name) radio"), seedId: song.artistId ?? song.id, seeds: [song])
+                self?.showNowPlaying()
+            })
+        }
+        radios += genres.prefix(limit - 2).map { g in
+            item(g.value, detail: String(localized: "Genre radio"), image: ArtTile.image(symbol: "guitars", hue: stableHue(g.value))) { [weak self] in
+                await self?.app.player.radio.start(String(localized: "\(g.value) radio"), genre: g.value)
+                self?.showNowPlaying()
+            }
+        }
+        var sections = [CPListSection(items: radios, header: String(localized: "Endless radio"), sectionIndexTitle: nil)]
+        if !stations.isEmpty {
+            let rows = stations.prefix(limit).map { s in
+                item(s.name, image: ArtTile.image(symbol: "dot.radiowaves.left.and.right", hue: stableHue(s.name))) { [weak self] in
+                    self?.app.player.play(s, in: stations)
+                    self?.showNowPlaying()
+                }
+            }
+            sections.append(CPListSection(items: rows, header: String(localized: "Stations"), sectionIndexTitle: nil))
+        }
+        t.updateSections(sections)
+    }
+
+    private func yourRadio() -> CPListItem {
+        item(String(localized: "Your radio"), detail: String(localized: "Endless, based on your favorites"),
+             image: ArtTile.image(symbol: "dot.radiowaves.left.and.right", hue: 0.52)) { [weak self] in
+            guard let self else { return }
+            let favorites = ((try? await self.app.client?.starred().song) ?? []).shuffled()
+            await self.app.player.radio.start(String(localized: "Your radio"), seedId: favorites.first?.id, seeds: Array(favorites.prefix(8)))
+            self.showNowPlaying()
+        }
+    }
+
     private func libraryTab() -> CPListTemplate {
-        let favorites = item(String(localized: "Favorite songs"), symbol: "heart.fill") { [weak self] in
+        let favorites = item(String(localized: "Favorite songs"), image: symbol("heart.fill")) { [weak self] in
             guard let self, let songs = try? await self.app.client?.starred().song else { return }
             self.pushSongs(String(localized: "Favorite songs"), songs, context: .init(kind: .favorites, name: String(localized: "Favorite songs")))
         }
-        let playlists = item(String(localized: "Playlists"), symbol: "music.note.list") { [weak self] in
+        let playlists = item(String(localized: "Playlists"), image: symbol("music.note.list")) { [weak self] in
             guard let self, let list = try? await self.app.client?.playlists() else { return }
             self.push(CPListTemplate(title: String(localized: "Playlists"), sections: [CPListSection(items: list.prefix(self.limit).map(self.playlistItem))]))
         }
-        let albums = item(String(localized: "Albums"), symbol: "square.stack") { [weak self] in
+        let albums = item(String(localized: "Albums"), image: symbol("square.stack")) { [weak self] in
             guard let self, let list = try? await self.app.client?.albumList("alphabeticalByName", size: self.limit) else { return }
             self.push(CPListTemplate(title: String(localized: "Albums"), sections: [CPListSection(items: list.map(self.albumItem))]))
         }
-        let artists = item(String(localized: "Artists"), symbol: "music.mic") { [weak self] in
+        let artists = item(String(localized: "Artists"), image: symbol("music.mic")) { [weak self] in
             guard let self, let list = try? await self.app.client?.artists() else { return }
             self.push(CPListTemplate(title: String(localized: "Artists"), sections: [CPListSection(items: list.prefix(self.limit).map(self.artistItem))]))
         }
@@ -110,8 +173,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         guard !songs.isEmpty else { t.updateSections([]); return }
         let context = PlayerModel.Context(kind: .downloads, name: String(localized: "Downloads"))
         let all = [
-            item(String(localized: "Play all"), detail: String(localized: "\(songs.count) songs"), symbol: "play.fill") { [weak self] in self?.play(songs, context: context) },
-            item(String(localized: "Shuffle"), symbol: "shuffle") { [weak self] in self?.play(songs, shuffled: true, context: context) },
+            item(String(localized: "Play all"), detail: String(localized: "\(songs.count) songs"), image: symbol("play.fill")) { [weak self] in self?.play(songs, context: context) },
+            item(String(localized: "Shuffle"), image: symbol("shuffle")) { [weak self] in self?.play(songs, shuffled: true, context: context) },
         ]
         var sections = [CPListSection(items: all)]
         let playlists = store.index.playlists.values.sorted { $0.name < $1.name }
@@ -125,9 +188,16 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     private var limit: Int { min(CPListTemplate.maximumItemCount, 200) }
 
-    private func item(_ text: String, detail: String? = nil, symbol: String? = nil, image: UIImage? = nil,
+    private var accent: UIColor { UIColor(Theme.shared.accent) }
+
+    /// A symbol in the accent color picked in the app.
+    private func symbol(_ name: String) -> UIImage? {
+        UIImage(systemName: name)?.withTintColor(accent, renderingMode: .alwaysOriginal)
+    }
+
+    private func item(_ text: String, detail: String? = nil, image: UIImage? = nil,
                       action: @escaping @MainActor () async -> Void) -> CPListItem {
-        let i = CPListItem(text: text, detailText: detail, image: image ?? symbol.flatMap { UIImage(systemName: $0) })
+        let i = CPListItem(text: text, detailText: detail, image: image)
         i.handler = { _, done in
             Task { @MainActor in await action(); done() }
         }
@@ -164,7 +234,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     /// A row of album covers, like a shelf on the phone's home screen.
     private func albumGrid(_ title: String, _ albums: [Album]) -> CPListImageRowItem {
         let shown = Array(albums.prefix(CPMaximumNumberOfGridImages))
-        let placeholder = UIImage(systemName: "music.note") ?? UIImage()
+        let placeholder = ArtTile.image(symbol: "music.note", hue: 0.62)
         var images = Array(repeating: placeholder, count: shown.count)
         let row = CPListImageRowItem(text: title, images: images)
         row.listImageRowHandler = { [weak self] _, index, done in
@@ -189,11 +259,11 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     /// Song list with "Shuffle" on top; tapping a song plays the list from there.
     private func pushSongs(_ title: String, _ songs: [Song], context: PlayerModel.Context) {
         let shown = Array(songs.prefix(limit - 1))
-        let shuffle = item(String(localized: "Shuffle"), symbol: "shuffle") { [weak self] in self?.play(shown, shuffled: true, context: context) }
+        let shuffle = item(String(localized: "Shuffle"), image: symbol("shuffle")) { [weak self] in self?.play(shown, shuffled: true, context: context) }
         let rows = shown.enumerated().map { n, s in
             let i = item(s.title, detail: s.artist) { [weak self] in self?.play(shown, from: n, context: context) }
             i.isPlaying = app.player.current?.id == s.id
-            if app.downloads.isDownloaded(s.id) { i.accessoryType = .none; i.setAccessoryImage(UIImage(systemName: "arrow.down.circle.fill")) }
+            if app.downloads.isDownloaded(s.id) { i.accessoryType = .none; i.setAccessoryImage(symbol("arrow.down.circle.fill")) }
             loadCover(s.coverArt ?? s.albumId) { i.setImage($0) }
             return i
         }
@@ -233,7 +303,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             _ = app.player.current?.starred
             _ = app.player.shuffle
             _ = app.player.repeatMode
+            _ = app.player.station
             _ = app.downloads.index.songs.count
+            _ = Theme.shared.accentHex
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self, self.interface != nil else { return }
@@ -245,29 +317,59 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         updateButtons()
     }
 
+    /// Own buttons instead of the system's shuffle and repeat: they show their state in the accent color,
+    /// and a tap does exactly one thing. A station has no queue to shuffle and no song to like.
     private func updateButtons() {
         let p = app.player
-        let starred = p.current?.starred != nil
-        let heart = CPNowPlayingImageButton(image: UIImage(systemName: starred ? "heart.fill" : "heart") ?? UIImage()) { [weak self] _ in
+        guard p.station == nil else { CPNowPlayingTemplate.shared.updateNowPlayingButtons([]); return }
+        let starred = p.current.map(app.isFavorite) ?? false
+        let shuffle = button("shuffle", on: p.shuffle) { p.toggleShuffle() }
+        let heart = button(starred ? "heart.fill" : "heart", on: starred) { [weak self] in
             guard let self, let song = self.app.player.current else { return }
             self.app.toggleStar(song)
         }
-        let shuffle = CPNowPlayingShuffleButton { _ in p.toggleShuffle() }
-        let repeatButton = CPNowPlayingRepeatButton { _ in p.cycleRepeat() }
+        let repeatButton = button(p.repeatMode == .one ? "repeat.1" : "repeat", on: p.repeatMode != .off) { p.cycleRepeat() }
         CPNowPlayingTemplate.shared.updateNowPlayingButtons([shuffle, heart, repeatButton])
-        MPRemoteCommandCenter.shared().changeShuffleModeCommand.currentShuffleType = p.shuffle ? .items : .off
-        MPRemoteCommandCenter.shared().changeRepeatModeCommand.currentRepeatType = p.repeatMode == .one ? .one : p.repeatMode == .all ? .all : .off
+    }
+
+    private func button(_ name: String, on: Bool, action: @escaping @MainActor () -> Void) -> CPNowPlayingImageButton {
+        let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)
+        let image = UIImage(systemName: name, withConfiguration: config)?
+            .withTintColor(on ? accent : .white, renderingMode: .alwaysOriginal) ?? UIImage()
+        let b = CPNowPlayingImageButton(image: image) { _ in MainActor.assumeIsolated { action() } }
+        b.isSelected = on
+        return b
     }
 
     nonisolated func nowPlayingTemplateUpNextButtonTapped(_ nowPlayingTemplate: CPNowPlayingTemplate) {
         Task { @MainActor in
             let p = self.app.player
             let rows = p.upNext.prefix(self.limit).enumerated().map { n, s in
-                self.item(s.title, detail: s.artist) { p.jump(to: p.index + 1 + n) }
+                let i = self.item(s.title, detail: s.artist) { p.jump(to: p.index + 1 + n) }
+                self.loadCover(s.coverArt ?? s.albumId) { i.setImage($0) }
+                return i
             }
             self.push(CPListTemplate(title: String(localized: "Up next"), sections: [CPListSection(items: Array(rows))]))
         }
     }
 
     nonisolated func nowPlayingTemplateAlbumArtistButtonTapped(_ nowPlayingTemplate: CPNowPlayingTemplate) {}
+}
+
+/// A colored square with a symbol, like the mix cards and station art on the phone.
+enum ArtTile {
+    static func image(symbol: String, hue: Double, size: CGFloat = 120) -> UIImage {
+        let rect = CGRect(x: 0, y: 0, width: size, height: size)
+        return UIGraphicsImageRenderer(size: rect.size).image { ctx in
+            let colors = [UIColor(hue: hue, saturation: 0.55, brightness: 0.75, alpha: 1).cgColor,
+                          UIColor(hue: (hue + 0.06).truncatingRemainder(dividingBy: 1), saturation: 0.7, brightness: 0.35, alpha: 1).cgColor]
+            if let gradient = CGGradient(colorsSpace: nil, colors: colors as CFArray, locations: nil) {
+                ctx.cgContext.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: size, y: size), options: [])
+            }
+            let config = UIImage.SymbolConfiguration(pointSize: size * 0.36, weight: .semibold)
+            if let s = UIImage(systemName: symbol, withConfiguration: config)?.withTintColor(UIColor(white: 1, alpha: 0.92), renderingMode: .alwaysOriginal) {
+                s.draw(at: CGPoint(x: (size - s.size.width) / 2, y: (size - s.size.height) / 2))
+            }
+        }
+    }
 }

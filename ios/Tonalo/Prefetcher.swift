@@ -60,6 +60,11 @@ import CryptoKit
         }
     }
 
+    /// A loaded file that turned out incomplete: the song streams instead.
+    func remove(account: UUID, song: Song, quality: AudioQuality) {
+        try? FileManager.default.removeItem(at: Self.file(account: account, song: song, quality: quality))
+    }
+
     /// Stops loading ahead, keeps what's there – e.g. when leaving home, the running download used the home address.
     func stop() {
         runner?.cancel()
