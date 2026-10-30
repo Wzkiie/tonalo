@@ -217,5 +217,11 @@ I18N.add('tr', {
   '▲ ▼ verschieben · OK ablegen': '▲ ▼ taşı · bırakmak için OK',
   'Songs gehen weich ineinander über': 'Şarkılar birbirine yumuşakça geçer',
   '{n} s': '{n} sn',
-  'Überblenden': 'Geçiş efekti'
+  'Überblenden': 'Geçiş efekti',
+  '{device} ist jetzt verbunden': '{device} artık bağlı',
+  'Gib diesen Code in Tonalo auf dem iPhone ein': 'Bu kodu iPhone’undaki Tonalo’ya gir',
+  'iPhone': 'iPhone',
+  'Kein iPhone verbunden': 'Bağlı iPhone yok',
+  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Verbinden in den Einstellungen der iPhone-App.': 'iPhone’undaki Tonalo’da burada ne çaldığını görür ve TV için müzik seçebilirsin. iPhone uygulamasının ayarlarından bağlan.',
+  'Alle trennen': 'Hepsinin bağlantısını kes'
 });

@@ -112,6 +112,7 @@ var App = (function () {
 
   function removeAccount(acc) {
     if (account && account.id === acc.id) {
+      Link.detach();
       Player.detach();
       account = null;
       API.setConfig(null);
@@ -126,7 +127,7 @@ var App = (function () {
 
   function selectAccount(acc) {
     if (account && account.id === acc.id && stack.length) { backToMain(); return; }
-    if (account) Player.detach();
+    if (account) { Link.detach(); Player.detach(); }
     account = acc;
     U.ustore.setNs(acc.id);
     API.setConfig(acc);
@@ -193,7 +194,7 @@ var App = (function () {
       var acc = Object.assign({ id: accId(creds.url, creds.user) }, creds);
       saveAccounts(accounts().filter(function (a) { return a.id !== acc.id; }).concat([acc]));
       U.store.set('lastUrl', creds.url);
-      if (account && account.id === acc.id) { Player.detach(); account = null; } // gleiches Konto neu angemeldet -> frisch laden
+      if (account && account.id === acc.id) { Link.detach(); Player.detach(); account = null; } // gleiches Konto neu angemeldet -> frisch laden
       selectAccount(acc);
     }).catch(function (e) {
       API.setConfig(prev);
@@ -463,6 +464,7 @@ var App = (function () {
     main.classList.remove('hidden');
     updateScope();
     Player.restore();
+    Link.attach();
     updateMini('init');
     updateUserBadge();
     offerRemoteQueue();
@@ -559,6 +561,7 @@ var App = (function () {
     document.addEventListener('webOSRelaunch', function () { touch(); if (ssActive) ssHide(); });
     document.addEventListener('visibilitychange', function () { if (!document.hidden) touch(); });
     blockTvScreensaver();
+    Link.init();
 
     // Beim Start immer die Benutzerauswahl zeigen (oder Login, wenn noch kein Konto existiert)
     migrate();
@@ -568,6 +571,8 @@ var App = (function () {
   return {
     init: init, go: go, back: back, reload: reload, viewReady: viewReady, updateScope: updateScope,
     error: error, logout: logout, exit: exit, showUsers: showUsers,
+    // Etwas kam vom iPhone: Bildschirmschoner weg, wie bei einem Tastendruck
+    wake: function () { touch(); if (ssActive) ssHide(); },
     account: function () { return account; },
     accountCount: function () { return accounts().length; },
     settings: function () { return settings; },

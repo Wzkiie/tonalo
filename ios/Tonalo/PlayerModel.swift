@@ -58,6 +58,13 @@ final class PlayerModel {
     private(set) var playingDownload = false
     /// Playing a song that was loaded ahead: a file on the device, so a new server address doesn't matter.
     @ObservationIgnored private var playingPreloaded = false
+    /// The TV that plays instead of this phone (its name): the player here shows and controls what plays there.
+    private(set) var tvName: String?
+    @ObservationIgnored private var tvState: TVLink.State?
+    /// Where the TV's queue window starts – song positions here count from it.
+    @ObservationIgnored private var tvOffset = 0
+    @ObservationIgnored private var tvClock: Timer?
+    @ObservationIgnored private var tv: TVLink? { app?.tv }
     /// The song that already continued once after ending too early – it isn't tried again.
     @ObservationIgnored private var resumedId: String?
     @ObservationIgnored private var stationArt: (name: String, image: UIImage)?
@@ -118,7 +125,8 @@ final class PlayerModel {
         statusObservation = p.observe(\.timeControlStatus) { [weak self] p, _ in
             let playing = p.timeControlStatus != .paused
             Task { @MainActor in
-                guard let self, p === self.player else { return }
+                // While the TV plays, the state here is the TV's – the paused player here mustn't overwrite it
+                guard let self, p === self.player, self.tvName == nil else { return }
                 self.isPlaying = playing
                 self.updateNowPlaying()
             }
@@ -129,6 +137,7 @@ final class PlayerModel {
 
     func play(_ songs: [Song], from start: Int = 0, shuffled: Bool = false, context: Context? = nil) {
         guard !songs.isEmpty else { return }
+        if tvName != nil { tv?.play(songs, from: start, shuffled: shuffled, context: context); return }
         self.context = context
         if shuffled {
             original = songs
@@ -159,6 +168,7 @@ final class PlayerModel {
     }
 
     func playNext(_ songs: [Song]) {
+        if tvName != nil { tv?.command("playNext", ["songs": songs.prefix(200).map(encodeSong)]); return }
         guard !queue.isEmpty else { return play(songs) }
         queue.insert(contentsOf: songs, at: index + 1)
         original?.append(contentsOf: songs)
@@ -167,6 +177,7 @@ final class PlayerModel {
     }
 
     func enqueue(_ songs: [Song]) {
+        if tvName != nil { tv?.command("enqueue", ["songs": songs.prefix(200).map(encodeSong)]); return }
         guard !queue.isEmpty else { return play(songs) }
         queue.append(contentsOf: songs)
         original?.append(contentsOf: songs)
@@ -176,12 +187,14 @@ final class PlayerModel {
 
     func jump(to i: Int) {
         guard queue.indices.contains(i) else { return }
+        if tvName != nil { tv?.command("jump", ["index": tvOffset + i]); return }
         index = i
         load(autoplay: true)
     }
 
     /// Drag and drop in the queue: positions count from the song after the current one.
     func moveUpNext(from source: IndexSet, to destination: Int) {
+        guard tvName == nil else { return }
         let base = index + 1
         queue.move(fromOffsets: IndexSet(source.map { $0 + base }), toOffset: destination + base)
         persist()
@@ -189,7 +202,7 @@ final class PlayerModel {
     }
 
     func remove(at i: Int) {
-        guard queue.indices.contains(i), i != index else { return }
+        guard tvName == nil, queue.indices.contains(i), i != index else { return }
         queue.remove(at: i)
         if i < index { index -= 1 }
         persist()
@@ -197,6 +210,7 @@ final class PlayerModel {
     }
 
     func next(auto: Bool = false) {
+        if tvName != nil { if !auto { tv?.command("next") }; return }
         if station != nil { if !auto { switchStation(by: 1) }; return }
         guard !queue.isEmpty else { return }
         if auto && sleepAfterSong { sleepAfterSong = false; player.pause(); persist(); syncToServer(force: true); return }
@@ -236,6 +250,7 @@ final class PlayerModel {
     }
 
     func previous() {
+        if tvName != nil { tv?.command("prev"); return }
         if station != nil { switchStation(by: -1); return }
         guard !queue.isEmpty else { return }
         if position > 3 { seek(to: 0); return }
@@ -244,6 +259,14 @@ final class PlayerModel {
     }
 
     func toggle() {
+        if tvName != nil {
+            tv?.command("play-pause", ["playing": !isPlaying])
+            isPlaying.toggle()
+            tvState?.position = position
+            tvState?.at = Date().timeIntervalSince1970 * 1000
+            tvState?.playing = isPlaying
+            return
+        }
         if let station {
             // Live: after a pause it starts again from now, not from where it stopped
             if isPlaying { player.pause() } else { play(station, in: stations) }
@@ -256,6 +279,13 @@ final class PlayerModel {
 
     func seek(to seconds: Double) {
         guard station == nil else { return }
+        if tvName != nil {
+            tv?.command("seek", ["position": seconds])
+            position = max(0, seconds)
+            tvState?.position = position
+            tvState?.at = Date().timeIntervalSince1970 * 1000
+            return
+        }
         endFade()
         position = max(0, seconds)
         if streamQuality?.format != nil {
@@ -268,6 +298,7 @@ final class PlayerModel {
     }
 
     func toggleShuffle() {
+        if tvName != nil { tv?.command("shuffle", ["on": !shuffle]); return }
         guard let cur = current else { return }
         if shuffle, let original {
             queue = original
@@ -293,12 +324,14 @@ final class PlayerModel {
     }
 
     func setRepeat(_ mode: RepeatMode) {
+        if tvName != nil { tv?.command("repeat", ["mode": mode.rawValue]); return }
         repeatMode = mode
         persist()
         updateNowPlaying()
     }
 
     func setStarred(_ song: Song, _ on: Bool) {
+        if tvName != nil { tv?.command("star", ["id": song.id, "on": on]) } // the heart on the TV
         if on { radio.liked(song) }
         for i in queue.indices where queue[i].id == song.id { queue[i].starred = on ? "1" : nil }
         persist(sync: false) // not a change to the queue – mustn't replace what another device saved
@@ -359,6 +392,7 @@ final class PlayerModel {
 
     /// Saves the current queue and empties the player, without touching the saved queue.
     func detach() {
+        endTV()
         leaveStation()
         persist()
         endFade()
@@ -393,7 +427,7 @@ final class PlayerModel {
 
     /// Saves the queue on the device, and on the server so other devices can continue from here.
     private func persist(sync: Bool = true) {
-        guard let key = storageKey else { return }
+        guard tvName == nil, let key = storageKey else { return }
         if sync { localChange = .now }
         let s = Saved(queue: Array(queue.prefix(1000)), index: index, position: station == nil ? position : queuePosition, repeatMode: repeatMode, shuffle: shuffle,
                       context: context, changed: localChange)
@@ -406,7 +440,7 @@ final class PlayerModel {
     /// Sends the queue to the server: right away when the songs or the current song changed,
     /// otherwise (only the position moved) at most every 30 seconds.
     func syncToServer(force: Bool = false) {
-        guard station == nil, let song = current, let client = app?.client, app?.isOnline != false else { return }
+        guard tvName == nil, station == nil, let song = current, let client = app?.client, app?.isOnline != false else { return }
         // A window around the current song keeps the request small for huge queues
         let start = max(0, index - 100)
         let ids = queue[start..<min(queue.count, start + 500)].map(\.id)
@@ -435,7 +469,7 @@ final class PlayerModel {
     /// Looks for a newer queue from another device. With nothing queued here it is taken over quietly
     /// (paused); otherwise it's offered, as long as nothing plays on this device.
     func checkServerQueue() async {
-        guard !isPlaying, let client = app?.client, let remote = await client.playQueue(), !isPlaying,
+        guard tvName == nil, !isPlaying, let client = app?.client, let remote = await client.playQueue(), !isPlaying, tvName == nil,
               let by = remote.changedBy, by != SubsonicClient.clientName,
               let changed = remote.changedDate, changed > localChange.addingTimeInterval(10),
               let songs = remote.entry, !songs.isEmpty, let stamp = remote.changed,
@@ -478,7 +512,7 @@ final class PlayerModel {
     // MARK: Loading
 
     private func load(autoplay: Bool, startAt: Double = 0, fadeIn: Double = 0) {
-        guard let song = current, let client = app?.client else { return }
+        guard tvName == nil, let song = current, let client = app?.client else { return }
         if resumedId != song.id { resumedId = nil }
         leaveStation()
         endFade()
@@ -689,6 +723,7 @@ final class PlayerModel {
     // MARK: Radio stations
 
     func play(_ station: Station, in list: [Station]) {
+        if tvName != nil { tv?.play(station, in: list); return }
         stationLoad?.cancel()
         if self.station == nil, current != nil {
             // Remember where the queue was, it continues there later
@@ -734,6 +769,7 @@ final class PlayerModel {
     /// Back to the queue, paused where it was.
     func stopStation() {
         guard station != nil else { return }
+        if tvName != nil { tv?.command("stopStation"); return }
         leaveStation()
         player.pause()
         player.replaceCurrentItem(with: nil)
@@ -763,6 +799,87 @@ final class PlayerModel {
         return artist.isEmpty || title.isEmpty ? (nil, text) : (artist, title)
     }
 
+    // MARK: Playing on the TV
+
+    /// News from the TV. `started`: it just began playing – then it takes over and this phone goes quiet.
+    func tvUpdate(_ s: TVLink.State, name: String, started: Bool) {
+        if tvName == nil {
+            guard started else { return }
+            if current != nil || station != nil {
+                if station == nil { persist() } // this phone's queue stays saved as it was
+                endFade()
+                player.pause()
+                player.replaceCurrentItem(with: nil)
+                leaveStation()
+            }
+            cancelSleepTimer()
+            prefetcher.stop()
+            remoteOffer = nil
+            qualityLabel = nil
+            playingDownload = false
+            tvName = name
+            tvClock = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.tvTick() }
+            }
+        }
+        tvState = s
+        let songs = s.queue ?? []
+        queue = songs
+        index = songs.indices.contains(s.index ?? -1) ? s.index ?? 0 : (songs.isEmpty ? -1 : 0)
+        tvOffset = s.offset ?? 0
+        original = nil
+        station = s.station
+        isPlaying = s.playing ?? false
+        duration = s.duration ?? Double(current?.duration ?? 0)
+        shuffle = s.shuffle ?? false
+        repeatMode = RepeatMode(rawValue: s.repeat ?? "") ?? .off
+        context = s.context.map { Context(kind: Context.Kind(rawValue: $0.kind ?? "") ?? .mix, id: $0.id, name: $0.name ?? "") }
+        tvTick()
+        updateNowPlaying()
+    }
+
+    /// The position counts on from the TV's last report, like a clock – the TV only reports now and then.
+    private func tvTick() {
+        guard let s = tvState else { return }
+        let since = s.playing == true ? max(0, Date().timeIntervalSince1970 - (s.at ?? 0) / 1000) : 0
+        let p = (s.position ?? 0) + since
+        position = duration > 0 ? min(p, duration) : p
+    }
+
+    /// The TV went away (switched off, app closed): this phone keeps what it played, paused, to go on here.
+    func tvGone() {
+        guard tvName != nil else { return }
+        let st = station
+        endTV()
+        station = nil
+        if st == nil, current != nil { isPlaying = false; persist(sync: false) } else { restore() }
+    }
+
+    /// "Play on iPhone": the TV pauses, the music goes on here from the same spot.
+    func continueHere() {
+        guard tvName != nil else { return }
+        tv?.command("play-pause", ["playing": false])
+        let st = station, at = position
+        endTV()
+        station = nil
+        if let st { play(st, in: [st]); return }
+        guard current != nil else { restore(); return }
+        errorStreak = 0
+        load(autoplay: true, startAt: at)
+    }
+
+    private func endTV() {
+        tvClock?.invalidate()
+        tvClock = nil
+        tvName = nil
+        tvState = nil
+        tvOffset = 0
+    }
+
+    private func encodeSong(_ song: Song) -> Any {
+        (try? JSONEncoder().encode(song)).flatMap { try? JSONSerialization.jsonObject(with: $0) } ?? NSNull()
+    }
+
     // MARK: Lock screen / Control Center
 
     private func loadArtwork(for song: Song, client: SubsonicClient) {
@@ -786,7 +903,7 @@ final class PlayerModel {
         commands.changeShuffleModeCommand.currentShuffleType = shuffle ? .items : .off
         commands.changeRepeatModeCommand.currentRepeatType = repeatMode == .one ? .one : repeatMode == .all ? .all : .off
         // Only while sound comes out: waiting for a slow connection mustn't let the clock in the car run ahead
-        let rate = player.timeControlStatus == .playing ? 1.0 : 0.0
+        let rate = tvName != nil ? (isPlaying ? 1.0 : 0.0) : player.timeControlStatus == .playing ? 1.0 : 0.0
         if let station {
             let parts = stationTitle.map(Self.split)
             if stationArt?.name != station.name {

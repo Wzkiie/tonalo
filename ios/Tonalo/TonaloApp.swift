@@ -76,6 +76,9 @@ struct RootView: View {
     @State private var barHeight: CGFloat = 0
     @State private var addBatch: SongBatch?
     @State private var whatsNew: AppRelease?
+    #if DEBUG
+    @State private var debugTV = false
+    #endif
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -99,16 +102,20 @@ struct RootView: View {
         .sheet(item: $addBatch) { AddToPlaylistSheet(songs: $0.songs) }
         // After an update: what's new, once – but not on top of the account picker
         .sheet(item: $whatsNew, onDismiss: WhatsNew.markSeen) { WhatsNewSheet(release: $0) }
+        .task { app.tv.start() }
         .task { try? await Task.sleep(for: .seconds(1)); checkWhatsNew() }
         .onChange(of: app.showsAccountPicker) { _, shown in if !shown { checkWhatsNew() } }
         #if DEBUG
         // Screenshot hook: -demoOpen stations opens the radio page, -demoOpen station plays a station in the player,
-        // -demoOpen artist:<id> opens an artist, -demoOpen download downloads the first playlist and opens it
+        // -demoOpen artist:<id> opens an artist, -demoOpen download downloads the first playlist and opens it,
+        // -demoOpen tv opens the TV pairing page
+        .sheet(isPresented: $debugTV) { NavigationStack { TVSettingsView() } }
         .task {
             let args = ProcessInfo.processInfo.arguments
             guard let i = args.firstIndex(of: "-demoOpen"), i + 1 < args.count else { return }
             try? await Task.sleep(for: .seconds(1.5))
             if args[i + 1] == "stations" { paths[0].append(Route.stations) }
+            if args[i + 1] == "tv" { debugTV = true }
             if args[i + 1].hasPrefix("artist:") { paths[0].append(Route.artist(String(args[i + 1].dropFirst(7)))) }
             if args[i + 1] == "download", let first = try? await app.client?.playlists().first,
                let list = try? await app.client?.playlist(first.id) {
@@ -128,8 +135,8 @@ struct RootView: View {
         }
         // Continue where another device left off – and leave the queue on the server when going away
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { app.checkRoute(); Task { await app.player.checkServerQueue() } }
-            if phase == .background { app.player.syncBeforeLeaving() }
+            if phase == .active { app.checkRoute(); app.tv.start(); Task { await app.player.checkServerQueue() } }
+            if phase == .background { app.player.syncBeforeLeaving(); app.tv.stop() }
         }
     }
 

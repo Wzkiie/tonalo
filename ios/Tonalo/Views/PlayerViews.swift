@@ -12,6 +12,7 @@ struct MiniPlayer: View {
         if let station = p.station {
             StationMiniBar(station: station)
         } else if let song = p.current {
+            VStack(spacing: 8) {
             HStack(spacing: 10) {
                 CoverView(id: song.coverArt ?? song.albumId, size: 120, corner: 4).frame(width: 40)
                 VStack(alignment: .leading, spacing: 1) {
@@ -30,6 +31,8 @@ struct MiniPlayer: View {
                     Image(systemName: p.isPlaying ? "pause.fill" : "play.fill").font(.system(size: 22)).frame(width: 36, height: 36)
                 }
                 .accessibilityLabel(p.isPlaying ? Text("Pause") : Text("Play"))
+            }
+                if let name = p.tvName { TVBar(name: name).padding(.trailing, 2).padding(.bottom, 2) }
             }
             .foregroundStyle(.white)
             .padding(.leading, 8).padding(.trailing, 6).padding(.vertical, 8)
@@ -253,6 +256,7 @@ struct NowPlayingView: View {
                 .padding(.bottom, 14)
             controls
                 .padding(.bottom, 20)
+            if let name = app.player.tvName { TVBar(name: name, big: true).padding(.bottom, 16) }
             HStack {
                 Button { showLyrics = true } label: { Image(systemName: "quote.bubble") }
                     .disabled(lyrics == nil)

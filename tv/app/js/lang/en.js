@@ -216,5 +216,11 @@ I18N.add('en', {
   '▲ ▼ verschieben · OK ablegen': '▲ ▼ move · OK to drop',
   'Songs gehen weich ineinander über': 'Songs blend smoothly into each other',
   '{n} s': '{n} s',
-  'Überblenden': 'Crossfade'
+  'Überblenden': 'Crossfade',
+  '{device} ist jetzt verbunden': '{device} is now connected',
+  'Gib diesen Code in Tonalo auf dem iPhone ein': 'Enter this code in Tonalo on your iPhone',
+  'iPhone': 'iPhone',
+  'Kein iPhone verbunden': 'No iPhone connected',
+  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Verbinden in den Einstellungen der iPhone-App.': 'In Tonalo on your iPhone you can see what plays here and pick music for the TV. Connect in the settings of the iPhone app.',
+  'Alle trennen': 'Disconnect all'
 });

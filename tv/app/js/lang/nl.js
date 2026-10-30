@@ -216,5 +216,11 @@ I18N.add('nl', {
   '▲ ▼ verschieben · OK ablegen': '▲ ▼ verplaatsen · OK om neer te zetten',
   'Songs gehen weich ineinander über': 'Nummers lopen vloeiend in elkaar over',
   '{n} s': '{n} s',
-  'Überblenden': 'Overvloeien'
+  'Überblenden': 'Overvloeien',
+  '{device} ist jetzt verbunden': '{device} is nu verbonden',
+  'Gib diesen Code in Tonalo auf dem iPhone ein': 'Voer deze code in Tonalo op je iPhone in',
+  'iPhone': 'iPhone',
+  'Kein iPhone verbunden': 'Geen iPhone verbonden',
+  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Verbinden in den Einstellungen der iPhone-App.': 'In Tonalo op je iPhone zie je wat hier speelt en kies je muziek voor de tv. Verbinden in de instellingen van de iPhone-app.',
+  'Alle trennen': 'Alles ontkoppelen'
 });

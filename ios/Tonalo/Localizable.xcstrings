@@ -7,6 +7,169 @@
     " " : {
       "shouldTranslate" : false
     },
+    "000000" : {
+      "shouldTranslate" : false
+    },
+    "Connect" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbinden"
+          }
+        }
+      }
+    },
+    "Connected" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbunden"
+          }
+        }
+      }
+    },
+    "Connecting to %@ …" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbinde mit %@ …"
+          }
+        }
+      }
+    },
+    "Enter the code shown on %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib den Code ein, den %@ anzeigt"
+          }
+        }
+      }
+    },
+    "In this network" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In diesem Netzwerk"
+          }
+        }
+      }
+    },
+    "No TV found. Open Tonalo on your TV – it has to be in the same Wi-Fi." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Fernseher gefunden. Öffne Tonalo auf dem TV – er muss im selben WLAN sein."
+          }
+        }
+      }
+    },
+    "Not connected" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht verbunden"
+          }
+        }
+      }
+    },
+    "Paired" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gekoppelt"
+          }
+        }
+      }
+    },
+    "Play on iPhone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf dem iPhone"
+          }
+        }
+      }
+    },
+    "Playing on %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Läuft auf: %@"
+          }
+        }
+      }
+    },
+    "That code doesn't match. Look at the TV and try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Code stimmt nicht. Schau noch mal auf den Fernseher."
+          }
+        }
+      }
+    },
+    "The code has expired. Starting over …" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Code ist abgelaufen. Ein neuer kommt …"
+          }
+        }
+      }
+    },
+    "The TV isn't answering." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Fernseher antwortet nicht."
+          }
+        }
+      }
+    },
+    "The TV isn't answering. Is Tonalo open on it?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Fernseher antwortet nicht. Ist Tonalo dort geöffnet?"
+          }
+        }
+      }
+    },
+    "TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fernseher"
+          }
+        }
+      }
+    },
+    "While the TV plays, this app shows what's playing there, and music you pick here plays on the TV. Only in your home network, nothing goes through the internet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Während der Fernseher spielt, zeigt dir die App, was dort läuft, und Musik, die du hier auswählst, spielt auf dem TV. Nur in deinem Heimnetz, nichts geht über das Internet."
+          }
+        }
+      }
+    },
     "“%@” is already in your favorite songs." : {
       "localizations" : {
         "de" : {

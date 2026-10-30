@@ -216,5 +216,11 @@ I18N.add('pt', {
   '▲ ▼ verschieben · OK ablegen': '▲ ▼ mover · OK para soltar',
   'Songs gehen weich ineinander über': 'As músicas se misturam suavemente',
   '{n} s': '{n} s',
-  'Überblenden': 'Transição suave'
+  'Überblenden': 'Transição suave',
+  '{device} ist jetzt verbunden': '{device} está agora ligado',
+  'Gib diesen Code in Tonalo auf dem iPhone ein': 'Introduz este código no Tonalo do teu iPhone',
+  'iPhone': 'iPhone',
+  'Kein iPhone verbunden': 'Nenhum iPhone ligado',
+  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Verbinden in den Einstellungen der iPhone-App.': 'No Tonalo do teu iPhone vês o que está a tocar aqui e podes escolher música para a TV. Liga nas definições da app do iPhone.',
+  'Alle trennen': 'Desligar todos'
 });

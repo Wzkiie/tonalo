@@ -514,6 +514,9 @@ struct SettingsView: View {
             }
             Section {
                 NavigationLink("Appearance") { AppearanceView() }
+                NavigationLink { TVSettingsView() } label: {
+                    LabeledContent("TV", value: app.tv.pairings.first?.name ?? String(localized: "Not connected"))
+                }
             }
             Section {
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–")

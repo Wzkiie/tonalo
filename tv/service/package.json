@@ -1,0 +1,1 @@
+{ "name": "tonalo.service", "version": "1.0.0", "description": "Tonalo: shows the iPhone what the TV plays", "main": "service.js" }

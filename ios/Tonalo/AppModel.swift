@@ -60,6 +60,8 @@ final class AppModel {
     }
 
     let player = PlayerModel()
+    /// The TV in the home network that can play for this phone.
+    let tv = TVLink()
     let downloads = DownloadStore.shared
     let librarySync = LibrarySync()
     /// False when the device has no network – the app then falls back to downloaded music.
@@ -107,6 +109,7 @@ final class AppModel {
             currentId = accounts.first?.id
         }
         player.app = self
+        tv.app = self
         downloads.app = self
         downloads.reload()
         player.restore()
@@ -249,6 +252,7 @@ final class AppModel {
             downloads.reload()
             librarySync.show(id)
             player.restore()
+            tv.accountChanged()
             checkRoute()
         }
         showsAccountPicker = false
@@ -261,6 +265,7 @@ final class AppModel {
         UserDefaults.standard.removeObject(forKey: "scrobbles." + account.id.uuidString)
         UserDefaults.standard.removeObject(forKey: "queue.dismissed." + account.id.uuidString)
         UserDefaults.standard.removeObject(forKey: "server." + account.id.uuidString)
+        Keychain.save([TVLink.Pairing](), key: "tv." + account.id.uuidString)
         ServerSession.shared.networkChanged()
         DownloadStore.deleteAccount(account.id)
         LibraryCache.deleteAccount(account.id)

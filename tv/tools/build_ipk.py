@@ -75,6 +75,23 @@ def main():
             size += len(data)
             entries.append(("./" + target + "/" + f, data, 0o644))
 
+    # Hintergrunddienst für das iPhone (tonalo.service) und die Paketbeschreibung, die App und Dienst verbindet
+    services = []
+    svc_dir = os.path.join(ROOT, "service")
+    if os.path.isdir(svc_dir):
+        svc = json.load(open(os.path.join(svc_dir, "services.json")))["id"]
+        services.append(svc)
+        add_dir("usr/palm/services/" + svc)
+        for f in sorted(os.listdir(svc_dir)):
+            if f.startswith("."):
+                continue
+            data = open(os.path.join(svc_dir, f), "rb").read()
+            size += len(data)
+            entries.append(("./usr/palm/services/%s/%s" % (svc, f), data, 0o644))
+    add_dir("usr/palm/packages/" + app_id)
+    pkg = {"id": app_id, "version": version, "app": app_id, "services": services}
+    entries.append(("./usr/palm/packages/%s/packageinfo.json" % app_id, json.dumps(pkg).encode(), 0o644))
+
     control = (
         "Package: %s\nVersion: %s\nSection: misc\nPriority: optional\nArchitecture: all\n"
         "Installed-Size: %d\nMaintainer: %s\nDescription: %s\nwebOS-Package-Format-Version: 2\n"

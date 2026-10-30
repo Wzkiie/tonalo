@@ -216,5 +216,11 @@ I18N.add('es', {
   '▲ ▼ verschieben · OK ablegen': '▲ ▼ mover · OK para soltar',
   'Songs gehen weich ineinander über': 'Las canciones se funden suavemente',
   '{n} s': '{n} s',
-  'Überblenden': 'Fundido'
+  'Überblenden': 'Fundido',
+  '{device} ist jetzt verbunden': '{device} ya está conectado',
+  'Gib diesen Code in Tonalo auf dem iPhone ein': 'Introduce este código en Tonalo en tu iPhone',
+  'iPhone': 'iPhone',
+  'Kein iPhone verbunden': 'Ningún iPhone conectado',
+  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Verbinden in den Einstellungen der iPhone-App.': 'En Tonalo en tu iPhone ves lo que suena aquí y puedes elegir música para la TV. Conéctalo en los ajustes de la app del iPhone.',
+  'Alle trennen': 'Desconectar todos'
 });
