@@ -7,8 +7,128 @@
     " " : {
       "shouldTranslate" : false
     },
+    "%@ added “%@”" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ hat „%2$@“ hinzugefügt"
+          }
+        }
+      }
+    },
+    "%@ (guest)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (Gast)"
+          }
+        }
+      }
+    },
+    "%@ added %lld songs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hat %lld Songs hinzugefügt"
+          }
+        }
+      }
+    },
+    "%@ isn't answering." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ antwortet nicht."
+          }
+        }
+      }
+    },
+    "%@ isn't answering. Is Tonalo open on it?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ antwortet nicht. Ist Tonalo dort geöffnet?"
+          }
+        }
+      }
+    },
+    "%@ joined the Jukebox" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ist der Jukebox beigetreten"
+          }
+        }
+      }
+    },
+    "%@ skipped" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hat übersprungen"
+          }
+        }
+      }
+    },
+    "%@ wants to join the Jukebox" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ möchte der Jukebox beitreten"
+          }
+        }
+      }
+    },
+    "%@'s Jukebox" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jukebox von %@"
+          }
+        }
+      }
+    },
     "000000" : {
       "shouldTranslate" : false
+    },
+    "A Radio tab, colorful mixes, and shuffle, repeat and the heart show when they're on. A song that drops out goes on where it stopped." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Radio-Tab, bunte Mixe, und Zufall, Wiederholen und das Herz zeigen, ob sie an sind. Bricht ein Song ab, geht er an derselben Stelle weiter."
+          }
+        }
+      }
+    },
+    "Added to the Jukebox" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zur Jukebox hinzugefügt"
+          }
+        }
+      }
+    },
+    "Better CarPlay" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besseres CarPlay"
+          }
+        }
+      }
     },
     "Connect" : {
       "localizations" : {
@@ -40,6 +160,16 @@
         }
       }
     },
+    "End" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beenden"
+          }
+        }
+      }
+    },
     "Enter the code shown on %@" : {
       "localizations" : {
         "de" : {
@@ -50,22 +180,132 @@
         }
       }
     },
-    "In this network" : {
+    "Friends join with a code, add songs and skip – on the TV at home, or in the car with your iPhone as the host, no Wi-Fi needed." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In diesem Netzwerk"
+            "value" : "Freunde treten mit einem Code bei, fügen Songs hinzu und überspringen – zu Hause am Fernseher oder im Auto mit deinem iPhone als Gastgeber, ganz ohne WLAN."
           }
         }
       }
     },
-    "No TV found. Open Tonalo on your TV – it has to be in the same Wi-Fi." : {
+    "Friends nearby join with a code shown on this iPhone, add songs to what's playing and skip. Works in the car too – the phones connect directly, without Wi-Fi. They need an account on the same server." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kein Fernseher gefunden. Öffne Tonalo auf dem TV – er muss im selben WLAN sein."
+            "value" : "Freunde in der Nähe treten mit einem Code bei, den dieses iPhone anzeigt, fügen Songs hinzu und überspringen. Klappt auch im Auto – die Handys verbinden sich direkt, ohne WLAN. Sie brauchen ein Konto auf demselben Server."
+          }
+        }
+      }
+    },
+    "Here" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dabei"
+          }
+        }
+      }
+    },
+    "Host a Jukebox" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jukebox starten"
+          }
+        }
+      }
+    },
+    "Join" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beitreten"
+          }
+        }
+      }
+    },
+    "Join the Jukebox" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Jukebox beitreten"
+          }
+        }
+      }
+    },
+    "Joined" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beigetreten"
+          }
+        }
+      }
+    },
+    "Jukebox" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jukebox"
+          }
+        }
+      }
+    },
+    "Jukebox on" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jukebox an"
+          }
+        }
+      }
+    },
+    "Jukebox · %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jukebox · %@"
+          }
+        }
+      }
+    },
+    "Jukebox · waiting for guests" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jukebox · wartet auf Gäste"
+          }
+        }
+      }
+    },
+    "Leave" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verlassen"
+          }
+        }
+      }
+    },
+    "Nearby" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In der Nähe"
           }
         }
       }
@@ -76,6 +316,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht verbunden"
+          }
+        }
+      }
+    },
+    "Nothing found. Open Tonalo on your TV, or on the iPhone hosting the Jukebox." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts gefunden. Öffne Tonalo auf deinem Fernseher oder auf dem iPhone, das die Jukebox startet."
+          }
+        }
+      }
+    },
+    "Only the host can do that" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das kann nur, wer die Jukebox startet"
           }
         }
       }
@@ -100,6 +360,16 @@
         }
       }
     },
+    "Play on your TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf dem Fernseher"
+          }
+        }
+      }
+    },
     "Playing on %@" : {
       "localizations" : {
         "de" : {
@@ -110,12 +380,22 @@
         }
       }
     },
-    "That code doesn't match. Look at the TV and try again." : {
+    "Show this code to %@." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der Code stimmt nicht. Schau noch mal auf den Fernseher."
+            "value" : "Zeig %@ diesen Code."
+          }
+        }
+      }
+    },
+    "That code doesn't match. Look at the other screen and try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Code stimmt nicht. Schau noch mal auf den anderen Bildschirm."
           }
         }
       }
@@ -130,42 +410,52 @@
         }
       }
     },
-    "The TV isn't answering." : {
+    "This is my TV" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der Fernseher antwortet nicht."
+            "value" : "Das ist mein Fernseher"
           }
         }
       }
     },
-    "The TV isn't answering. Is Tonalo open on it?" : {
+    "TV & Jukebox" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der Fernseher antwortet nicht. Ist Tonalo dort geöffnet?"
+            "value" : "TV & Jukebox"
           }
         }
       }
     },
-    "TV" : {
+    "While your TV plays Tonalo, the iPhone shows what's playing there, and music you pick plays on the TV. Pair once under TV & Jukebox." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fernseher"
+            "value" : "Während dein Fernseher Tonalo spielt, zeigt das iPhone, was dort läuft, und Musik, die du auswählst, spielt auf dem TV. Einmal koppeln unter „TV & Jukebox“."
           }
         }
       }
     },
-    "While the TV plays, this app shows what's playing there, and music you pick here plays on the TV. Only in your home network, nothing goes through the internet." : {
+    "Your own TV plays together with this iPhone. As a guest you add songs and skip." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Während der Fernseher spielt, zeigt dir die App, was dort läuft, und Musik, die du hier auswählst, spielt auf dem TV. Nur in deinem Heimnetz, nichts geht über das Internet."
+            "value" : "Dein eigener Fernseher spielt mit diesem iPhone zusammen. Als Gast fügst du Songs hinzu und überspringst."
+          }
+        }
+      }
+    },
+    "Your own TV: while it plays, this app shows what's playing there, and music you pick here plays on the TV. Nothing goes through the internet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein eigener Fernseher: Während er spielt, zeigt dir die App, was dort läuft, und Musik, die du hier auswählst, spielt auf dem TV. Nichts geht über das Internet."
           }
         }
       }

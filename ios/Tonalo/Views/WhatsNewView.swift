@@ -18,6 +18,14 @@ struct AppRelease: Identifiable {
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
+        AppRelease(version: "1.2.0", items: [
+            .init(icon: "tv", color: .blue, title: "Play on your TV",
+                  text: "While your TV plays Tonalo, the iPhone shows what's playing there, and music you pick plays on the TV. Pair once under TV & Jukebox."),
+            .init(icon: "person.2.wave.2", color: .purple, title: "Jukebox",
+                  text: "Friends join with a code, add songs and skip – on the TV at home, or in the car with your iPhone as the host, no Wi-Fi needed."),
+            .init(icon: "car.fill", color: .green, title: "Better CarPlay",
+                  text: "A Radio tab, colorful mixes, and shuffle, repeat and the heart show when they're on. A song that drops out goes on where it stopped."),
+        ]),
         AppRelease(version: "1.1.0", items: [
             .init(icon: "dot.radiowaves.left.and.right", color: .purple, title: "Endless radio",
                   text: "Start a radio from a song, an artist, a genre or your favorites. It plays more of what you listen to and like, and less of what you skip."),

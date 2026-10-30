@@ -60,6 +60,8 @@ final class PlayerModel {
     @ObservationIgnored private var playingPreloaded = false
     /// The TV that plays instead of this phone (its name): the player here shows and controls what plays there.
     private(set) var tvName: String?
+    /// Joined someone's Jukebox as a guest: adding songs and skipping is all that goes there.
+    private(set) var tvGuest = false
     @ObservationIgnored private var tvState: TVLink.State?
     /// Where the TV's queue window starts – song positions here count from it.
     @ObservationIgnored private var tvOffset = 0
@@ -137,6 +139,14 @@ final class PlayerModel {
 
     func play(_ songs: [Song], from start: Int = 0, shuffled: Bool = false, context: Context? = nil) {
         guard !songs.isEmpty else { return }
+        if tvGuest {
+            // A guest adds to the Jukebox instead of replacing what plays: from the song tapped on, and no more
+            // than 20 at once – a mix of 150 songs would bury what everyone else added
+            let picked = shuffled ? songs.shuffled() : Array(songs[min(max(start, 0), songs.count - 1)...])
+            tv?.add(Array(picked.prefix(20)), next: false)
+            app?.notify(String(localized: "Added to the Jukebox"))
+            return
+        }
         if tvName != nil { tv?.play(songs, from: start, shuffled: shuffled, context: context); return }
         self.context = context
         if shuffled {
@@ -168,7 +178,7 @@ final class PlayerModel {
     }
 
     func playNext(_ songs: [Song]) {
-        if tvName != nil { tv?.command("playNext", ["songs": songs.prefix(200).map(encodeSong)]); return }
+        if tvName != nil { tv?.add(songs, next: true); if tvGuest { app?.notify(String(localized: "Added to the Jukebox")) }; return }
         guard !queue.isEmpty else { return play(songs) }
         queue.insert(contentsOf: songs, at: index + 1)
         original?.append(contentsOf: songs)
@@ -177,7 +187,7 @@ final class PlayerModel {
     }
 
     func enqueue(_ songs: [Song]) {
-        if tvName != nil { tv?.command("enqueue", ["songs": songs.prefix(200).map(encodeSong)]); return }
+        if tvName != nil { tv?.add(songs, next: false); if tvGuest { app?.notify(String(localized: "Added to the Jukebox")) }; return }
         guard !queue.isEmpty else { return play(songs) }
         queue.append(contentsOf: songs)
         original?.append(contentsOf: songs)
@@ -187,6 +197,7 @@ final class PlayerModel {
 
     func jump(to i: Int) {
         guard queue.indices.contains(i) else { return }
+        if tvGuest { return hostOnly() }
         if tvName != nil { tv?.command("jump", ["index": tvOffset + i]); return }
         index = i
         load(autoplay: true)
@@ -250,6 +261,7 @@ final class PlayerModel {
     }
 
     func previous() {
+        if tvGuest { return hostOnly() }
         if tvName != nil { tv?.command("prev"); return }
         if station != nil { switchStation(by: -1); return }
         guard !queue.isEmpty else { return }
@@ -259,6 +271,7 @@ final class PlayerModel {
     }
 
     func toggle() {
+        if tvGuest { return hostOnly() }
         if tvName != nil {
             tv?.command("play-pause", ["playing": !isPlaying])
             isPlaying.toggle()
@@ -279,6 +292,7 @@ final class PlayerModel {
 
     func seek(to seconds: Double) {
         guard station == nil else { return }
+        if tvGuest { return hostOnly() }
         if tvName != nil {
             tv?.command("seek", ["position": seconds])
             position = max(0, seconds)
@@ -298,6 +312,7 @@ final class PlayerModel {
     }
 
     func toggleShuffle() {
+        if tvGuest { return hostOnly() }
         if tvName != nil { tv?.command("shuffle", ["on": !shuffle]); return }
         guard let cur = current else { return }
         if shuffle, let original {
@@ -324,6 +339,7 @@ final class PlayerModel {
     }
 
     func setRepeat(_ mode: RepeatMode) {
+        if tvGuest { return hostOnly() }
         if tvName != nil { tv?.command("repeat", ["mode": mode.rawValue]); return }
         repeatMode = mode
         persist()
@@ -331,7 +347,7 @@ final class PlayerModel {
     }
 
     func setStarred(_ song: Song, _ on: Bool) {
-        if tvName != nil { tv?.command("star", ["id": song.id, "on": on]) } // the heart on the TV
+        if tvName != nil && !tvGuest { tv?.command("star", ["id": song.id, "on": on]) } // the heart on the TV
         if on { radio.liked(song) }
         for i in queue.indices where queue[i].id == song.id { queue[i].starred = on ? "1" : nil }
         persist(sync: false) // not a change to the queue – mustn't replace what another device saved
@@ -723,6 +739,7 @@ final class PlayerModel {
     // MARK: Radio stations
 
     func play(_ station: Station, in list: [Station]) {
+        if tvGuest { return hostOnly() }
         if tvName != nil { tv?.play(station, in: list); return }
         stationLoad?.cancel()
         if self.station == nil, current != nil {
@@ -769,6 +786,7 @@ final class PlayerModel {
     /// Back to the queue, paused where it was.
     func stopStation() {
         guard station != nil else { return }
+        if tvGuest { return hostOnly() }
         if tvName != nil { tv?.command("stopStation"); return }
         leaveStation()
         player.pause()
@@ -802,7 +820,7 @@ final class PlayerModel {
     // MARK: Playing on the TV
 
     /// News from the TV. `started`: it just began playing – then it takes over and this phone goes quiet.
-    func tvUpdate(_ s: TVLink.State, name: String, started: Bool) {
+    func tvUpdate(_ s: TVLink.State, name: String, guest: Bool, started: Bool) {
         if tvName == nil {
             guard started else { return }
             if current != nil || station != nil {
@@ -818,6 +836,7 @@ final class PlayerModel {
             qualityLabel = nil
             playingDownload = false
             tvName = name
+            tvGuest = guest
             tvClock = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated { self?.tvTick() }
             }
@@ -849,15 +868,17 @@ final class PlayerModel {
     /// The TV went away (switched off, app closed): this phone keeps what it played, paused, to go on here.
     func tvGone() {
         guard tvName != nil else { return }
-        let st = station
+        let st = station, guest = tvGuest
         endTV()
         station = nil
-        if st == nil, current != nil { isPlaying = false; persist(sync: false) } else { restore() }
+        // A guest goes back to its own music; the own TV's music stays here, paused, to go on with
+        if !guest, st == nil, current != nil { isPlaying = false; persist(sync: false) } else { isPlaying = false; restore() }
     }
 
     /// "Play on iPhone": the TV pauses, the music goes on here from the same spot.
     func continueHere() {
         guard tvName != nil else { return }
+        if tvGuest { app?.tv.leave(); return }
         tv?.command("play-pause", ["playing": false])
         let st = station, at = position
         endTV()
@@ -872,12 +893,13 @@ final class PlayerModel {
         tvClock?.invalidate()
         tvClock = nil
         tvName = nil
+        tvGuest = false
         tvState = nil
         tvOffset = 0
     }
 
-    private func encodeSong(_ song: Song) -> Any {
-        (try? JSONEncoder().encode(song)).flatMap { try? JSONSerialization.jsonObject(with: $0) } ?? NSNull()
+    private func hostOnly() {
+        app?.notify(String(localized: "Only the host can do that"))
     }
 
     // MARK: Lock screen / Control Center

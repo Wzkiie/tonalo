@@ -14,7 +14,7 @@ var service = new Service(NAME);
 var app = null;        // Abo der TV-App – darüber gehen Befehle und Kopplungscodes raus
 var tv = { id: '', name: 'TV', keys: [] }; // keys: [{ id, device, key }], gespeichert macht sie die App
 var state = { active: false };
-var clients = [];      // offene Live-Verbindungen der iPhones
+var clients = [];      // offene Live-Verbindungen der iPhones: { res, entry }
 var pairing = null;    // { code, until, tries }
 var server = null;
 
@@ -45,9 +45,29 @@ service.register('state', function (msg) {
 
 function setState(s) {
   state = s;
-  var line = 'data: ' + JSON.stringify(s) + '\n\n';
-  clients.forEach(function (res) { res.write(line); });
+  broadcast();
 }
+
+// Gäste der Jukebox sehen nicht, wessen Konto das ist – nur was läuft und wer gerade mit dabei ist
+function line(guest) {
+  var s = Object.assign({}, state, { guests: guestNames() });
+  if (guest) delete s.user;
+  return 'data: ' + JSON.stringify(s) + '\n\n';
+}
+
+function broadcast() {
+  var forHost = line(false), forGuest = line(true);
+  clients.forEach(function (c) { c.res.write(c.entry.guest ? forGuest : forHost); });
+}
+
+function guestNames() {
+  var names = [];
+  clients.forEach(function (c) { if (c.entry.guest && names.indexOf(c.entry.device) < 0) names.push(c.entry.device); });
+  return names;
+}
+
+// Was Gäste dürfen: Songs hinzufügen und überspringen
+var GUEST = ['enqueue', 'playNext', 'next'];
 
 // ---------- Anmeldung der iPhones: HMAC über Methode, Pfad, Zeit und Inhalt mit dem Schlüssel aus der Kopplung
 function authorized(req, body) {
@@ -73,8 +93,9 @@ function handle(req, res, body) {
   // Kopplung: der TV zeigt einen Code, das iPhone schickt ihn zurück und bekommt einen eigenen Schlüssel
   if (req.method === 'POST' && path === '/pair/start') {
     if (!app) return reply(res, 503, { error: 'not running' });
+    var ask = parse(body);
     pairing = { code: String(crypto.randomBytes(4).readUInt32BE(0) % 1000000 + 1000000).slice(1), until: Date.now() + 120000, tries: 0 };
-    send({ pairCode: pairing.code });
+    send({ pairCode: pairing.code, pairName: String(ask.device || '').slice(0, 60), guest: !!ask.guest });
     return reply(res, 200, { ok: true });
   }
   if (req.method === 'POST' && path === '/pair/finish') {
@@ -86,9 +107,9 @@ function handle(req, res, body) {
       return reply(res, 403, { error: 'wrong code' });
     }
     pairing = null;
-    var entry = { id: crypto.randomBytes(8).toString('hex'), device: String(p.device || 'iPhone').slice(0, 60), key: crypto.randomBytes(32).toString('hex') };
+    var entry = { id: crypto.randomBytes(8).toString('hex'), device: String(p.device || 'iPhone').slice(0, 60), key: crypto.randomBytes(32).toString('hex'), guest: !!p.guest };
     tv.keys = tv.keys.concat([entry]);
-    send({ pairCode: null, keys: tv.keys, paired: entry.device });
+    send({ pairCode: null, keys: tv.keys, paired: entry.device, guest: entry.guest });
     return reply(res, 200, { id: entry.id, key: entry.key, tv: tv.id, name: tv.name });
   }
 
@@ -97,16 +118,26 @@ function handle(req, res, body) {
 
   if (req.method === 'GET' && path === '/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
-    res.write('data: ' + JSON.stringify(state) + '\n\n');
-    clients.push(res);
+    var client = { res: res, entry: who };
+    clients.push(client);
+    if (who.guest) broadcast(); else res.write(line(false)); // ein neuer Gast: alle sehen, wer dabei ist
     var ping = setInterval(function () { res.write(': ping\n\n'); }, 20000);
     // Am Antwort-Objekt, nicht an der Anfrage: neuere Node-Versionen melden dort schon das Ende der Anfrage selbst
-    res.on('close', function () { clearInterval(ping); clients = clients.filter(function (c) { return c !== res; }); });
+    res.on('close', function () {
+      clearInterval(ping);
+      clients = clients.filter(function (c) { return c !== client; });
+      if (who.guest) broadcast();
+    });
     return;
   }
   if (req.method === 'POST' && path === '/command') {
     if (!app) return reply(res, 503, { error: 'not running' });
-    send({ command: parse(body) });
+    var cmd = parse(body);
+    if (who.guest) {
+      if (GUEST.indexOf(cmd.cmd) < 0) return reply(res, 403, { error: 'host only' });
+      cmd.by = who.device; // der TV zeigt kurz, wer etwas hinzugefügt hat
+    }
+    send({ command: cmd });
     return reply(res, 200, { ok: true });
   }
   reply(res, 404, { error: 'not found' });

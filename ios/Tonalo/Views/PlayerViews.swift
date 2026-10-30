@@ -33,6 +33,7 @@ struct MiniPlayer: View {
                 .accessibilityLabel(p.isPlaying ? Text("Pause") : Text("Play"))
             }
                 if let name = p.tvName { TVBar(name: name).padding(.trailing, 2).padding(.bottom, 2) }
+                else if app.jukeboxHost.running { JukeboxHostBar().padding(.trailing, 2).padding(.bottom, 2) }
             }
             .foregroundStyle(.white)
             .padding(.leading, 8).padding(.trailing, 6).padding(.vertical, 8)

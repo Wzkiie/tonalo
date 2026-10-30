@@ -62,6 +62,8 @@ final class AppModel {
     let player = PlayerModel()
     /// The TV in the home network that can play for this phone.
     let tv = TVLink()
+    /// This phone hosting a Jukebox (in the car, where there's no TV).
+    let jukeboxHost = JukeboxHost()
     let downloads = DownloadStore.shared
     let librarySync = LibrarySync()
     /// False when the device has no network – the app then falls back to downloaded music.
@@ -110,6 +112,7 @@ final class AppModel {
         }
         player.app = self
         tv.app = self
+        jukeboxHost.app = self
         downloads.app = self
         downloads.reload()
         player.restore()
@@ -253,6 +256,7 @@ final class AppModel {
             librarySync.show(id)
             player.restore()
             tv.accountChanged()
+            jukeboxHost.accountChanged()
             checkRoute()
         }
         showsAccountPicker = false
@@ -266,6 +270,7 @@ final class AppModel {
         UserDefaults.standard.removeObject(forKey: "queue.dismissed." + account.id.uuidString)
         UserDefaults.standard.removeObject(forKey: "server." + account.id.uuidString)
         Keychain.save([TVLink.Pairing](), key: "tv." + account.id.uuidString)
+        Keychain.save([JukeboxHost.Guest](), key: "jukebox." + account.id.uuidString)
         ServerSession.shared.networkChanged()
         DownloadStore.deleteAccount(account.id)
         LibraryCache.deleteAccount(account.id)

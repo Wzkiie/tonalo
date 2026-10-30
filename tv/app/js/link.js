@@ -39,17 +39,18 @@ var Link = (function () {
 
   function onMessage(msg) {
     if (msg.keys) U.ustore.set('phones', msg.keys);
-    if ('pairCode' in msg) showCode(msg.pairCode);
-    if (msg.paired) U.toast(T('{device} ist jetzt verbunden', { device: msg.paired }), 4000);
+    if ('pairCode' in msg) showCode(msg.pairCode, msg.pairName, msg.guest);
+    if (msg.paired) U.toast(msg.guest ? T('{device} ist der Jukebox beigetreten', { device: msg.paired }) : T('{device} ist jetzt verbunden', { device: msg.paired }), 4000);
     if (msg.command) run(msg.command);
   }
 
-  function showCode(code) {
+  function showCode(code, name, guest) {
     if (pairModal) { pairModal.close(); pairModal = null; }
     if (!code) return;
     App.wake();
     pairModal = UI.modal(null, [{ icon: 'close', label: T('Abbrechen') }], {
-      head: { title: code.slice(0, 3) + ' ' + code.slice(3), sub: T('Gib diesen Code in Tonalo auf dem iPhone ein') }
+      head: { title: code.slice(0, 3) + ' ' + code.slice(3),
+        sub: guest && name ? T('{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben', { name: name }) : T('Gib diesen Code in Tonalo auf dem iPhone ein') }
     });
     pairModal.box.classList.add('pair-code');
     var m = pairModal;
@@ -57,7 +58,17 @@ var Link = (function () {
   }
 
   // ---------- Befehle vom iPhone
+  // Ein Gast der Jukebox hat etwas getan: kurz zeigen, wer
+  function announce(c) {
+    if (!c.by) return;
+    var n = (c.songs || []).length;
+    if (c.cmd === 'next') U.toast(T('{name} hat übersprungen', { name: c.by }), 3000);
+    else if (n === 1) U.toast(T('{name} hat „{title}“ hinzugefügt', { name: c.by, title: c.songs[0].title }), 4000);
+    else if (n > 1) U.toast(T('{name} hat {n} Songs hinzugefügt', { name: c.by, n: n }), 4000);
+  }
+
   function run(c) {
+    announce(c);
     switch (c.cmd) {
       case 'play':
         if (c.songs && c.songs.length) Player.playList(c.songs, c.index || 0, { shuffle: !!c.shuffle, keepStart: !c.shuffle || c.index > 0, context: c.context || null });

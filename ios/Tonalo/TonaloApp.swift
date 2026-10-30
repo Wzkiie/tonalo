@@ -45,6 +45,7 @@ enum Route: Hashable {
     case downloads
     case stations
     case settings
+    case tv
 }
 
 extension View {
@@ -62,6 +63,7 @@ extension View {
             case .downloads: DownloadsView()
             case .stations: StationsView()
             case .settings: SettingsView()
+            case .tv: TVSettingsView()
             }
         }
     }
@@ -100,6 +102,8 @@ struct RootView: View {
             },
             addToPlaylist: { songs in if !songs.isEmpty { addBatch = SongBatch(songs: songs) } }))
         .sheet(item: $addBatch) { AddToPlaylistSheet(songs: $0.songs) }
+        // Someone wants to join the Jukebox this phone hosts: the code to show them
+        .sheet(item: Binding(get: { app.jukeboxHost.request }, set: { if $0 == nil { app.jukeboxHost.cancelRequest() } })) { JukeboxCodeView(request: $0) }
         // After an update: what's new, once – but not on top of the account picker
         .sheet(item: $whatsNew, onDismiss: WhatsNew.markSeen) { WhatsNewSheet(release: $0) }
         .task { app.tv.start() }
@@ -108,10 +112,11 @@ struct RootView: View {
         #if DEBUG
         // Screenshot hook: -demoOpen stations opens the radio page, -demoOpen station plays a station in the player,
         // -demoOpen artist:<id> opens an artist, -demoOpen download downloads the first playlist and opens it,
-        // -demoOpen tv opens the TV pairing page
+        // -demoOpen tv opens the TV pairing page; -demoJukebox hosts a Jukebox right away
         .sheet(isPresented: $debugTV) { NavigationStack { TVSettingsView() } }
         .task {
             let args = ProcessInfo.processInfo.arguments
+            if args.contains("-demoJukebox") { app.jukeboxHost.start() }
             guard let i = args.firstIndex(of: "-demoOpen"), i + 1 < args.count else { return }
             try? await Task.sleep(for: .seconds(1.5))
             if args[i + 1] == "stations" { paths[0].append(Route.stations) }
@@ -274,6 +279,7 @@ struct ProfileMenu: View {
                 }
                 row(label: Text("Add account")) { Image(systemName: "plus").font(.system(size: 20)) } action: { adding = true }
                 row(label: Text("Downloads")) { Image(systemName: "arrow.down.circle").font(.system(size: 22)) } action: { ui.open(.downloads) }
+                row(label: Text("TV & Jukebox")) { Image(systemName: "person.2.wave.2").font(.system(size: 20)) } action: { ui.open(.tv) }
                 row(label: Text("Settings")) { Image(systemName: "gearshape").font(.system(size: 22)) } action: { ui.open(.settings) }
                 Spacer()
                 row(label: Text("Log out")) {

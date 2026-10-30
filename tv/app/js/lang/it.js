@@ -221,6 +221,12 @@ I18N.add('it', {
   'Gib diesen Code in Tonalo auf dem iPhone ein': 'Inserisci questo codice in Tonalo sul tuo iPhone',
   'iPhone': 'iPhone',
   'Kein iPhone verbunden': 'Nessun iPhone connesso',
-  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Verbinden in den Einstellungen der iPhone-App.': 'In Tonalo sul tuo iPhone vedi cosa suona qui e puoi scegliere la musica per la TV. Collegalo nelle impostazioni dell’app per iPhone.',
-  'Alle trennen': 'Disconnetti tutti'
+  'Alle trennen': 'Disconnetti tutti',
+  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „TV & Jukebox“ in der iPhone-App.': 'In Tonalo sul tuo iPhone vedi cosa suona qui e puoi scegliere la musica per la TV. Gli ospiti del Jukebox possono aggiungere brani e saltarli. Collegati da «TV e Jukebox» nell’app per iPhone.',
+  '{device} ist der Jukebox beigetreten': '{device} si è unito al Jukebox',
+  '{name} (Gast)': '{name} (ospite)',
+  '{name} hat {n} Songs hinzugefügt': '{name} ha aggiunto {n} brani',
+  '{name} hat übersprungen': '{name} ha saltato',
+  '{name} hat „{title}“ hinzugefügt': '{name} ha aggiunto «{title}»',
+  '{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben': '{name} vuole unirsi al Jukebox – inserisci questo codice sull’iPhone'
 });
