@@ -152,7 +152,7 @@ var Player = (function () {
       index = Math.min(start, queue.length - 1);
     }
     errorStreak = 0;
-    load(0, true);
+    load((opts && opts.at) || 0, true); // vom iPhone herübergeholt: an derselben Stelle weiter
     emit('queue', queue);
     emit('mode');
   }

@@ -136,6 +136,29 @@ struct ContinueBanner: View {
 }
 
 /// Full-screen player. Lyrics sit in a card below and can be opened full screen.
+/// Where the music plays: this iPhone or the own TV, while it's connected. Switching takes the song along, from the same spot.
+struct PlaybackDeviceButton: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        let p = app.player
+        let onTV = p.tvName != nil
+        Menu {
+            Button { if onTV { p.continueHere() } } label: {
+                Label("This iPhone", systemImage: onTV ? "iphone" : "checkmark")
+            }
+            Button { if !onTV { p.playOnTV() } } label: {
+                Label(app.tv.ownTV ?? "TV", systemImage: onTV ? "checkmark" : "tv")
+            }
+            .disabled(!onTV && p.current == nil && p.station == nil)
+        } label: {
+            Image(systemName: onTV ? "tv.fill" : "tv")
+                .foregroundStyle(onTV ? Color.accent : .white.opacity(0.8))
+        }
+        .accessibilityLabel("Play on")
+    }
+}
+
 struct NowPlayingView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.ui) private var ui
@@ -273,6 +296,10 @@ struct NowPlayingView: View {
                 Spacer()
                 SleepTimerButton()
                 Spacer()
+                if app.tv.ownTV != nil && !app.player.tvGuest && !app.jukeboxHost.running {
+                    PlaybackDeviceButton()
+                    Spacer()
+                }
                 Button { showQueue = true } label: { Image(systemName: "list.bullet") }
                     .accessibilityLabel("Queue")
             }

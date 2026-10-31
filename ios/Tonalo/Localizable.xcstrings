@@ -350,6 +350,16 @@
         }
       }
     },
+    "Play on" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abspielen auf"
+          }
+        }
+      }
+    },
     "Play on iPhone" : {
       "localizations" : {
         "de" : {
@@ -406,6 +416,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Der Code ist abgelaufen. Ein neuer kommt …"
+          }
+        }
+      }
+    },
+    "This iPhone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses iPhone"
           }
         }
       }

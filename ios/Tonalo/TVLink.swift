@@ -71,6 +71,9 @@ final class TVLink {
         }
     }
 
+    /// The own TV's name while it's connected and ready – music playing here can move over to it.
+    private(set) var ownTV: String?
+
     @ObservationIgnored private var browser: NWBrowser?
     @ObservationIgnored private var listener: Task<Void, Never>?
     @ObservationIgnored private var listening: (device: Device, pairing: Pairing)?
@@ -108,6 +111,7 @@ final class TVLink {
         listener?.cancel()
         listener = nil
         listening = nil
+        ownTV = nil
         retry?.cancel()
         devices = []
     }
@@ -200,6 +204,7 @@ final class TVLink {
         listener = nil
         listening = nil
         target = nil
+        ownTV = nil
         retry?.cancel()
         app?.player.tvGone()
     }
@@ -246,6 +251,7 @@ final class TVLink {
         let status = await LinkHTTP.stream(device.endpoint, "/events", headers: ["Authorization": auth]) { line in
             guard line.starts(with: Data("data: ".utf8)), let s = try? JSONDecoder().decode(State.self, from: Data(line.dropFirst(6))) else { return }
             guard !Task.isCancelled else { return }
+            if !guest { self.ownTV = device.name }
             let playing = s.active && s.playing == true
             if guest {
                 // A guest follows the Jukebox all the time, also before anything plays there – what it picks is the first song
@@ -261,6 +267,7 @@ final class TVLink {
             wasPlaying = playing
             first = false
         }
+        if !guest { ownTV = nil }
         // The other side forgot this phone – but not when only its clock is off
         if status?.status == 401, !String(decoding: status?.body ?? Data(), as: UTF8.self).contains("clock") { unpair(pairing.tv) }
         return !first
@@ -282,10 +289,11 @@ final class TVLink {
     // MARK: Commands
 
     /// Plays songs over there, like PlayerModel.play does here. Very long lists go as a window around the start.
-    func play(_ songs: [Song], from start: Int, shuffled: Bool, context: PlayerModel.Context?) {
+    /// `at`: where in the first song to begin – for music moving over from this phone.
+    func play(_ songs: [Song], from start: Int, shuffled: Bool, context: PlayerModel.Context?, at: Double = 0) {
         let from = max(0, min(start - 100, songs.count - 500))
         let window = Array(songs[from..<min(songs.count, from + 500)])
-        var cmd: [String: Any] = ["cmd": "play", "songs": json(window), "index": start - from, "shuffle": shuffled]
+        var cmd: [String: Any] = ["cmd": "play", "songs": json(window), "index": start - from, "shuffle": shuffled, "position": at]
         if let context { cmd["context"] = ["kind": context.kind.rawValue, "name": context.name, "id": context.id as Any] }
         command(cmd)
     }

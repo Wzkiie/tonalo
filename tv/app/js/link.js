@@ -70,7 +70,7 @@ var Link = (function () {
   function run(c) {
     switch (c.cmd) {
       case 'play':
-        if (c.songs && c.songs.length) Player.playList(c.songs, c.index || 0, { shuffle: !!c.shuffle, keepStart: !c.shuffle || c.index > 0, context: c.context || null });
+        if (c.songs && c.songs.length) Player.playList(c.songs, c.index || 0, { shuffle: !!c.shuffle, keepStart: !c.shuffle || c.index > 0, context: c.context || null, at: +c.position || 0 });
         break;
       case 'station': if (c.station) Player.playStation(c.station, c.list || null); break;
       case 'stopStation': Player.stopStation(); break;

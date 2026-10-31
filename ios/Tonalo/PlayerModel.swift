@@ -893,6 +893,16 @@ final class PlayerModel {
         restore()
     }
 
+    /// The other way round: what plays here goes on on the own TV, from the same spot. The TV takes over
+    /// as soon as it reports playing.
+    func playOnTV() {
+        guard tvName == nil, let tv, tv.ownTV != nil else { return }
+        if let station { tv.play(station, in: stations) }
+        else if current != nil { tv.play(queue, from: index, shuffled: false, context: context, at: position) }
+        else { return }
+        if isPlaying { endFade(); player.pause(); persist() }
+    }
+
     /// "Play on iPhone": the TV pauses, the music goes on here from the same spot.
     func continueHere() {
         guard tvName != nil else { return }
