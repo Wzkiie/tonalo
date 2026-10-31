@@ -181,9 +181,12 @@ struct PairTVView: View {
 
     private func ask() async {
         busy = true
-        asked = await app.tv.startPairing(device, guest: guest)
+        let status = await app.tv.startPairing(device, guest: guest)
+        asked = status == 200
         busy = false
-        if asked { try? await Task.sleep(for: .milliseconds(350)); focused = true } else { message = "\(device.name) isn't answering. Is Tonalo open on it?" }
+        if asked { try? await Task.sleep(for: .milliseconds(350)); focused = true }
+        else if status == 503 { message = "Open Tonalo on \(device.name) and choose who's listening." }
+        else { message = "\(device.name) isn't answering. Is Tonalo open on it?" }
     }
 
     private func finish() async {

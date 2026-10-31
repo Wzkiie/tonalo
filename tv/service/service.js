@@ -96,8 +96,9 @@ function authorized(req, body) {
 }
 
 function reply(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(obj));
+  var body = Buffer.from(JSON.stringify(obj), 'utf8');
+  res.writeHead(code, { 'Content-Type': 'application/json', 'Content-Length': body.length });
+  res.end(body);
 }
 
 function handle(req, res, body) {
@@ -213,22 +214,29 @@ function record(name, type, cls, ttl, data) {
   return Buffer.concat([encodeName(name), head, data]);
 }
 
-function answer() {
+function instanceName() { return tv.name.replace(/\./g, ' ') + '.' + TYPE; }
+function hostName() { return 'tonalo-' + tv.id.slice(0, 8) + '.local'; }
+
+function answer(query) {
   var ip = lanIp();
   if (!ip || !tv.id) return null;
-  var instance = tv.name.replace(/\./g, ' ') + '.' + TYPE;
-  var host = 'tonalo-' + tv.id.slice(0, 8) + '.local';
+  var instance = instanceName();
+  var host = hostName();
   var srv = Buffer.alloc(6); srv.writeUInt16BE(0, 0); srv.writeUInt16BE(0, 2); srv.writeUInt16BE(PORT, 4);
   var txt = Buffer.from('id=' + tv.id, 'utf8');
+  var only = query ? 1 : 0x8001; // „nur dieser Eintrag gilt“ – nicht bei direkten Antworten
   var records = [
     record(TYPE, 12, 1, 120, encodeName(instance)),
-    record(instance, 33, 0x8001, 120, Buffer.concat([srv, encodeName(host)])),
-    record(instance, 16, 0x8001, 120, Buffer.concat([Buffer.from([txt.length]), txt])),
-    record(host, 1, 0x8001, 120, Buffer.from(ip.split('.').map(Number)))
+    record(instance, 33, only, 120, Buffer.concat([srv, encodeName(host)])),
+    record(instance, 16, only, 120, Buffer.concat([Buffer.from([txt.length]), txt])),
+    record(host, 1, only, 120, Buffer.from(ip.split('.').map(Number)))
   ];
   var header = Buffer.alloc(12);
   header.writeUInt16BE(0x8400, 2); header.writeUInt16BE(records.length, 6);
-  return Buffer.concat([header].concat(records));
+  if (!query) return Buffer.concat([header].concat(records));
+  // Direkte Antwort: dieselbe Nummer und die Frage dazu, sonst verwirft der Fragende sie
+  header.writeUInt16BE(query.readUInt16BE(0), 0); header.writeUInt16BE(query.readUInt16BE(4), 4);
+  return Buffer.concat([header, query.slice(12)].concat(records));
 }
 
 function readName(buf, off) {
@@ -243,19 +251,21 @@ function readName(buf, off) {
   return { name: labels.join('.').toLowerCase(), end: end };
 }
 
+// Fragt jemand nach uns – nach dem Dienst, nach diesem TV (Port) oder nach seiner Adresse? Liefert dann das Ende der Fragen
 function asksForUs(buf) {
-  if (buf.length < 12 || (buf.readUInt16BE(2) & 0x8000)) return false; // nur Fragen, keine Antworten
-  var count = buf.readUInt16BE(4), off = 12;
+  if (buf.length < 12 || (buf.readUInt16BE(2) & 0x8000) || !tv.id) return 0; // nur Fragen, keine Antworten
+  var names = [TYPE, '_services._dns-sd._udp.local', instanceName().toLowerCase(), hostName()];
+  var count = buf.readUInt16BE(4), off = 12, ours = false;
   for (var i = 0; i < count; i++) {
     var q = readName(buf, off);
     off = q.end + 4;
-    if (q.name === TYPE || q.name === '_services._dns-sd._udp.local') return true;
+    if (names.indexOf(q.name) >= 0) ours = true;
   }
-  return false;
+  return ours && off <= buf.length ? off : 0;
 }
 
 function announce(to) {
-  var packet = answer();
+  var packet = answer(to && to.query);
   if (packet && mdns) mdns.send(packet, 0, packet.length, to ? to.port : 5353, to ? to.address : '224.0.0.251');
 }
 
@@ -263,8 +273,9 @@ function startMdns() {
   if (mdns) { announce(); return; }
   mdns = dgram.createSocket({ type: 'udp4', reuseAddr: true });
   mdns.on('message', function (buf, from) {
-    // Fragen von einem anderen Port als 5353 wollen die Antwort direkt zurück
-    if (asksForUs(buf)) announce(from.port !== 5353 ? from : null);
+    // Fragen von einem anderen Port als 5353 wollen die Antwort direkt zurück, mit ihrer Nummer und Frage
+    var asked = asksForUs(buf);
+    if (asked) announce(from.port !== 5353 ? { port: from.port, address: from.address, query: buf.slice(0, asked) } : null);
   });
   mdns.on('error', function (e) { console.error('mdns', e); try { mdns.close(); } catch (x) { /* egal */ } mdns = null; });
   mdns.bind(5353, function () {

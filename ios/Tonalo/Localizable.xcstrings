@@ -2388,6 +2388,16 @@
         }
       }
     },
+    "Open Tonalo on %@ and choose who's listening." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne Tonalo auf %@ und wähle aus, wer zuhört."
+          }
+        }
+      }
+    },
     "Orange" : {
       "localizations" : {
         "de" : {

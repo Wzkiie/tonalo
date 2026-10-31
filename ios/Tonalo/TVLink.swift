@@ -130,10 +130,11 @@ final class TVLink {
 
     func pairing(for device: Device) -> Pairing? { pairings.first { $0.tv == device.id } }
 
-    /// Asks the other side to show a code.
-    func startPairing(_ device: Device, guest: Bool) async -> Bool {
+    /// Asks the other side to show a code. The answer's status: 200 shows the code, 503 means Tonalo on the TV
+    /// isn't ready yet (no one chosen there), 0 means no answer.
+    func startPairing(_ device: Device, guest: Bool) async -> Int {
         let body = (try? JSONSerialization.data(withJSONObject: ["guest": guest, "device": deviceName])) ?? Data()
-        return (try? await LinkHTTP.request(device.endpoint, "POST", "/pair/start", body: body))?.status == 200
+        return (try? await LinkHTTP.request(device.endpoint, "POST", "/pair/start", body: body))?.status ?? 0
     }
 
     func finishPairing(_ device: Device, code: String, guest: Bool) async -> PairResult {

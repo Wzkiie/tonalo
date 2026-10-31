@@ -29,10 +29,31 @@ enum LinkHTTP {
             try await c.open(timeout: timeout)
             try await c.send(head(method, path, body: body, headers: headers) + body)
             var data = Data()
-            while let chunk = try await c.receive() { data.append(chunk) }
-            guard let split = data.range(of: Data("\r\n\r\n".utf8)) else { throw URLError(.badServerResponse) }
-            return Response(status: status(data[..<split.lowerBound]), body: Data(data[split.upperBound...]))
+            do {
+                while let chunk = try await c.receive() {
+                    data.append(chunk)
+                    // With a length the answer is complete without waiting for the other side to close
+                    if let r = parse(data), r.length.map({ r.response.body.count >= $0 }) == true { return r.response }
+                }
+            } catch {
+                // The other side closed abruptly after answering: what arrived still counts
+                guard let r = parse(data), r.length.map({ r.response.body.count >= $0 }) ?? true else { throw error }
+                return r.response
+            }
+            guard let r = parse(data) else { throw URLError(.badServerResponse) }
+            return r.response
         } onCancel: { c.close() }
+    }
+
+    /// Status and body once the head is complete, and the length the head announces.
+    private static func parse(_ data: Data) -> (response: Response, length: Int?)? {
+        guard let split = data.range(of: Data("\r\n\r\n".utf8)) else { return nil }
+        let head = String(decoding: data[..<split.lowerBound], as: UTF8.self)
+        let length = head.split(separator: "\r\n").first { $0.lowercased().hasPrefix("content-length:") }
+            .flatMap { Int($0.dropFirst(15).trimmingCharacters(in: .whitespaces)) }
+        var body = Data(data[split.upperBound...])
+        if let length, body.count > length { body = body.prefix(length) }
+        return (Response(status: status(data[..<split.lowerBound]), body: body), length)
     }
 
     /// A stream of server-sent events: `line` gets every line of the body as it comes.
@@ -127,6 +148,8 @@ final class LinkConnection: @unchecked Sendable {
     private let queue = DispatchQueue(label: "tonalo.link")
     /// Gives up when nothing arrives for this long.
     var idle: TimeInterval?
+    /// The other side has closed: nothing more to wait for.
+    private var ended = false
 
     init(_ endpoint: NWEndpoint) { connection = NWConnection(to: endpoint, using: LinkHTTP.parameters) }
     init(_ connection: NWConnection) { self.connection = connection }
@@ -157,14 +180,17 @@ final class LinkConnection: @unchecked Sendable {
 
     /// The next piece of data, or nil once the other side has closed.
     func receive() async throws -> Data? {
-        try await withCheckedThrowingContinuation { (done: CheckedContinuation<Data?, Error>) in
+        if ended { return nil }
+        return try await withCheckedThrowingContinuation { (done: CheckedContinuation<Data?, Error>) in
             let watchdog = idle.map { idle in
                 let w = DispatchWorkItem { [connection] in connection.cancel() } // ends the receive below with an error
                 queue.asyncAfter(deadline: .now() + idle, execute: w)
                 return w
             }
-            connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, complete, error in
+            connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [self] data, _, complete, error in
                 watchdog?.cancel()
+                // The last piece can come together with the end – asking once more after that isn't answered on every system
+                if complete { ended = true }
                 if let data, !data.isEmpty { done.resume(returning: data) }
                 else if let error { done.resume(throwing: error) }
                 else if complete { done.resume(returning: nil) }
