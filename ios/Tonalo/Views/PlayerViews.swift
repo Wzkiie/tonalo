@@ -252,7 +252,10 @@ struct NowPlayingView: View {
                     // Keep moving at the finger's speed until it's off screen, then close
                     closing = true
                     let duration = min(0.35, max(0.15, (height - drag) / max(speed, 1800)))
-                    withAnimation(.easeOut(duration: duration)) { drag = height } completion: { close() }
+                    withAnimation(.easeOut(duration: duration)) { drag = height }
+                    // Not in the animation's completion: on an iPhone following the TV that didn't always come,
+                    // and the player stayed open just below the screen – a tap on the mini player then did nothing
+                    DispatchQueue.main.asyncAfter(deadline: .now() + duration) { close() }
                 } else {
                     withAnimation(.interpolatingSpring(stiffness: 300, damping: 30, initialVelocity: min(10, max(-10, Double(-speed / max(drag, 20)))))) { drag = 0 }
                 }
