@@ -74,6 +74,7 @@ struct RootView: View {
     @State private var tab = min(Theme.shared.startTab, 2)
     @State private var paths = [NavigationPath(), NavigationPath(), NavigationPath()]
     @State private var showNowPlaying = false
+    @State private var playerOpened = 0
     @State private var showMenu = false
     @State private var barHeight: CGFloat = 0
     @State private var addBatch: SongBatch?
@@ -94,7 +95,7 @@ struct RootView: View {
         }
         .fullScreenCover(isPresented: $app.showsAccountPicker) { AccountPickerView() }
         .environment(\.ui, UIActions(
-            nowPlaying: { withAnimation(.spring(duration: 0.4)) { showNowPlaying = true } },
+            nowPlaying: { if !showNowPlaying { playerOpened += 1 }; withAnimation(.spring(duration: 0.4)) { showNowPlaying = true } },
             profileMenu: { withAnimation(.easeOut(duration: 0.25)) { showMenu = true } },
             open: { route in
                 withAnimation(.easeOut(duration: 0.25)) { showNowPlaying = false; showMenu = false }
@@ -173,6 +174,9 @@ struct RootView: View {
         .overlay {
             if showNowPlaying {
                 NowPlayingView { withAnimation(.spring(duration: 0.35)) { showNowPlaying = false } }
+                    // A fresh one every time: opened again while the last one is still sliding away, that one
+                    // would come back still pulled down below the screen
+                    .id(playerOpened)
                     .transition(.move(edge: .bottom))
                     .zIndex(2)
                     // Notes like "Only the host can do that" show over the big player too
