@@ -47,9 +47,17 @@ Navidrome's web UI technically works in the TV browser, but it's made for a mous
 
 ### Installing
 
-Grab the `.ipk` from the [latest release](../../releases/latest).
+**Rooted TV with the Homebrew Channel (easiest)** – add Tonalo's repository once, then install and update it like any other Homebrew app. In the Homebrew Channel open *Settings*, choose *Add repository* and enter:
 
-**Rooted TV with the Homebrew Channel** – the easiest way is the deploy script, which uploads the package over the root telnet shell, installs it and starts the app:
+```
+https://raw.githubusercontent.com/Wzkiie/tonalo/repo/apps.json
+```
+
+Tonalo then shows up in the app list. New versions appear there as soon as they're released.
+
+The other ways need the `.ipk` from the [latest release](../../releases/latest).
+
+**Rooted TV, by hand** – the deploy script, which uploads the package over the root telnet shell, installs it and starts the app:
 
 ```bash
 python3 tv/tools/deploy.py 192.168.x.x    # your TV's IP

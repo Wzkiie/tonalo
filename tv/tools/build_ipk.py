@@ -109,18 +109,21 @@ def main():
         f.write(ipk)
     print("OK:", out, "(%d KB)" % (len(ipk) // 1024))
 
-    # Manifest für den Homebrew Channel (ipkUrl relativ -> funktioniert mit releases/latest/download/)
+    # Manifest und Repository für den Homebrew Channel. Die Repo-Liste (apps.json) kommt in den Branch "repo",
+    # weil Homebrew Channel sie im Browser lädt: raw.githubusercontent.com erlaubt das (CORS), Release-Downloads nicht.
     repo = os.environ.get("GITHUB_REPOSITORY", "Wzkiie/tonalo")
+    description = "Unofficial Navidrome/Subsonic client for LG webOS TVs"
+    icon = "https://raw.githubusercontent.com/%s/main/assets/icon-512.png" % repo
     manifest = {
         "id": app_id,
         "version": version,
         "type": info.get("type", "web"),
         "title": info["title"],
-        "appDescription": "Inoffizieller Navidrome-/Subsonic-Client für LG webOS-Fernseher",
-        "iconUri": "https://raw.githubusercontent.com/%s/main/assets/icon-512.png" % repo,
+        "appDescription": description,
+        "iconUri": icon,
         "sourceUrl": "https://github.com/%s" % repo,
         "rootRequired": False,
-        "ipkUrl": os.path.basename(out),
+        "ipkUrl": "https://github.com/%s/releases/download/v%s/%s" % (repo, version, os.path.basename(out)),
         "ipkSize": len(ipk),
         "ipkHash": {"sha256": hashlib.sha256(ipk).hexdigest()},
     }
@@ -128,6 +131,24 @@ def main():
     with open(mpath, "w") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
     print("OK:", mpath)
+
+    apps = {
+        "paging": {"page": 1, "count": 1, "maxPage": 1, "itemsTotal": 1, "prevUrl": None, "nextUrl": None},
+        "packages": [{
+            "id": app_id,
+            "title": info["title"],
+            "iconUri": icon,
+            "manifestUrl": "https://github.com/%s/releases/download/v%s/%s.manifest.json" % (repo, version, app_id),
+            "manifest": manifest,
+            "pool": "main",
+            "requirements": {"webosRelease": ">=5.0"},
+            "shortDescription": description,
+        }],
+    }
+    apath = os.path.join(DIST, "apps.json")
+    with open(apath, "w") as f:
+        json.dump(apps, f, indent=2, ensure_ascii=False)
+    print("OK:", apath)
 
 
 if __name__ == "__main__":

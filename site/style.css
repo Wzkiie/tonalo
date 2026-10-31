@@ -489,3 +489,4 @@ section[class*="tint-"]::before {
   .log .entry { grid-template-columns: 1fr; gap: 14px; padding: 26px 0; }
   .log .meta { flex-direction: row; align-items: center; gap: 12px; }
 }
+code.url { word-break: break-all; }

@@ -46,3 +46,17 @@ jobs:
             tv/dist/*.ipk
             tv/dist/*.manifest.json
           generate_release_notes: true
+
+      # Die Paketliste für den Homebrew Channel liegt allein im Branch "repo" (ein Commit, wird jedes Mal ersetzt).
+      # Adresse für die Einstellungen dort: https://raw.githubusercontent.com/<repo>/repo/apps.json
+      - name: Homebrew-Channel-Repository aktualisieren
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/hbrepo" && cp tv/dist/apps.json "$RUNNER_TEMP/hbrepo/"
+          cd "$RUNNER_TEMP/hbrepo"
+          git init -q -b repo
+          git add apps.json
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Homebrew Channel: $GITHUB_REF_NAME"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" repo

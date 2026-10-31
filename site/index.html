@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -377,8 +377,8 @@
         <p class="req">LG TV · webOS 5 or newer</p>
         <h3>LG TV</h3>
         <ol class="steps">
-          <li>Download the <b>.ipk</b> from the latest release.</li>
-          <li>Install it on a rooted TV with the <a href="https://www.webosbrew.org/">Homebrew Channel</a>, or in Developer Mode with <a href="https://github.com/webosbrew/dev-manager-desktop">webOS Dev Manager</a>.</li>
+          <li>Rooted TV: in the <a href="https://www.webosbrew.org/">Homebrew Channel</a> settings, add the repository <code class="url">https://raw.githubusercontent.com/Wzkiie/tonalo/repo/apps.json</code>, then install Tonalo from the list. Updates come the same way.</li>
+          <li>Developer Mode: download the <b>.ipk</b> from the latest release and install it with <a href="https://github.com/webosbrew/dev-manager-desktop">webOS Dev Manager</a>.</li>
           <li>Enter your server address, for example <code>http://192.168.1.10:4533</code>, and sign in.</li>
         </ol>
         <div class="actions"><a class="btn" href="https://github.com/Wzkiie/tonalo/releases/latest"><svg><use href="#i-tv"/></svg>Latest release</a><a class="btn" href="https://github.com/Wzkiie/tonalo#installing">Install guide</a></div>
@@ -397,7 +397,7 @@
     <div class="faq reveal">
       <details><summary>Which servers does it work with?</summary><p>Tonalo is built and tested with Navidrome. Other servers with the Subsonic API, like Gonic or Airsonic-Advanced, should work but haven't been tried yet. Reports are very welcome.</p></details>
       <details><summary>Does it cost anything?</summary><p>No. Both apps are free and MIT licensed, without ads, subscriptions or in-app purchases.</p></details>
-      <details><summary>When will it be in the App Store and the Homebrew Channel?</summary><p>The iPhone app is in public beta on TestFlight right now; the App Store comes next. The TV app is planned for the Homebrew Channel. Until then, the .ipk from the GitHub releases works on any rooted TV or one in Developer Mode.</p></details>
+      <details><summary>When will it be in the App Store and the Homebrew Channel?</summary><p>The iPhone app is in public beta on TestFlight right now; the App Store comes next. The TV app can already be installed from the Homebrew Channel by adding Tonalo's own repository (see above); a listing in the official repository is planned. The .ipk from the GitHub releases also works on any TV in Developer Mode.</p></details>
       <details><summary>Why are artist pages empty on my server?</summary><p>Popular songs, similar artists and biographies come from Navidrome, which gets them from Last.fm. Adding a free Last.fm API key to Navidrome takes two minutes; the <a href="https://github.com/Wzkiie/tonalo#server-tips">server tips</a> show how. Without it, the iPhone app shows your own most played songs instead.</p></details>
       <details><summary>Is there an Android or Samsung TV version?</summary><p>Not at the moment. Tonalo is made for LG webOS and the iPhone.</p></details>
       <details><summary>Was AI involved?</summary><p>A good part of the code was written together with an AI coding assistant. Everything is tested on a real LG OLED and iPhone, and the code is public, so you can see exactly what it does.</p></details>
