@@ -453,3 +453,39 @@ section[class*="tint-"]::before {
   .wcard .watch-case img { border-radius: 27px; }
   .ccard ul { margin-top: 16px; }
 }
+
+/* Changelog */
+.top nav a[aria-current="page"] { color: var(--text); }
+.changelog { padding-top: 72px; }
+.changelog .head p a, .log .text a { color: var(--blue); }
+.log-filter { display: flex; gap: 8px; margin-bottom: 40px; flex-wrap: wrap; }
+.log-filter button {
+  display: inline-flex; align-items: center; gap: 7px;
+  font: 500 14.5px/1 var(--sans); color: var(--muted);
+  background: transparent; border: 1px solid var(--line); border-radius: 999px;
+  padding: 9px 15px; cursor: pointer;
+}
+.log-filter button svg { width: 16px; height: 16px; }
+.log-filter button:hover { color: var(--text); }
+.log-filter button[aria-pressed="true"] { color: var(--text); background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); }
+.log { list-style: none; margin: 0; padding: 0; max-width: 860px; }
+.log .entry { display: grid; grid-template-columns: 170px 1fr; gap: 32px; padding: 32px 0; border-top: 1px solid var(--line); }
+.log .entry[hidden] { display: none; }
+.log .meta { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.log time { font: 13px/1 var(--mono); color: var(--dim); }
+.ver { font: 600 12.5px/1 var(--mono); padding: 6px 9px; border-radius: 7px; letter-spacing: .02em; }
+.ver.tv { color: #e7b6e4; background: rgba(122,58,119,.32); }
+.ver.ios { color: #ffcf9a; background: rgba(249,115,22,.18); }
+.log h3 { font-size: 23px; font-weight: 680; margin-bottom: 12px; line-height: 1.2; }
+.log .text p, .log .text li { color: var(--muted); }
+.log .text b { color: var(--text); font-weight: 600; }
+.log ul { margin: 0 0 14px; padding-left: 20px; }
+.log li + li { margin-top: 6px; }
+.log .more { font-size: 15px; text-decoration: none; }
+.log .more::after { content: " →"; }
+@media (max-width: 720px) {
+  .top nav a.keep { display: inline; }
+  .changelog { padding-top: 40px; }
+  .log .entry { grid-template-columns: 1fr; gap: 14px; padding: 26px 0; }
+  .log .meta { flex-direction: row; align-items: center; gap: 12px; }
+}

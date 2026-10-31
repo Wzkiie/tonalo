@@ -26,8 +26,19 @@
   });
 
   // Screenshots open large
+  // Changelog: show one app or both
+  var filter = document.querySelectorAll('.log-filter button');
+  filter.forEach(function (b) {
+    b.addEventListener('click', function () {
+      filter.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+      document.querySelectorAll('.log .entry').forEach(function (e) {
+        e.hidden = b.dataset.show !== 'all' && e.dataset.app !== b.dataset.show;
+      });
+    });
+  });
+
   var lb = document.getElementById('lb');
-  if (!lb.showModal) return;
+  if (!lb || !lb.showModal) return;
   var lbImg = lb.querySelector('img');
   document.querySelectorAll('img.shot').forEach(function (img) {
     img.addEventListener('click', function () {
