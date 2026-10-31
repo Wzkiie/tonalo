@@ -184,6 +184,11 @@ function handle(req, res, u) {
         let l = q.type === 'byGenre' ? albums.filter(a => a.genre === q.genre) : q.type === 'starred' ? starred.album : albums.slice().sort(sorters[q.type] || sorters.newest);
         const o = +q.offset || 0; body = ok({ albumList2: { album: l.slice(o, o + (+q.size || 10)) } }); break;
       }
+      case 'getSong': {
+        const so = byId(songs, q.id);
+        body = so ? ok({ song: so }) : { 'subsonic-response': Object.assign({ status: 'failed' }, SERVER, { error: { code: 70, message: 'Song not found' } }) };
+        break;
+      }
       case 'getAlbum': body = ok({ album: Object.assign({}, byId(albums, q.id), { song: songs.filter(s => s.albumId === q.id) }) }); break;
       case 'getArtists': body = ok({ artists: { index: [{ name: '#', artist: artists.slice().sort((a, b) => a.name.localeCompare(b.name)) }] } }); break;
       case 'getArtist': body = ok({ artist: Object.assign({}, byId(artists, q.id), { album: albums.filter(a => a.artistId === q.id) }) }); break;

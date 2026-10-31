@@ -84,6 +84,10 @@ final class TVLink {
     /// Where commands go – kept while the app is in the background, so a pause on the lock screen still reaches the TV.
     @ObservationIgnored private var target: (device: Device, pairing: Pairing)?
     @ObservationIgnored private var retry: Task<Void, Never>?
+    /// TV and server ("id|address") where the server turned out to be this account's under another address –
+    /// the TV knows it by its home IP, the phone by its domain. Checked once by asking for a song playing there.
+    @ObservationIgnored private var sameServer: Set<String> = []
+    @ObservationIgnored private var checking: Set<String> = []
 
     private var storageKey: String? { app?.current.map { "tv." + $0.id.uuidString } }
 
@@ -124,6 +128,7 @@ final class TVLink {
     func accountChanged() {
         disconnect()
         jukebox = nil
+        sameServer = []
         loadPairings()
         connect()
     }
@@ -205,6 +210,7 @@ final class TVLink {
     // MARK: Live
 
     private func disconnect() {
+        checking = []
         listener?.cancel()
         listener = nil
         listening = nil
@@ -254,9 +260,8 @@ final class TVLink {
         let guest = pairing.guest == true || jukebox == device.id
         var wasPlaying = false, first = true
         let auth = LinkHTTP.authorization("GET", "/events", body: Data(), keyId: pairing.keyId, key: key)
-        let status = await LinkHTTP.stream(device.endpoint, "/events", headers: ["Authorization": auth]) { line in
-            guard line.starts(with: Data("data: ".utf8)), let s = try? JSONDecoder().decode(State.self, from: Data(line.dropFirst(6))) else { return }
-            guard !Task.isCancelled else { return }
+        // What the other side reports, shown here – again once the server check below says it's the same server
+        func apply(_ s: State) {
             if pairing.guest != true {
                 if s.jukebox == true { self.guestOnly.insert(device.id) } else { self.guestOnly.remove(device.id) }
                 // Joined as a guest, and now the TV is back on this account: it's the own TV again
@@ -268,10 +273,12 @@ final class TVLink {
                 self.ownTV = device.name
             }
             let playing = s.active && s.playing == true
+            let same = self.matches(s, guest: guest, device: device.id)
+            if s.active, !same { self.checkServer(s, device: device.id) { if !Task.isCancelled, self.listening?.device.id == device.id { apply(s) } } }
             if guest {
                 // A guest follows the Jukebox all the time, also before anything plays there – what it picks is the first song
-                if !s.active || self.matches(s, guest: true) { self.app?.player.tvUpdate(s, name: device.name, guest: true, started: true) }
-            } else if s.active && self.matches(s, guest: false) {
+                if !s.active || same { self.app?.player.tvUpdate(s, name: device.name, guest: true, started: true) }
+            } else if s.active && same {
                 // The own TV takes over when it starts playing – or, right after connecting, when it plays and this
                 // phone doesn't: music playing here isn't cut off just because the app came back to the front
                 let local = self.app?.player.tvName == nil && self.app?.player.isPlaying == true
@@ -282,6 +289,11 @@ final class TVLink {
             wasPlaying = playing
             first = false
         }
+        let status = await LinkHTTP.stream(device.endpoint, "/events", headers: ["Authorization": auth]) { line in
+            guard line.starts(with: Data("data: ".utf8)), let s = try? JSONDecoder().decode(State.self, from: Data(line.dropFirst(6))) else { return }
+            guard !Task.isCancelled else { return }
+            apply(s)
+        }
         if !guest { ownTV = nil }
         // The other side forgot this phone – but not when only its clock is off
         if status?.status == 401, !String(decoding: status?.body ?? Data(), as: UTF8.self).contains("clock") { unpair(pairing.tv) }
@@ -290,15 +302,29 @@ final class TVLink {
 
     /// The own TV: same account on the same server – another person's music is none of this phone's business.
     /// A Jukebox: the same server, so the songs added are there too.
-    private func matches(_ s: State, guest: Bool) -> Bool {
+    private func matches(_ s: State, guest: Bool, device: String) -> Bool {
         guard let acc = app?.current, let server = s.server else { return false }
         if !guest && s.user != acc.username { return false }
+        if sameServer.contains(device + "|" + server) { return true }
         func norm(_ url: String?) -> String? {
             guard let url, let u = URL(string: url.trimmingCharacters(in: .whitespaces)), let host = u.host?.lowercased() else { return nil }
             return host + ":" + String(u.port ?? (u.scheme == "https" ? 443 : 80))
         }
         let other = norm(server)
         return other != nil && (other == norm(acc.serverURL) || other == norm(acc.localURL))
+    }
+
+    /// The address differs: asks this account's server for a song playing over there. If it knows it, it's the same server.
+    private func checkServer(_ s: State, device: String, then: @escaping () -> Void) {
+        guard let server = s.server, let client = app?.client else { return }
+        let key = device + "|" + server
+        let songs = s.queue ?? []
+        guard let song = songs.indices.contains(s.index ?? -1) ? songs[s.index ?? 0] : songs.first,
+              !sameServer.contains(key), checking.insert(key).inserted else { return }
+        Task {
+            // Asked once per connection: an unknown song stays a different server until the phone connects again
+            if (try? await client.call("getSong", ["id": song.id])) != nil { sameServer.insert(key); then() }
+        }
     }
 
     // MARK: Commands
