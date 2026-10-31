@@ -4,6 +4,8 @@
 
 <p align="center">A Navidrome client for LG TVs and the iPhone. Play your own music library from the couch with nothing but the remote, or take it with you.</p>
 
+<p align="center"><a href="https://tonalo.app">tonalo.app</a> · <a href="https://tonalo.app/changelog">Changelog</a> · <a href="https://testflight.apple.com/join/vKkNhNZJ">iPhone beta</a></p>
+
 <p align="center">
   <img src="assets/screenshots/tv/home.jpg" width="74%" alt="TV app home screen">
   <img src="assets/screenshots/ios/home.jpg" width="19%" alt="iPhone app home screen">
@@ -17,7 +19,7 @@ There are two apps in this repository. They share the name, the icon and the ide
 |---|---|---|
 | Runs on | LG TVs with webOS 5 or newer | iPhone with iOS 17 or newer, plus Apple Watch |
 | Code | [`tv/`](tv) – plain HTML, CSS and JavaScript | [`ios/`](ios) – Swift and SwiftUI |
-| Install | `.ipk` from the [releases](../../releases/latest) | Public beta on [TestFlight](https://testflight.apple.com/join/vKkNhNZJ), or build it with Xcode |
+| Install | Homebrew Channel [repository](#installing) or `.ipk` from the [releases](../../releases/latest) | Public beta on [TestFlight](https://testflight.apple.com/join/vKkNhNZJ), or build it with Xcode |
 
 ## TV app
 
@@ -33,6 +35,8 @@ Navidrome's web UI technically works in the TV browser, but it's made for a mous
 - **Radio stations** set up on your server (Navidrome: Radio) play live
 - Rename and delete your playlists and remove songs from them; a sleep timer, crossfade (3–12 seconds) and volume leveling with ReplayGain
 - **Continue on another device**: the queue is kept on your server, so the TV offers to pick up where the iPhone left off (and the other way round)
+- **Control it from your iPhone**: pair once with a code shown on the TV. The iPhone then shows what's playing and the queue, works as a remote, and sends albums, playlists and radio to the TV – or moves the song you're hearing over, at the same second. Everything stays in your home network
+- **Jukebox**: friends nearby join with a code on the TV, add up to 20 songs to what's playing and skip. They need an account on the same server and don't see whose account is playing; the TV briefly shows who added what
 - Several people on one TV: everyone signs in once, then picks their profile on start. Queues and settings stay separate.
 - Transcoding options for weaker Wi-Fi, scrobbling, and a moving screensaver so the OLED doesn't burn in
 - English, German, Spanish, French, Italian, Portuguese, Dutch, Polish and Turkish – it follows the TV's language
@@ -115,8 +119,8 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 - **Radio stations**: the stations set up on your server (Navidrome: Radio) play live, with the song on air when the station sends it. If that song is in your library, one tap plays it from there
 - **Artist pages** with popular songs, the discography, "Fans also like" and a biography. Without Last.fm on the server, the artist's songs you played most stand in for the popular ones – see [Server tips](#server-tips)
 - **Continue on another device**: started on the TV, finished on the iPhone – the app offers to pick up the queue another device left on your server
-- **Play on the TV**: pair the iPhone with your TV once with a code. While the TV plays, the phone shows it live, and music you pick on the phone plays on the TV. "Play on iPhone" takes it back at the same second
-- **Jukebox**: friends nearby join with a code, add songs to what's playing and skip. The TV hosts it at home, an iPhone in the car – the phones connect directly, without Wi-Fi. Guests need an account on the same server
+- **Play on the TV**: pair the iPhone with your TV once with a code. While the TV plays, the phone shows it live, and music you pick on the phone plays on the TV. "Play on iPhone" takes it back at the same second. When the TV app is open, *Play on* in the full-screen player picks where the music plays
+- **Jukebox**: friends nearby join with a code, add songs to what's playing and skip. The TV hosts it at home, an iPhone in the car – the phones connect directly, without Wi-Fi. Guests need an account on the same server. If someone else is signed in on your TV, your iPhone offers to join their Jukebox instead
 - **Playlists**: create, rename and delete them, add songs from any menu (with a warning for duplicates), remove and reorder songs
 - **Crossfade** between songs, adjustable from 1 to 12 seconds
 - **Audio quality** set separately for Wi-Fi, cellular and downloads: the original files (lossless, FLAC stays FLAC) or converted by your server to AAC, Opus or MP3, with the data an hour of music takes next to each level. Formats the iPhone can't play are converted automatically.
@@ -206,6 +210,7 @@ The screenshots in this README use a made-up demo library (`tv/tools/mock_server
 
 - Your password is never stored. Like every Subsonic client, Tonalo keeps the salted token derived from it, and that token is sent with each request. Anyone who gets hold of it can use your server account (but not learn the password) – so use https for any server reachable from the internet.
 - iPhone: the token and custom headers live in the Keychain, only on that device. Library info and covers are kept on the device so pages open at once and offline, but never the request addresses, which carry the token. Custom headers never follow a redirect to another host, and plain http is only tried automatically for home-network addresses.
+- TV and iPhone pairing: the code shown on the screen never goes over the network. Both sides agree on a key (ECDH) and the phone proves it knows the code; every request after that is signed and can't be replayed. Each iPhone gets its own key, and nothing leaves your home network.
 - TV: webOS has no secure storage, so the token sits in the app's local storage. Without a scheme, addresses in the home network use http and all others https.
 
 Found a security problem? Please report it privately – see [SECURITY.md](SECURITY.md). For bugs and ideas, use the [issue forms](../../issues/new/choose).
