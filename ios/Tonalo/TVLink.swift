@@ -36,6 +36,8 @@ final class TVLink {
         var context: Source?
         /// Guests of a Jukebox, by name.
         var guests: [String]?
+        /// This phone is only a guest there: on the TV someone with another account is signed in.
+        var jukebox: Bool?
     }
 
     struct Device: Identifiable, Hashable {
@@ -73,6 +75,8 @@ final class TVLink {
 
     /// The own TV's name while it's connected and ready – music playing here can move over to it.
     private(set) var ownTV: String?
+    /// Own TVs where someone with another account is signed in right now: this phone can join their Jukebox.
+    private(set) var guestOnly: Set<String> = []
 
     @ObservationIgnored private var browser: NWBrowser?
     @ObservationIgnored private var listener: Task<Void, Never>?
@@ -112,6 +116,7 @@ final class TVLink {
         listener = nil
         listening = nil
         ownTV = nil
+        guestOnly = []
         retry?.cancel()
         devices = []
     }
@@ -245,13 +250,23 @@ final class TVLink {
         guard let key = Data(hex: pairing.key) else { return false }
         listening = (device, pairing)
         target = (device, pairing)
-        let guest = pairing.guest == true
+        // Joined as a guest: a Jukebox – or the own TV while someone else is signed in there
+        let guest = pairing.guest == true || jukebox == device.id
         var wasPlaying = false, first = true
         let auth = LinkHTTP.authorization("GET", "/events", body: Data(), keyId: pairing.keyId, key: key)
         let status = await LinkHTTP.stream(device.endpoint, "/events", headers: ["Authorization": auth]) { line in
             guard line.starts(with: Data("data: ".utf8)), let s = try? JSONDecoder().decode(State.self, from: Data(line.dropFirst(6))) else { return }
             guard !Task.isCancelled else { return }
-            if !guest { self.ownTV = device.name }
+            if pairing.guest != true {
+                if s.jukebox == true { self.guestOnly.insert(device.id) } else { self.guestOnly.remove(device.id) }
+                // Joined as a guest, and now the TV is back on this account: it's the own TV again
+                if guest, s.jukebox != true { Task { @MainActor in self.leave() }; return }
+            }
+            if !guest {
+                // Someone else is signed in on the TV: nothing of theirs shows here until this phone joins
+                guard s.jukebox != true else { self.ownTV = nil; self.app?.player.tvGone(); first = false; return }
+                self.ownTV = device.name
+            }
             let playing = s.active && s.playing == true
             if guest {
                 // A guest follows the Jukebox all the time, also before anything plays there – what it picks is the first song

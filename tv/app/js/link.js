@@ -26,7 +26,12 @@ var Link = (function () {
   function attach() {
     if (!available() || !App.account()) return;
     if (bridge) { try { bridge.cancel(); } catch (e) { /* egal */ } }
-    var params = { subscribe: true, id: tvId(), name: U.store.get('tvName', 'LG TV'), keys: U.ustore.get('phones', []) };
+    // Die iPhones der anderen Konten auf diesem TV dürfen als Gäste der Jukebox beitreten – sie sehen nicht, wessen Konto läuft
+    var others = [];
+    (U.store.get('accounts', []) || []).forEach(function (a) {
+      if (a.id !== App.account().id) others = others.concat(U.ustore.peek(a.id, 'phones', []) || []);
+    });
+    var params = { subscribe: true, id: tvId(), name: U.store.get('tvName', 'LG TV'), keys: U.ustore.get('phones', []), others: others };
     bridge = call('attach', params, onMessage);
     push();
   }

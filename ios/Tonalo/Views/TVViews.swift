@@ -124,13 +124,14 @@ struct TVSettingsView: View {
 
     private func status(_ d: TVLink.Device) -> LocalizedStringKey {
         guard let p = app.tv.pairing(for: d) else { return d.isPhone ? "Join" : "Connect" }
-        if p.guest != true { return "Connected" }
-        return app.tv.jukebox == d.id ? "Joined" : "Join"
+        if app.tv.jukebox == d.id { return "Joined" }
+        // The own TV, while someone else is signed in there: its Jukebox is open to this phone
+        return p.guest == true || app.tv.guestOnly.contains(d.id) ? "Join" : "Connected"
     }
 
     private func tapped(_ d: TVLink.Device) {
         if let p = app.tv.pairing(for: d) {
-            if p.guest == true && app.tv.jukebox != d.id { app.tv.join(d) }
+            if (p.guest == true || app.tv.guestOnly.contains(d.id)) && app.tv.jukebox != d.id { app.tv.join(d) }
             return
         }
         // An iPhone only hosts a Jukebox; a TV can be the own one or someone's Jukebox

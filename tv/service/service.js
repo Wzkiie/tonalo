@@ -12,7 +12,8 @@ var PORT = 47913;
 var service = new Service(NAME);
 
 var app = null;        // Abo der TV-App – darüber gehen Befehle und Kopplungscodes raus
-var tv = { id: '', name: 'TV', keys: [] }; // keys: [{ id, device, key }], gespeichert macht sie die App
+var tv = { id: '', name: 'TV', keys: [], others: [] }; // keys: [{ id, device, key }], gespeichert macht sie die App
+                                                        // others: die iPhones der anderen Konten – hier nur Gäste
 var state = { active: false };
 var clients = [];      // offene Live-Verbindungen der iPhones: { res, entry }
 var pairing = null;    // { code, until, tries, guest }
@@ -28,8 +29,13 @@ service.register('attach', function (msg) {
   tv.id = String(p.id || tv.id);
   tv.name = String(p.name || tv.name);
   tv.keys = Array.isArray(p.keys) ? p.keys : [];
-  // Getrennte Geräte sehen ab sofort nichts mehr, auch nicht über eine schon offene Verbindung
-  clients.filter(function (c) { return !keyFor(c.entry.id); }).forEach(function (c) { c.res.end(); });
+  tv.others = Array.isArray(p.others) ? p.others : [];
+  // Getrennte Geräte sehen ab sofort nichts mehr, auch nicht über eine schon offene Verbindung – und wer mit dem
+  // Kontowechsel nur noch Gast ist (oder wieder mehr), verbindet sich neu und bekommt seine neue Rolle
+  var gone = clients.filter(function (c) { var k = keyFor(c.entry.id); return !k || !!k.guest !== !!c.entry.guest; });
+  // Sofort aus der Liste, nicht erst wenn die Verbindung zu ist – sonst schreibt der nächste Stand noch hinein
+  clients = clients.filter(function (c) { return gone.indexOf(c) < 0; });
+  gone.forEach(function (c) { c.res.end(); });
   if (app && app !== msg) { try { app.cancel(); } catch (e) { /* schon weg */ } }
   app = msg;
   startServer();
@@ -55,7 +61,7 @@ function setState(s) {
 // Gäste der Jukebox sehen nicht, wessen Konto das ist – nur was läuft und wer gerade mit dabei ist
 function line(guest) {
   var s = Object.assign({}, state, { guests: guestNames() });
-  if (guest) delete s.user;
+  if (guest) { delete s.user; s.jukebox = true; } // so weiß ein iPhone, dass es hier nur Gast sein kann
   return 'data: ' + JSON.stringify(s) + '\n\n';
 }
 
@@ -74,7 +80,13 @@ function guestNames() {
 var GUEST = ['enqueue', 'playNext', 'next'];
 var GUEST_SONGS = 20;
 
-function keyFor(id) { return tv.keys.filter(function (k) { return k.id === id; })[0]; }
+// Ein iPhone, das mit einem anderen Konto auf diesem TV gekoppelt ist, kommt als Gast der Jukebox herein
+function keyFor(id) {
+  var own = tv.keys.filter(function (k) { return k.id === id; })[0];
+  if (own) return own;
+  var other = tv.others.filter(function (k) { return k.id === id; })[0];
+  return other && Object.assign({}, other, { guest: true });
+}
 
 // ---------- Anmeldung der iPhones: HMAC über Methode, Pfad, Zeit, Einmalwert und Inhalt mit dem Schlüssel aus der Kopplung
 // Liefert das Gerät oder den Grund der Ablehnung: 'clock' (Uhr daneben – die Kopplung gilt weiter) oder 'not paired'
