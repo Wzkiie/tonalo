@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Network
 import Observation
@@ -8,8 +9,9 @@ import UIKit
 ///   on the phone plays on the TV.
 /// - A Jukebox (someone else's TV or iPhone, same server): you see what plays, add songs and skip.
 /// Found with Bonjour, in the home network or directly phone to phone. Paired once with a code from the
-/// other screen; every request is signed with the key from the pairing, so nobody else nearby can see or
-/// send anything. Nothing goes through the internet.
+/// other screen; both sides work out a key that never goes over the network (see LinkHTTP), and every request
+/// is signed with it, so nobody else nearby can send anything. Nothing goes through the internet.
+/// What plays isn't encrypted – someone in the same Wi-Fi who listens in could see song titles, not more.
 @MainActor
 @Observable
 final class TVLink {
@@ -72,6 +74,9 @@ final class TVLink {
     @ObservationIgnored private var browser: NWBrowser?
     @ObservationIgnored private var listener: Task<Void, Never>?
     @ObservationIgnored private var listening: (device: Device, pairing: Pairing)?
+    /// Where commands go – kept while the app is in the background, so a pause on the lock screen still reaches the TV.
+    @ObservationIgnored private var target: (device: Device, pairing: Pairing)?
+    @ObservationIgnored private var retry: Task<Void, Never>?
 
     private var storageKey: String? { app?.current.map { "tv." + $0.id.uuidString } }
 
@@ -103,6 +108,7 @@ final class TVLink {
         listener?.cancel()
         listener = nil
         listening = nil
+        retry?.cancel()
         devices = []
     }
 
@@ -114,7 +120,9 @@ final class TVLink {
     }
 
     private func found(_ list: [Device]) {
-        devices = list.filter { $0.id != app?.jukeboxHost.id }
+        // A device in the network more than one way (Wi-Fi and cable, or peer to peer) shows up once
+        var seen = Set<String>()
+        devices = list.filter { $0.id != app?.jukeboxHost.id && seen.insert($0.id).inserted }
         connect()
     }
 
@@ -129,19 +137,23 @@ final class TVLink {
     }
 
     func finishPairing(_ device: Device, code: String, guest: Bool) async -> PairResult {
-        let body = (try? JSONSerialization.data(withJSONObject: ["code": code, "device": deviceName, "guest": guest])) ?? Data()
+        let mine = P256.KeyAgreement.PrivateKey()
+        let pub = mine.publicKey.x963Representation
+        let body = (try? JSONSerialization.data(withJSONObject: ["device": deviceName, "guest": guest, "pub": pub.hex,
+                                                                 "proof": LinkHTTP.proof(code: code, pub: pub).hex])) ?? Data()
         guard let r = try? await LinkHTTP.request(device.endpoint, "POST", "/pair/finish", body: body) else { return .failed }
         switch r.status {
         case 200:
-            struct Answer: Decodable { var id: String; var key: String; var tv: String; var name: String }
-            guard let a = try? JSONDecoder().decode(Answer.self, from: r.body) else { return .failed }
+            struct Answer: Decodable { var id: String; var pub: String; var tv: String; var name: String }
+            guard let a = try? JSONDecoder().decode(Answer.self, from: r.body), let other = Data(hex: a.pub),
+                  let key = LinkHTTP.pairingKey(mine, other: other, code: code) else { return .failed }
             pairings.removeAll { $0.tv == a.tv }
-            pairings.append(Pairing(tv: a.tv, name: a.name, keyId: a.id, key: a.key, guest: guest))
+            pairings.append(Pairing(tv: a.tv, name: a.name, keyId: a.id, key: key.hex, guest: guest))
             savePairings()
             if guest { join(device) } else { connect() }
             return .ok
         case 403: return .wrongCode
-        case 410: return .expired
+        case 410, 429: return .expired
         default: return .failed
         }
     }
@@ -151,6 +163,7 @@ final class TVLink {
         savePairings()
         if jukebox == tv { jukebox = nil }
         if listening?.pairing.tv == tv { disconnect() }
+        if target?.pairing.tv == tv { target = nil }
     }
 
     /// The name others see when this phone pairs or adds songs: the account's user name, which they know anyway.
@@ -185,6 +198,8 @@ final class TVLink {
         listener?.cancel()
         listener = nil
         listening = nil
+        target = nil
+        retry?.cancel()
         app?.player.tvGone()
     }
 
@@ -208,8 +223,14 @@ final class TVLink {
             guard let self, !Task.isCancelled else { return }
             self.listener = nil
             self.listening = nil
-            // A Jukebox that dropped out (the host's phone locked for a moment) is joined again once it's back
+            self.target = nil
             self.app?.player.tvGone()
+            // A Jukebox that dropped out (the host's phone locked for a moment) is joined again once it's back
+            self.retry = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(20))
+                guard !Task.isCancelled, let self, self.browser != nil else { return }
+                self.connect()
+            }
         }
     }
 
@@ -217,6 +238,7 @@ final class TVLink {
     private func follow(_ device: Device, _ pairing: Pairing) async -> Bool {
         guard let key = Data(hex: pairing.key) else { return false }
         listening = (device, pairing)
+        target = (device, pairing)
         let guest = pairing.guest == true
         var wasPlaying = false, first = true
         let auth = LinkHTTP.authorization("GET", "/events", body: Data(), keyId: pairing.keyId, key: key)
@@ -224,16 +246,22 @@ final class TVLink {
             guard line.starts(with: Data("data: ".utf8)), let s = try? JSONDecoder().decode(State.self, from: Data(line.dropFirst(6))) else { return }
             guard !Task.isCancelled else { return }
             let playing = s.active && s.playing == true
-            if s.active && self.matches(s, guest: guest) {
-                // A guest follows the Jukebox all the time; the own TV only takes over when it starts playing
-                self.app?.player.tvUpdate(s, name: device.name, guest: guest, started: guest || (playing && (first || !wasPlaying)))
-            } else if !guest {
+            if guest {
+                // A guest follows the Jukebox all the time, also before anything plays there – what it picks is the first song
+                if !s.active || self.matches(s, guest: true) { self.app?.player.tvUpdate(s, name: device.name, guest: true, started: true) }
+            } else if s.active && self.matches(s, guest: false) {
+                // The own TV takes over when it starts playing – or, right after connecting, when it plays and this
+                // phone doesn't: music playing here isn't cut off just because the app came back to the front
+                let local = self.app?.player.tvName == nil && self.app?.player.isPlaying == true
+                self.app?.player.tvUpdate(s, name: device.name, guest: false, started: playing && (first ? !local : !wasPlaying))
+            } else {
                 self.app?.player.tvGone()
             }
             wasPlaying = playing
             first = false
         }
-        if status == 401 { unpair(pairing.tv) } // the other side forgot this phone
+        // The other side forgot this phone – but not when only its clock is off
+        if status?.status == 401, !String(decoding: status?.body ?? Data(), as: UTF8.self).contains("clock") { unpair(pairing.tv) }
         return !first
     }
 
@@ -274,7 +302,7 @@ final class TVLink {
     }
 
     private func command(_ cmd: [String: Any]) {
-        guard let (device, pairing) = listening, let key = Data(hex: pairing.key),
+        guard let (device, pairing) = listening ?? target, let key = Data(hex: pairing.key),
               let body = try? JSONSerialization.data(withJSONObject: cmd) else { return }
         let auth = LinkHTTP.authorization("POST", "/command", body: body, keyId: pairing.keyId, key: key)
         Task {

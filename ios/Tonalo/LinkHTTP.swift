@@ -23,6 +23,7 @@ enum LinkHTTP {
     static func request(_ endpoint: NWEndpoint, _ method: String, _ path: String, body: Data = Data(),
                         headers: [String: String] = [:], timeout: TimeInterval = 8) async throws -> Response {
         let c = LinkConnection(endpoint)
+        c.idle = timeout // a side that took the request and then went quiet doesn't keep this waiting
         defer { c.close() }
         return try await withTaskCancellationHandler {
             try await c.open(timeout: timeout)
@@ -35,10 +36,12 @@ enum LinkHTTP {
     }
 
     /// A stream of server-sent events: `line` gets every line of the body as it comes.
-    /// Returns the status, once the connection has ended.
+    /// Returns the status (and for an error the body), once the connection has ended.
+    /// Both sides send a ping every 20 s – nothing for 50 s means the other side is gone without saying so.
     @MainActor
-    static func stream(_ endpoint: NWEndpoint, _ path: String, headers: [String: String], line: (Data) -> Void) async -> Int? {
+    static func stream(_ endpoint: NWEndpoint, _ path: String, headers: [String: String], line: (Data) -> Void) async -> Response? {
         let c = LinkConnection(endpoint)
+        c.idle = 50
         defer { c.close() }
         return await withTaskCancellationHandler {
             do {
@@ -52,14 +55,14 @@ enum LinkHTTP {
                         guard let split = buffer.range(of: Data("\r\n\r\n".utf8)) else { continue }
                         code = status(buffer[..<split.lowerBound])
                         buffer = Data(buffer[split.upperBound...])
-                        if code != 200 { return code }
                     }
+                    if code != 200 { continue } // the error's body, read to the end
                     while let nl = buffer.firstIndex(of: UInt8(ascii: "\n")) {
                         line(Data(buffer[buffer.startIndex..<nl]))
                         buffer = Data(buffer[buffer.index(after: nl)...])
                     }
                 }
-                return code
+                return code.map { Response(status: $0, body: $0 == 200 ? Data() : buffer) }
             } catch {
                 return nil
             }
@@ -79,16 +82,42 @@ enum LinkHTTP {
 
     // MARK: Signing
 
-    /// HMAC over method, path, time and body with the key from the pairing – the same as tv/service/service.js.
+    /// HMAC over method, path, time, a one-time value and body with the key from the pairing – the same as
+    /// tv/service/service.js. The one-time value makes a request recorded by someone else useless a second time.
     static func authorization(_ method: String, _ path: String, body: Data, keyId: String, key: Data) -> String {
         let time = String(Int(Date().timeIntervalSince1970))
-        return "Tonalo \(keyId):\(time):\(signature(method, path, time, body, key))"
+        let nonce = random(8).hex
+        return "Tonalo \(keyId):\(time):\(nonce):\(signature(method, path, time, nonce, body, key))"
     }
 
-    static func signature(_ method: String, _ path: String, _ time: String, _ body: Data, _ key: Data) -> String {
-        var message = Data("\(method)\n\(path)\n\(time)\n".utf8)
+    static func signature(_ method: String, _ path: String, _ time: String, _ nonce: String, _ body: Data, _ key: Data) -> String {
+        var message = Data("\(method)\n\(path)\n\(time)\n\(nonce)\n".utf8)
         message.append(body)
-        return HMAC<SHA256>.authenticationCode(for: message, using: SymmetricKey(data: key)).map { String(format: "%02x", $0) }.joined()
+        return Data(HMAC<SHA256>.authenticationCode(for: message, using: SymmetricKey(data: key))).hex
+    }
+
+    static func random(_ count: Int) -> Data { Data((0..<count).map { _ in UInt8.random(in: 0...255) }) }
+
+    // MARK: Pairing
+    // The code shown on the other screen never goes over the network: the phone proves it knows the code with an
+    // HMAC over its public key, and both sides work out the same key (ECDH) – whoever listens in gets neither.
+
+    /// Proof of knowing the code, tied to this public key.
+    static func proof(code: String, pub: Data) -> Data {
+        Data(HMAC<SHA256>.authenticationCode(for: pub, using: SymmetricKey(data: Data(code.utf8))))
+    }
+
+    /// The shared key from the pairing, as tv/service/service.js works it out.
+    static func pairingKey(_ mine: P256.KeyAgreement.PrivateKey, other pub: Data, code: String) -> Data? {
+        guard let other = try? P256.KeyAgreement.PublicKey(x963Representation: pub),
+              let secret = try? mine.sharedSecretFromKeyAgreement(with: other) else { return nil }
+        let raw = secret.withUnsafeBytes { Data($0) }
+        return Data(HMAC<SHA256>.authenticationCode(for: Data("tonalo-pair\n\(code)".utf8), using: SymmetricKey(data: raw)))
+    }
+
+    /// Compares in full, so the time it takes says nothing about how much matched.
+    static func same(_ a: Data, _ b: Data) -> Bool {
+        a.count == b.count && zip(a, b).reduce(0) { $0 | ($1.0 ^ $1.1) } == 0
     }
 }
 
@@ -96,6 +125,8 @@ enum LinkHTTP {
 final class LinkConnection: @unchecked Sendable {
     let connection: NWConnection
     private let queue = DispatchQueue(label: "tonalo.link")
+    /// Gives up when nothing arrives for this long.
+    var idle: TimeInterval?
 
     init(_ endpoint: NWEndpoint) { connection = NWConnection(to: endpoint, using: LinkHTTP.parameters) }
     init(_ connection: NWConnection) { self.connection = connection }
@@ -127,7 +158,13 @@ final class LinkConnection: @unchecked Sendable {
     /// The next piece of data, or nil once the other side has closed.
     func receive() async throws -> Data? {
         try await withCheckedThrowingContinuation { (done: CheckedContinuation<Data?, Error>) in
+            let watchdog = idle.map { idle in
+                let w = DispatchWorkItem { [connection] in connection.cancel() } // ends the receive below with an error
+                queue.asyncAfter(deadline: .now() + idle, execute: w)
+                return w
+            }
             connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, complete, error in
+                watchdog?.cancel()
                 if let data, !data.isEmpty { done.resume(returning: data) }
                 else if let error { done.resume(throwing: error) }
                 else if complete { done.resume(returning: nil) }

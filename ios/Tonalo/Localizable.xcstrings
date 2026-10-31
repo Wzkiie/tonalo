@@ -87,16 +87,6 @@
         }
       }
     },
-    "%@'s Jukebox" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Jukebox von %@"
-          }
-        }
-      }
-    },
     "000000" : {
       "shouldTranslate" : false
     },
@@ -326,6 +316,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nichts gefunden. Öffne Tonalo auf deinem Fernseher oder auf dem iPhone, das die Jukebox startet."
+          }
+        }
+      }
+    },
+    "Nothing playing yet – pick something to add" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch läuft nichts – wähl etwas zum Hinzufügen aus"
           }
         }
       }

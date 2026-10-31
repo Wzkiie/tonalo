@@ -8,3 +8,6 @@ xcuserdata/
 DerivedData/
 ios/build/
 ios/Local.xcconfig
+# private notes
+*NOTIZEN*.md
+*-POST.md

@@ -328,6 +328,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             guard let self, let song = self.app.player.current else { return }
             self.app.toggleStar(song)
         }
+        // A Jukebox guest can't shuffle or repeat what the host plays – the heart is for the guest's own favorites
+        if p.tvGuest { CPNowPlayingTemplate.shared.updateNowPlayingButtons([heart]); return }
         let repeatButton = button(p.repeatMode == .one ? "repeat.1" : "repeat", on: p.repeatMode != .off) { p.cycleRepeat() }
         CPNowPlayingTemplate.shared.updateNowPlayingButtons([shuffle, heart, repeatButton])
     }

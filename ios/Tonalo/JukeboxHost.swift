@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Network
 import Observation
@@ -40,10 +41,22 @@ final class JukeboxHost {
     @ObservationIgnored private var listener: NWListener?
     @ObservationIgnored private var streams: [(connection: LinkConnection, guest: Guest)] = []
     @ObservationIgnored private var pairing: (code: String, until: Date, tries: Int)?
+    /// Wrong codes over all pairings – after 15, pairing is closed for 10 minutes, so guessing gets nowhere.
+    @ObservationIgnored private var failures = 0
+    @ObservationIgnored private var lockedUntil = Date.distantPast
+    /// Requests already used: one recorded by someone else doesn't go through a second time.
+    @ObservationIgnored private var nonces: [String: Date] = [:]
+    @ObservationIgnored private var connections = 0
     @ObservationIgnored private var sync: Timer?
+    @ObservationIgnored private var ticks = 0
+    /// What the guests were told last, to notice a jump (seeking) between the regular updates.
+    @ObservationIgnored private var told: (position: Double, at: Date, playing: Bool)?
+    /// Counts up with every start, so an observation left from before a restart ends by itself.
+    @ObservationIgnored private var generation = 0
 
     private var storageKey: String? { app?.current.map { "jukebox." + $0.id.uuidString } }
-    var name: String { String(localized: "\(app?.current?.username ?? "Tonalo")'s Jukebox") }
+    /// What everyone nearby sees before pairing – no user name, that's for those who joined.
+    let name = "Tonalo Jukebox"
 
     // MARK: Switching on and off
 
@@ -55,13 +68,18 @@ final class JukeboxHost {
         l.newConnectionHandler = { [weak self] c in
             Task { @MainActor in await self?.handle(LinkConnection(c)) }
         }
+        l.stateUpdateHandler = { [weak self] state in
+            // No local network permission, or the system took the listener away: off, so the switch says so
+            if case .failed = state { Task { @MainActor in self?.stop() } }
+        }
         l.start(queue: .main)
         listener = l
         running = true
-        watchPlayer()
-        // The position counts on by itself on the guests' phones – it's only corrected now and then
-        sync = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.push() }
+        generation += 1
+        watchPlayer(generation)
+        // The position counts on by itself on the guests' phones – it's only corrected now and then, or when it jumped
+        sync = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.tick() }
         }
     }
 
@@ -100,9 +118,15 @@ final class JukeboxHost {
     // MARK: Requests
 
     private func handle(_ c: LinkConnection) async {
+        // Someone nearby opening lots of connections that never send anything doesn't wear the phone out
+        guard connections < 16 else { return c.close() }
+        connections += 1
+        defer { connections -= 1 }
         do {
+            c.idle = 10
             try await c.open(timeout: 10)
             guard let req = try await read(c) else { c.close(); return }
+            c.idle = nil
             await route(req, c)
         } catch {
             c.close()
@@ -143,6 +167,7 @@ final class JukeboxHost {
         case ("GET", "/info"):
             return await reply(c, 200, ["app": "tonalo", "id": id, "name": name])
         case ("POST", "/pair/start"):
+            guard Date() > lockedUntil else { return await reply(c, 429, ["error": "too many tries"]) }
             // Only guests: this phone's own account plays here already
             let code = String(format: "%06d", Int.random(in: 0..<1_000_000))
             pairing = (code, Date().addingTimeInterval(120), 0)
@@ -150,24 +175,35 @@ final class JukeboxHost {
             return await reply(c, 200, ["ok": true])
         case ("POST", "/pair/finish"):
             guard let pairing, pairing.until > .now else { return await reply(c, 410, ["error": "expired"]) }
-            guard p["code"] as? String == pairing.code else {
+            // The code itself never comes over the network – only proof that the guest knows it (see LinkHTTP)
+            guard let pub = (p["pub"] as? String).flatMap({ Data(hex: $0) }), let proof = (p["proof"] as? String).flatMap({ Data(hex: $0) }),
+                  LinkHTTP.same(proof, LinkHTTP.proof(code: pairing.code, pub: pub)) else {
                 self.pairing?.tries += 1
-                // Guessing doesn't pay off: after five wrong tries the code is gone
+                failures += 1
+                // Guessing doesn't pay off: after five wrong tries the code is gone, after 15 pairing closes for 10 minutes
+                if failures >= 15 { failures = 0; lockedUntil = Date().addingTimeInterval(600); cancelRequest() }
                 if (self.pairing?.tries ?? 0) >= 5 { cancelRequest() }
                 return await reply(c, 403, ["error": "wrong code"])
             }
-            let guest = Guest(keyId: Data((0..<8).map { _ in UInt8.random(in: 0...255) }).hex,
-                              key: Data((0..<32).map { _ in UInt8.random(in: 0...255) }).hex,
-                              name: String((p["device"] as? String ?? "Guest").prefix(60)))
+            let mine = P256.KeyAgreement.PrivateKey()
+            guard let key = LinkHTTP.pairingKey(mine, other: pub, code: pairing.code) else { return await reply(c, 400, ["error": "bad key"]) }
+            let guest = Guest(keyId: LinkHTTP.random(8).hex, key: key.hex, name: String((p["device"] as? String ?? "Guest").prefix(60)))
+            // Pairing again replaces the old pairing of the same guest
+            for old in guests where old.name == guest.name { remove(old) }
             guests.append(guest)
             save()
             cancelRequest()
+            failures = 0
             app?.notify(String(localized: "\(guest.name) joined the Jukebox"))
-            return await reply(c, 200, ["id": guest.keyId, "key": guest.key, "tv": id, "name": name])
+            return await reply(c, 200, ["id": guest.keyId, "pub": mine.publicKey.x963Representation.hex, "tv": id, "name": name])
         default:
             break
         }
-        guard let guest = authorized(r) else { return await reply(c, 401, ["error": "not paired"]) }
+        let who = authorized(r)
+        guard case .success(let guest) = who else {
+            if case .failure(let why) = who { return await reply(c, 401, ["error": why.rawValue]) }
+            return
+        }
         switch (r.method, r.path) {
         case ("GET", "/events"):
             try? await c.send(Data("HTTP/1.0 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\n\r\n".utf8))
@@ -186,15 +222,24 @@ final class JukeboxHost {
         }
     }
 
-    private func authorized(_ r: Request_) -> Guest? {
-        let parts = (r.headers["authorization"] ?? "").replacingOccurrences(of: "Tonalo ", with: "").split(separator: ":")
-        guard parts.count == 3, let time = Double(parts[1]), abs(Date().timeIntervalSince1970 - time) < 120,
-              let guest = guests.first(where: { $0.keyId == parts[0] }), let key = Data(hex: guest.key) else { return nil }
-        let want = LinkHTTP.signature(r.method, r.path, String(parts[1]), r.body, key)
-        // Compared in full, so the time it takes says nothing about how much matched
-        let a = Array(want.utf8), b = Array(String(parts[2]).utf8)
-        guard a.count == b.count else { return nil }
-        return zip(a, b).reduce(0) { $0 | ($1.0 ^ $1.1) } == 0 ? guest : nil
+    enum Refusal: String, Error {
+        case notPaired = "not paired"
+        /// The signature is right, the time isn't – the guest stays paired.
+        case clock
+    }
+
+    private func authorized(_ r: Request_) -> Result<Guest, Refusal> {
+        let parts = (r.headers["authorization"] ?? "").replacingOccurrences(of: "Tonalo ", with: "").split(separator: ":").map(String.init)
+        guard parts.count == 4, let time = Double(parts[1]), parts[2].count >= 16,
+              let guest = guests.first(where: { $0.keyId == parts[0] }), let key = Data(hex: guest.key),
+              let got = Data(hex: parts[3]), let want = Data(hex: LinkHTTP.signature(r.method, r.path, parts[1], parts[2], r.body, key)),
+              LinkHTTP.same(got, want) else { return .failure(.notPaired) }
+        guard abs(Date().timeIntervalSince1970 - time) < 120 else { return .failure(.clock) }
+        let now = Date()
+        nonces = nonces.filter { $0.value > now }
+        guard nonces[parts[2]] == nil else { return .failure(.notPaired) }
+        nonces[parts[2]] = now.addingTimeInterval(250)
+        return .success(guest)
     }
 
     private func reply(_ c: LinkConnection, _ status: Int, _ body: [String: Any]) async {
@@ -208,8 +253,9 @@ final class JukeboxHost {
 
     private func run(_ c: [String: Any], from guest: Guest) {
         let player = app?.player
-        let songs = (c["songs"] as? [Any]).flatMap { try? JSONSerialization.data(withJSONObject: $0) }
-            .flatMap { try? JSONDecoder().decode([Song].self, from: $0) } ?? []
+        // No more than 20 at once, whatever a guest's phone sends
+        let songs = Array(((c["songs"] as? [Any]).flatMap { try? JSONSerialization.data(withJSONObject: $0) }
+            .flatMap { try? JSONDecoder().decode([Song].self, from: $0) } ?? []).prefix(20))
         switch c["cmd"] as? String {
         case "enqueue" where !songs.isEmpty:
             player?.enqueue(songs)
@@ -233,8 +279,8 @@ final class JukeboxHost {
 
     // MARK: State for the guests
 
-    private func watchPlayer() {
-        guard running, let p = app?.player else { return }
+    private func watchPlayer(_ generation: Int) {
+        guard running, generation == self.generation, let p = app?.player else { return }
         withObservationTracking {
             _ = p.current?.id
             _ = p.isPlaying
@@ -246,7 +292,7 @@ final class JukeboxHost {
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.push()
-                self?.watchPlayer()
+                self?.watchPlayer(generation)
             }
         }
     }
@@ -283,7 +329,20 @@ final class JukeboxHost {
         return s
     }
 
+    /// Every 2 s: a ping now and then so guests notice when this phone is gone, the state every 10 s, and
+    /// at once when the position jumped.
+    private func tick() {
+        ticks += 1
+        guard !streams.isEmpty, let p = app?.player else { return }
+        if let t = told {
+            let expected = t.position + (t.playing ? Date().timeIntervalSince(t.at) : 0)
+            if abs(p.position - expected) > 2 || ticks % 5 == 0 { return push() }
+        } else if ticks % 5 == 0 { return push() }
+        if ticks % 10 == 0 { for s in streams { Task { try? await s.connection.send(Data(": ping\n\n".utf8)) } } }
+    }
+
     private func push() {
+        if let p = app?.player { told = (p.position, Date(), p.isPlaying) }
         guard !streams.isEmpty, let data = try? JSONSerialization.data(withJSONObject: snapshot()) else { return }
         let line = Data("data: ".utf8) + data + Data("\n\n".utf8)
         for s in streams { Task { try? await s.connection.send(line) } }

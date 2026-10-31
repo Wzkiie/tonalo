@@ -178,7 +178,7 @@ final class PlayerModel {
     }
 
     func playNext(_ songs: [Song]) {
-        if tvName != nil { tv?.add(songs, next: true); if tvGuest { app?.notify(String(localized: "Added to the Jukebox")) }; return }
+        if tvName != nil { addOnTV(songs, next: true); return }
         guard !queue.isEmpty else { return play(songs) }
         queue.insert(contentsOf: songs, at: index + 1)
         original?.append(contentsOf: songs)
@@ -187,12 +187,18 @@ final class PlayerModel {
     }
 
     func enqueue(_ songs: [Song]) {
-        if tvName != nil { tv?.add(songs, next: false); if tvGuest { app?.notify(String(localized: "Added to the Jukebox")) }; return }
+        if tvName != nil { addOnTV(songs, next: false); return }
         guard !queue.isEmpty else { return play(songs) }
         queue.append(contentsOf: songs)
         original?.append(contentsOf: songs)
         persist()
         if isPlaying { preload() }
+    }
+
+    /// A guest adds no more than 20 songs at once, whichever way – the host and the TV hold to that too.
+    private func addOnTV(_ songs: [Song], next: Bool) {
+        tv?.add(tvGuest ? Array(songs.prefix(20)) : songs, next: next)
+        if tvGuest { app?.notify(String(localized: "Added to the Jukebox")) }
     }
 
     func jump(to i: Int) {
@@ -248,7 +254,9 @@ final class PlayerModel {
             if playingPreloaded {
                 prefetcher.remove(account: client.account.id, song: song, quality: (app?.streamingQuality ?? .lossless).resolved(for: song))
             }
+            let counted = scrobbled
             load(autoplay: true, startAt: position)
+            scrobbled = counted // the same listen, not a second one
             return
         }
         next(auto: true)
@@ -383,6 +391,11 @@ final class PlayerModel {
     /// Turns the volume down over a few seconds instead of stopping abruptly – nicer when falling asleep.
     private func fadeOutAndPause() {
         guard isPlaying else { return }
+        if tvName != nil {
+            // The phone is quiet anyway – it's the TV that should stop
+            if !tvGuest { tv?.command("play-pause", ["playing": false]); isPlaying = false }
+            return
+        }
         endFade()
         fadingOut = true
         let start = Date(), from = gain
@@ -408,9 +421,11 @@ final class PlayerModel {
 
     /// Saves the current queue and empties the player, without touching the saved queue.
     func detach() {
+        // While the TV played, the queue here is the TV's – this phone's own was saved when the TV took over
+        let mirrored = tvName != nil
         endTV()
         leaveStation()
-        persist()
+        if mirrored { queue = [] } else { persist() }
         endFade()
         player.pause()
         player.replaceCurrentItem(with: nil)
@@ -616,7 +631,7 @@ final class PlayerModel {
 
     /// Loads the next songs of the queue in the background (downloaded ones don't need it).
     private func preload() {
-        guard let app, let client = app.client else { return }
+        guard tvName == nil, let app, let client = app.client else { return }
         let count = app.preloadCount
         let upcoming = count == 0 || index < 0 ? [] : queue.dropFirst(index + 1).prefix(count).filter { app.downloads.localURL($0.id) == nil }
         prefetcher.update(current: current, upcoming: Array(upcoming), client: client, quality: app.streamingQuality)
@@ -871,8 +886,11 @@ final class PlayerModel {
         let st = station, guest = tvGuest
         endTV()
         station = nil
-        // A guest goes back to its own music; the own TV's music stays here, paused, to go on with
-        if !guest, st == nil, current != nil { isPlaying = false; persist(sync: false) } else { isPlaying = false; restore() }
+        isPlaying = false
+        // A guest goes back to its own music (or none); the own TV's music stays here, paused, to go on with
+        if !guest, st == nil, current != nil { persist(sync: false); return }
+        queue = []; index = -1; position = 0; duration = 0; original = nil; context = nil; shuffle = false; repeatMode = .off
+        restore()
     }
 
     /// "Play on iPhone": the TV pauses, the music goes on here from the same spot.
@@ -883,7 +901,8 @@ final class PlayerModel {
         let st = station, at = position
         endTV()
         station = nil
-        if let st { play(st, in: [st]); return }
+        // The station's time isn't a position in the queue – that one starts over when the station ends
+        if let st { position = 0; play(st, in: [st]); return }
         guard current != nil else { restore(); return }
         errorStreak = 0
         load(autoplay: true, startAt: at)

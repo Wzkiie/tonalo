@@ -175,6 +175,8 @@ struct RootView: View {
                 NowPlayingView { withAnimation(.spring(duration: 0.35)) { showNowPlaying = false } }
                     .transition(.move(edge: .bottom))
                     .zIndex(2)
+                    // Notes like "Only the host can do that" show over the big player too
+                    .overlay(alignment: .top) { if let notice = app.notice { noticeView(notice).padding(.top, 54) } }
             }
         }
         .overlay {
@@ -193,15 +195,16 @@ struct RootView: View {
         }
     }
 
+    private func noticeView(_ notice: String) -> some View {
+        Text(notice).font(.system(size: 14, weight: .semibold)).foregroundStyle(.black)
+            .padding(.horizontal, 16).padding(.vertical, 10)
+            .background(Color.white, in: Capsule())
+            .transition(.opacity.combined(with: .scale(scale: 0.9)))
+    }
+
     private var bottomBar: some View {
         VStack(spacing: 4) {
-            if let notice = app.notice {
-                Text(notice).font(.system(size: 14, weight: .semibold)).foregroundStyle(.black)
-                    .padding(.horizontal, 16).padding(.vertical, 10)
-                    .background(Color.white, in: Capsule())
-                    .padding(.bottom, 4)
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-            }
+            if let notice = app.notice { noticeView(notice).padding(.bottom, 4) }
             ContinueBanner().padding(.horizontal, 8)
             MiniPlayer().padding(.horizontal, 8)
             TabBar(tab: $tab) { paths[$0] = NavigationPath() }

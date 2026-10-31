@@ -263,7 +263,7 @@ final class AppModel {
     }
 
     func remove(_ account: Account) {
-        if account.id == currentId { player.detach() }
+        if account.id == currentId { jukeboxHost.accountChanged(); player.detach() }
         accounts.removeAll { $0.id == account.id }
         UserDefaults.standard.removeObject(forKey: "queue." + account.id.uuidString)
         UserDefaults.standard.removeObject(forKey: "scrobbles." + account.id.uuidString)
@@ -284,6 +284,7 @@ final class AppModel {
             downloads.reload()
             librarySync.show(currentId)
             player.restore()
+            tv.accountChanged()
             checkRoute()
         }
     }

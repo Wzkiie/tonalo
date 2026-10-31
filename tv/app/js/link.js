@@ -48,7 +48,7 @@ var Link = (function () {
     if (pairModal) { pairModal.close(); pairModal = null; }
     if (!code) return;
     App.wake();
-    pairModal = UI.modal(null, [{ icon: 'close', label: T('Abbrechen') }], {
+    pairModal = UI.modal(null, [{ icon: 'close', label: T('Abbrechen'), action: function () { pairModal = null; } }], {
       head: { title: code.slice(0, 3) + ' ' + code.slice(3),
         sub: guest && name ? T('{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben', { name: name }) : T('Gib diesen Code in Tonalo auf dem iPhone ein') }
     });
@@ -68,7 +68,6 @@ var Link = (function () {
   }
 
   function run(c) {
-    announce(c);
     switch (c.cmd) {
       case 'play':
         if (c.songs && c.songs.length) Player.playList(c.songs, c.index || 0, { shuffle: !!c.shuffle, keepStart: !c.shuffle || c.index > 0, context: c.context || null });
@@ -92,6 +91,8 @@ var Link = (function () {
         if (s && s.id === c.id) Player.setStarred(s, !!c.on); // der Server weiß es schon vom iPhone
         break;
     }
+    // Erst danach: der Player zeigt beim Hinzufügen selbst einen Hinweis, der den hier sonst gleich ersetzt
+    announce(c);
     App.wake();
     push();
   }

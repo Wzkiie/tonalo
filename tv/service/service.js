@@ -15,7 +15,9 @@ var app = null;        // Abo der TV-App – darüber gehen Befehle und Kopplung
 var tv = { id: '', name: 'TV', keys: [] }; // keys: [{ id, device, key }], gespeichert macht sie die App
 var state = { active: false };
 var clients = [];      // offene Live-Verbindungen der iPhones: { res, entry }
-var pairing = null;    // { code, until, tries }
+var pairing = null;    // { code, until, tries, guest }
+var failures = 0, lockedUntil = 0; // falsche Codes über alle Kopplungen – Raten wird nach 15 Fehlern 10 min gesperrt
+var nonces = {};       // schon benutzte Anfragen: eine mitgeschnittene Anfrage geht kein zweites Mal durch
 var server = null;
 
 function send(msg) { if (app) app.respond(Object.assign({ returnValue: true }, msg)); }
@@ -26,6 +28,8 @@ service.register('attach', function (msg) {
   tv.id = String(p.id || tv.id);
   tv.name = String(p.name || tv.name);
   tv.keys = Array.isArray(p.keys) ? p.keys : [];
+  // Getrennte Geräte sehen ab sofort nichts mehr, auch nicht über eine schon offene Verbindung
+  clients.filter(function (c) { return !keyFor(c.entry.id); }).forEach(function (c) { c.res.end(); });
   if (app && app !== msg) { try { app.cancel(); } catch (e) { /* schon weg */ } }
   app = msg;
   startServer();
@@ -66,19 +70,29 @@ function guestNames() {
   return names;
 }
 
-// Was Gäste dürfen: Songs hinzufügen und überspringen
+// Was Gäste dürfen: Songs hinzufügen (höchstens 20 auf einmal) und überspringen
 var GUEST = ['enqueue', 'playNext', 'next'];
+var GUEST_SONGS = 20;
 
-// ---------- Anmeldung der iPhones: HMAC über Methode, Pfad, Zeit und Inhalt mit dem Schlüssel aus der Kopplung
+function keyFor(id) { return tv.keys.filter(function (k) { return k.id === id; })[0]; }
+
+// ---------- Anmeldung der iPhones: HMAC über Methode, Pfad, Zeit, Einmalwert und Inhalt mit dem Schlüssel aus der Kopplung
+// Liefert das Gerät oder den Grund der Ablehnung: 'clock' (Uhr daneben – die Kopplung gilt weiter) oder 'not paired'
 function authorized(req, body) {
-  var m = /^Tonalo ([^:]+):(\d+):([0-9a-f]{64})$/.exec(req.headers.authorization || '');
-  if (!m || Math.abs(Date.now() / 1000 - +m[2]) > 120) return null;
-  var entry = tv.keys.filter(function (k) { return k.id === m[1]; })[0];
-  if (!entry) return null;
+  var m = /^Tonalo ([^:]+):(\d+):([0-9a-f]{16,64}):([0-9a-f]{64})$/.exec(req.headers.authorization || '');
+  if (!m) return 'not paired';
+  var entry = keyFor(m[1]);
+  if (!entry) return 'not paired';
   var want = crypto.createHmac('sha256', Buffer.from(entry.key, 'hex'))
-    .update(req.method + '\n' + req.url + '\n' + m[2] + '\n' + body).digest();
-  var got = Buffer.from(m[3], 'hex');
-  return got.length === want.length && crypto.timingSafeEqual(got, want) ? entry : null;
+    .update(req.method + '\n' + req.url + '\n' + m[2] + '\n' + m[3] + '\n' + body).digest();
+  var got = Buffer.from(m[4], 'hex');
+  if (got.length !== want.length || !crypto.timingSafeEqual(got, want)) return 'not paired';
+  var now = Date.now();
+  if (Math.abs(now / 1000 - +m[2]) > 120) return 'clock';
+  Object.keys(nonces).forEach(function (n) { if (nonces[n] < now) delete nonces[n]; });
+  if (nonces[m[3]]) return 'not paired';
+  nonces[m[3]] = now + 250000;
+  return entry;
 }
 
 function reply(res, code, obj) {
@@ -93,28 +107,41 @@ function handle(req, res, body) {
   // Kopplung: der TV zeigt einen Code, das iPhone schickt ihn zurück und bekommt einen eigenen Schlüssel
   if (req.method === 'POST' && path === '/pair/start') {
     if (!app) return reply(res, 503, { error: 'not running' });
+    if (Date.now() < lockedUntil) return reply(res, 429, { error: 'too many tries' });
     var ask = parse(body);
-    pairing = { code: String(crypto.randomBytes(4).readUInt32BE(0) % 1000000 + 1000000).slice(1), until: Date.now() + 120000, tries: 0 };
+    // Ob Gast oder eigenes iPhone, steht hier fest – und damit auch auf dem Bildschirm, den der TV zeigt
+    pairing = { code: String(crypto.randomBytes(4).readUInt32BE(0) % 1000000 + 1000000).slice(1), until: Date.now() + 120000, tries: 0, guest: !!ask.guest };
     send({ pairCode: pairing.code, pairName: String(ask.device || '').slice(0, 60), guest: !!ask.guest });
     return reply(res, 200, { ok: true });
   }
   if (req.method === 'POST' && path === '/pair/finish') {
     var p = parse(body);
     if (!pairing || Date.now() > pairing.until) return reply(res, 410, { error: 'expired' });
-    if (String(p.code) !== pairing.code) {
-      // Raten lohnt nicht: nach fünf Fehlversuchen gilt der Code nicht mehr
+    // Der Code selbst geht nie übers Netz – nur ein Nachweis, dass das iPhone ihn kennt, über seinen öffentlichen Schlüssel
+    var pub = /^[0-9a-f]{130}$/.test(p.pub || '') ? Buffer.from(p.pub, 'hex') : null;
+    var proof = /^[0-9a-f]{64}$/.test(p.proof || '') ? Buffer.from(p.proof, 'hex') : null;
+    var expect = pub && crypto.createHmac('sha256', pairing.code).update(pub).digest();
+    if (!proof || !expect || !crypto.timingSafeEqual(proof, expect)) {
+      // Raten lohnt nicht: nach fünf Fehlversuchen gilt der Code nicht mehr, nach 15 ist für 10 min Schluss
+      if (++failures >= 15) { lockedUntil = Date.now() + 600000; failures = 0; pairing.tries = 5; }
       if (++pairing.tries >= 5) { pairing = null; send({ pairCode: null }); }
       return reply(res, 403, { error: 'wrong code' });
     }
+    // Beide Seiten errechnen denselben Schlüssel (ECDH) – wer im WLAN mitliest, bekommt ihn nicht zu sehen
+    var ecdh = crypto.createECDH('prime256v1'), secret;
+    ecdh.generateKeys();
+    try { secret = ecdh.computeSecret(pub); } catch (e) { return reply(res, 400, { error: 'bad key' }); }
+    var key = crypto.createHmac('sha256', secret).update('tonalo-pair\n' + pairing.code).digest('hex');
+    var entry = { id: crypto.randomBytes(8).toString('hex'), device: String(p.device || 'iPhone').slice(0, 60), key: key, guest: pairing.guest };
     pairing = null;
-    var entry = { id: crypto.randomBytes(8).toString('hex'), device: String(p.device || 'iPhone').slice(0, 60), key: crypto.randomBytes(32).toString('hex'), guest: !!p.guest };
+    failures = 0;
     tv.keys = tv.keys.concat([entry]);
     send({ pairCode: null, keys: tv.keys, paired: entry.device, guest: entry.guest });
-    return reply(res, 200, { id: entry.id, key: entry.key, tv: tv.id, name: tv.name });
+    return reply(res, 200, { id: entry.id, pub: ecdh.getPublicKey('hex'), tv: tv.id, name: tv.name });
   }
 
   var who = authorized(req, body);
-  if (!who) return reply(res, 401, { error: 'not paired' });
+  if (typeof who === 'string') return reply(res, 401, { error: who });
 
   if (req.method === 'GET' && path === '/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
@@ -135,6 +162,7 @@ function handle(req, res, body) {
     var cmd = parse(body);
     if (who.guest) {
       if (GUEST.indexOf(cmd.cmd) < 0) return reply(res, 403, { error: 'host only' });
+      if (Array.isArray(cmd.songs)) cmd.songs = cmd.songs.slice(0, GUEST_SONGS);
       cmd.by = who.device; // der TV zeigt kurz, wer etwas hinzugefügt hat
     }
     send({ command: cmd });
@@ -171,7 +199,11 @@ function lanIp() {
 }
 
 function encodeName(name) {
-  var parts = name.split('.').filter(Boolean).map(function (l) { var b = Buffer.from(l, 'utf8'); return Buffer.concat([Buffer.from([b.length]), b]); });
+  var parts = name.split('.').filter(Boolean).map(function (l) {
+    while (Buffer.byteLength(l, 'utf8') > 63) l = l.slice(0, -1); // ein Teil eines Namens hat höchstens 63 Bytes
+    var b = Buffer.from(l, 'utf8');
+    return Buffer.concat([Buffer.from([b.length]), b]);
+  });
   return Buffer.concat(parts.concat([Buffer.from([0])]));
 }
 

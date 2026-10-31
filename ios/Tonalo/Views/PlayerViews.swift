@@ -11,6 +11,14 @@ struct MiniPlayer: View {
         let p = app.player
         if let station = p.station {
             StationMiniBar(station: station)
+        } else if p.current == nil, let name = p.tvName {
+            // Joined a Jukebox where nothing plays yet: what the guest picks starts it
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Nothing playing yet – pick something to add").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                TVBar(name: name)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 10)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.16)))
         } else if let song = p.current {
             VStack(spacing: 8) {
             HStack(spacing: 10) {

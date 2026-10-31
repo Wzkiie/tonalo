@@ -74,7 +74,7 @@ struct TVSettingsView: View {
                         Spacer()
                         if host.present.contains(g.name) { Text("Here").foregroundStyle(Color.accent) }
                     }
-                    .swipeActions { Button("Remove", role: .destructive) { host.remove(g) } }
+                    .swipeActions { Button("Remove", role: .destructive) { host.remove(g) }.tint(.red) }
                 }
             } header: {
                 Text("Jukebox")
@@ -104,7 +104,7 @@ struct TVSettingsView: View {
                 Section("Paired") {
                     ForEach(paired, id: \.tv) { p in
                         Label(p.guest == true ? "\(p.name) (guest)" : p.name, systemImage: "link")
-                            .swipeActions { Button("Remove", role: .destructive) { link.unpair(p.tv) } }
+                            .swipeActions { Button("Remove", role: .destructive) { link.unpair(p.tv) }.tint(.red) }
                     }
                 }
             }
@@ -165,7 +165,8 @@ struct PairTVView: View {
                     .disabled(!asked)
                     .onChange(of: code) { _, v in
                         code = String(v.filter(\.isNumber).prefix(6))
-                        if code.count == 6 { Task { await finish() } }
+                        // A pasted code changes the field twice – sent once
+                        if code.count == 6, !busy { busy = true; Task { await finish() } }
                     }
                 if let message { Text(message).foregroundStyle(.red).font(.subheadline).multilineTextAlignment(.center) }
                 if busy { ProgressView() }

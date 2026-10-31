@@ -107,6 +107,8 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 - **Radio stations**: the stations set up on your server (Navidrome: Radio) play live, with the song on air when the station sends it. If that song is in your library, one tap plays it from there
 - **Artist pages** with popular songs, the discography, "Fans also like" and a biography. Without Last.fm on the server, the artist's songs you played most stand in for the popular ones – see [Server tips](#server-tips)
 - **Continue on another device**: started on the TV, finished on the iPhone – the app offers to pick up the queue another device left on your server
+- **Play on the TV**: pair the iPhone with your TV once with a code. While the TV plays, the phone shows it live, and music you pick on the phone plays on the TV. "Play on iPhone" takes it back at the same second
+- **Jukebox**: friends nearby join with a code, add songs to what's playing and skip. The TV hosts it at home, an iPhone in the car – the phones connect directly, without Wi-Fi. Guests need an account on the same server
 - **Playlists**: create, rename and delete them, add songs from any menu (with a warning for duplicates), remove and reorder songs
 - **Crossfade** between songs, adjustable from 1 to 12 seconds
 - **Audio quality** set separately for Wi-Fi, cellular and downloads: the original files (lossless, FLAC stays FLAC) or converted by your server to AAC, Opus or MP3, with the data an hour of music takes next to each level. Formats the iPhone can't play are converted automatically.
