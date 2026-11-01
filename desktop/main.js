@@ -123,8 +123,11 @@ function setStatus(s) {
   if (win && !win.webContents.isDestroyed()) win.webContents.send('upd-status', s);
 }
 
+// Das neueste Release hat (noch) keinen Windows-Installer, z. B. ein reines TV-Release: dann gibt es nichts Neues
+function noWindowsBuild(err) { return /latest\.yml/.test(String(err && err.message)) && /404/.test(String(err && err.message)); }
+
 function shortError(err) {
-  const text = String((err && err.message) || err || '').split('\n')[0];
+  const text = String((err && err.message) || err || '').split('\n')[0].replace(/\s*\(https?:[^)]*\)/g, '');
   return text.length > 140 ? text.slice(0, 137) + '…' : text;
 }
 
@@ -138,7 +141,7 @@ function setupUpdater() {
   updater.on('update-not-available', () => setStatus({ state: 'none' }));
   updater.on('download-progress', (p) => setStatus({ state: 'downloading', version: status.version, percent: p.percent }));
   updater.on('update-downloaded', (info) => setStatus({ state: 'ready', version: info.version }));
-  updater.on('error', (err) => setStatus({ state: 'error', version: status.version, error: shortError(err) }));
+  updater.on('error', (err) => setStatus(noWindowsBuild(err) ? { state: 'none' } : { state: 'error', version: status.version, error: shortError(err) }));
   setTimeout(check, 5000);
   setInterval(check, 6 * 60 * 60 * 1000);
 }
@@ -146,7 +149,7 @@ function setupUpdater() {
 function check() {
   if (!updater) { setStatus({ state: 'none' }); return; }
   if (status.state === 'downloading' || status.state === 'ready') return;
-  updater.checkForUpdates().catch((err) => setStatus({ state: 'error', error: shortError(err) }));
+  updater.checkForUpdates().catch((err) => setStatus(noWindowsBuild(err) ? { state: 'none' } : { state: 'error', error: shortError(err) }));
 }
 
 ipcMain.on('upd-ready', () => setStatus(status));
