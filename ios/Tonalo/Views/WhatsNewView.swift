@@ -18,6 +18,14 @@ struct AppRelease: Identifiable {
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
+        AppRelease(version: "1.3.0", items: [
+            .init(icon: "desktopcomputer", color: .teal, title: "Play on your computer",
+                  text: "Tonalo now runs on Windows too. Pair your PC under Devices, and it works like the TV: see what's playing there and send music to it."),
+            .init(icon: "person.2.wave.2", color: .purple, title: "Devices and Jukebox",
+                  text: "Your own TV or computer is under Devices. Hosting a Jukebox and joining one have their own page."),
+            .init(icon: "heart.fill", color: .pink, title: "Favorites offline",
+                  text: "Your favorite songs open at once without a connection, from the saved copy or your downloads."),
+        ]),
         AppRelease(version: "1.2.0", items: [
             .init(icon: "tv", color: .blue, title: "Play on your TV",
                   text: "While your TV plays Tonalo, the iPhone shows what's playing there, and music you pick plays on the TV. Pair once under TV & Jukebox."),

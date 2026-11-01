@@ -400,6 +400,66 @@
         }
       }
     },
+    "Play on your computer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf deinem Computer abspielen"
+          }
+        }
+      }
+    },
+    "Tonalo now runs on Windows too. Pair your PC under Devices, and it works like the TV: see what's playing there and send music to it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tonalo läuft jetzt auch unter Windows. Koppel deinen PC unter Geräte, dann klappt es wie mit dem Fernseher: Du siehst, was dort läuft, und schickst Musik hin."
+          }
+        }
+      }
+    },
+    "Devices and Jukebox" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geräte und Jukebox"
+          }
+        }
+      }
+    },
+    "Your own TV or computer is under Devices. Hosting a Jukebox and joining one have their own page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein eigener Fernseher oder Computer steht unter Geräte. Eine Jukebox starten und einer beitreten hat jetzt eine eigene Seite."
+          }
+        }
+      }
+    },
+    "Favorites offline" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten offline"
+          }
+        }
+      }
+    },
+    "Your favorite songs open at once without a connection, from the saved copy or your downloads." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Lieblingssongs öffnen sich ohne Verbindung sofort, aus der gespeicherten Kopie oder deinen Downloads."
+          }
+        }
+      }
+    },
     "Play on your TV" : {
       "localizations" : {
         "de" : {

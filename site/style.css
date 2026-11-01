@@ -206,7 +206,7 @@ kbd.dot::after { content: ""; width: 11px; height: 11px; border-radius: 50%; bac
 .more a:hover { text-decoration: underline; }
 
 /* Install */
-.install { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.install { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .install .card { display: flex; flex-direction: column; }
 .req { font: 500 13px/1.4 var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
 .steps { counter-reset: s; list-style: none; margin: 22px 0 28px; padding: 0; }
@@ -263,6 +263,8 @@ dialog.lb button { position: fixed; top: 18px; right: 18px; width: 44px; height:
   .hero { padding-top: 48px; }
   .hero .wrap { grid-template-columns: 1fr; gap: 48px; }
   .cols { grid-template-columns: repeat(2, 1fr); }
+  .install { grid-template-columns: 1fr 1fr; }
+  .install #get-windows { grid-column: 1 / -1; }
   .remote, .split { grid-template-columns: 1fr; gap: 36px; }
   .facts .wrap { grid-template-columns: repeat(2, 1fr); }
   .facts .wrap > div:nth-child(3) { padding-left: 0; border-left: 0; }

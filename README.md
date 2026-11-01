@@ -4,7 +4,7 @@
 
 <p align="center">A Navidrome client for LG TVs, Windows and the iPhone. Play your own music library from the couch with nothing but the remote, or take it with you.</p>
 
-<p align="center"><a href="https://tonalo.app">tonalo.app</a> · <a href="https://tonalo.app/changelog">Changelog</a> · <a href="https://testflight.apple.com/join/vKkNhNZJ">iPhone beta</a></p>
+<p align="center"><a href="https://tonalo.app">tonalo.app</a> · <a href="https://tonalo.app/changelog">Changelog</a> · <a href="https://testflight.apple.com/join/vKkNhNZJ">iPhone beta</a> · <a href="https://github.com/Wzkiie/tonalo/releases/latest">Windows &amp; TV download</a></p>
 
 <p align="center">
   <img src="assets/screenshots/tv/home.jpg" width="74%" alt="TV app home screen">
@@ -100,7 +100,7 @@ The same app as on the TV, made for mouse and keyboard: the same screens and fea
 - Click anywhere in the progress bar to jump there, a volume slider (or scroll on it), right-click for the options menu
 - Keyboard: Space plays and pauses, Ctrl + ← / → changes the song, Ctrl + F searches, Esc goes back, Ctrl + Plus / Minus makes everything bigger or smaller
 - Media keys and the Windows media overlay show and control what's playing
-- **Control it from your iPhone and host a Jukebox**, just like the TV: pair under *Devices & Jukebox* in the iPhone app. Windows asks once whether Tonalo may use the network – allow it for private networks
+- **Control it from your iPhone and host a Jukebox**, just like the TV: pair under *Devices* in the iPhone app, guests join under *Jukebox*. Windows asks once whether Tonalo may use the network – allow it for private networks
 - **Updates install from inside the app**: Tonalo checks GitHub for a new release on start, asks, downloads it and restarts. Settings → Updates checks by hand
 
 ### Installing on Windows
@@ -133,8 +133,8 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 - **Radio stations**: the stations set up on your server (Navidrome: Radio) play live, with the song on air when the station sends it. If that song is in your library, one tap plays it from there
 - **Artist pages** with popular songs, the discography, "Fans also like" and a biography. Without Last.fm on the server, the artist's songs you played most stand in for the popular ones – see [Server tips](#server-tips)
 - **Continue on another device**: started on the TV, finished on the iPhone – the app offers to pick up the queue another device left on your server
-- **Play on the TV**: pair the iPhone with your TV once with a code. While the TV plays, the phone shows it live, and music you pick on the phone plays on the TV. "Play on iPhone" takes it back at the same second. When the TV app is open, *Play on* in the full-screen player picks where the music plays
-- **Jukebox**: friends nearby join with a code, add songs to what's playing and skip. The TV hosts it at home, an iPhone in the car – the phones connect directly, without Wi-Fi. Guests need an account on the same server. If someone else is signed in on your TV, your iPhone offers to join their Jukebox instead
+- **Play on the TV or PC**: pair the iPhone once under *Devices* with a code shown on your TV or in Tonalo for Windows (the PC shows up with a computer icon). While the TV plays, the phone shows it live, and music you pick on the phone plays on the TV. "Play on iPhone" takes it back at the same second. When the TV app is open, *Play on* in the full-screen player picks where the music plays
+- **Jukebox** (its own page, next to *Devices*): friends nearby join with a code, add songs to what's playing and skip. The TV or PC hosts it at home, an iPhone in the car – the phones connect directly, without Wi-Fi. Guests need an account on the same server. If someone else is signed in on your TV, your iPhone offers to join their Jukebox instead
 - **Playlists**: create, rename and delete them, add songs from any menu (with a warning for duplicates), remove and reorder songs
 - **Crossfade** between songs, adjustable from 1 to 12 seconds
 - **Audio quality** set separately for Wi-Fi, cellular and downloads: the original files (lossless, FLAC stays FLAC) or converted by your server to AAC, Opus or MP3, with the data an hour of music takes next to each level. Formats the iPhone can't play are converted automatically.
