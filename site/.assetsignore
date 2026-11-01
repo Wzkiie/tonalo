@@ -1,0 +1,4 @@
+wrangler.jsonc
+deploy.sh
+.assetsignore
+.wrangler

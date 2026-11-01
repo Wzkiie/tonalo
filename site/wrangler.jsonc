@@ -1,0 +1,10 @@
+// Die Website als Cloudflare-Worker mit statischen Dateien – hochladen mit ./deploy.sh
+{
+  "name": "tonalo",
+  "compatibility_date": "2026-10-01",
+  // Nur tonalo.app, keine workers.dev-Adresse und keine Vorschau-Adressen
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "tonalo.app", "custom_domain": true }],
+  "assets": { "directory": "." }
+}
