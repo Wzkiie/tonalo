@@ -10,7 +10,7 @@ struct TVBar: View {
     var body: some View {
         let guest = app.player.tvGuest
         HStack(spacing: 8) {
-            Image(systemName: guest ? "person.2.wave.2" : "tv").font(.system(size: big ? 15 : 12, weight: .semibold))
+            Image(systemName: guest ? "person.2.wave.2" : app.tv.ownIsPC ? "desktopcomputer" : "tv").font(.system(size: big ? 15 : 12, weight: .semibold))
             // An iPhone's Jukebox already says so in its name
             Text(guest ? (name.contains("Jukebox") ? "\(name)" : "Jukebox · \(name)") : "Playing on \(name)").font(.system(size: big ? 14 : 12, weight: .semibold)).lineLimit(1)
             Spacer(minLength: 8)
@@ -85,19 +85,19 @@ struct TVSettingsView: View {
                 ForEach(link.devices) { d in
                     Button { tapped(d) } label: {
                         HStack {
-                            Label(d.name, systemImage: d.isPhone ? "iphone" : "tv").foregroundStyle(.white)
+                            Label(d.name, systemImage: d.symbol).foregroundStyle(.white)
                             Spacer()
                             Text(status(d)).foregroundStyle(Color.accent)
                         }
                     }
                 }
                 if link.devices.isEmpty {
-                    Text("Nothing found. Open Tonalo on your TV, or on the iPhone hosting the Jukebox.").foregroundStyle(.secondary)
+                    Text("Nothing found. Open Tonalo on your TV or computer, or on the iPhone hosting the Jukebox.").foregroundStyle(.secondary)
                 }
             } header: {
                 Text("Nearby")
             } footer: {
-                Text("Your own TV: while it plays, this app shows what's playing there, and music you pick here plays on the TV. Nothing goes through the internet.")
+                Text("Your own TV or computer: while it plays, this app shows what's playing there, and music you pick here plays on it. Nothing goes through the internet.")
             }
             let paired = link.pairings
             if !paired.isEmpty {
@@ -114,11 +114,11 @@ struct TVSettingsView: View {
         .sheet(item: $pairing) { PairTVView(device: $0.device, guest: $0.guest) }
         .confirmationDialog(choose?.name ?? "", isPresented: Binding(get: { choose != nil }, set: { if !$0 { choose = nil } }), titleVisibility: .visible) {
             if let d = choose {
-                Button("This is my TV") { pairing = Pairing(device: d, guest: false) }
+                Button(d.isPC ? "This is my computer" : "This is my TV") { pairing = Pairing(device: d, guest: false) }
                 Button("Join the Jukebox") { pairing = Pairing(device: d, guest: true) }
             }
         } message: {
-            Text("Your own TV plays together with this iPhone. As a guest you add songs and skip.")
+            Text(choose?.isPC == true ? "Your own computer plays together with this iPhone. As a guest you add songs and skip." : "Your own TV plays together with this iPhone. As a guest you add songs and skip.")
         }
     }
 
@@ -154,7 +154,7 @@ struct PairTVView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 22) {
-                Image(systemName: device.isPhone ? "iphone" : "tv").font(.system(size: 44)).foregroundStyle(Color.accent).padding(.top, 30)
+                Image(systemName: device.symbol).font(.system(size: 44)).foregroundStyle(Color.accent).padding(.top, 30)
                 Text(asked ? "Enter the code shown on \(device.name)" : "Connecting to \(device.name) …")
                     .font(.headline).multilineTextAlignment(.center)
                 TextField("000000", text: $code)

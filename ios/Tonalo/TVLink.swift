@@ -46,6 +46,9 @@ final class TVLink {
         let endpoint: NWEndpoint
         /// An iPhone hosting a Jukebox rather than a TV.
         let isPhone: Bool
+        /// Tonalo for Windows: works like a TV, but it's a computer.
+        let isPC: Bool
+        var symbol: String { isPhone ? "iphone" : isPC ? "desktopcomputer" : "tv" }
     }
 
     struct Pairing: Codable, Hashable {
@@ -75,6 +78,8 @@ final class TVLink {
 
     /// The own TV's name while it's connected and ready – music playing here can move over to it.
     private(set) var ownTV: String?
+    /// The own TV is Tonalo on a computer – shown with a computer instead of a TV.
+    private(set) var ownIsPC = false
     /// Own TVs where someone with another account is signed in right now: this phone can join their Jukebox.
     private(set) var guestOnly: Set<String> = []
 
@@ -104,7 +109,7 @@ final class TVLink {
         b.browseResultsChangedHandler = { [weak self] results, _ in
             let found = results.compactMap { r -> Device? in
                 guard case let .service(name, _, _, _) = r.endpoint, case let .bonjour(txt) = r.metadata, let id = txt["id"] else { return nil }
-                return Device(id: id, name: name, endpoint: r.endpoint, isPhone: txt["kind"] == "phone")
+                return Device(id: id, name: name, endpoint: r.endpoint, isPhone: txt["kind"] == "phone", isPC: txt["kind"] == "pc")
             }
             Task { @MainActor in self?.found(found) }
         }
@@ -271,6 +276,7 @@ final class TVLink {
                 // Someone else is signed in on the TV: nothing of theirs shows here until this phone joins
                 guard s.jukebox != true else { self.ownTV = nil; self.app?.player.tvGone(); first = false; return }
                 self.ownTV = device.name
+                self.ownIsPC = device.isPC
             }
             let playing = s.active && s.playing == true
             let same = self.matches(s, guest: guest, device: device.id)

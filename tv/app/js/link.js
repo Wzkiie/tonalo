@@ -31,7 +31,7 @@ var Link = (function () {
     (U.store.get('accounts', []) || []).forEach(function (a) {
       if (a.id !== App.account().id) others = others.concat(U.ustore.peek(a.id, 'phones', []) || []);
     });
-    var params = { subscribe: true, id: tvId(), name: U.store.get('tvName', 'LG TV'), keys: U.ustore.get('phones', []), others: others };
+    var params = { subscribe: true, id: tvId(), name: U.store.get('tvName', 'LG TV'), kind: U.desktop ? 'pc' : 'tv', keys: U.ustore.get('phones', []), others: others };
     bridge = call('attach', params, onMessage);
     push();
   }

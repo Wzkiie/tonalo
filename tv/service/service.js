@@ -12,7 +12,7 @@ var PORT = 47913;
 var service = new Service(NAME);
 
 var app = null;        // Abo der TV-App – darüber gehen Befehle und Kopplungscodes raus
-var tv = { id: '', name: 'TV', keys: [], others: [] }; // keys: [{ id, device, key }], gespeichert macht sie die App
+var tv = { id: '', name: 'TV', kind: 'tv', keys: [], others: [] }; // keys: [{ id, device, key }], gespeichert macht sie die App
                                                         // others: die iPhones der anderen Konten – hier nur Gäste
 var state = { active: false };
 var clients = [];      // offene Live-Verbindungen der iPhones: { res, entry }
@@ -28,6 +28,7 @@ service.register('attach', function (msg) {
   var p = msg.payload || {};
   tv.id = String(p.id || tv.id);
   tv.name = String(p.name || tv.name);
+  tv.kind = p.kind === 'pc' ? 'pc' : 'tv'; // die Windows-App: das iPhone zeigt dann einen Computer statt eines TVs
   tv.keys = Array.isArray(p.keys) ? p.keys : [];
   tv.others = Array.isArray(p.others) ? p.others : [];
   // Getrennte Geräte sehen ab sofort nichts mehr, auch nicht über eine schon offene Verbindung – und wer mit dem
@@ -260,12 +261,15 @@ function answer(query, peer) {
   var instance = instanceName();
   var host = hostName();
   var srv = Buffer.alloc(6); srv.writeUInt16BE(0, 0); srv.writeUInt16BE(0, 2); srv.writeUInt16BE(PORT, 4);
-  var txt = Buffer.from('id=' + tv.id, 'utf8');
+  var txt = Buffer.concat(['id=' + tv.id, 'kind=' + tv.kind].map(function (t) {
+    var b = Buffer.from(t, 'utf8');
+    return Buffer.concat([Buffer.from([b.length]), b]);
+  }));
   var only = query ? 1 : 0x8001; // „nur dieser Eintrag gilt“ – nicht bei direkten Antworten
   var records = [
     record(TYPE, 12, 1, 120, encodeName(instance)),
     record(instance, 33, only, 120, Buffer.concat([srv, encodeName(host)])),
-    record(instance, 16, only, 120, Buffer.concat([Buffer.from([txt.length]), txt])),
+    record(instance, 16, only, 120, txt),
     record(host, 1, only, 120, Buffer.from(ip.split('.').map(Number)))
   ];
   var header = Buffer.alloc(12);

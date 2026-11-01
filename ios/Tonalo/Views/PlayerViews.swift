@@ -148,11 +148,11 @@ struct PlaybackDeviceButton: View {
                 Label("This iPhone", systemImage: onTV ? "iphone" : "checkmark")
             }
             Button { if !onTV { p.playOnTV() } } label: {
-                Label(app.tv.ownTV ?? "TV", systemImage: onTV ? "checkmark" : "tv")
+                Label(app.tv.ownTV ?? "TV", systemImage: onTV ? "checkmark" : app.tv.ownIsPC ? "desktopcomputer" : "tv")
             }
             .disabled(!onTV && p.current == nil && p.station == nil)
         } label: {
-            Image(systemName: onTV ? "tv.fill" : "tv")
+            Image(systemName: app.tv.ownIsPC ? "desktopcomputer" : onTV ? "tv.fill" : "tv")
                 .foregroundStyle(onTV ? Color.accent : .white.opacity(0.8))
         }
         .accessibilityLabel("Play on")

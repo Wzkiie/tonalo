@@ -310,12 +310,12 @@
         }
       }
     },
-    "Nothing found. Open Tonalo on your TV, or on the iPhone hosting the Jukebox." : {
+    "Nothing found. Open Tonalo on your TV or computer, or on the iPhone hosting the Jukebox." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nichts gefunden. Öffne Tonalo auf deinem Fernseher oder auf dem iPhone, das die Jukebox startet."
+            "value" : "Nichts gefunden. Öffne Tonalo auf deinem Fernseher oder Computer oder auf dem iPhone, das die Jukebox startet."
           }
         }
       }
@@ -430,6 +430,16 @@
         }
       }
     },
+    "This is my computer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das ist mein Computer"
+          }
+        }
+      }
+    },
     "This is my TV" : {
       "localizations" : {
         "de" : {
@@ -460,6 +470,16 @@
         }
       }
     },
+    "Your own computer plays together with this iPhone. As a guest you add songs and skip." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein eigener Computer spielt mit diesem iPhone zusammen. Als Gast fügst du Songs hinzu und überspringst."
+          }
+        }
+      }
+    },
     "Your own TV plays together with this iPhone. As a guest you add songs and skip." : {
       "localizations" : {
         "de" : {
@@ -470,12 +490,12 @@
         }
       }
     },
-    "Your own TV: while it plays, this app shows what's playing there, and music you pick here plays on the TV. Nothing goes through the internet." : {
+    "Your own TV or computer: while it plays, this app shows what's playing there, and music you pick here plays on it. Nothing goes through the internet." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dein eigener Fernseher: Während er spielt, zeigt dir die App, was dort läuft, und Musik, die du hier auswählst, spielt auf dem TV. Nichts geht über das Internet."
+            "value" : "Dein eigener Fernseher oder Computer: Während er spielt, zeigt dir die App, was dort läuft, und Musik, die du hier auswählst, spielt dort. Nichts geht über das Internet."
           }
         }
       }
