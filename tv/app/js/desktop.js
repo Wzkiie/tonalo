@@ -52,10 +52,16 @@ var Desktop = (function () {
     Player.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * Player.duration());
   }, true);
 
-  // ---------------- Lautstärke im Mini-Player
-  function volumeControl() {
-    var last = Player.volume() || 1;
-    var btn = h('button#mp-volume.mp-btn.focusable.nav-fallback', { title: T('Lautstärke') });
+  // ---------------- Lautstärke: im Mini-Player und in der Vollbildansicht (dort ist der Mini-Player weg)
+  var volumeSyncs = [], lastVolume = Player.volume() || 1;
+  Player.on('volume', function () {
+    volumeSyncs = volumeSyncs.filter(function (v) { return v.box === mini || document.body.contains(v.box); });
+    volumeSyncs.forEach(function (v) { v.sync(); });
+  });
+  var mini = null;
+
+  function volumeControl(big) {
+    var btn = big ? h('button.icon-btn.focusable', { title: T('Lautstärke') }) : h('button.mp-btn.focusable.nav-fallback', { title: T('Lautstärke') });
     var range = h('input.mp-volume', { type: 'range', min: 0, max: 100, step: 1 });
     function sync() {
       var v = Player.volume();
@@ -64,15 +70,15 @@ var Desktop = (function () {
       btn.innerHTML = Icon.svg(v ? 'volume' : 'mute');
     }
     btn.addEventListener('click', function () {
-      if (Player.volume()) { last = Player.volume(); Player.setVolume(0); } else Player.setVolume(last || 1);
+      if (Player.volume()) { lastVolume = Player.volume(); Player.setVolume(0); } else Player.setVolume(lastVolume || 1);
     });
     range.addEventListener('input', function () { Player.setVolume(range.value / 100); });
-    var box = h('div.mp-volbox', null, btn, range);
+    var box = h('div.mp-volbox' + (big ? '.np-volume' : ''), null, btn, range);
     box.addEventListener('wheel', function (e) {
       e.preventDefault();
       Player.setVolume(Player.volume() + (e.deltaY < 0 ? 0.05 : -0.05));
     }, { passive: false });
-    Player.on('volume', sync);
+    volumeSyncs.push({ box: box, sync: sync });
     sync();
     return box;
   }
@@ -167,10 +173,11 @@ var Desktop = (function () {
     window.addEventListener('resize', size);
     var hint = U.$('.users-hint');
     if (hint) hint.textContent = T('Rechtsklick: Konto verwalten');
-    U.$('.mp-right').insertBefore(volumeControl(), U.$('.mp-right').firstChild);
+    mini = volumeControl(false);
+    U.$('.mp-right').insertBefore(mini, U.$('.mp-right').firstChild);
     ['track', 'state'].forEach(function (evt) { Player.on(evt, function () { media(); mediaState(); }); });
     N.updates.ready();
   });
 
-  return { updateSetting: updateSetting };
+  return { updateSetting: updateSetting, volume: function () { return volumeControl(true); } };
 })();

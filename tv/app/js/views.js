@@ -473,7 +473,8 @@ var Views = (function () {
         h('div.nav-container.np-progressrow', null, progress),
         h('div.np-time', null, tCur, live, tDur),
         h('div.np-controls.nav-container', null, btnShuffle, btnPrev, btnPlay, btnNext, btnRepeat,
-          h('div.np-extra', null, btnSleep, btnHeart, btnLyrics, btnQueue, btnMore))
+          h('div.np-extra', null, btnSleep, btnHeart, btnLyrics, btnQueue, btnMore),
+          U.desktop ? Desktop.volume() : null) // am PC links die Lautstärke – zuletzt, damit die Abzählung oben (.np.live) stimmt
       )
     ));
 

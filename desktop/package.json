@@ -1,7 +1,7 @@
 {
   "name": "tonalo-desktop",
   "productName": "Tonalo",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Unofficial Navidrome/Subsonic client for Windows",
   "homepage": "https://tonalo.app",
   "author": "Wzkiie",
@@ -24,10 +24,26 @@
     "appId": "app.tonalo.desktop",
     "productName": "Tonalo",
     "copyright": "Copyright © 2026 Wzkiie",
-    "files": ["main.js", "preload.js", "webos-service.js", "web/**", "service/**"],
-    "directories": { "output": "dist", "buildResources": "build" },
+    "files": [
+      "main.js",
+      "preload.js",
+      "webos-service.js",
+      "web/**",
+      "service/**"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "build/icon.png"
     },
     "nsis": {
@@ -37,6 +53,13 @@
       "shortcutName": "Tonalo",
       "deleteAppDataOnUninstall": false
     },
-    "publish": [{ "provider": "github", "owner": "Wzkiie", "repo": "tonalo", "releaseType": "release" }]
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Wzkiie",
+        "repo": "tonalo",
+        "releaseType": "release"
+      }
+    ]
   }
 }
