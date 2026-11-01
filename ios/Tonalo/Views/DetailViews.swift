@@ -297,8 +297,17 @@ struct FavoritesView: View {
         .refreshable { await Task { await load() }.value }
     }
 
+    // Like an album: the saved copy shows at once – offline, asking the server only gives up after its timeout
     private func load() async {
-        do { songs = try await app.client?.starred().song ?? [] } catch { self.error = error.userMessage }
+        if songs == nil, let saved = app.client?.cached("getStarred2")?.starred2?.song { songs = saved }
+        do {
+            songs = try await app.client?.starred().song ?? []
+        } catch {
+            guard songs == nil else { return }
+            // Never loaded before: the downloaded favorites at least
+            let downloaded = app.downloads.index.songs.values.map(\.song).filter { $0.starred != nil }
+            if downloaded.isEmpty { self.error = error.userMessage } else { songs = downloaded.sorted { ($0.starred ?? "") > ($1.starred ?? "") } }
+        }
     }
 }
 
