@@ -780,7 +780,7 @@ var Views = (function () {
     var phones = Link.phones();
     el.appendChild(h('div.setting', null, h('div', null,
       h('div.setting-label', { text: phones.length ? phones.map(function (p) { return p.guest ? T('{name} (Gast)', { name: p.device }) : p.device; }).join(', ') : T('Kein iPhone verbunden') }),
-      h('div.setting-desc', { text: T(U.desktop ? 'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den PC auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „Geräte & Jukebox“ in der iPhone-App.' : 'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „Geräte & Jukebox“ in der iPhone-App.') }))));
+      h('div.setting-desc', { text: T(U.desktop ? 'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den PC auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „Geräte“ in der iPhone-App, Gäste treten über „Jukebox“ bei.' : 'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „Geräte“ in der iPhone-App, Gäste treten über „Jukebox“ bei.') }))));
     if (phones.length) el.appendChild(h('div.settings-actions.nav-container', null,
       UI.button(T('Alle trennen'), function () { Link.forget(); App.reload(); }, 'outline', 'close')));
 

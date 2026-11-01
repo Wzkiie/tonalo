@@ -48,21 +48,72 @@ struct JukeboxHostBar: View {
     }
 }
 
-/// Settings → Devices & Jukebox: the own TV or computer, hosting a Jukebox, and joining one.
-struct TVSettingsView: View {
-    @Environment(AppModel.self) private var app
-    @State private var pairing: Pairing?
-    @State private var choose: TVLink.Device?
+/// Opens the pairing sheet: as the own device, or as a guest of its Jukebox.
+struct PairingRequest: Identifiable {
+    let device: TVLink.Device
+    let guest: Bool
+    var id: String { device.id + (guest ? "g" : "") }
+}
 
-    struct Pairing: Identifiable {
-        let device: TVLink.Device
-        let guest: Bool
-        var id: String { device.id + (guest ? "g" : "") }
+/// Settings → Devices: the own TV or computer. While it plays, this iPhone shows and controls it.
+struct DevicesView: View {
+    @Environment(AppModel.self) private var app
+    @State private var pairing: PairingRequest?
+
+    var body: some View {
+        let link = app.tv
+        let nearby = link.devices.filter { !$0.isPhone }
+        let own = link.pairings.filter { $0.guest != true }
+        List {
+            Section {
+                ForEach(nearby) { d in
+                    Button { tapped(d) } label: {
+                        HStack {
+                            Label(d.name, systemImage: d.symbol).foregroundStyle(.white)
+                            Spacer()
+                            Text(link.pairing(for: d)?.guest == false ? "Connected" : "Connect").foregroundStyle(Color.accent)
+                        }
+                    }
+                }
+                if nearby.isEmpty {
+                    Text("Nothing found. Open Tonalo on your TV or computer.").foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Nearby")
+            } footer: {
+                Text("Your own TV or computer: while it plays, this app shows what's playing there, and music you pick here plays on it. Nothing goes through the internet.")
+            }
+            if !own.isEmpty {
+                Section("Paired") {
+                    ForEach(own, id: \.tv) { p in
+                        Label(p.name, systemImage: "link")
+                            .swipeActions { Button("Remove", role: .destructive) { link.unpair(p.tv) }.tint(.red) }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Devices")
+        .onAppear { link.start() }
+        .sheet(item: $pairing) { PairTVView(device: $0.device, guest: $0.guest) }
     }
+
+    private func tapped(_ d: TVLink.Device) {
+        if app.tv.pairing(for: d)?.guest == false { return }
+        pairing = PairingRequest(device: d, guest: false)
+    }
+}
+
+/// Settings → Jukebox: hosting one on this iPhone, and joining someone else's.
+struct JukeboxView: View {
+    @Environment(AppModel.self) private var app
+    @State private var pairing: PairingRequest?
 
     var body: some View {
         let link = app.tv
         let host = app.jukeboxHost
+        // The own TV or computer only has a Jukebox to join while someone with another account is signed in there
+        let open = link.devices.filter { d in link.pairing(for: d)?.guest != false || link.guestOnly.contains(d.id) }
+        let joined = link.pairings.filter { $0.guest == true }
         List {
             Section {
                 Toggle(isOn: Binding(get: { host.running }, set: { $0 ? host.start() : host.stop() })) {
@@ -77,65 +128,45 @@ struct TVSettingsView: View {
                     .swipeActions { Button("Remove", role: .destructive) { host.remove(g) }.tint(.red) }
                 }
             } header: {
-                Text("Jukebox")
+                Text("Your Jukebox")
             } footer: {
                 Text("Friends nearby join with a code shown on this iPhone, add songs to what's playing and skip. Works in the car too – the phones connect directly, without Wi-Fi. They need an account on the same server.")
             }
             Section {
-                ForEach(link.devices) { d in
+                ForEach(open) { d in
                     Button { tapped(d) } label: {
                         HStack {
                             Label(d.name, systemImage: d.symbol).foregroundStyle(.white)
                             Spacer()
-                            Text(status(d)).foregroundStyle(Color.accent)
+                            Text(link.jukebox == d.id ? "Joined" : "Join").foregroundStyle(Color.accent)
                         }
                     }
                 }
-                if link.devices.isEmpty {
-                    Text("Nothing found. Open Tonalo on your TV or computer, or on the iPhone hosting the Jukebox.").foregroundStyle(.secondary)
+                if open.isEmpty {
+                    Text("Nothing found. A Jukebox shows up here while Tonalo is open on a TV, computer or iPhone nearby.").foregroundStyle(.secondary)
                 }
             } header: {
-                Text("Nearby")
+                Text("Join a Jukebox")
             } footer: {
-                Text("Your own TV or computer: while it plays, this app shows what's playing there, and music you pick here plays on it. Nothing goes through the internet.")
+                Text("As a guest you add songs to what's playing there and skip. You need an account on the same server.")
             }
-            let paired = link.pairings
-            if !paired.isEmpty {
+            if !joined.isEmpty {
                 Section("Paired") {
-                    ForEach(paired, id: \.tv) { p in
-                        Label(p.guest == true ? "\(p.name) (guest)" : p.name, systemImage: "link")
+                    ForEach(joined, id: \.tv) { p in
+                        Label(p.name, systemImage: "link")
                             .swipeActions { Button("Remove", role: .destructive) { link.unpair(p.tv) }.tint(.red) }
                     }
                 }
             }
         }
-        .navigationTitle("Devices & Jukebox")
+        .navigationTitle("Jukebox")
         .onAppear { link.start() }
         .sheet(item: $pairing) { PairTVView(device: $0.device, guest: $0.guest) }
-        .confirmationDialog(choose?.name ?? "", isPresented: Binding(get: { choose != nil }, set: { if !$0 { choose = nil } }), titleVisibility: .visible) {
-            if let d = choose {
-                Button(d.isPC ? "This is my computer" : "This is my TV") { pairing = Pairing(device: d, guest: false) }
-                Button("Join the Jukebox") { pairing = Pairing(device: d, guest: true) }
-            }
-        } message: {
-            Text(choose?.isPC == true ? "Your own computer plays together with this iPhone. As a guest you add songs and skip." : "Your own TV plays together with this iPhone. As a guest you add songs and skip.")
-        }
-    }
-
-    private func status(_ d: TVLink.Device) -> LocalizedStringKey {
-        guard let p = app.tv.pairing(for: d) else { return d.isPhone ? "Join" : "Connect" }
-        if app.tv.jukebox == d.id { return "Joined" }
-        // The own TV, while someone else is signed in there: its Jukebox is open to this phone
-        return p.guest == true || app.tv.guestOnly.contains(d.id) ? "Join" : "Connected"
     }
 
     private func tapped(_ d: TVLink.Device) {
-        if let p = app.tv.pairing(for: d) {
-            if (p.guest == true || app.tv.guestOnly.contains(d.id)) && app.tv.jukebox != d.id { app.tv.join(d) }
-            return
-        }
-        // An iPhone only hosts a Jukebox; a TV can be the own one or someone's Jukebox
-        if d.isPhone { pairing = Pairing(device: d, guest: true) } else { choose = d }
+        guard app.tv.jukebox != d.id else { return }
+        if app.tv.pairing(for: d) != nil { app.tv.join(d) } else { pairing = PairingRequest(device: d, guest: true) }
     }
 }
 

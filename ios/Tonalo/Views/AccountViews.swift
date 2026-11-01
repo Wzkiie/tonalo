@@ -514,9 +514,11 @@ struct SettingsView: View {
             }
             Section {
                 NavigationLink("Appearance") { AppearanceView() }
-                NavigationLink { TVSettingsView() } label: {
-                    LabeledContent("Devices & Jukebox", value: app.jukeboxHost.running ? String(localized: "Jukebox on")
-                                   : app.tv.pairings.first { $0.guest != true }?.name ?? String(localized: "Not connected"))
+                NavigationLink { DevicesView() } label: {
+                    LabeledContent("Devices", value: app.tv.pairings.first { $0.guest != true }?.name ?? String(localized: "Not connected"))
+                }
+                NavigationLink { JukeboxView() } label: {
+                    LabeledContent("Jukebox", value: app.jukeboxHost.running ? String(localized: "Jukebox on") : String(localized: "Off"))
                 }
             }
             Section {

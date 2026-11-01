@@ -45,7 +45,8 @@ enum Route: Hashable {
     case downloads
     case stations
     case settings
-    case tv
+    case devices
+    case jukebox
 }
 
 extension View {
@@ -63,7 +64,8 @@ extension View {
             case .downloads: DownloadsView()
             case .stations: StationsView()
             case .settings: SettingsView()
-            case .tv: TVSettingsView()
+            case .devices: DevicesView()
+            case .jukebox: JukeboxView()
             }
         }
     }
@@ -81,6 +83,7 @@ struct RootView: View {
     @State private var whatsNew: AppRelease?
     #if DEBUG
     @State private var debugTV = false
+    @State private var debugJukebox = false
     #endif
     @Environment(\.scenePhase) private var scenePhase
 
@@ -113,8 +116,9 @@ struct RootView: View {
         #if DEBUG
         // Screenshot hook: -demoOpen stations opens the radio page, -demoOpen station plays a station in the player,
         // -demoOpen artist:<id> opens an artist, -demoOpen download downloads the first playlist and opens it,
-        // -demoOpen tv opens the TV pairing page; -demoJukebox hosts a Jukebox right away
-        .sheet(isPresented: $debugTV) { NavigationStack { TVSettingsView() } }
+        // -demoOpen tv / jukebox opens the devices / Jukebox page; -demoJukebox hosts a Jukebox right away
+        .sheet(isPresented: $debugTV) { NavigationStack { DevicesView() } }
+        .sheet(isPresented: $debugJukebox) { NavigationStack { JukeboxView() } }
         .task {
             let args = ProcessInfo.processInfo.arguments
             if args.contains("-demoJukebox") { app.jukeboxHost.start() }
@@ -122,6 +126,7 @@ struct RootView: View {
             try? await Task.sleep(for: .seconds(1.5))
             if args[i + 1] == "stations" { paths[0].append(Route.stations) }
             if args[i + 1] == "tv" { debugTV = true }
+            if args[i + 1] == "jukebox" { debugJukebox = true }
             if args[i + 1].hasPrefix("artist:") { paths[0].append(Route.artist(String(args[i + 1].dropFirst(7)))) }
             if args[i + 1] == "download", let first = try? await app.client?.playlists().first,
                let list = try? await app.client?.playlist(first.id) {
@@ -286,7 +291,8 @@ struct ProfileMenu: View {
                 }
                 row(label: Text("Add account")) { Image(systemName: "plus").font(.system(size: 20)) } action: { adding = true }
                 row(label: Text("Downloads")) { Image(systemName: "arrow.down.circle").font(.system(size: 22)) } action: { ui.open(.downloads) }
-                row(label: Text("Devices & Jukebox")) { Image(systemName: "person.2.wave.2").font(.system(size: 20)) } action: { ui.open(.tv) }
+                row(label: Text("Devices")) { Image(systemName: "tv").font(.system(size: 19)) } action: { ui.open(.devices) }
+                row(label: Text("Jukebox")) { Image(systemName: "person.2.wave.2").font(.system(size: 20)) } action: { ui.open(.jukebox) }
                 row(label: Text("Settings")) { Image(systemName: "gearshape").font(.system(size: 22)) } action: { ui.open(.settings) }
                 Spacer()
                 row(label: Text("Log out")) {

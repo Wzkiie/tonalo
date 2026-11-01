@@ -120,6 +120,16 @@
         }
       }
     },
+    "As a guest you add songs to what's playing there and skip. You need an account on the same server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Gast fügst du Songs zu dem hinzu, was dort läuft, und überspringst. Du brauchst ein Konto auf demselben Server."
+          }
+        }
+      }
+    },
     "Connect" : {
       "localizations" : {
         "de" : {
@@ -190,6 +200,16 @@
         }
       }
     },
+    "Devices" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geräte"
+          }
+        }
+      }
+    },
     "Here" : {
       "localizations" : {
         "de" : {
@@ -220,12 +240,12 @@
         }
       }
     },
-    "Join the Jukebox" : {
+    "Join a Jukebox" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der Jukebox beitreten"
+            "value" : "Einer Jukebox beitreten"
           }
         }
       }
@@ -300,22 +320,32 @@
         }
       }
     },
+    "Nothing found. A Jukebox shows up here while Tonalo is open on a TV, computer or iPhone nearby." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts gefunden. Eine Jukebox erscheint hier, solange Tonalo auf einem Fernseher, Computer oder iPhone in der Nähe offen ist."
+          }
+        }
+      }
+    },
+    "Nothing found. Open Tonalo on your TV or computer." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts gefunden. Öffne Tonalo auf deinem Fernseher oder Computer."
+          }
+        }
+      }
+    },
     "Not connected" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht verbunden"
-          }
-        }
-      }
-    },
-    "Nothing found. Open Tonalo on your TV or computer, or on the iPhone hosting the Jukebox." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nichts gefunden. Öffne Tonalo auf deinem Fernseher oder Computer oder auf dem iPhone, das die Jukebox startet."
           }
         }
       }
@@ -430,62 +460,12 @@
         }
       }
     },
-    "This is my computer" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das ist mein Computer"
-          }
-        }
-      }
-    },
-    "This is my TV" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das ist mein Fernseher"
-          }
-        }
-      }
-    },
-    "Devices & Jukebox" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geräte & Jukebox"
-          }
-        }
-      }
-    },
     "While your TV plays Tonalo, the iPhone shows what's playing there, and music you pick plays on the TV. Pair once under TV & Jukebox." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Während dein Fernseher Tonalo spielt, zeigt das iPhone, was dort läuft, und Musik, die du auswählst, spielt auf dem TV. Einmal koppeln unter „TV & Jukebox“."
-          }
-        }
-      }
-    },
-    "Your own computer plays together with this iPhone. As a guest you add songs and skip." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dein eigener Computer spielt mit diesem iPhone zusammen. Als Gast fügst du Songs hinzu und überspringst."
-          }
-        }
-      }
-    },
-    "Your own TV plays together with this iPhone. As a guest you add songs and skip." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dein eigener Fernseher spielt mit diesem iPhone zusammen. Als Gast fügst du Songs hinzu und überspringst."
           }
         }
       }
@@ -3977,6 +3957,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Deine Lieblingssongs, gemischt"
+          }
+        }
+      }
+    },
+    "Your Jukebox" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Jukebox"
           }
         }
       }
