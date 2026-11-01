@@ -109,6 +109,8 @@ var U = (function () {
 
   return {
     $: $, $$: $$, esc: esc, h: h, fmtTime: fmtTime, fmtDuration: fmtDuration, store: store, ustore: ustore,
-    debounce: debounce, shuffle: shuffle, asArray: asArray, toast: toast
+    debounce: debounce, shuffle: shuffle, asArray: asArray, toast: toast,
+    // Läuft als Windows-App (Tonalo für Windows stellt TonaloNative bereit) statt auf dem TV
+    desktop: !!window.TonaloNative
   };
 })();

@@ -1,0 +1,178 @@
+// Tonalo für Windows: ein Fenster mit der TV-Oberfläche (web/), dazu der Dienst fürs iPhone und Updates von GitHub
+const { app, BrowserWindow, ipcMain, shell, session, Menu } = require('electron');
+const path = require('path'), fs = require('fs'), os = require('os'), Module = require('module');
+
+// tv/service/service.js verlangt webOS' "webos-service" – hier bekommt es den Ersatz
+const resolve = Module._resolveFilename;
+Module._resolveFilename = function (request, ...rest) {
+  return resolve.call(this, request === 'webos-service' ? path.join(__dirname, 'webos-service.js') : request, ...rest);
+};
+
+const ZOOM = 0.6;              // die TV-Oberfläche ist für 3 m Abstand gebaut – am Schreibtisch reicht gut die Hälfte
+const MAC = process.platform === 'darwin';
+let win = null;
+
+// ---------------- Fenster merken (Größe, Position, Zoom)
+const stateFile = () => path.join(app.getPath('userData'), 'window.json');
+function loadState() { try { return JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch (e) { return {}; } }
+function saveState() {
+  if (!win) return;
+  const s = { bounds: win.getNormalBounds(), maximized: win.isMaximized(), zoom: win.webContents.getZoomFactor() };
+  try { fs.writeFileSync(stateFile(), JSON.stringify(s)); } catch (e) { /* egal */ }
+}
+
+function createWindow() {
+  const st = loadState();
+  win = new BrowserWindow({
+    ...(st.bounds || { width: 1360, height: 860 }),
+    minWidth: 980, minHeight: 640,
+    title: 'Tonalo',
+    backgroundColor: '#000000',
+    show: false,
+    titleBarStyle: 'hidden',
+    ...(MAC ? { trafficLightPosition: { x: 12, y: 8 } } : { titleBarOverlay: { color: '#000000', symbolColor: '#ffffff', height: 34 } }),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+      spellcheck: false,
+      backgroundThrottling: false, // Überblenden und Warteschlange laufen über Timer – auch im Hintergrund
+      zoomFactor: st.zoom || ZOOM
+    }
+  });
+  if (st.maximized) win.maximize();
+  win.once('ready-to-show', () => win.show());
+
+  // Nur die eigene Seite – Links (Hilfe, GitHub) gehen in den Browser
+  win.webContents.on('will-navigate', (e) => e.preventDefault());
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https:\/\//.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  // Strg + Plus / Minus / 0: Größe der Oberfläche, F11: Vollbild
+  win.webContents.on('before-input-event', (e, input) => {
+    if (input.type !== 'keyDown') return;
+    if (input.key === 'F11') { win.setFullScreen(!win.isFullScreen()); e.preventDefault(); return; }
+    if (!(input.control || input.meta)) return;
+    const wc = win.webContents, z = wc.getZoomFactor();
+    if (input.key === '+' || input.key === '=') wc.setZoomFactor(Math.min(1.2, z * 1.1));
+    else if (input.key === '-') wc.setZoomFactor(Math.max(0.4, z / 1.1));
+    else if (input.key === '0') wc.setZoomFactor(ZOOM);
+    else return;
+    e.preventDefault();
+  });
+
+  // Seite neu geladen oder abgestürzt: das iPhone sieht sofort, dass hier nichts mehr läuft
+  win.webContents.on('did-start-loading', cancelAll);
+  win.webContents.on('render-process-gone', cancelAll);
+  win.on('close', saveState);
+  win.on('closed', () => { win = null; });
+
+  win.loadFile(path.join(__dirname, 'web', 'index.html'));
+}
+
+// ---------------- Dienst fürs iPhone (tv/service/service.js)
+let Service = null;
+const subs = new Map(); // offene Abos der Oberfläche: id -> { msg, h }
+
+function startService() {
+  Service = require('./webos-service.js');
+  require('./service/service.js');
+}
+
+ipcMain.on('svc-call', (e, id, uri, params) => {
+  const m = /^luna:\/\/([^/]+)\/(.+)$/.exec(uri);
+  if (!m) return;
+  const reply = (obj) => { if (!e.sender.isDestroyed()) e.sender.send('svc-msg', id, JSON.stringify(obj)); };
+  let payload = {};
+  try { payload = JSON.parse(params); } catch (err) { return; }
+  if (m[1] === 'tonalo.service') {
+    const h = Service && Service.handlers[m[2]];
+    if (!h) return;
+    const msg = { payload, respond: reply, cancel: () => { subs.delete(id); } };
+    if (payload.subscribe) subs.set(id, { msg, h });
+    h.fn(msg);
+  } else if (m[1] === 'com.webos.service.settings') {
+    // Der Name, den das iPhone beim Koppeln zeigt
+    reply({ returnValue: true, settings: { deviceName: os.hostname().replace(/\.local$/, '') } });
+  }
+  // Alles andere (Bildschirmschoner des TVs …) gibt es am PC nicht
+});
+
+ipcMain.on('svc-cancel', (_e, id) => {
+  const s = subs.get(id);
+  if (!s) return;
+  subs.delete(id);
+  if (s.h.cancel) s.h.cancel(s.msg);
+});
+
+function cancelAll() {
+  const all = [...subs.values()];
+  subs.clear();
+  all.forEach((s) => { if (s.h.cancel) s.h.cancel(s.msg); });
+}
+
+// ---------------- Updates: neue Releases auf GitHub (latest.yml), geladen und installiert erst auf Wunsch
+let status = { state: 'idle' };
+let updater = null;
+
+function setStatus(s) {
+  status = s;
+  if (win && !win.webContents.isDestroyed()) win.webContents.send('upd-status', s);
+}
+
+function shortError(err) {
+  const text = String((err && err.message) || err || '').split('\n')[0];
+  return text.length > 140 ? text.slice(0, 137) + '…' : text;
+}
+
+function setupUpdater() {
+  if (!app.isPackaged) return; // aus dem Quellcode gestartet: nichts zu aktualisieren
+  updater = require('electron-updater').autoUpdater;
+  updater.autoDownload = false;
+  updater.autoInstallOnAppQuit = true;
+  updater.on('checking-for-update', () => setStatus({ state: 'checking' }));
+  updater.on('update-available', (info) => setStatus({ state: 'available', version: info.version }));
+  updater.on('update-not-available', () => setStatus({ state: 'none' }));
+  updater.on('download-progress', (p) => setStatus({ state: 'downloading', version: status.version, percent: p.percent }));
+  updater.on('update-downloaded', (info) => setStatus({ state: 'ready', version: info.version }));
+  updater.on('error', (err) => setStatus({ state: 'error', version: status.version, error: shortError(err) }));
+  setTimeout(check, 5000);
+  setInterval(check, 6 * 60 * 60 * 1000);
+}
+
+function check() {
+  if (!updater) { setStatus({ state: 'none' }); return; }
+  if (status.state === 'downloading' || status.state === 'ready') return;
+  updater.checkForUpdates().catch((err) => setStatus({ state: 'error', error: shortError(err) }));
+}
+
+ipcMain.on('upd-ready', () => setStatus(status));
+ipcMain.on('upd-check', check);
+ipcMain.on('upd-download', () => {
+  if (updater && status.state === 'available') updater.downloadUpdate().catch((err) => setStatus({ state: 'error', error: shortError(err) }));
+});
+// Still installieren und Tonalo danach wieder starten
+ipcMain.on('upd-install', () => { if (updater && status.state === 'ready') setImmediate(() => updater.quitAndInstall(true, true)); });
+
+// ---------------- Start
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  });
+  app.whenReady().then(() => {
+    if (!MAC) Menu.setApplicationMenu(null);
+    // Die App braucht keine Kamera, kein Mikrofon, keinen Standort …
+    session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+    startService();
+    createWindow();
+    setupUpdater();
+  });
+  app.on('window-all-closed', () => app.quit());
+}

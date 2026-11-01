@@ -229,5 +229,27 @@ I18N.add('tr', {
   '{name} hat {n} Songs hinzugefügt': '{name} {n} şarkı ekledi',
   '{name} hat übersprungen': '{name} şarkıyı geçti',
   '{name} hat „{title}“ hinzugefügt': '{name} “{title}” şarkısını ekledi',
-  '{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben': '{name} Jukebox’a katılmak istiyor – bu kodu iPhone’a gir'
+  '{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben': '{name} Jukebox’a katılmak istiyor – bu kodu iPhone’a gir',
+  // Windows-App
+  '<b>Leertaste</b> Play/Pause · <b>Strg + ← / →</b> Song wechseln · <b>Strg + F</b> Suchen · <b>Esc</b> zurück<br>': '<b>Boşluk</b> Oynat/Duraklat · <b>Ctrl + ← / →</b> Şarkı değiştir · <b>Ctrl + F</b> Ara · <b>Esc</b> Geri<br>',
+  '<b>Rechtsklick</b> Optionen · <b>Strg + Plus / Minus</b> größer, kleiner · <b>Strg + 0</b> Standardgröße': '<b>Sağ tık</b> Seçenekler · <b>Ctrl + Artı / Eksi</b> Büyüt, küçült · <b>Ctrl + 0</b> Varsayılan boyut',
+  'Automatisch (Sprache von Windows)': 'Otomatik (Windows dili)',
+  'Das Update wird geladen, danach startet Tonalo neu.': 'Güncelleme indirilir, ardından Tonalo yeniden başlar.',
+  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den PC auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „TV & Jukebox“ in der iPhone-App.': 'iPhone’undaki Tonalo’da burada ne çaldığını görür ve PC için müzik seçebilirsin. Jukebox misafirleri şarkı ekleyip geçebilir. iPhone uygulamasında “TV ve Jukebox” bölümünden bağlan.',
+  'Jetzt installieren': 'Şimdi yükle',
+  'Konto von diesem PC entfernen': 'Hesabı bu PC’den kaldır',
+  'Konto „{name}“ von diesem PC entfernen?': '“{name}” hesabı bu PC’den kaldırılsın mı?',
+  'Lautstärke': 'Ses düzeyi',
+  'Nach Updates suchen': 'Güncellemeleri denetle',
+  'Noch keine Favoriten. Rechtsklick auf einen Song → „Zu Favoriten hinzufügen“.': 'Henüz favori yok. Bir şarkıya sağ tık → “Favorilere ekle”.',
+  'Rechtsklick: Konto verwalten': 'Sağ tık: hesabı yönet',
+  'Später': 'Sonra',
+  'Suche nach Updates …': 'Güncellemeler denetleniyor …',
+  'Tastatur': 'Klavye',
+  'Tonalo ist aktuell': 'Tonalo güncel',
+  'Tonalo {version} ist da': 'Tonalo {version} çıktı',
+  'Update wird geladen … {n} %': 'Güncelleme indiriliyor … {n} %',
+  'Updates': 'Güncellemeler',
+  'Updates kommen direkt von GitHub und werden in der App installiert.': 'Güncellemeler doğrudan GitHub’dan gelir ve uygulama içinde yüklenir.',
+  'inoffizieller Navidrome-Client für Windows': 'Windows için resmi olmayan Navidrome istemcisi'
 });

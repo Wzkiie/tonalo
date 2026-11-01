@@ -1,0 +1,42 @@
+{
+  "name": "tonalo-desktop",
+  "productName": "Tonalo",
+  "version": "1.8.1",
+  "description": "Unofficial Navidrome/Subsonic client for Windows",
+  "homepage": "https://tonalo.app",
+  "author": "Wzkiie",
+  "license": "MIT",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "sync": "node tools/sync.js",
+    "start": "node tools/sync.js && electron .",
+    "dist": "node tools/sync.js && electron-builder --win --x64 --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.10"
+  },
+  "devDependencies": {
+    "electron": "44.7.2",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "app.tonalo.desktop",
+    "productName": "Tonalo",
+    "copyright": "Copyright © 2026 Wzkiie",
+    "files": ["main.js", "preload.js", "webos-service.js", "web/**", "service/**"],
+    "directories": { "output": "dist", "buildResources": "build" },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "Tonalo-Setup-${version}.${ext}",
+      "shortcutName": "Tonalo",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": [{ "provider": "github", "owner": "Wzkiie", "repo": "tonalo", "releaseType": "release" }]
+  }
+}

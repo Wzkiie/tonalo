@@ -228,5 +228,27 @@ I18N.add('it', {
   '{name} hat {n} Songs hinzugefügt': '{name} ha aggiunto {n} brani',
   '{name} hat übersprungen': '{name} ha saltato',
   '{name} hat „{title}“ hinzugefügt': '{name} ha aggiunto «{title}»',
-  '{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben': '{name} vuole unirsi al Jukebox – inserisci questo codice sull’iPhone'
+  '{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben': '{name} vuole unirsi al Jukebox – inserisci questo codice sull’iPhone',
+  // Windows-App
+  '<b>Leertaste</b> Play/Pause · <b>Strg + ← / →</b> Song wechseln · <b>Strg + F</b> Suchen · <b>Esc</b> zurück<br>': '<b>Spazio</b> Play/Pausa · <b>Ctrl + ← / →</b> Cambia brano · <b>Ctrl + F</b> Cerca · <b>Esc</b> Indietro<br>',
+  '<b>Rechtsklick</b> Optionen · <b>Strg + Plus / Minus</b> größer, kleiner · <b>Strg + 0</b> Standardgröße': '<b>Clic destro</b> Opzioni · <b>Ctrl + Più / Meno</b> Più grande, più piccolo · <b>Ctrl + 0</b> Dimensione standard',
+  'Automatisch (Sprache von Windows)': 'Automatica (lingua di Windows)',
+  'Das Update wird geladen, danach startet Tonalo neu.': 'L’aggiornamento viene scaricato, poi Tonalo si riavvia.',
+  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den PC auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „TV & Jukebox“ in der iPhone-App.': 'In Tonalo sul tuo iPhone vedi cosa suona qui e puoi scegliere la musica per il PC. Gli ospiti del Jukebox possono aggiungere brani e saltarli. Collegati da «TV e Jukebox» nell’app per iPhone.',
+  'Jetzt installieren': 'Installa ora',
+  'Konto von diesem PC entfernen': 'Rimuovi l’account da questo PC',
+  'Konto „{name}“ von diesem PC entfernen?': 'Rimuovere l’account «{name}» da questo PC?',
+  'Lautstärke': 'Volume',
+  'Nach Updates suchen': 'Cerca aggiornamenti',
+  'Noch keine Favoriten. Rechtsklick auf einen Song → „Zu Favoriten hinzufügen“.': 'Ancora nessun preferito. Clic destro su un brano → «Aggiungi ai preferiti».',
+  'Rechtsklick: Konto verwalten': 'Clic destro: gestisci account',
+  'Später': 'Più tardi',
+  'Suche nach Updates …': 'Ricerca aggiornamenti …',
+  'Tastatur': 'Tastiera',
+  'Tonalo ist aktuell': 'Tonalo è aggiornato',
+  'Tonalo {version} ist da': 'È arrivato Tonalo {version}',
+  'Update wird geladen … {n} %': 'Download dell’aggiornamento … {n} %',
+  'Updates': 'Aggiornamenti',
+  'Updates kommen direkt von GitHub und werden in der App installiert.': 'Gli aggiornamenti arrivano direttamente da GitHub e si installano nell’app.',
+  'inoffizieller Navidrome-Client für Windows': 'client Navidrome non ufficiale per Windows'
 });

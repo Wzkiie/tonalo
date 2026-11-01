@@ -2,7 +2,7 @@
 
 <h1 align="center">Tonalo</h1>
 
-<p align="center">A Navidrome client for LG TVs and the iPhone. Play your own music library from the couch with nothing but the remote, or take it with you.</p>
+<p align="center">A Navidrome client for LG TVs, Windows and the iPhone. Play your own music library from the couch with nothing but the remote, or take it with you.</p>
 
 <p align="center"><a href="https://tonalo.app">tonalo.app</a> · <a href="https://tonalo.app/changelog">Changelog</a> · <a href="https://testflight.apple.com/join/vKkNhNZJ">iPhone beta</a></p>
 
@@ -13,13 +13,13 @@
 
 Tonalo talks to any server that speaks the Subsonic API. It was built and tested against Navidrome; other Subsonic servers should work but haven't been tried.
 
-There are two apps in this repository. They share the name, the icon and the idea, but no code, because each one is written for its platform:
+There are three apps in this repository. The TV and Windows apps share their code; the iPhone app is written natively for its platform:
 
-| | TV app | iPhone app |
-|---|---|---|
-| Runs on | LG TVs with webOS 5 or newer | iPhone with iOS 17 or newer, plus Apple Watch |
-| Code | [`tv/`](tv) – plain HTML, CSS and JavaScript | [`ios/`](ios) – Swift and SwiftUI |
-| Install | Homebrew Channel [repository](#installing) or `.ipk` from the [releases](../../releases/latest) | Public beta on [TestFlight](https://testflight.apple.com/join/vKkNhNZJ), or build it with Xcode |
+| | TV app | Windows app | iPhone app |
+|---|---|---|---|
+| Runs on | LG TVs with webOS 5 or newer | Windows 10 and 11 (64-bit) | iPhone with iOS 17 or newer, plus Apple Watch |
+| Code | [`tv/`](tv) – plain HTML, CSS and JavaScript | [`desktop/`](desktop) – the TV app in an Electron window | [`ios/`](ios) – Swift and SwiftUI |
+| Install | Homebrew Channel [repository](#installing) or `.ipk` from the [releases](../../releases/latest) | `Tonalo-Setup-….exe` from the [releases](../../releases/latest), updates itself | Public beta on [TestFlight](https://testflight.apple.com/join/vKkNhNZJ), or build it with Xcode |
 
 ## TV app
 
@@ -92,6 +92,20 @@ Tested on an LG OLED65CX with webOS 5.6. Anything from webOS 5 up should be fine
 | Red / Green / Yellow / Blue | Now playing / Search / Options / Play-pause |
 
 The Magic Remote pointer works too.
+
+## Windows app
+
+The same app as on the TV, made for mouse and keyboard: the same screens and features, including endless radio, lyrics, crossfade and several profiles. On top of that:
+
+- Click anywhere in the progress bar to jump there, a volume slider (or scroll on it), right-click for the options menu
+- Keyboard: Space plays and pauses, Ctrl + ← / → changes the song, Ctrl + F searches, Esc goes back, Ctrl + Plus / Minus makes everything bigger or smaller
+- Media keys and the Windows media overlay show and control what's playing
+- **Control it from your iPhone and host a Jukebox**, just like the TV: pair under *TV & Jukebox* in the iPhone app. Windows asks once whether Tonalo may use the network – allow it for private networks
+- **Updates install from inside the app**: Tonalo checks GitHub for a new release on start, asks, downloads it and restarts. Settings → Updates checks by hand
+
+### Installing on Windows
+
+Download `Tonalo-Setup-<version>.exe` from the [latest release](../../releases/latest) and run it. It installs for your user only, no admin rights needed. The installer isn't code-signed, so Windows SmartScreen warns the first time: click *More info* → *Run anyway*.
 
 ## iPhone app
 
@@ -187,7 +201,19 @@ In a desktop browser the UI scales to the window, and arrow keys, Enter and Esc 
 
 **Translations:** German is the source language. The code uses `T('German text')` and each file in `tv/app/js/lang/` maps those strings to another language. To add a language, copy `en.js`, translate it, and register it in `index.html` and `tv/app/js/i18n.js`. Corrections from native speakers are very welcome.
 
-**Releases:** bump the version in `tv/app/appinfo.json` and `tv/app/js/util.js`, commit, then push a tag (`git tag v1.5.1 && git push origin v1.5.1`). GitHub Actions builds the package and publishes the release.
+**Releases:** bump the version in `tv/app/appinfo.json` and `tv/app/js/util.js`, commit, then push a tag (`git tag v1.5.1 && git push origin v1.5.1`). GitHub Actions builds the TV package and the Windows installer and publishes both in one release.
+
+### Windows app
+
+The screens come straight from `tv/app`; `tv/app/js/desktop.js` and `tv/app/css/desktop.css` hold what only applies on Windows (they do nothing on the TV). `desktop/` is the Electron shell around it: the window, the iPhone service from `tv/service` running in the main process, and updates through `electron-updater`. The version is always the TV app's.
+
+```bash
+cd desktop && npm ci
+npm start               # run it from source (copies tv/app into desktop/web first)
+npm run dist            # build the installer into desktop/dist
+```
+
+The release workflow attaches the installer to the same release as the TV app, together with the `latest.yml` the installed apps read their updates from. *Windows-Testbuild* in the Actions tab builds an installer to try out without releasing anything.
 
 ### iPhone app
 

@@ -60,3 +60,30 @@ jobs:
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
             commit -q -m "Homebrew Channel: $GITHUB_REF_NAME"
           git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" repo
+
+  # Windows-App zum selben Release: Installer + latest.yml, aus der die installierten Apps ihr Update lesen
+  windows:
+    needs: release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Windows-App bauen
+        working-directory: desktop
+        run: |
+          npm ci
+          npm run dist
+
+      - name: An das Release hängen
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          files: |
+            desktop/dist/Tonalo-Setup-*.exe
+            desktop/dist/Tonalo-Setup-*.exe.blockmap
+            desktop/dist/latest.yml

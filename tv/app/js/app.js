@@ -4,7 +4,7 @@ var App = (function () {
   var K = Nav.KEY;
   var APP_ID = 'tonalo';
 
-  var DEFAULTS = { maxBitRate: 0, format: 'mp3', scrobble: true, screensaver: 3, startView: 'home', autoplay: true, leveling: 'off', crossfade: 0 };
+  var DEFAULTS = { maxBitRate: 0, format: 'mp3', scrobble: true, screensaver: U.desktop ? 0 : 3, startView: 'home', autoplay: true, leveling: 'off', crossfade: 0 };
   var settings = Object.assign({}, DEFAULTS);
   var account = null;   // aktives Konto {id, url, user, salt, token}
 
@@ -13,8 +13,14 @@ var App = (function () {
 
   // ---------------- Skalierung (im Desktop-Browser zum Testen; TV läuft nativ 1920x1080)
   function fit() {
-    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
     var st = document.getElementById('stage');
+    // Windows-App: die Bühne ist so groß wie das Fenster unter der Titelleiste, die Größe regelt der Zoom
+    if (U.desktop) {
+      var top = TonaloNative.titleBar();
+      st.style.top = top + 'px'; st.style.width = window.innerWidth + 'px'; st.style.height = (window.innerHeight - top) + 'px';
+      return;
+    }
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
     st.style.transform = s === 1 ? '' : 'scale(' + s + ')';
   }
 
@@ -104,7 +110,7 @@ var App = (function () {
     UI.modal(acc.user, [
       { icon: 'play', label: T('Auswählen'), action: function () { selectAccount(acc); } },
       { icon: 'refresh', label: T('Neu anmelden (Passwort geändert)'), action: function () { showLogin(null, { prefill: acc, adding: true }); } },
-      { icon: 'trash', label: T('Konto von diesem TV entfernen'), danger: true, action: function () {
+      { icon: 'trash', label: T(U.desktop ? 'Konto von diesem PC entfernen' : 'Konto von diesem TV entfernen'), danger: true, action: function () {
         UI.confirm(T('„{name}“ entfernen?', { name: acc.user }), T('Entfernen'), function () { removeAccount(acc); }, 'trash');
       } }
     ]);
@@ -377,7 +383,8 @@ var App = (function () {
   }
   function ssMove() {
     var box = U.$('#ss-box');
-    var x = Math.random() * (1920 - 520), y = Math.random() * (1080 - 620);
+    var st = document.getElementById('stage');
+    var x = Math.random() * (st.offsetWidth - 520), y = Math.random() * (st.offsetHeight - 620);
     box.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
     var d = new Date();
     U.$('#ss-clock').textContent = (d.getHours() < 10 ? '0' : '') + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();

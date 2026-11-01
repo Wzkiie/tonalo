@@ -1,0 +1,24 @@
+// Holt die App aus tv/ (dieselbe Oberfläche wie am TV) und den Dienst fürs iPhone, und übernimmt die Version.
+// Läuft vor "npm start" und "npm run dist" – die Kopien in web/, service/ und build/ gehören nicht ins Repo.
+const fs = require('fs'), path = require('path');
+const DESK = path.join(__dirname, '..'), TV = path.join(DESK, '..', 'tv');
+
+function copy(from, to) {
+  fs.rmSync(to, { recursive: true, force: true });
+  fs.cpSync(from, to, { recursive: true });
+}
+copy(path.join(TV, 'app'), path.join(DESK, 'web'));
+fs.mkdirSync(path.join(DESK, 'service'), { recursive: true });
+for (const f of ['service.js', 'package.json']) fs.copyFileSync(path.join(TV, 'service', f), path.join(DESK, 'service', f));
+fs.mkdirSync(path.join(DESK, 'build'), { recursive: true });
+fs.copyFileSync(path.join(DESK, '..', 'assets', 'icon-512.png'), path.join(DESK, 'build', 'icon.png'));
+
+// Eine Version für TV und Windows: die aus tv/app/appinfo.json
+const version = JSON.parse(fs.readFileSync(path.join(TV, 'app', 'appinfo.json'), 'utf8')).version;
+const pkgFile = path.join(DESK, 'package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
+if (pkg.version !== version) {
+  pkg.version = version;
+  fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+  console.log('Version ' + version + ' übernommen');
+}

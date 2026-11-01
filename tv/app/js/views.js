@@ -344,7 +344,7 @@ var Views = (function () {
         ));
         el.appendChild(UI.trackList(s.songs, { showCover: true, showAlbum: true }));
       } else {
-        el.appendChild(h('div.empty', { text: T('Noch keine Favoriten. Gelbe Taste auf einem Song → „Zu Favoriten hinzufügen“.') }));
+        el.appendChild(h('div.empty', { text: T(U.desktop ? 'Noch keine Favoriten. Rechtsklick auf einen Song → „Zu Favoriten hinzufügen“.' : 'Noch keine Favoriten. Gelbe Taste auf einem Song → „Zu Favoriten hinzufügen“.') }));
       }
       if (s.albums.length) el.appendChild(UI.row(T('Favorisierte Alben'), s.albums, UI.albumCard));
       if (s.artists.length) el.appendChild(UI.row(T('Favorisierte Künstler'), s.artists, UI.artistCard));
@@ -753,11 +753,11 @@ var Views = (function () {
     el.appendChild(option(T('Lautstärke angleichen'), T('Mit den ReplayGain-Angaben deiner Dateien'), [['off', T('Aus')], ['track', T('Pro Song')], ['album', T('Pro Album')]], 'leveling', function () { Player.applyVolume(); }));
 
     el.appendChild(h('div.settings-section', { text: T('Anzeige') }));
-    el.appendChild(option(T('Bildschirmschoner'), T('Schützt das OLED-Panel vor Einbrennen'), [[0, T('Aus')], [1, T('{n} Min.', { n: 1 })], [3, T('{n} Min.', { n: 3 })], [5, T('{n} Min.', { n: 5 })], [10, T('{n} Min.', { n: 10 })]], 'screensaver'));
+    if (!U.desktop) el.appendChild(option(T('Bildschirmschoner'), T('Schützt das OLED-Panel vor Einbrennen'), [[0, T('Aus')], [1, T('{n} Min.', { n: 1 })], [3, T('{n} Min.', { n: 3 })], [5, T('{n} Min.', { n: 5 })], [10, T('{n} Min.', { n: 10 })]], 'screensaver'));
     el.appendChild(option(T('Startansicht'), null, [['home', T('Start')], ['nowplaying', T('Läuft gerade')], ['albums', T('Alben')]], 'startView'));
 
     var langBtn = UI.button(I18N.choice() === 'auto' ? T('Automatisch ({lang})', { lang: I18N.languages[I18N.lang()] }) : I18N.languages[I18N.lang()], function () {
-      var items = [{ label: T('Automatisch (Sprache des Fernsehers)'), action: function () { I18N.set('auto'); } }];
+      var items = [{ label: T(U.desktop ? 'Automatisch (Sprache von Windows)' : 'Automatisch (Sprache des Fernsehers)'), action: function () { I18N.set('auto'); } }];
       Object.keys(I18N.languages).forEach(function (code) {
         items.push({ label: I18N.languages[code], action: function () { I18N.set(code); } });
       });
@@ -771,7 +771,7 @@ var Views = (function () {
     el.appendChild(h('div.setting', null, h('div', null, h('div.setting-label', { text: T('Angemeldet als {name}', { name: cfg.user }) }), infoText)));
     el.appendChild(h('div.settings-actions.nav-container', null,
       UI.button(T('Benutzer wechseln'), App.showUsers, 'primary', 'swap'),
-      UI.button(T('Konto entfernen'), function () { UI.confirm(T('Konto „{name}“ von diesem TV entfernen?', { name: cfg.user }), T('Entfernen'), App.logout, 'trash'); }, 'danger', 'logout'),
+      UI.button(T('Konto entfernen'), function () { UI.confirm(T(U.desktop ? 'Konto „{name}“ von diesem PC entfernen?' : 'Konto „{name}“ von diesem TV entfernen?', { name: cfg.user }), T('Entfernen'), App.logout, 'trash'); }, 'danger', 'logout'),
       UI.button(T('App beenden'), App.exit, 'outline', 'power')
     ));
 
@@ -779,15 +779,23 @@ var Views = (function () {
     var phones = Link.phones();
     el.appendChild(h('div.setting', null, h('div', null,
       h('div.setting-label', { text: phones.length ? phones.map(function (p) { return p.guest ? T('{name} (Gast)', { name: p.device }) : p.device; }).join(', ') : T('Kein iPhone verbunden') }),
-      h('div.setting-desc', { text: T('In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „TV & Jukebox“ in der iPhone-App.') }))));
+      h('div.setting-desc', { text: T(U.desktop ? 'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den PC auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „TV & Jukebox“ in der iPhone-App.' : 'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „TV & Jukebox“ in der iPhone-App.') }))));
     if (phones.length) el.appendChild(h('div.settings-actions.nav-container', null,
       UI.button(T('Alle trennen'), function () { Link.forget(); App.reload(); }, 'outline', 'close')));
 
-    el.appendChild(h('div.settings-section', { text: T('Fernbedienung') }));
-    el.appendChild(h('div.keys', { html:
-      T('<b>▶ / ❚❚ / ■</b> Play, Pause, Stopp · <b>⏪ ⏩</b> 10 s spulen, gedrückt halten = Song wechseln · <b>CH + / –</b> seitenweise scrollen<br>') +
-      T('<b style="color:#e53935">Rot</b> Läuft gerade · <b style="color:#43a047">Grün</b> Suchen · <b style="color:#fdd835">Gelb</b> Optionen · <b style="color:#1e88e5">Blau</b> Play/Pause') }));
-    el.appendChild(h('div.version', { text: 'Tonalo · ' + T('inoffizieller Navidrome-Client für LG webOS') + ' · v' + APP_VERSION }));
+    if (U.desktop) {
+      el.appendChild(Desktop.updateSetting());
+      el.appendChild(h('div.settings-section', { text: T('Tastatur') }));
+      el.appendChild(h('div.keys', { html:
+        T('<b>Leertaste</b> Play/Pause · <b>Strg + ← / →</b> Song wechseln · <b>Strg + F</b> Suchen · <b>Esc</b> zurück<br>') +
+        T('<b>Rechtsklick</b> Optionen · <b>Strg + Plus / Minus</b> größer, kleiner · <b>Strg + 0</b> Standardgröße') }));
+    } else {
+      el.appendChild(h('div.settings-section', { text: T('Fernbedienung') }));
+      el.appendChild(h('div.keys', { html:
+        T('<b>▶ / ❚❚ / ■</b> Play, Pause, Stopp · <b>⏪ ⏩</b> 10 s spulen, gedrückt halten = Song wechseln · <b>CH + / –</b> seitenweise scrollen<br>') +
+        T('<b style="color:#e53935">Rot</b> Läuft gerade · <b style="color:#43a047">Grün</b> Suchen · <b style="color:#fdd835">Gelb</b> Optionen · <b style="color:#1e88e5">Blau</b> Play/Pause') }));
+    }
+    el.appendChild(h('div.version', { text: 'Tonalo · ' + T(U.desktop ? 'inoffizieller Navidrome-Client für Windows' : 'inoffizieller Navidrome-Client für LG webOS') + ' · v' + APP_VERSION }));
     setTimeout(function () { App.viewReady(el); }, 0);
     return { el: el };
   }

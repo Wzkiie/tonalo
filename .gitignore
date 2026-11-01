@@ -14,3 +14,9 @@ ios/Local.xcconfig
 
 # Cloudflare-Hochladen
 site/.wrangler/
+
+# Windows-App: Kopien aus tv/ und Build-Ergebnisse
+desktop/node_modules/
+desktop/web/
+desktop/service/
+desktop/build/

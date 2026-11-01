@@ -21,6 +21,7 @@ var Player = (function () {
   var station = null;    // Radiosender, der gerade live läuft – die Warteschlange wartet so lange
   var stations = [], stationSeq = 0;
   var sleepAt = 0, sleepEnd = false, fade = 1;
+  var master = U.store.get('volume', 1); // Lautstärke in der App – nur am PC einstellbar, am TV regelt das der Fernseher
   var xf = null, xfIn = 1, xfBroken = false, xfStarting = false; // laufendes Überblenden, Lautstärke des neuen Songs dabei
 
   function on(evt, fn) { (listeners[evt] = listeners[evt] || []).push(fn); }
@@ -46,7 +47,7 @@ var Player = (function () {
       var gain = album ? rg.albumGain : rg.trackGain, peak = album ? rg.albumPeak : rg.trackPeak;
       if (gain != null) { g = Math.pow(10, gain / 20); if (peak) g = Math.min(g, 1 / peak); }
     }
-    audio.volume = Math.max(0, Math.min(1, g * fade * xfIn));
+    audio.volume = Math.max(0, Math.min(1, g * fade * xfIn * master));
   }
 
   function clear(el) {
@@ -551,6 +552,8 @@ var Player = (function () {
     dismissRemote: dismissRemote,
     reloadCurrent: function () { if (current() && audio.src && !station) load(position(), !audio.paused); },
     applyVolume: applyVolume,
+    volume: function () { return master; },
+    setVolume: function (v) { master = Math.max(0, Math.min(1, +v || 0)); U.store.set('volume', master); applyVolume(); emit('volume'); },
     context: function () { return context; },
     playStation: playStation,
     stopStation: stopStation,

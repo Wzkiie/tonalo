@@ -228,5 +228,27 @@ I18N.add('en', {
   '{name} hat {n} Songs hinzugefügt': '{name} added {n} songs',
   '{name} hat übersprungen': '{name} skipped',
   '{name} hat „{title}“ hinzugefügt': '{name} added “{title}”',
-  '{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben': '{name} wants to join the Jukebox – enter this code on the iPhone'
+  '{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben': '{name} wants to join the Jukebox – enter this code on the iPhone',
+  // Windows-App
+  '<b>Leertaste</b> Play/Pause · <b>Strg + ← / →</b> Song wechseln · <b>Strg + F</b> Suchen · <b>Esc</b> zurück<br>': '<b>Space</b> Play/Pause · <b>Ctrl + ← / →</b> Change song · <b>Ctrl + F</b> Search · <b>Esc</b> Back<br>',
+  '<b>Rechtsklick</b> Optionen · <b>Strg + Plus / Minus</b> größer, kleiner · <b>Strg + 0</b> Standardgröße': '<b>Right-click</b> Options · <b>Ctrl + Plus / Minus</b> Bigger, smaller · <b>Ctrl + 0</b> Default size',
+  'Automatisch (Sprache von Windows)': 'Automatic (Windows language)',
+  'Das Update wird geladen, danach startet Tonalo neu.': 'The update is downloaded, then Tonalo restarts.',
+  'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den PC auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „TV & Jukebox“ in der iPhone-App.': 'In Tonalo on your iPhone you can see what plays here and pick music for the PC. Jukebox guests can add songs and skip. Connect under “TV & Jukebox” in the iPhone app.',
+  'Jetzt installieren': 'Install now',
+  'Konto von diesem PC entfernen': 'Remove account from this PC',
+  'Konto „{name}“ von diesem PC entfernen?': 'Remove account “{name}” from this PC?',
+  'Lautstärke': 'Volume',
+  'Nach Updates suchen': 'Check for updates',
+  'Noch keine Favoriten. Rechtsklick auf einen Song → „Zu Favoriten hinzufügen“.': 'No favorites yet. Right-click a song → “Add to favorites”.',
+  'Rechtsklick: Konto verwalten': 'Right-click: manage account',
+  'Später': 'Later',
+  'Suche nach Updates …': 'Checking for updates …',
+  'Tastatur': 'Keyboard',
+  'Tonalo ist aktuell': 'Tonalo is up to date',
+  'Tonalo {version} ist da': 'Tonalo {version} is here',
+  'Update wird geladen … {n} %': 'Downloading update … {n} %',
+  'Updates': 'Updates',
+  'Updates kommen direkt von GitHub und werden in der App installiert.': 'Updates come straight from GitHub and install inside the app.',
+  'inoffizieller Navidrome-Client für Windows': 'unofficial Navidrome client for Windows'
 });
