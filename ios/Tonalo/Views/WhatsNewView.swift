@@ -63,39 +63,86 @@ enum WhatsNew {
     static func markSeen() { UserDefaults.standard.set(currentVersion, forKey: key) }
 }
 
-/// The sheet after an update.
+/// The sheet after an update: one new thing per page – tap or swipe to the next.
 struct WhatsNewSheet: View {
     let release: AppRelease
     @Environment(\.dismiss) private var dismiss
+    @State private var page = 0
+
+    private var last: Bool { page == release.items.count - 1 }
 
     var body: some View {
+        let color = release.items[page].color
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 30) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("What's New in Tonalo")
-                            .font(.system(size: 34, weight: .bold))
-                        Text("Version \(release.version)")
-                            .font(.headline).foregroundStyle(Color.subtle)
-                    }
-                    .padding(.top, 48)
-                    ForEach(release.items) { WhatsNewRow(item: $0) }
-                }
-                .padding(.horizontal, 28)
-                .padding(.bottom, 24)
+            VStack(spacing: 4) {
+                Text("What's New in Tonalo").font(.system(size: 17, weight: .bold))
+                Text("Version \(release.version)").font(.subheadline).foregroundStyle(Color.subtle)
             }
-            Button {
-                dismiss()
-            } label: {
-                Text("Continue").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 16)
+            .padding(.top, 36)
+            TabView(selection: $page) {
+                ForEach(Array(release.items.enumerated()), id: \.element.id) { i, item in
+                    WhatsNewPage(item: item, shown: page == i)
+                        .contentShape(Rectangle())
+                        .onTapGesture { next() }
+                        .tag(i)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            HStack(spacing: 8) {
+                ForEach(release.items.indices, id: \.self) { i in
+                    Capsule().fill(i == page ? color : Color.white.opacity(0.22))
+                        .frame(width: i == page ? 22 : 7, height: 7)
+                }
+            }
+            .animation(.spring(duration: 0.35), value: page)
+            .padding(.bottom, 26)
+            Button { next() } label: {
+                Text(last ? "Continue" : "Next").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 16)
             }
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.capsule)
+            .tint(color)
             .padding(.horizontal, 28)
             .padding(.bottom, 20)
         }
-        .background(Color.black)
+        .background {
+            // A soft glow in the color of the page, changing with it
+            RadialGradient(colors: [color.opacity(0.35), .clear], center: .init(x: 0.5, y: 0.38), startRadius: 10, endRadius: 360)
+                .animation(.easeInOut(duration: 0.4), value: page)
+                .background(Color.black)
+                .ignoresSafeArea()
+        }
         .presentationDragIndicator(.visible)
+    }
+
+    private func next() {
+        if last { dismiss() } else { withAnimation(.easeInOut(duration: 0.3)) { page += 1 } }
+    }
+}
+
+private struct WhatsNewPage: View {
+    let item: AppRelease.Item
+    let shown: Bool
+
+    var body: some View {
+        VStack(spacing: 26) {
+            Spacer(minLength: 0)
+            Image(systemName: item.icon)
+                .font(.system(size: 52, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 120, height: 120)
+                .background(item.color.gradient, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
+                .shadow(color: item.color.opacity(0.5), radius: 24, y: 8)
+                .symbolEffect(.bounce, value: shown)
+            VStack(spacing: 12) {
+                Text(item.title).font(.system(size: 28, weight: .bold))
+                Text(item.text).font(.body).foregroundStyle(Color.subtle).fixedSize(horizontal: false, vertical: true)
+            }
+            .multilineTextAlignment(.center)
+            Spacer(minLength: 0)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 32)
     }
 }
 
@@ -103,32 +150,88 @@ private struct WhatsNewRow: View {
     let item: AppRelease.Item
 
     var body: some View {
-        HStack(alignment: .top, spacing: 18) {
+        HStack(alignment: .top, spacing: 14) {
             Image(systemName: item.icon)
-                .font(.system(size: 24, weight: .semibold))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 48, height: 48)
-                .background(item.color.gradient, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.title).font(.headline)
+                .frame(width: 38, height: 38)
+                .background(item.color.gradient, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.title).font(.system(size: 16, weight: .semibold))
                 Text(item.text).font(.subheadline).foregroundStyle(Color.subtle).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 }
 
-/// Every version, newest first – from Settings.
+/// Every version, newest first – from Settings. A card per version; tap to open it.
 struct VersionHistoryView: View {
+    @State private var open: Set<String> = [WhatsNew.releases.first?.version ?? ""]
+
     var body: some View {
-        List {
-            ForEach(WhatsNew.releases) { release in
-                Section {
-                    ForEach(release.items) { WhatsNewRow(item: $0).padding(.vertical, 4) }
-                } header: {
-                    Text("Version \(release.version)")
+        ScrollView {
+            VStack(spacing: 12) {
+                ForEach(WhatsNew.releases) { release in
+                    card(release)
                 }
             }
+            .padding(16)
         }
+        .background(Color.black)
         .navigationTitle("What's New")
+    }
+
+    private func card(_ release: AppRelease) -> some View {
+        let isOpen = open.contains(release.version)
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.spring(duration: 0.35)) {
+                    if isOpen { open.remove(release.version) } else { open.insert(release.version) }
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Text("Version \(release.version)").font(.system(size: 19, weight: .bold))
+                            if release.version == WhatsNew.currentVersion {
+                                Text("Current").font(.system(size: 11, weight: .bold)).textCase(.uppercase)
+                                    .foregroundStyle(Color.accent)
+                                    .padding(.horizontal, 7).padding(.vertical, 4)
+                                    .background(Color.accent.opacity(0.16), in: Capsule())
+                            }
+                        }
+                        // What's in it, at a glance
+                        HStack(spacing: -6) {
+                            ForEach(release.items) { item in
+                                Image(systemName: item.icon)
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 26, height: 26)
+                                    .background(item.color.gradient, in: Circle())
+                                    .overlay(Circle().stroke(Color(white: 0.11), lineWidth: 2))
+                            }
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.subtle)
+                        .rotationEffect(.degrees(isOpen ? 90 : 0))
+                }
+                .padding(18)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if isOpen {
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(release.items) { WhatsNewRow(item: $0) }
+                }
+                .padding(.horizontal, 18)
+                .padding(.bottom, 20)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(Color(white: 0.11), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }

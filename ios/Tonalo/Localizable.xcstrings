@@ -1325,6 +1325,16 @@
         }
       }
     },
+    "Current" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuell"
+          }
+        }
+      }
+    },
     "Custom color" : {
       "localizations" : {
         "de" : {
