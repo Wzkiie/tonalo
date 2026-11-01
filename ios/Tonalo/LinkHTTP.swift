@@ -105,8 +105,9 @@ enum LinkHTTP {
 
     /// HMAC over method, path, time, a one-time value and body with the key from the pairing – the same as
     /// tv/service/service.js. The one-time value makes a request recorded by someone else useless a second time.
-    static func authorization(_ method: String, _ path: String, body: Data, keyId: String, key: Data) -> String {
-        let time = String(Int(Date().timeIntervalSince1970))
+    /// `offset`: how far the other side's clock is ahead of this one – a TV or PC with the wrong time still works.
+    static func authorization(_ method: String, _ path: String, body: Data, keyId: String, key: Data, offset: TimeInterval = 0) -> String {
+        let time = String(Int(Date().timeIntervalSince1970 + offset))
         let nonce = random(8).hex
         return "Tonalo \(keyId):\(time):\(nonce):\(signature(method, path, time, nonce, body, key))"
     }

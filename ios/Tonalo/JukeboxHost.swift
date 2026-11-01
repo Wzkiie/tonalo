@@ -213,7 +213,8 @@ final class JukeboxHost {
         }
         let who = authorized(r)
         guard case .success(let guest) = who else {
-            if case .failure(let why) = who { return await reply(c, 401, ["error": why.rawValue]) }
+            // Only the clock is off: the guest learns this phone's time and signs with it from then on
+            if case .failure(let why) = who { return await reply(c, 401, why == .clock ? ["error": why.rawValue, "now": Date().timeIntervalSince1970] : ["error": why.rawValue]) }
             return
         }
         switch (r.method, r.path) {
@@ -329,6 +330,7 @@ final class JukeboxHost {
             "position": p.position,
             "duration": p.duration,
             "at": Date().timeIntervalSince1970 * 1000,
+            "sent": Date().timeIntervalSince1970 * 1000, // built when it's sent – the guest's clock needn't match this one
             "queue": json(window),
             "index": p.index - from,
             "offset": from,

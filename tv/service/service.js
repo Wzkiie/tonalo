@@ -76,6 +76,7 @@ function setState(s) {
 function line(guest) {
   var s = Object.assign({}, state, { guests: guestNames() });
   if (guest) { delete s.user; s.jukebox = true; } // so weiß ein iPhone, dass es hier nur Gast sein kann
+  s.sent = Date.now(); // mit „at“ zusammen rechnet das iPhone die Position aus, ohne dass beide Uhren stimmen müssen
   return 'data: ' + JSON.stringify(s) + '\n\n';
 }
 
@@ -185,7 +186,8 @@ function handle(req, res, body) {
   }
 
   var who = authorized(req, body);
-  if (typeof who === 'string') return reply(res, 401, { error: who });
+  // Geht nur die Uhr falsch, erfährt das iPhone die Zeit hier und rechnet ab dann damit
+  if (typeof who === 'string') return reply(res, 401, who === 'clock' ? { error: who, now: Math.floor(Date.now() / 1000) } : { error: who });
 
   if (req.method === 'GET' && path === '/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });

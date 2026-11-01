@@ -24,8 +24,10 @@ final class TVLink {
         var playing: Bool?
         var position: Double?
         var duration: Double?
-        /// When the snapshot was taken (ms since 1970) – the position counts on from there.
+        /// When the snapshot was taken (ms since 1970, the other side's clock) – the position counts on from there.
         var at: Double?
+        /// When this line was sent, on the same clock as `at`: together they don't depend on both clocks being right.
+        var sent: Double?
         var station: Station?
         var queue: [Song]?
         var index: Int?
@@ -264,7 +266,7 @@ final class TVLink {
         // Joined as a guest: a Jukebox – or the own TV while someone else is signed in there
         let guest = pairing.guest == true || jukebox == device.id
         var wasPlaying = false, first = true
-        let auth = LinkHTTP.authorization("GET", "/events", body: Data(), keyId: pairing.keyId, key: key)
+        let auth = LinkHTTP.authorization("GET", "/events", body: Data(), keyId: pairing.keyId, key: key, offset: clockOffset[pairing.tv] ?? 0)
         // What the other side reports, shown here – again once the server check below says it's the same server
         func apply(_ s: State) {
             if pairing.guest != true {
@@ -301,8 +303,11 @@ final class TVLink {
             apply(s)
         }
         if !guest { ownTV = nil }
-        // The other side forgot this phone – but not when only its clock is off
-        if status?.status == 401, !String(decoding: status?.body ?? Data(), as: UTF8.self).contains("clock") { unpair(pairing.tv) }
+        // The other side forgot this phone – but not when only its clock is off: then the next try uses its time
+        if status?.status == 401 {
+            if !learnClock(status?.body, pairing.tv) { unpair(pairing.tv) }
+            return false
+        }
         return !first
     }
 
@@ -360,11 +365,26 @@ final class TVLink {
     private func command(_ cmd: [String: Any]) {
         guard let (device, pairing) = listening ?? target, let key = Data(hex: pairing.key),
               let body = try? JSONSerialization.data(withJSONObject: cmd) else { return }
-        let auth = LinkHTTP.authorization("POST", "/command", body: body, keyId: pairing.keyId, key: key)
         Task {
-            let status = (try? await LinkHTTP.request(device.endpoint, "POST", "/command", body: body, headers: ["Authorization": auth]))?.status
-            if status != 200 { app?.player.lastError = String(localized: "\(device.name) isn't answering.") }
+            var answer: LinkHTTP.Response?
+            // Twice at most: the second time with the other side's clock, if only that was off
+            for _ in 0..<2 {
+                let auth = LinkHTTP.authorization("POST", "/command", body: body, keyId: pairing.keyId, key: key, offset: clockOffset[pairing.tv] ?? 0)
+                answer = try? await LinkHTTP.request(device.endpoint, "POST", "/command", body: body, headers: ["Authorization": auth])
+                guard answer?.status == 401, learnClock(answer?.body, pairing.tv) else { break }
+            }
+            if answer?.status != 200 { app?.player.lastError = String(localized: "\(device.name) isn't answering.") }
         }
+    }
+
+    /// How far each TV's or computer's clock is off from this phone's – learned when it turns a request down for the time.
+    @ObservationIgnored private var clockOffset: [String: TimeInterval] = [:]
+
+    /// True when the other side only turned the request down for the time; from now on its time is used.
+    private func learnClock(_ body: Data?, _ tv: String) -> Bool {
+        guard let body, let p = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any], p["error"] as? String == "clock" else { return false }
+        if let now = p["now"] as? Double { clockOffset[tv] = now - Date().timeIntervalSince1970 }
+        return true
     }
 
     private func json<T: Encodable>(_ value: T) -> Any {

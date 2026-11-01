@@ -858,6 +858,8 @@ final class PlayerModel {
             }
         }
         tvState = s
+        // From here on `at` is on this phone's clock: the TV's or computer's clock may be off
+        if let sent = s.sent, let at = s.at { tvState?.at = Date().timeIntervalSince1970 * 1000 - max(0, sent - at) }
         let songs = s.queue ?? []
         queue = songs
         index = songs.indices.contains(s.index ?? -1) ? s.index ?? 0 : (songs.isEmpty ? -1 : 0)
