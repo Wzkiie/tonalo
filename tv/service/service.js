@@ -17,7 +17,8 @@ var tv = { id: '', name: 'TV', kind: 'tv', keys: [], others: [] }; // keys: [{ i
 var state = { active: false };
 var clients = [];      // offene Live-Verbindungen der iPhones: { res, entry }
 var pairing = null;    // { code, until, tries, guest }
-var failures = 0, lockedUntil = 0; // falsche Codes über alle Kopplungen – Raten wird nach 15 Fehlern 10 min gesperrt
+var failures = 0, lockedUntil = 0, lockouts = 0; // falsche Codes über alle Kopplungen – nach 15 Fehlern ist Pause, jedes Mal doppelt so lang
+var lastStart = 0;     // wann zuletzt ein Code verlangt wurde – niemand im WLAN soll den Bildschirm mit Codes zuschütten
 var nonces = {};       // schon benutzte Anfragen: eine mitgeschnittene Anfrage geht kein zweites Mal durch
 var server = null;
 
@@ -47,6 +48,18 @@ service.register('attach', function (msg) {
   if (app !== msg) return;
   app = null;
   setState({ active: false });
+});
+
+// Am PC abschaltbar („Im Netzwerk sichtbar: Aus“, z. B. im Hotel-WLAN): niemand findet ihn, niemand erreicht ihn
+service.register('stop', function (msg) {
+  if (app) { try { app.cancel(); } catch (e) { /* schon weg */ } app = null; }
+  clients.forEach(function (c) { c.res.end(); });
+  clients = [];
+  pairing = null;
+  if (server) { server.close(); server = null; }
+  if (mdns) { try { mdns.close(); } catch (e) { /* egal */ } mdns = null; }
+  clearInterval(announcer);
+  msg.respond({ returnValue: true });
 });
 
 service.register('state', function (msg) {
@@ -80,6 +93,19 @@ function guestNames() {
 // Was Gäste dürfen: Songs hinzufügen (höchstens 20 auf einmal) und überspringen
 var GUEST = ['enqueue', 'playNext', 'next'];
 var GUEST_SONGS = 20;
+
+// Von einem Gast kommt nur, was ein Song braucht: einfache Werte, kurz gehalten – keine Sender-Adressen, keine Objekte
+function guestSong(s) {
+  var out = {};
+  if (!s || typeof s !== 'object') return null;
+  Object.keys(s).slice(0, 40).forEach(function (k) {
+    var v = s[k];
+    if (k === 'streamUrl' || k === 'url') return;
+    if (typeof v === 'string') out[k] = v.slice(0, 300);
+    else if ((typeof v === 'number' && isFinite(v)) || typeof v === 'boolean') out[k] = v;
+  });
+  return typeof out.id === 'string' && out.id ? out : null;
+}
 
 // Ein iPhone, das mit einem anderen Konto auf diesem TV gekoppelt ist, kommt als Gast der Jukebox herein
 function keyFor(id) {
@@ -121,7 +147,9 @@ function handle(req, res, body) {
   // Kopplung: der TV zeigt einen Code, das iPhone schickt ihn zurück und bekommt einen eigenen Schlüssel
   if (req.method === 'POST' && path === '/pair/start') {
     if (!app) return reply(res, 503, { error: 'not running' });
-    if (Date.now() < lockedUntil) return reply(res, 429, { error: 'too many tries' });
+    var now = Date.now();
+    if (now < lockedUntil || now - lastStart < 3000) return reply(res, 429, { error: 'too many tries' });
+    lastStart = now;
     var ask = parse(body);
     // Ob Gast oder eigenes iPhone, steht hier fest – und damit auch auf dem Bildschirm, den der TV zeigt
     pairing = { code: String(crypto.randomBytes(4).readUInt32BE(0) % 1000000 + 1000000).slice(1), until: Date.now() + 120000, tries: 0, guest: !!ask.guest };
@@ -137,7 +165,8 @@ function handle(req, res, body) {
     var expect = pub && crypto.createHmac('sha256', pairing.code).update(pub).digest();
     if (!proof || !expect || !crypto.timingSafeEqual(proof, expect)) {
       // Raten lohnt nicht: nach fünf Fehlversuchen gilt der Code nicht mehr, nach 15 ist für 10 min Schluss
-      if (++failures >= 15) { lockedUntil = Date.now() + 600000; failures = 0; pairing.tries = 5; }
+      // Wer weiterrät, wartet jedes Mal doppelt so lange: 10 min, 20 min, 40 min … höchstens einen Tag
+      if (++failures >= 15) { lockedUntil = Date.now() + Math.min(600000 * Math.pow(2, lockouts++), 86400000); failures = 0; pairing.tries = 5; }
       if (++pairing.tries >= 5) { pairing = null; send({ pairCode: null }); }
       return reply(res, 403, { error: 'wrong code' });
     }
@@ -149,6 +178,7 @@ function handle(req, res, body) {
     var entry = { id: crypto.randomBytes(8).toString('hex'), device: String(p.device || 'iPhone').slice(0, 60), key: key, guest: pairing.guest };
     pairing = null;
     failures = 0;
+    lockouts = 0;
     tv.keys = tv.keys.concat([entry]);
     send({ pairCode: null, keys: tv.keys, paired: entry.device, guest: entry.guest });
     return reply(res, 200, { id: entry.id, pub: ecdh.getPublicKey('hex'), tv: tv.id, name: tv.name });
@@ -176,7 +206,7 @@ function handle(req, res, body) {
     var cmd = parse(body);
     if (who.guest) {
       if (GUEST.indexOf(cmd.cmd) < 0) return reply(res, 403, { error: 'host only' });
-      if (Array.isArray(cmd.songs)) cmd.songs = cmd.songs.slice(0, GUEST_SONGS);
+      cmd = { cmd: cmd.cmd, songs: Array.isArray(cmd.songs) ? cmd.songs.slice(0, GUEST_SONGS).map(guestSong).filter(Boolean) : undefined };
       cmd.by = who.device; // der TV zeigt kurz, wer etwas hinzugefügt hat
     }
     send({ command: cmd });
@@ -185,11 +215,24 @@ function handle(req, res, body) {
   reply(res, 404, { error: 'not found' });
 }
 
-function parse(body) { try { return JSON.parse(body) || {}; } catch (e) { return {}; } }
+function parse(body) { try { var v = JSON.parse(body); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
+
+// Nur aus dem eigenen Netz: private Adressen (IPv4 und IPv6). Hat der PC oder TV eine öffentliche IPv6-Adresse,
+// kommt von außen trotzdem niemand bis zur Kopplung
+function local(addr) {
+  var a = String(addr || '').toLowerCase().replace(/^::ffff:/, '');
+  var m = /^(\d+)\.(\d+)\.\d+\.\d+$/.exec(a);
+  if (m) {
+    var x = +m[1], y = +m[2];
+    return x === 10 || x === 127 || (x === 192 && y === 168) || (x === 172 && y >= 16 && y < 32) || (x === 169 && y === 254);
+  }
+  return a === '::1' || /^f[cd]/.test(a) || /^fe[89ab]/.test(a);
+}
 
 function startServer() {
   if (server) return;
   server = http.createServer(function (req, res) {
+    if (!local(req.socket.remoteAddress)) { req.socket.destroy(); return; }
     var chunks = [], size = 0;
     req.on('data', function (c) { size += c.length; if (size > 2000000) req.destroy(); else chunks.push(c); });
     req.on('end', function () { handle(req, res, Buffer.concat(chunks).toString('utf8')); });
@@ -201,7 +244,7 @@ function startServer() {
 }
 
 // ---------- Im WLAN auffindbar (mDNS / Bonjour): _tonalo._tcp
-var mdns = null;
+var mdns = null, announcer = null;
 var TYPE = '_tonalo._tcp.local';
 
 // Adressen im Heimnetz, die beste zuerst. Ein Windows-PC hat oft virtuelle Netze (WSL, Hyper-V, VPN …),
@@ -316,7 +359,7 @@ function startMdns() {
   mdns.on('message', function (buf, from) {
     // Fragen von einem anderen Port als 5353 wollen die Antwort direkt zurück, mit ihrer Nummer und Frage
     var asked = asksForUs(buf);
-    if (asked) announce(from.port !== 5353 ? { port: from.port, address: from.address, query: buf.slice(0, asked) } : null, from.address);
+    if (asked && local(from.address)) announce(from.port !== 5353 ? { port: from.port, address: from.address, query: buf.slice(0, asked) } : null, from.address);
   });
   mdns.on('error', function (e) { console.error('mdns', e); try { mdns.close(); } catch (x) { /* egal */ } mdns = null; });
   mdns.bind(5353, function () {
@@ -328,6 +371,7 @@ function startMdns() {
     announce();
     setTimeout(announce, 1000);
     // Zur Sicherheit regelmäßig von selbst melden – manche Router reichen Suchanfragen nicht zuverlässig weiter
-    setInterval(function () { if (app) announce(); }, 60000);
+    clearInterval(announcer);
+    announcer = setInterval(function () { if (app) announce(); }, 60000);
   });
 }

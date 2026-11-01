@@ -1,6 +1,6 @@
 // Tonalo für Windows: ein Fenster mit der TV-Oberfläche (web/), dazu der Dienst fürs iPhone und Updates von GitHub
 const { app, BrowserWindow, ipcMain, shell, session, Menu } = require('electron');
-const path = require('path'), fs = require('fs'), os = require('os'), Module = require('module');
+const path = require('path'), fs = require('fs'), os = require('os'), Module = require('module'), { pathToFileURL } = require('url');
 
 // tv/service/service.js verlangt webOS' "webos-service" – hier bekommt es den Ersatz
 const resolve = Module._resolveFilename;
@@ -46,6 +46,7 @@ function createWindow() {
 
   // Nur die eigene Seite – Links (Hilfe, GitHub) gehen in den Browser
   win.webContents.on('will-navigate', (e) => e.preventDefault());
+  win.webContents.on('will-attach-webview', (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//.test(url)) shell.openExternal(url);
     return { action: 'deny' };
@@ -73,6 +74,13 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'web', 'index.html'));
 }
 
+// Nachrichten an den Hauptprozess nimmt nur die eigene Oberfläche an – nie eine fremde Seite oder ein Unterrahmen
+const WEB = pathToFileURL(path.join(__dirname, 'web') + path.sep).href;
+function fromUs(e) {
+  const f = e.senderFrame;
+  return !!f && !!win && e.sender === win.webContents && f === e.sender.mainFrame && f.url.startsWith(WEB);
+}
+
 // ---------------- Dienst fürs iPhone (tv/service/service.js)
 let Service = null;
 const subs = new Map(); // offene Abos der Oberfläche: id -> { msg, h }
@@ -83,6 +91,7 @@ function startService() {
 }
 
 ipcMain.on('svc-call', (e, id, uri, params) => {
+  if (!fromUs(e)) return;
   const m = /^luna:\/\/([^/]+)\/(.+)$/.exec(uri);
   if (!m) return;
   const reply = (obj) => { if (!e.sender.isDestroyed()) e.sender.send('svc-msg', id, JSON.stringify(obj)); };
@@ -102,7 +111,8 @@ ipcMain.on('svc-call', (e, id, uri, params) => {
   // Alles andere (Bildschirmschoner des TVs …) gibt es am PC nicht
 });
 
-ipcMain.on('svc-cancel', (_e, id) => {
+ipcMain.on('svc-cancel', (e, id) => {
+  if (!fromUs(e)) return;
   const s = subs.get(id);
   if (!s) return;
   subs.delete(id);
@@ -153,13 +163,13 @@ function check() {
   updater.checkForUpdates().catch((err) => setStatus(noWindowsBuild(err) ? { state: 'none' } : { state: 'error', error: shortError(err) }));
 }
 
-ipcMain.on('upd-ready', () => setStatus(status));
-ipcMain.on('upd-check', check);
-ipcMain.on('upd-download', () => {
-  if (updater && status.state === 'available') updater.downloadUpdate().catch((err) => setStatus({ state: 'error', error: shortError(err) }));
+ipcMain.on('upd-ready', (e) => { if (fromUs(e)) setStatus(status); });
+ipcMain.on('upd-check', (e) => { if (fromUs(e)) check(); });
+ipcMain.on('upd-download', (e) => {
+  if (fromUs(e) && updater && status.state === 'available') updater.downloadUpdate().catch((err) => setStatus({ state: 'error', error: shortError(err) }));
 });
 // Still installieren und Tonalo danach wieder starten
-ipcMain.on('upd-install', () => { if (updater && status.state === 'ready') setImmediate(() => updater.quitAndInstall(true, true)); });
+ipcMain.on('upd-install', (e) => { if (fromUs(e) && updater && status.state === 'ready') setImmediate(() => updater.quitAndInstall(true, true)); });
 
 // ---------------- Start
 if (!app.requestSingleInstanceLock()) {

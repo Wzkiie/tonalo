@@ -783,6 +783,19 @@ var Views = (function () {
       h('div.setting-desc', { text: T(U.desktop ? 'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den PC auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „Geräte“ in der iPhone-App, Gäste treten über „Jukebox“ bei.' : 'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den TV auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „Geräte“ in der iPhone-App, Gäste treten über „Jukebox“ bei.') }))));
     if (phones.length) el.appendChild(h('div.settings-actions.nav-container', null,
       UI.button(T('Alle trennen'), function () { Link.forget(); App.reload(); }, 'outline', 'close')));
+    if (U.desktop) {
+      var vis = h('div.chips.nav-container');
+      [[true, T('An')], [false, T('Aus')]].forEach(function (v) {
+        var c = UI.chip(v[1], function () {
+          Link.setVisible(v[0]);
+          U.$$('.chip', vis).forEach(function (x) { x.classList.remove('active'); });
+          c.classList.add('active');
+        }, Link.visible() === v[0]);
+        vis.appendChild(c);
+      });
+      el.appendChild(h('div.setting', null, h('div', null, h('div.setting-label', { text: T('Im Netzwerk sichtbar') }),
+        h('div.setting-desc', { text: T('Aus: iPhones finden diesen PC nicht und erreichen ihn nicht – gut in fremden WLANs wie im Hotel oder Café.') })), vis));
+    }
 
     if (U.desktop) {
       el.appendChild(Desktop.updateSetting());

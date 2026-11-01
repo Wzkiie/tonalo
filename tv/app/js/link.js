@@ -9,6 +9,9 @@ var Link = (function () {
 
   function available() { return typeof PalmServiceBridge !== 'undefined'; }
 
+  // Am PC abschaltbar, z. B. in einem fremden WLAN – am TV immer an
+  function visible() { return !U.desktop || U.store.get('linkVisible', true) !== false; }
+
   function tvId() {
     var id = U.store.get('tvId');
     if (!id) { id = ''; for (var i = 0; i < 16; i++) id += '0123456789abcdef'.charAt(Math.floor(Math.random() * 16)); U.store.set('tvId', id); }
@@ -24,7 +27,7 @@ var Link = (function () {
 
   // Nach der Kontoauswahl: Gekoppelte iPhones gehören zum Konto – ein anderes Konto sieht sie nicht
   function attach() {
-    if (!available() || !App.account()) return;
+    if (!available() || !App.account() || !visible()) return;
     if (bridge) { try { bridge.cancel(); } catch (e) { /* egal */ } }
     // Die iPhones der anderen Konten auf diesem TV dürfen als Gäste der Jukebox beitreten – sie sehen nicht, wessen Konto läuft
     var others = [];
@@ -55,7 +58,10 @@ var Link = (function () {
     App.wake();
     pairModal = UI.modal(null, [{ icon: 'close', label: T('Abbrechen'), action: function () { pairModal = null; } }], {
       head: { title: code.slice(0, 3) + ' ' + code.slice(3),
-        sub: guest && name ? T('{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben', { name: name }) : T('Gib diesen Code in Tonalo auf dem iPhone ein') }
+        // Wer fragt, steht immer dabei – kommt die Anfrage unerwartet, gibt man den Code einfach nicht weiter
+        sub: !name ? T('Gib diesen Code in Tonalo auf dem iPhone ein')
+          : guest ? T('{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben', { name: name })
+          : T('{name} möchte sich als eigenes Gerät verbinden – diesen Code auf dem iPhone eingeben', { name: name }) }
     });
     pairModal.box.classList.add('pair-code');
     var m = pairModal;
@@ -156,8 +162,15 @@ var Link = (function () {
     });
   }
 
+  function setVisible(on) {
+    U.store.set('linkVisible', !!on);
+    if (on) { attach(); return; }
+    detach();
+    if (available()) call('stop', {});
+  }
+
   function phones() { return U.ustore.get('phones', []); }
   function forget() { U.ustore.set('phones', []); attach(); }
 
-  return { init: init, attach: attach, detach: detach, push: push, phones: phones, forget: forget };
+  return { init: init, attach: attach, detach: detach, push: push, phones: phones, forget: forget, visible: visible, setVisible: setVisible };
 })();

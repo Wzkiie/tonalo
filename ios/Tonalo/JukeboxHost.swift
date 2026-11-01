@@ -44,6 +44,10 @@ final class JukeboxHost {
     /// Wrong codes over all pairings – after 15, pairing is closed for 10 minutes, so guessing gets nowhere.
     @ObservationIgnored private var failures = 0
     @ObservationIgnored private var lockedUntil = Date.distantPast
+    /// How often pairing was closed for guessing – each time it stays closed twice as long.
+    @ObservationIgnored private var lockouts = 0
+    /// Nobody nearby gets to flood this screen with codes.
+    @ObservationIgnored private var lastStart = Date.distantPast
     /// Requests already used: one recorded by someone else doesn't go through a second time.
     @ObservationIgnored private var nonces: [String: Date] = [:]
     @ObservationIgnored private var connections = 0
@@ -167,7 +171,8 @@ final class JukeboxHost {
         case ("GET", "/info"):
             return await reply(c, 200, ["app": "tonalo", "id": id, "name": name])
         case ("POST", "/pair/start"):
-            guard Date() > lockedUntil else { return await reply(c, 429, ["error": "too many tries"]) }
+            guard Date() > lockedUntil, Date().timeIntervalSince(lastStart) > 3 else { return await reply(c, 429, ["error": "too many tries"]) }
+            lastStart = Date()
             // Only guests: this phone's own account plays here already
             let code = String(format: "%06d", Int.random(in: 0..<1_000_000))
             pairing = (code, Date().addingTimeInterval(120), 0)
@@ -180,8 +185,14 @@ final class JukeboxHost {
                   LinkHTTP.same(proof, LinkHTTP.proof(code: pairing.code, pub: pub)) else {
                 self.pairing?.tries += 1
                 failures += 1
-                // Guessing doesn't pay off: after five wrong tries the code is gone, after 15 pairing closes for 10 minutes
-                if failures >= 15 { failures = 0; lockedUntil = Date().addingTimeInterval(600); cancelRequest() }
+                // Guessing doesn't pay off: after five wrong tries the code is gone, after 15 pairing closes –
+                // for 10 minutes, then 20, 40 … at most a day
+                if failures >= 15 {
+                    failures = 0
+                    lockedUntil = Date().addingTimeInterval(min(600 * pow(2, Double(lockouts)), 86400))
+                    lockouts += 1
+                    cancelRequest()
+                }
                 if (self.pairing?.tries ?? 0) >= 5 { cancelRequest() }
                 return await reply(c, 403, ["error": "wrong code"])
             }
@@ -194,6 +205,7 @@ final class JukeboxHost {
             save()
             cancelRequest()
             failures = 0
+            lockouts = 0
             app?.notify(String(localized: "\(guest.name) joined the Jukebox"))
             return await reply(c, 200, ["id": guest.keyId, "pub": mine.publicKey.x963Representation.hex, "tv": id, "name": name])
         default:

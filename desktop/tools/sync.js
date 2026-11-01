@@ -8,6 +8,15 @@ function copy(from, to) {
   fs.cpSync(from, to, { recursive: true });
 }
 copy(path.join(TV, 'app'), path.join(DESK, 'web'));
+
+// Am PC strenger als am TV: Skripte nur aus der App selbst. Selbst ein eingeschleuster Text könnte so nichts ausführen.
+// Bilder, Musik und Server-Anfragen gehen weiter an jeden Navidrome-Server und jeden Radiosender.
+const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src * data: blob:; media-src * blob:; " +
+  "connect-src *; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'";
+const indexFile = path.join(DESK, 'web', 'index.html');
+const index = fs.readFileSync(indexFile, 'utf8');
+if (!index.includes('<meta charset="utf-8">')) throw new Error('index.html: <meta charset> nicht gefunden');
+fs.writeFileSync(indexFile, index.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n  <meta http-equiv="Content-Security-Policy" content="' + CSP + '">'));
 fs.mkdirSync(path.join(DESK, 'service'), { recursive: true });
 for (const f of ['service.js', 'package.json']) fs.copyFileSync(path.join(TV, 'service', f), path.join(DESK, 'service', f));
 fs.mkdirSync(path.join(DESK, 'build'), { recursive: true });
