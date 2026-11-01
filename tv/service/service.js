@@ -43,6 +43,7 @@ service.register('attach', function (msg) {
   startServer();
   startMdns();
   msg.respond({ returnValue: true, port: PORT });
+  report();
 }, function (msg) {
   // App geschlossen: es läuft nichts mehr, das iPhone spielt wieder selbst
   if (app !== msg) return;
@@ -83,6 +84,15 @@ function line(guest) {
 function broadcast() {
   var forHost = line(false), forGuest = line(true);
   clients.forEach(function (c) { c.res.write(c.entry.guest ? forGuest : forHost); });
+}
+
+// Der App sagen, welche iPhones gerade verbunden sind – die Windows-App zeigt das unten an
+function report() {
+  var seen = {};
+  send({ connected: clients.filter(function (c) {
+    var k = c.entry.id;
+    return seen[k] ? false : (seen[k] = true);
+  }).map(function (c) { return { device: c.entry.device, guest: !!c.entry.guest }; }) });
 }
 
 function guestNames() {
@@ -194,12 +204,14 @@ function handle(req, res, body) {
     var client = { res: res, entry: who };
     clients.push(client);
     if (who.guest) broadcast(); else res.write(line(false)); // ein neuer Gast: alle sehen, wer dabei ist
+    report();
     var ping = setInterval(function () { res.write(': ping\n\n'); }, 20000);
     // Am Antwort-Objekt, nicht an der Anfrage: neuere Node-Versionen melden dort schon das Ende der Anfrage selbst
     res.on('close', function () {
       clearInterval(ping);
       clients = clients.filter(function (c) { return c !== client; });
       if (who.guest) broadcast();
+      report();
     });
     return;
   }

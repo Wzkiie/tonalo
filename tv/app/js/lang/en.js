@@ -238,6 +238,7 @@ I18N.add('en', {
   'In Tonalo auf dem iPhone siehst du, was hier läuft, und kannst Musik für den PC auswählen. Gäste der Jukebox können Songs hinzufügen und überspringen. Verbinden über „Geräte“ in der iPhone-App, Gäste treten über „Jukebox“ bei.': 'In Tonalo on your iPhone you can see what plays here and pick music for the PC. Jukebox guests can add songs and skip. Connect under “Devices” in the iPhone app; guests join under “Jukebox”.',
   'Aus: iPhones finden diesen PC nicht und erreichen ihn nicht – gut in fremden WLANs wie im Hotel oder Café.': 'Off: iPhones can\'t find or reach this PC – good on other people\'s Wi-Fi, like in a hotel or café.',
   'Im Netzwerk sichtbar': 'Visible on the network',
+  'Jukebox-Gäste: {names}': 'Jukebox guests: {names}',
   'Jetzt installieren': 'Install now',
   'Konto von diesem PC entfernen': 'Remove account from this PC',
   'Konto „{name}“ von diesem PC entfernen?': 'Remove account “{name}” from this PC?',
@@ -253,5 +254,6 @@ I18N.add('en', {
   'Update wird geladen … {n} %': 'Downloading update … {n} %',
   'Updates': 'Updates',
   'Updates kommen direkt von GitHub und werden in der App installiert.': 'Updates come straight from GitHub and install inside the app.',
+  'Verbunden mit {name}': 'Connected to {name}',
   'inoffizieller Navidrome-Client für Windows': 'unofficial Navidrome client for Windows'
 });

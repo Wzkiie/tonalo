@@ -30,3 +30,15 @@ html.desktop .row-track::-webkit-scrollbar { height: 0; }
 html.desktop .np-volume { position: absolute; left: 0; top: 50%; transform: translateY(-50%); margin: 0; }
 html.desktop .np-volume .icon-btn { margin: 0 10px 0 0; }
 html.desktop .np-volume .mp-volume { width: 200px; background: linear-gradient(90deg, #fff var(--fill, 100%), rgba(255,255,255,.3) var(--fill, 100%)); }
+
+/* Unten über die ganze Breite, solange ein iPhone verbunden ist – wie „Läuft auf …“ bei anderen Playern */
+html.desktop { --linkbar: 0px; }
+html.desktop.linked { --linkbar: 40px; }
+html.desktop #linkbar { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: var(--linkbar); align-items: center; gap: 10px;
+  padding: 0 24px; background: var(--accent); color: #000; font-size: 20px; font-weight: 600; z-index: 6; }
+html.desktop.linked #linkbar { display: flex; }
+html.desktop #linkbar .ic { width: 22px; height: 22px; flex: none; }
+html.desktop #linkbar .lb-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+html.desktop #miniplayer { bottom: var(--linkbar); }
+html.desktop #sidebar, html.desktop #content { bottom: calc(var(--gap) + var(--linkbar)); }
+html.desktop #main.mini-on #sidebar, html.desktop #main.mini-on #content { bottom: calc(var(--mini) + var(--linkbar)); }

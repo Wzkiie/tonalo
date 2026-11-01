@@ -42,6 +42,7 @@ var Link = (function () {
   function detach() {
     if (bridge) { try { bridge.cancel(); } catch (e) { /* egal */ } }
     bridge = null;
+    if (U.desktop) Desktop.linked([]);
     if (available()) call('state', { state: { active: false } });
   }
 
@@ -50,6 +51,7 @@ var Link = (function () {
     if ('pairCode' in msg) showCode(msg.pairCode, msg.pairName, msg.guest);
     if (msg.paired) U.toast(msg.guest ? T('{device} ist der Jukebox beigetreten', { device: msg.paired }) : T('{device} ist jetzt verbunden', { device: msg.paired }), 4000);
     if (msg.command) run(msg.command);
+    if (msg.connected && U.desktop) Desktop.linked(msg.connected);
   }
 
   function showCode(code, name, guest) {

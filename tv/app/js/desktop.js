@@ -173,11 +173,26 @@ var Desktop = (function () {
     window.addEventListener('resize', size);
     var hint = U.$('.users-hint');
     if (hint) hint.textContent = T('Rechtsklick: Konto verwalten');
+    linkbar = h('div#linkbar', null, Icon.el('phone'), h('span.lb-text'));
+    U.$('#main').appendChild(linkbar);
     mini = volumeControl(false);
     U.$('.mp-right').insertBefore(mini, U.$('.mp-right').firstChild);
     ['track', 'state'].forEach(function (evt) { Player.on(evt, function () { media(); mediaState(); }); });
     N.updates.ready();
   });
 
-  return { updateSetting: updateSetting, volume: function () { return volumeControl(true); } };
+  // ---------------- Unten: welche iPhones gerade verbunden sind
+  var linkbar = null;
+  function linked(list) {
+    if (!linkbar) return;
+    var own = [], guests = [];
+    (list || []).forEach(function (p) { (p.guest ? guests : own).push(p.device); });
+    var parts = [];
+    if (own.length) parts.push(T('Verbunden mit {name}', { name: own.join(', ') }));
+    if (guests.length) parts.push(T('Jukebox-Gäste: {names}', { names: guests.join(', ') }));
+    U.$('.lb-text', linkbar).textContent = parts.join(' · ');
+    document.documentElement.classList.toggle('linked', parts.length > 0);
+  }
+
+  return { updateSetting: updateSetting, volume: function () { return volumeControl(true); }, linked: linked };
 })();
