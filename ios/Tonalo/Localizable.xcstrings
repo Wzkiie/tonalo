@@ -450,12 +450,12 @@
         }
       }
     },
-    "TV & Jukebox" : {
+    "Devices & Jukebox" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TV & Jukebox"
+            "value" : "Geräte & Jukebox"
           }
         }
       }

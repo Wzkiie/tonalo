@@ -286,7 +286,7 @@ struct ProfileMenu: View {
                 }
                 row(label: Text("Add account")) { Image(systemName: "plus").font(.system(size: 20)) } action: { adding = true }
                 row(label: Text("Downloads")) { Image(systemName: "arrow.down.circle").font(.system(size: 22)) } action: { ui.open(.downloads) }
-                row(label: Text("TV & Jukebox")) { Image(systemName: "person.2.wave.2").font(.system(size: 20)) } action: { ui.open(.tv) }
+                row(label: Text("Devices & Jukebox")) { Image(systemName: "person.2.wave.2").font(.system(size: 20)) } action: { ui.open(.tv) }
                 row(label: Text("Settings")) { Image(systemName: "gearshape").font(.system(size: 22)) } action: { ui.open(.settings) }
                 Spacer()
                 row(label: Text("Log out")) {

@@ -100,7 +100,7 @@ The same app as on the TV, made for mouse and keyboard: the same screens and fea
 - Click anywhere in the progress bar to jump there, a volume slider (or scroll on it), right-click for the options menu
 - Keyboard: Space plays and pauses, Ctrl + ← / → changes the song, Ctrl + F searches, Esc goes back, Ctrl + Plus / Minus makes everything bigger or smaller
 - Media keys and the Windows media overlay show and control what's playing
-- **Control it from your iPhone and host a Jukebox**, just like the TV: pair under *TV & Jukebox* in the iPhone app. Windows asks once whether Tonalo may use the network – allow it for private networks
+- **Control it from your iPhone and host a Jukebox**, just like the TV: pair under *Devices & Jukebox* in the iPhone app. Windows asks once whether Tonalo may use the network – allow it for private networks
 - **Updates install from inside the app**: Tonalo checks GitHub for a new release on start, asks, downloads it and restarts. Settings → Updates checks by hand
 
 ### Installing on Windows

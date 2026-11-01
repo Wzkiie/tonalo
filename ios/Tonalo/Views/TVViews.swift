@@ -48,7 +48,7 @@ struct JukeboxHostBar: View {
     }
 }
 
-/// Settings → TV & Jukebox: the own TV, hosting a Jukebox, and joining one.
+/// Settings → Devices & Jukebox: the own TV or computer, hosting a Jukebox, and joining one.
 struct TVSettingsView: View {
     @Environment(AppModel.self) private var app
     @State private var pairing: Pairing?
@@ -109,7 +109,7 @@ struct TVSettingsView: View {
                 }
             }
         }
-        .navigationTitle("TV & Jukebox")
+        .navigationTitle("Devices & Jukebox")
         .onAppear { link.start() }
         .sheet(item: $pairing) { PairTVView(device: $0.device, guest: $0.guest) }
         .confirmationDialog(choose?.name ?? "", isPresented: Binding(get: { choose != nil }, set: { if !$0 { choose = nil } }), titleVisibility: .visible) {
