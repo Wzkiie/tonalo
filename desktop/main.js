@@ -95,8 +95,9 @@ ipcMain.on('svc-call', (e, id, uri, params) => {
     if (payload.subscribe) subs.set(id, { msg, h });
     h.fn(msg);
   } else if (m[1] === 'com.webos.service.settings') {
-    // Der Name, den das iPhone beim Koppeln zeigt
-    reply({ returnValue: true, settings: { deviceName: os.hostname().replace(/\.local$/, '') } });
+    // Der Name, den das iPhone beim Koppeln zeigt – Windows' Standardnamen (DESKTOP-7F3K2Q1) sagen niemandem etwas
+    const host = os.hostname().replace(/\.local$/, '');
+    reply({ returnValue: true, settings: { deviceName: /^(DESKTOP|LAPTOP)-[A-Z0-9]+$/i.test(host) ? 'PC' : host } });
   }
   // Alles andere (Bildschirmschoner des TVs …) gibt es am PC nicht
 });

@@ -430,7 +430,7 @@ var Player = (function () {
       var i = 0;
       songs.forEach(function (x, k) { if (x.id === r.current && !i) i = k; });
       var offer = { songs: songs, index: i, pos: (r.position || 0) / 1000, changed: r.changed,
-        device: r.changedBy === 'Tonalo-iOS' ? 'iPhone' : r.changedBy };
+        device: { 'Tonalo-iOS': 'iPhone', 'Tonalo-Windows': 'PC', 'Tonalo': 'TV' }[r.changedBy] || r.changedBy };
       if (!queue.length) { take(offer, false); return null; }
       var cur = current();
       if (cur && cur.id === songs[i].id && Math.abs(position() - offer.pos) < 15) return null;

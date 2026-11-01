@@ -1,7 +1,7 @@
 /* Subsonic / OpenSubsonic API-Client (Navidrome) */
 var API = (function () {
   'use strict';
-  var CLIENT = 'Tonalo';
+  var CLIENT = U.desktop ? 'Tonalo-Windows' : 'Tonalo'; // daran erkennen die anderen Geräte, woher eine Warteschlange kommt
   var VERSION = '1.16.1';
   var cfg = null; // {url, user, token, salt}
 

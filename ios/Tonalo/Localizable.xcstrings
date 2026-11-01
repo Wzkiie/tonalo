@@ -4011,6 +4011,16 @@
         }
       }
     },
+    "your PC" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "deinem PC"
+          }
+        }
+      }
+    },
     "your TV" : {
       "localizations" : {
         "de" : {

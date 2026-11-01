@@ -507,7 +507,8 @@ final class PlayerModel {
               stamp != dismissedKey.flatMap({ UserDefaults.standard.string(forKey: $0) }) else { return }
         let i = songs.firstIndex { $0.id == remote.current } ?? 0
         let offer = RemoteQueue(songs: songs, index: i, position: Double(remote.position ?? 0) / 1000,
-                                source: by == "Tonalo" ? String(localized: "your TV") : by, changed: stamp, changedDate: changed)
+                                source: by == "Tonalo" ? String(localized: "your TV") : by == "Tonalo-Windows" ? String(localized: "your PC") : by,
+                                changed: stamp, changedDate: changed)
         if queue.isEmpty {
             take(offer, play: false)
         } else if current?.id != offer.song.id || abs(position - offer.position) > 15 {

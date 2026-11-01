@@ -203,12 +203,37 @@ function startServer() {
 var mdns = null;
 var TYPE = '_tonalo._tcp.local';
 
-function lanIp() {
-  var all = os.networkInterfaces(), out = null;
+// Adressen im Heimnetz, die beste zuerst. Ein Windows-PC hat oft virtuelle Netze (WSL, Hyper-V, VPN …),
+// deren Adresse das iPhone nie erreicht – die kommen ans Ende.
+var VIRTUAL = /vethernet|wsl|hyper-v|virtualbox|vmware|vbox|docker|tailscale|zerotier|wireguard|vpn|tap|tun|bluetooth|bridge|loopback/i;
+function lanAddrs() {
+  var all = os.networkInterfaces(), out = [];
   Object.keys(all).forEach(function (n) {
-    all[n].forEach(function (a) { if (!out && a.family === 'IPv4' && !a.internal) out = a.address; });
+    all[n].forEach(function (a) {
+      if (a.family === 'IPv4' && !a.internal && !/^169\.254\./.test(a.address)) out.push({ ip: a.address, mask: a.netmask, virtual: VIRTUAL.test(n) });
+    });
   });
-  return out;
+  function rank(a) {
+    var p = a.ip.split('.').map(Number);
+    var home = p[0] === 192 && p[1] === 168 ? 0 : p[0] === 10 ? 1 : p[0] === 172 && p[1] >= 16 && p[1] < 32 ? 2 : 3;
+    return (a.virtual ? 10 : 0) + home;
+  }
+  return out.sort(function (a, b) { return rank(a) - rank(b); });
+}
+
+function sameNet(a, peer) {
+  var x = a.ip.split('.').map(Number), y = peer.split('.').map(Number), m = String(a.mask || '255.255.255.0').split('.').map(Number);
+  for (var i = 0; i < 4; i++) if ((x[i] & m[i]) !== (y[i] & m[i])) return false;
+  return true;
+}
+
+// Die Adresse, unter der uns der Fragende erreicht: im selben Netz wie er, sonst die beste
+function lanIp(peer) {
+  var list = lanAddrs();
+  if (peer && /^\d+\.\d+\.\d+\.\d+$/.test(peer)) {
+    for (var i = 0; i < list.length; i++) if (sameNet(list[i], peer)) return list[i].ip;
+  }
+  return list.length ? list[0].ip : null;
 }
 
 function encodeName(name) {
@@ -229,8 +254,8 @@ function record(name, type, cls, ttl, data) {
 function instanceName() { return tv.name.replace(/\./g, ' ') + '.' + TYPE; }
 function hostName() { return 'tonalo-' + tv.id.slice(0, 8) + '.local'; }
 
-function answer(query) {
-  var ip = lanIp();
+function answer(query, peer) {
+  var ip = lanIp(peer);
   if (!ip || !tv.id) return null;
   var instance = instanceName();
   var host = hostName();
@@ -276,8 +301,8 @@ function asksForUs(buf) {
   return ours && off <= buf.length ? off : 0;
 }
 
-function announce(to) {
-  var packet = answer(to && to.query);
+function announce(to, peer) {
+  var packet = answer(to && to.query, peer || (to && to.address));
   if (packet && mdns) mdns.send(packet, 0, packet.length, to ? to.port : 5353, to ? to.address : '224.0.0.251');
 }
 
@@ -287,11 +312,15 @@ function startMdns() {
   mdns.on('message', function (buf, from) {
     // Fragen von einem anderen Port als 5353 wollen die Antwort direkt zurück, mit ihrer Nummer und Frage
     var asked = asksForUs(buf);
-    if (asked) announce(from.port !== 5353 ? { port: from.port, address: from.address, query: buf.slice(0, asked) } : null);
+    if (asked) announce(from.port !== 5353 ? { port: from.port, address: from.address, query: buf.slice(0, asked) } : null, from.address);
   });
   mdns.on('error', function (e) { console.error('mdns', e); try { mdns.close(); } catch (x) { /* egal */ } mdns = null; });
   mdns.bind(5353, function () {
-    try { mdns.addMembership('224.0.0.251'); mdns.setMulticastTTL(255); } catch (e) { console.error('mdns join', e); }
+    // In jedem Netz zuhören, gesendet wird ins beste (sonst landet es am PC womöglich im virtuellen Netz)
+    var joined = 0, list = lanAddrs();
+    list.forEach(function (a) { try { mdns.addMembership('224.0.0.251', a.ip); joined++; } catch (e) { /* dieses Netz nicht */ } });
+    if (!joined) { try { mdns.addMembership('224.0.0.251'); } catch (e) { console.error('mdns join', e); } }
+    try { if (list.length) mdns.setMulticastInterface(list[0].ip); mdns.setMulticastTTL(255); } catch (e) { console.error('mdns if', e); }
     announce();
     setTimeout(announce, 1000);
     // Zur Sicherheit regelmäßig von selbst melden – manche Router reichen Suchanfragen nicht zuverlässig weiter
