@@ -125,6 +125,7 @@ var App = (function () {
       stack = []; content.innerHTML = '';
     }
     saveAccounts(accounts().filter(function (a) { return a.id !== acc.id; }));
+    if (U.desktop) Desktop.keepHeaders(accounts());
     U.ustore.clear(acc.id);
     if (U.store.get('lastAccount') === acc.id) U.store.del('lastAccount');
     U.toast(T('Konto „{name}“ entfernt', { name: acc.user }));
@@ -176,6 +177,7 @@ var App = (function () {
     U.$('#login-msg').textContent = msg || '';
     U.$('#login-msg').className = 'msg';
     U.$('#btn-login-cancel').classList.toggle('hidden', !accounts().length);
+    if (U.desktop) Desktop.showHeaders(U.$('#in-url').value);
     updateScope();
     Nav.focus(U.$('#in-url').value ? U.$('#in-user').value ? U.$('#in-pass') : U.$('#in-user') : U.$('#in-url'), { noInputFocus: true });
   }
@@ -195,7 +197,8 @@ var App = (function () {
     API.setConfig(creds);
     msg.textContent = T('Verbinde …');
     msg.className = 'msg';
-    API.ping().then(function () {
+    (U.desktop ? Desktop.tryHeaders(creds.url) : Promise.resolve()).then(API.ping).then(function () {
+      if (U.desktop) Desktop.commitHeaders();
       U.$('#in-pass').value = ''; // das Passwort selbst wird nirgends gebraucht, nur der Token
       var acc = Object.assign({ id: accId(creds.url, creds.user) }, creds);
       saveAccounts(accounts().filter(function (a) { return a.id !== acc.id; }).concat([acc]));
@@ -205,6 +208,7 @@ var App = (function () {
     }).catch(function (e) {
       API.setConfig(prev);
       msg.className = 'msg error';
+      if (U.desktop) { Desktop.dropHeaders(); if (Desktop.headerProblem(e, msg)) return; }
       msg.textContent = e.code === 40 ? T('Benutzername oder Passwort falsch.') : T('Verbindung fehlgeschlagen: {msg}', { msg: e.message });
     });
   }

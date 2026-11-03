@@ -256,5 +256,21 @@ I18N.add('tr', {
   'Updates': 'Güncellemeler',
   'Updates kommen direkt von GitHub und werden in der App installiert.': 'Güncellemeler doğrudan GitHub’dan gelir ve uygulama içinde yüklenir.',
   'Verbunden mit {name}': '{name} ile bağlı',
-  'inoffizieller Navidrome-Client für Windows': 'Windows için resmi olmayan Navidrome istemcisi'
+  'inoffizieller Navidrome-Client für Windows': 'Windows için resmi olmayan Navidrome istemcisi',
+  'Name': 'Ad',
+  'Wert': 'Değer',
+  'Gespeichert': 'Kaydedildi',
+  'Header entfernen': 'Başlığı kaldır',
+  'Header hinzufügen': 'Başlık ekle',
+  'Cloudflare-Access-Header': 'Cloudflare Access başlıkları',
+  'Eigene Header': 'Özel başlıklar',
+  'Wird bei jeder Anfrage an diesen Server mitgeschickt, auch für Musik und Cover. Für Cloudflare Access: in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen verschlüsselt auf diesem PC.': 'Bu sunucuya yapılan her istekle, müzik ve kapaklar dahil, gönderilir. Cloudflare Access için Zero Trust’ta bir hizmet belirteci oluşturup Client ID ve Client Secret değerlerini girin. Değerler bu bilgisayarda şifreli olarak saklanır.',
+  'Ungültiger Header-Name: {name}': 'Geçersiz başlık adı: {name}',
+  'Header „{name}“ hat keinen Wert.': '"{name}" başlığının değeri yok.',
+  'Ungültiger Wert für Header „{name}“.': '"{name}" başlığı için geçersiz değer.',
+  'Zu viele Header.': 'Çok fazla başlık.',
+  'Header gehen nur über https, im Heimnetz auch über http.': 'Başlıklar yalnızca https üzerinden, ev ağında http üzerinden de gönderilir.',
+  'Die Header können auf diesem PC nicht verschlüsselt gespeichert werden.': 'Başlıklar bu bilgisayarda şifreli olarak saklanamıyor.',
+  'Ungültige Server-URL.': 'Geçersiz sunucu URL’si.',
+  'Keine Antwort von Navidrome. Liegt der Server hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Navidrome yanıt vermiyor. Sunucu Cloudflare Access veya başka bir proxy arkasındaysa özel başlıkları kontrol edin.'
 });

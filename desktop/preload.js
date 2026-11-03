@@ -12,6 +12,13 @@ contextBridge.exposeInMainWorld('TonaloNative', {
     cancel: (id) => ipcRenderer.send('svc-cancel', +id),
     onMessage: (fn) => { ipcRenderer.on('svc-msg', (_e, id, msg) => fn(id, msg)); }
   },
+  headers: {
+    names: (url) => ipcRenderer.invoke('hdr-names', String(url)),
+    attempt: (url, rows) => ipcRenderer.invoke('hdr-try', String(url), rows),
+    commit: () => ipcRenderer.invoke('hdr-commit'),
+    discard: () => ipcRenderer.invoke('hdr-discard'),
+    keepOnly: (urls) => ipcRenderer.invoke('hdr-keep', urls)
+  },
   updates: {
     ready: () => ipcRenderer.send('upd-ready'),
     check: () => ipcRenderer.send('upd-check'),

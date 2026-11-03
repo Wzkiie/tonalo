@@ -10,7 +10,7 @@ Tonalo doesn't collect anything. There are no accounts with us, no analytics, no
 
 ## What is stored on your device
 
-- **Login details:** the server address (and, if you add one, a second address for your home network), your user name, the authentication token and salt derived from your password, and any custom HTTP headers you add (for example a Cloudflare Access service token). On iPhone these are stored in the iOS Keychain. Your password itself is never stored.
+- **Login details:** the server address (and, if you add one, a second address for your home network), your user name, the authentication token and salt derived from your password, and any custom HTTP headers you add (for example a Cloudflare Access service token). On iPhone these are stored in the iOS Keychain; on Windows, custom headers are stored encrypted with Windows' data protection. Your password itself is never stored.
 - **App data:** settings, the appearance you chose, your play queue and recent search. On iPhone this lives in the app's own storage; on the TV in the app's local storage.
 - **Downloads (iPhone):** songs you download for offline listening, with their cover art and lyrics, are stored in the app's own storage.
 - **Library cache (iPhone):** what you've browsed (or, if you start a library sync, your whole library) – album, artist and playlist lists, your favorites and cover art – is kept in the app's storage, so pages open at once and still show without a connection. It contains no login details and is removed together with the account.

@@ -1,7 +1,7 @@
 {
   "name": "tonalo-desktop",
   "productName": "Tonalo",
-  "version": "1.8.7",
+  "version": "1.8.8",
   "description": "Unofficial Navidrome/Subsonic client for Windows",
   "homepage": "https://tonalo.app",
   "author": "Wzkiie",
@@ -27,6 +27,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "headers.js",
       "webos-service.js",
       "web/**",
       "service/**"

@@ -164,6 +164,94 @@ var Desktop = (function () {
     return frag;
   }
 
+  // ---------------- Eigene Header bei der Anmeldung (Cloudflare Access …). Die Werte kennt nur der Hauptprozess.
+  var hdrBox = null, hdrRows = null;
+
+  function headerRow(name, stored) {
+    var nameIn = h('input.focusable.hdr-name', { type: 'text', placeholder: T('Name'), autocomplete: 'off', spellcheck: 'false' });
+    var valueIn = h('input.focusable.hdr-value', { type: 'password', autocomplete: 'off', placeholder: stored ? T('Gespeichert') : T('Wert') });
+    nameIn.value = name || '';
+    var del = h('button.icon-btn.focusable', { title: T('Header entfernen') }, Icon.el('close'));
+    var row = h('div.hdr-row', null, nameIn, valueIn, del);
+    del.addEventListener('click', function () { row.remove(); Nav.focus(U.$('#btn-hdr-add')); });
+    hdrRows.appendChild(row);
+    return nameIn;
+  }
+
+  function fillHeaders(url) {
+    hdrRows.innerHTML = '';
+    if (!url) return Promise.resolve();
+    return N.headers.names(API.normalizeUrl(url)).then(function (names) {
+      hdrRows.innerHTML = '';
+      names.forEach(function (n) { headerRow(n, true); });
+      if (names.length) hdrBox.classList.remove('hidden');
+    });
+  }
+
+  function typedValue() { return U.$$('.hdr-value', hdrRows).some(function (v) { return v.value; }); }
+
+  function buildHeaders() {
+    hdrRows = h('div#hdr-rows');
+    hdrBox = h('div#hdr-box.hidden', null,
+      hdrRows,
+      h('div.hdr-actions', null,
+        h('button#btn-hdr-add.btn.outline.focusable', { text: T('Header hinzufügen'), onclick: function () { Nav.focus(headerRow(''), { noInputFocus: true }); } }),
+        h('button#btn-hdr-cf.btn.outline.focusable', { text: T('Cloudflare-Access-Header'), onclick: function () {
+          var have = U.$$('.hdr-name', hdrRows).map(function (n) { return n.value.toLowerCase(); }), first = null;
+          ['CF-Access-Client-Id', 'CF-Access-Client-Secret'].forEach(function (n) {
+            if (have.indexOf(n.toLowerCase()) < 0) { var el = headerRow(n); first = first || el; }
+          });
+          if (first) Nav.focus(first.parentNode.querySelector('.hdr-value'), { noInputFocus: true });
+        } })),
+      h('p.hdr-hint.muted', { text: T('Wird bei jeder Anfrage an diesen Server mitgeschickt, auch für Musik und Cover. Für Cloudflare Access: in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen verschlüsselt auf diesem PC.') }));
+    var toggle = h('button#btn-hdr.btn.outline.focusable', { text: T('Eigene Header'), onclick: function () { hdrBox.classList.toggle('hidden'); } });
+    var login = U.$('#btn-login');
+    login.parentNode.insertBefore(toggle, login);
+    login.parentNode.insertBefore(hdrBox, login);
+    // Andere Adresse: deren gespeicherte Header zeigen – aber nichts wegwerfen, was gerade eingetippt wurde
+    U.$('#in-url').addEventListener('change', function () { if (!typedValue()) fillHeaders(U.$('#in-url').value); });
+  }
+
+  function showHeaders(url) {
+    if (!hdrBox) buildHeaders(); // der Start zeigt die Anmeldung vor unserem DOMContentLoaded
+    hdrBox.classList.add('hidden');
+    fillHeaders(url);
+  }
+
+  function headerError(r) {
+    switch (r.error) {
+      case 'name': return T('Ungültiger Header-Name: {name}', { name: r.name || '?' });
+      case 'empty': return T('Header „{name}“ hat keinen Wert.', { name: r.name });
+      case 'value': return T('Ungültiger Wert für Header „{name}“.', { name: r.name });
+      case 'many': return T('Zu viele Header.');
+      case 'https': return T('Header gehen nur über https, im Heimnetz auch über http.');
+      case 'crypto': return T('Die Header können auf diesem PC nicht verschlüsselt gespeichert werden.');
+      default: return T('Ungültige Server-URL.');
+    }
+  }
+
+  function tryHeaders(url) {
+    var rows = U.$$('.hdr-row', hdrRows).map(function (r) {
+      return { name: U.$('.hdr-name', r).value, value: U.$('.hdr-value', r).value };
+    });
+    return N.headers.attempt(url, rows).then(function (r) {
+      if (r && r.error) { var e = new Error(headerError(r)); e.headers = true; throw e; }
+    });
+  }
+
+  function commitHeaders() {
+    U.$$('.hdr-value', hdrRows).forEach(function (v) { v.value = ''; });
+    return N.headers.commit();
+  }
+
+  // Antwortet ein Proxy statt Navidrome (Login-Seite, 403, keine CORS-Freigabe), sagt "Failed to fetch" niemandem etwas
+  function headerProblem(e, msg) {
+    if (e.headers) { msg.textContent = e.message; return true; }
+    if (e.code != null || !/TypeError|SyntaxError/.test(e.name) && !/^HTTP 4/.test(e.message)) return false;
+    msg.textContent = T('Keine Antwort von Navidrome. Liegt der Server hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.');
+    return true;
+  }
+
   // ---------------- Fenster
   document.addEventListener('DOMContentLoaded', function () {
     var bar = h('div#titlebar');
@@ -194,5 +282,9 @@ var Desktop = (function () {
     document.documentElement.classList.toggle('linked', parts.length > 0);
   }
 
-  return { updateSetting: updateSetting, volume: function () { return volumeControl(true); }, linked: linked };
+  return { showHeaders: showHeaders, tryHeaders: tryHeaders, commitHeaders: commitHeaders,
+    dropHeaders: function () { N.headers.discard(); },
+    keepHeaders: function (list) { N.headers.keepOnly(list.map(function (a) { return a.url; })); },
+    headerProblem: headerProblem,
+    updateSetting: updateSetting, volume: function () { return volumeControl(true); }, linked: linked };
 })();

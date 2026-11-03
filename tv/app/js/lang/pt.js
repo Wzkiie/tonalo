@@ -255,5 +255,21 @@ I18N.add('pt', {
   'Updates': 'Atualizações',
   'Updates kommen direkt von GitHub und werden in der App installiert.': 'As atualizações vêm diretamente do GitHub e instalam-se na app.',
   'Verbunden mit {name}': 'Ligado a {name}',
-  'inoffizieller Navidrome-Client für Windows': 'cliente não oficial do Navidrome para Windows'
+  'inoffizieller Navidrome-Client für Windows': 'cliente não oficial do Navidrome para Windows',
+  'Name': 'Nome',
+  'Wert': 'Valor',
+  'Gespeichert': 'Guardado',
+  'Header entfernen': 'Remover cabeçalho',
+  'Header hinzufügen': 'Adicionar cabeçalho',
+  'Cloudflare-Access-Header': 'Cabeçalhos do Cloudflare Access',
+  'Eigene Header': 'Cabeçalhos personalizados',
+  'Wird bei jeder Anfrage an diesen Server mitgeschickt, auch für Musik und Cover. Für Cloudflare Access: in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen verschlüsselt auf diesem PC.': 'Enviados em cada pedido a este servidor, incluindo música e capas. Para o Cloudflare Access, crie um token de serviço no Zero Trust e introduza o Client ID e o Client Secret. Os valores ficam encriptados neste PC.',
+  'Ungültiger Header-Name: {name}': 'Nome de cabeçalho inválido: {name}',
+  'Header „{name}“ hat keinen Wert.': 'O cabeçalho "{name}" não tem valor.',
+  'Ungültiger Wert für Header „{name}“.': 'Valor inválido para o cabeçalho "{name}".',
+  'Zu viele Header.': 'Demasiados cabeçalhos.',
+  'Header gehen nur über https, im Heimnetz auch über http.': 'Os cabeçalhos só são enviados por https, ou por http na rede doméstica.',
+  'Die Header können auf diesem PC nicht verschlüsselt gespeichert werden.': 'Os cabeçalhos não podem ser guardados encriptados neste PC.',
+  'Ungültige Server-URL.': 'URL do servidor inválido.',
+  'Keine Antwort von Navidrome. Liegt der Server hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Sem resposta do Navidrome. Se o servidor estiver atrás do Cloudflare Access ou de outro proxy, verifique os cabeçalhos personalizados.'
 });

@@ -1,5 +1,5 @@
 // Tonalo für Windows: ein Fenster mit der TV-Oberfläche (web/), dazu der Dienst fürs iPhone und Updates von GitHub
-const { app, BrowserWindow, ipcMain, shell, session, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, session, safeStorage, Menu } = require('electron');
 const path = require('path'), fs = require('fs'), os = require('os'), Module = require('module'), { pathToFileURL } = require('url');
 
 // tv/service/service.js verlangt webOS' "webos-service" – hier bekommt es den Ersatz
@@ -125,6 +125,22 @@ function cancelAll() {
   all.forEach((s) => { if (s.h.cancel) s.h.cancel(s.msg); });
 }
 
+// ---------------- Eigene Header (Cloudflare Access …): siehe headers.js. Die Oberfläche kann Werte setzen, aber nie lesen.
+let headers = null;
+
+function setupHeaders() {
+  headers = require('./headers.js').create(path.join(app.getPath('userData'), 'headers.bin'), safeStorage);
+  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['http://*/*', 'https://*/*'] }, (details, cb) => {
+    cb({ requestHeaders: headers.apply(details.url, details.requestHeaders) });
+  });
+}
+
+ipcMain.handle('hdr-names', (e, url) => (fromUs(e) ? headers.names(String(url)) : []));
+ipcMain.handle('hdr-try', (e, url, rows) => (fromUs(e) ? headers.attempt(String(url), rows) : { error: 'url' }));
+ipcMain.handle('hdr-commit', (e) => { if (fromUs(e)) headers.commit(); });
+ipcMain.handle('hdr-discard', (e) => { if (fromUs(e)) headers.discard(); });
+ipcMain.handle('hdr-keep', (e, urls) => { if (fromUs(e)) headers.keepOnly(urls); });
+
 // ---------------- Updates: neue Releases auf GitHub (latest.yml), geladen und installiert erst auf Wunsch
 let status = { state: 'idle' };
 let updater = null;
@@ -184,6 +200,7 @@ if (!app.requestSingleInstanceLock()) {
     if (!MAC) Menu.setApplicationMenu(null);
     // Die App braucht keine Kamera, kein Mikrofon, keinen Standort …
     session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+    setupHeaders();
     startService();
     createWindow();
     setupUpdater();

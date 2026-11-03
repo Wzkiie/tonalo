@@ -255,5 +255,21 @@ I18N.add('it', {
   'Updates': 'Aggiornamenti',
   'Updates kommen direkt von GitHub und werden in der App installiert.': 'Gli aggiornamenti arrivano direttamente da GitHub e si installano nell’app.',
   'Verbunden mit {name}': 'Collegato a {name}',
-  'inoffizieller Navidrome-Client für Windows': 'client Navidrome non ufficiale per Windows'
+  'inoffizieller Navidrome-Client für Windows': 'client Navidrome non ufficiale per Windows',
+  'Name': 'Nome',
+  'Wert': 'Valore',
+  'Gespeichert': 'Salvato',
+  'Header entfernen': 'Rimuovi intestazione',
+  'Header hinzufügen': 'Aggiungi intestazione',
+  'Cloudflare-Access-Header': 'Intestazioni Cloudflare Access',
+  'Eigene Header': 'Intestazioni personalizzate',
+  'Wird bei jeder Anfrage an diesen Server mitgeschickt, auch für Musik und Cover. Für Cloudflare Access: in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen verschlüsselt auf diesem PC.': 'Inviate a ogni richiesta a questo server, anche per musica e copertine. Per Cloudflare Access, crea un token di servizio in Zero Trust e inserisci Client ID e Client Secret. I valori sono salvati cifrati su questo PC.',
+  'Ungültiger Header-Name: {name}': 'Nome intestazione non valido: {name}',
+  'Header „{name}“ hat keinen Wert.': 'L’intestazione "{name}" non ha un valore.',
+  'Ungültiger Wert für Header „{name}“.': 'Valore non valido per l’intestazione "{name}".',
+  'Zu viele Header.': 'Troppe intestazioni.',
+  'Header gehen nur über https, im Heimnetz auch über http.': 'Le intestazioni vengono inviate solo via https, o via http nella rete domestica.',
+  'Die Header können auf diesem PC nicht verschlüsselt gespeichert werden.': 'Le intestazioni non possono essere salvate cifrate su questo PC.',
+  'Ungültige Server-URL.': 'URL del server non valido.',
+  'Keine Antwort von Navidrome. Liegt der Server hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Nessuna risposta da Navidrome. Se il server è dietro Cloudflare Access o un altro proxy, controlla le intestazioni personalizzate.'
 });

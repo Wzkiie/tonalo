@@ -255,5 +255,21 @@ I18N.add('nl', {
   'Updates': 'Updates',
   'Updates kommen direkt von GitHub und werden in der App installiert.': 'Updates komen rechtstreeks van GitHub en worden in de app geïnstalleerd.',
   'Verbunden mit {name}': 'Verbonden met {name}',
-  'inoffizieller Navidrome-Client für Windows': 'onofficiële Navidrome-client voor Windows'
+  'inoffizieller Navidrome-Client für Windows': 'onofficiële Navidrome-client voor Windows',
+  'Name': 'Naam',
+  'Wert': 'Waarde',
+  'Gespeichert': 'Opgeslagen',
+  'Header entfernen': 'Header verwijderen',
+  'Header hinzufügen': 'Header toevoegen',
+  'Cloudflare-Access-Header': 'Cloudflare Access-headers',
+  'Eigene Header': 'Eigen headers',
+  'Wird bei jeder Anfrage an diesen Server mitgeschickt, auch für Musik und Cover. Für Cloudflare Access: in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen verschlüsselt auf diesem PC.': 'Wordt met elk verzoek aan deze server meegestuurd, ook voor muziek en covers. Voor Cloudflare Access: maak in Zero Trust een servicetoken aan en vul de Client ID en Client Secret in. De waarden worden versleuteld op deze pc bewaard.',
+  'Ungültiger Header-Name: {name}': 'Ongeldige headernaam: {name}',
+  'Header „{name}“ hat keinen Wert.': 'Header "{name}" heeft geen waarde.',
+  'Ungültiger Wert für Header „{name}“.': 'Ongeldige waarde voor header "{name}".',
+  'Zu viele Header.': 'Te veel headers.',
+  'Header gehen nur über https, im Heimnetz auch über http.': 'Headers gaan alleen via https, of via http in je thuisnetwerk.',
+  'Die Header können auf diesem PC nicht verschlüsselt gespeichert werden.': 'De headers kunnen op deze pc niet versleuteld worden bewaard.',
+  'Ungültige Server-URL.': 'Ongeldige server-URL.',
+  'Keine Antwort von Navidrome. Liegt der Server hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Geen antwoord van Navidrome. Staat de server achter Cloudflare Access of een andere proxy, controleer dan de eigen headers.'
 });

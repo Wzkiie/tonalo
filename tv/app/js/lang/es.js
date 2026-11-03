@@ -255,5 +255,21 @@ I18N.add('es', {
   'Updates': 'Actualizaciones',
   'Updates kommen direkt von GitHub und werden in der App installiert.': 'Las actualizaciones llegan directamente de GitHub y se instalan en la app.',
   'Verbunden mit {name}': 'Conectado a {name}',
-  'inoffizieller Navidrome-Client für Windows': 'cliente no oficial de Navidrome para Windows'
+  'inoffizieller Navidrome-Client für Windows': 'cliente no oficial de Navidrome para Windows',
+  'Name': 'Nombre',
+  'Wert': 'Valor',
+  'Gespeichert': 'Guardado',
+  'Header entfernen': 'Quitar encabezado',
+  'Header hinzufügen': 'Añadir encabezado',
+  'Cloudflare-Access-Header': 'Encabezados de Cloudflare Access',
+  'Eigene Header': 'Encabezados personalizados',
+  'Wird bei jeder Anfrage an diesen Server mitgeschickt, auch für Musik und Cover. Für Cloudflare Access: in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen verschlüsselt auf diesem PC.': 'Se envían en cada petición a este servidor, también para la música y las portadas. Para Cloudflare Access, crea un token de servicio en Zero Trust e introduce su Client ID y Client Secret. Los valores se guardan cifrados en este PC.',
+  'Ungültiger Header-Name: {name}': 'Nombre de encabezado no válido: {name}',
+  'Header „{name}“ hat keinen Wert.': 'El encabezado «{name}» no tiene valor.',
+  'Ungültiger Wert für Header „{name}“.': 'Valor no válido para el encabezado «{name}».',
+  'Zu viele Header.': 'Demasiados encabezados.',
+  'Header gehen nur über https, im Heimnetz auch über http.': 'Los encabezados solo se envían por https, o por http en tu red doméstica.',
+  'Die Header können auf diesem PC nicht verschlüsselt gespeichert werden.': 'Los encabezados no se pueden guardar cifrados en este PC.',
+  'Ungültige Server-URL.': 'URL del servidor no válida.',
+  'Keine Antwort von Navidrome. Liegt der Server hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Navidrome no responde. Si el servidor está detrás de Cloudflare Access u otro proxy, revisa los encabezados personalizados.'
 });

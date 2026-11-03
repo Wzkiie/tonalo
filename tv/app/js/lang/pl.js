@@ -256,5 +256,21 @@ I18N.add('pl', {
   'Updates': 'Aktualizacje',
   'Updates kommen direkt von GitHub und werden in der App installiert.': 'Aktualizacje pochodzą prosto z GitHuba i instalują się w aplikacji.',
   'Verbunden mit {name}': 'Połączono z {name}',
-  'inoffizieller Navidrome-Client für Windows': 'nieoficjalny klient Navidrome dla Windows'
+  'inoffizieller Navidrome-Client für Windows': 'nieoficjalny klient Navidrome dla Windows',
+  'Name': 'Nazwa',
+  'Wert': 'Wartość',
+  'Gespeichert': 'Zapisano',
+  'Header entfernen': 'Usuń nagłówek',
+  'Header hinzufügen': 'Dodaj nagłówek',
+  'Cloudflare-Access-Header': 'Nagłówki Cloudflare Access',
+  'Eigene Header': 'Własne nagłówki',
+  'Wird bei jeder Anfrage an diesen Server mitgeschickt, auch für Musik und Cover. Für Cloudflare Access: in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen verschlüsselt auf diesem PC.': 'Wysyłane z każdym żądaniem do tego serwera, także po muzykę i okładki. Dla Cloudflare Access utwórz token usługi w Zero Trust i wpisz Client ID oraz Client Secret. Wartości są przechowywane w postaci zaszyfrowanej na tym komputerze.',
+  'Ungültiger Header-Name: {name}': 'Nieprawidłowa nazwa nagłówka: {name}',
+  'Header „{name}“ hat keinen Wert.': 'Nagłówek „{name}” nie ma wartości.',
+  'Ungültiger Wert für Header „{name}“.': 'Nieprawidłowa wartość nagłówka „{name}”.',
+  'Zu viele Header.': 'Za dużo nagłówków.',
+  'Header gehen nur über https, im Heimnetz auch über http.': 'Nagłówki są wysyłane tylko przez https, a w sieci domowej także przez http.',
+  'Die Header können auf diesem PC nicht verschlüsselt gespeichert werden.': 'Nie można zapisać nagłówków w postaci zaszyfrowanej na tym komputerze.',
+  'Ungültige Server-URL.': 'Nieprawidłowy adres URL serwera.',
+  'Keine Antwort von Navidrome. Liegt der Server hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Brak odpowiedzi z Navidrome. Jeśli serwer działa za Cloudflare Access lub innym proxy, sprawdź własne nagłówki.'
 });

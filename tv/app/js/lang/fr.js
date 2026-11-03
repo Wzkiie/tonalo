@@ -255,5 +255,21 @@ I18N.add('fr', {
   'Updates': 'Mises à jour',
   'Updates kommen direkt von GitHub und werden in der App installiert.': 'Les mises à jour viennent directement de GitHub et s’installent dans l’app.',
   'Verbunden mit {name}': 'Connecté à {name}',
-  'inoffizieller Navidrome-Client für Windows': 'client Navidrome non officiel pour Windows'
+  'inoffizieller Navidrome-Client für Windows': 'client Navidrome non officiel pour Windows',
+  'Name': 'Nom',
+  'Wert': 'Valeur',
+  'Gespeichert': 'Enregistré',
+  'Header entfernen': 'Supprimer l’en-tête',
+  'Header hinzufügen': 'Ajouter un en-tête',
+  'Cloudflare-Access-Header': 'En-têtes Cloudflare Access',
+  'Eigene Header': 'En-têtes personnalisés',
+  'Wird bei jeder Anfrage an diesen Server mitgeschickt, auch für Musik und Cover. Für Cloudflare Access: in Zero Trust ein Service-Token anlegen und Client-ID und Client-Secret eintragen. Die Werte liegen verschlüsselt auf diesem PC.': 'Envoyés à chaque requête vers ce serveur, y compris pour la musique et les pochettes. Pour Cloudflare Access, créez un jeton de service dans Zero Trust et saisissez son Client ID et son Client Secret. Les valeurs sont chiffrées sur ce PC.',
+  'Ungültiger Header-Name: {name}': 'Nom d’en-tête non valide : {name}',
+  'Header „{name}“ hat keinen Wert.': 'L’en-tête « {name} » n’a pas de valeur.',
+  'Ungültiger Wert für Header „{name}“.': 'Valeur non valide pour l’en-tête « {name} ».',
+  'Zu viele Header.': 'Trop d’en-têtes.',
+  'Header gehen nur über https, im Heimnetz auch über http.': 'Les en-têtes ne sont envoyés qu’en https, ou en http sur le réseau domestique.',
+  'Die Header können auf diesem PC nicht verschlüsselt gespeichert werden.': 'Les en-têtes ne peuvent pas être chiffrés sur ce PC.',
+  'Ungültige Server-URL.': 'URL du serveur non valide.',
+  'Keine Antwort von Navidrome. Liegt der Server hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Pas de réponse de Navidrome. Si le serveur est derrière Cloudflare Access ou un autre proxy, vérifiez les en-têtes personnalisés.'
 });
