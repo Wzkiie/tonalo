@@ -162,6 +162,7 @@ kbd.dot::after { content: ""; width: 11px; height: 11px; border-radius: 50%; bac
 .strip-nav svg { width: 18px; height: 18px; }
 
 .groups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 64px; margin-top: 64px; }
+.groups .group:last-child:nth-child(odd) { grid-column: 1 / -1; } /* an odd one out fills the row instead of leaving a hole */
 .group { border-top: 1px solid var(--line); padding: 28px 0 36px; }
 .group h3 { font-size: 22px; margin-bottom: 18px; }
 .group ul { list-style: none; margin: 0; padding: 0; }
