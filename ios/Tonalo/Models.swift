@@ -19,8 +19,12 @@ struct Account: Codable, Hashable, Identifiable {
     var headers: [HeaderField] = []
     /// Optional address inside the home network (e.g. http://192.168.1.10:4533), used on Wi-Fi when it answers.
     var localURL: String?
+    /// Optional Audiobookshelf server for this account. Optional, so accounts saved before it existed still load.
+    var audiobooks: AudiobookServer?
 
-    var host: String { URL(string: serverURL)?.host ?? serverURL }
+    /// An account can be audiobooks only: then there's no music server, and `username` is the Audiobookshelf user.
+    var hasMusic: Bool { !serverURL.isEmpty }
+    var host: String { hasMusic ? URL(string: serverURL)?.host ?? serverURL : audiobooks?.host ?? "" }
 
     /// Only headers with a name are sent; values are trimmed so pasted secrets don't break.
     var httpHeaders: [String: String] {

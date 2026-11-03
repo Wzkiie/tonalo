@@ -9,7 +9,9 @@ struct MiniPlayer: View {
 
     var body: some View {
         let p = app.player
-        if let station = p.station {
+        if app.bookPlayer.isActive {
+            BookMiniBar()
+        } else if let station = p.station {
             StationMiniBar(station: station)
         } else if p.current == nil, let name = p.tvName {
             // Joined a Jukebox where nothing plays yet: what the guest picks starts it

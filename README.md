@@ -148,6 +148,7 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 - **Apple Watch app**: player with cover, favorites, shuffle and the iPhone's volume on the Digital Crown, plus your playlists and favorites to start music from the wrist. It remote-controls the iPhone.
 - **CarPlay**: Home, Library and Downloads on the car screen, with shuffle, repeat and a heart in the player (no search – Apple doesn't allow a keyboard in CarPlay music apps)
 - Several accounts, accent colors and alternative app icons
+- **Audiobooks and podcasts from Audiobookshelf**: connect your server under Settings, per account, with its own address outside and at home and its own custom headers (Cloudflare Access and similar). A *Continue listening* shelf on Home, results in Search, pages for authors and series, hearts for books and authors that fill Your Library, a player with chapters, speed, skip buttons and a sleep timer, downloads for listening offline, and your progress stays in sync with the server
 - **Custom HTTP headers per account**, sent with every request including the audio stream and cover art, so servers behind Cloudflare Access (service token), Authelia or a similar proxy work. There's a one-tap preset for the two Cloudflare Access headers, and all secrets live in the iOS Keychain.
 - English and German
 

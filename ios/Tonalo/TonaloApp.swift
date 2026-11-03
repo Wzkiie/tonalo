@@ -13,6 +13,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String,
                      completionHandler: @escaping () -> Void) {
+        if identifier == BookDownloadSession.identifier {
+            BookDownloadSession.shared.backgroundCompletion = completionHandler
+            _ = BookDownloadSession.shared.session
+            return
+        }
         DownloadSession.shared.backgroundCompletion = completionHandler
         _ = DownloadSession.shared.session // reconnect to the background session
     }
@@ -47,6 +52,12 @@ enum Route: Hashable {
     case settings
     case devices
     case jukebox
+    case audiobook(String)
+    case bookAuthor(id: String, name: String)
+    case bookSeries(id: String, name: String, library: String?)
+    case bookNarrator(name: String, library: String?)
+    case booksAll(podcasts: Bool)
+    case bookDownloads
 }
 
 extension View {
@@ -54,6 +65,12 @@ extension View {
         navigationDestination(for: Route.self) { route in
             switch route {
             case .album(let id): AlbumView(id: id)
+            case .audiobook(let id): AudiobookView(id: id)
+            case .bookAuthor(let id, let name): BookAuthorView(id: id, name: name)
+            case .bookSeries(let id, let name, let library): BookGroupView(title: name, group: "series", value: id, library: library, sort: "sequence")
+            case .bookNarrator(let name, let library): BookGroupView(title: name, group: "narrators", value: name, library: library)
+            case .booksAll(let podcasts): BooksBrowseView(podcasts: podcasts)
+            case .bookDownloads: BookDownloadsView()
             case .artist(let id): ArtistView(id: id)
             case .playlist(let id): PlaylistView(id: id)
             case .albums(let type): AlbumsView(type: type)
@@ -79,6 +96,9 @@ struct RootView: View {
     @State private var playerOpened = 0
     @State private var showMenu = false
     @State private var barHeight: CGFloat = 0
+    @State private var keyboardUp = false
+    /// Counts the taps on a tab that's already open and on its start page: its filter goes back to everything.
+    @State private var reselected = [0, 0, 0]
     @State private var addBatch: SongBatch?
     @State private var whatsNew: AppRelease?
     #if DEBUG
@@ -122,10 +142,23 @@ struct RootView: View {
         .task {
             let args = ProcessInfo.processInfo.arguments
             if args.contains("-demoJukebox") { app.jukeboxHost.start() }
+            // -demoBooks <url> connects to a test server (ios/tools/abs_mock.js)
+            if let b = args.firstIndex(of: "-demoBooks"), b + 1 < args.count, !app.books.connected {
+                try? await app.books.connect(address: args[b + 1], username: "demo", password: "demo", headers: [])
+            }
             guard let i = args.firstIndex(of: "-demoOpen"), i + 1 < args.count else { return }
             try? await Task.sleep(for: .seconds(1.5))
             if args[i + 1] == "stations" { paths[0].append(Route.stations) }
             if args[i + 1] == "tv" { debugTV = true }
+            if args[i + 1].hasPrefix("book:") { paths[0].append(Route.audiobook(String(args[i + 1].dropFirst(5)))) }
+            // -demoOpen bookplay:<id>[@seconds] plays it and opens the player
+            if args[i + 1].hasPrefix("bookplay:") {
+                let parts = args[i + 1].dropFirst(9).split(separator: "@")
+                if let item = try? await app.books.item(String(parts[0])) {
+                    app.bookPlayer.play(item, at: parts.count > 1 ? Double(parts[1]) : nil)
+                    showNowPlaying = true
+                }
+            }
             if args[i + 1] == "jukebox" { debugJukebox = true }
             if args[i + 1].hasPrefix("artist:") { paths[0].append(Route.artist(String(args[i + 1].dropFirst(7)))) }
             if args[i + 1] == "download", let first = try? await app.client?.playlists().first,
@@ -169,16 +202,28 @@ struct RootView: View {
         // Every scrolling page (plain scroll views and system lists alike) ends above the floating bar
         .contentMargins(.bottom, barHeight, for: .scrollContent)
         .contentMargins(.bottom, barHeight, for: .scrollIndicators)
+        // The keyboard covers player and tabs like in any other app, they don't ride on top of it
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { note in
+            // A hardware keyboard only brings a small bar, the tabs stay usable then
+            keyboardUp = ((note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect)?.height ?? 0) > 120
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardUp = false }
         .overlay(alignment: .bottom) {
             bottomBar.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
         }
         .overlay(alignment: .bottom) {
             DownloadBar().padding(.bottom, barHeight + 10)
-                .animation(.spring(duration: 0.35), value: app.downloads.batchProgress == nil)
+                .animation(.spring(duration: 0.35), value: app.downloads.batchProgress == nil && app.books.downloads.batchProgress == nil)
         }
         .overlay {
             if showNowPlaying {
-                NowPlayingView { withAnimation(.spring(duration: 0.35)) { showNowPlaying = false } }
+                Group {
+                    if app.bookPlayer.isActive {
+                        BookPlayerView { withAnimation(.spring(duration: 0.35)) { showNowPlaying = false } }
+                    } else {
+                        NowPlayingView { withAnimation(.spring(duration: 0.35)) { showNowPlaying = false } }
+                    }
+                }
                     // A fresh one every time: opened again while the last one is still sliding away, that one
                     // would come back still pulled down below the screen
                     .id(playerOpened)
@@ -198,9 +243,9 @@ struct RootView: View {
 
     @ViewBuilder private func root(_ i: Int) -> some View {
         switch i {
-        case 0: HomeView()
+        case 0: HomeView(reselected: reselected[0])
         case 1: SearchView()
-        default: LibraryView()
+        default: LibraryView(reselected: reselected[2])
         }
     }
 
@@ -214,9 +259,13 @@ struct RootView: View {
     private var bottomBar: some View {
         VStack(spacing: 4) {
             if let notice = app.notice { noticeView(notice).padding(.bottom, 4) }
-            ContinueBanner().padding(.horizontal, 8)
-            MiniPlayer().padding(.horizontal, 8)
-            TabBar(tab: $tab) { paths[$0] = NavigationPath() }
+            if !keyboardUp {
+                ContinueBanner().padding(.horizontal, 8)
+                MiniPlayer().padding(.horizontal, 8)
+                TabBar(tab: $tab) { i in
+                    if paths[i].isEmpty { reselected[i] += 1 } else { paths[i] = NavigationPath() }
+                }
+            }
         }
         .background(alignment: .bottom) {
             LinearGradient(stops: [.init(color: .black.opacity(0), location: 0), .init(color: .black.opacity(0.8), location: 0.45),
@@ -230,7 +279,7 @@ struct RootView: View {
 
 struct TabBar: View {
     @Binding var tab: Int
-    /// Tapping the open tab again goes back to its start page.
+    /// Tapping the open tab again goes back to its start page, and from there to all of it.
     let reselect: (Int) -> Void
 
     private let items: [(icon: String, selected: String, title: LocalizedStringKey)] = [
@@ -266,7 +315,6 @@ struct ProfileMenu: View {
     @Environment(\.ui) private var ui
     let close: () -> Void
     @State private var shown = false
-    @State private var adding = false
     @State private var confirmLogout = false
 
     var body: some View {
@@ -276,12 +324,15 @@ struct ProfileMenu: View {
                 if let acc = app.current {
                     HStack(spacing: 12) {
                         Avatar(name: acc.username, size: 52)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(acc.username).font(.system(size: 20, weight: .bold))
-                            Text(acc.host).font(.system(size: 13)).foregroundStyle(Color.subtle).lineLimit(1)
-                        }
+                        Text(acc.username).font(.system(size: 20, weight: .bold)).lineLimit(1)
                     }
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 12)
+                    // Both servers, each with the user it's signed in as
+                    VStack(alignment: .leading, spacing: 8) {
+                        if acc.hasMusic { serverLine("music.note", user: acc.username, host: acc.host) }
+                        if let books = acc.audiobooks { serverLine("book.closed", user: books.username, host: books.host) }
+                    }
+                    .padding(.bottom, 18)
                 }
                 Rectangle().fill(Color(white: 0.22)).frame(height: 1).padding(.bottom, 12)
                 ForEach(app.accounts.filter { $0.id != app.currentId }) { acc in
@@ -289,10 +340,13 @@ struct ProfileMenu: View {
                         dismiss(); app.select(acc.id)
                     }
                 }
-                row(label: Text("Add account")) { Image(systemName: "plus").font(.system(size: 20)) } action: { adding = true }
-                row(label: Text("Downloads")) { Image(systemName: "arrow.down.circle").font(.system(size: 22)) } action: { ui.open(.downloads) }
+                row(label: Text("Downloads")) { Image(systemName: "arrow.down.circle").font(.system(size: 22)) } action: {
+                    ui.open(app.current?.hasMusic == false ? .bookDownloads : .downloads)
+                }
+                if app.current?.hasMusic != false {
                 row(label: Text("Devices")) { Image(systemName: "tv").font(.system(size: 19)) } action: { ui.open(.devices) }
                 row(label: Text("Jukebox")) { Image(systemName: "person.2.wave.2").font(.system(size: 20)) } action: { ui.open(.jukebox) }
+                }
                 row(label: Text("Settings")) { Image(systemName: "gearshape").font(.system(size: 22)) } action: { ui.open(.settings) }
                 Spacer()
                 row(label: Text("Log out")) {
@@ -311,7 +365,14 @@ struct ProfileMenu: View {
             .gesture(DragGesture().onEnded { if $0.translation.width < -60 { dismiss() } })
         }
         .onAppear { withAnimation(.easeOut(duration: 0.25)) { shown = true } }
-        .sheet(isPresented: $adding) { NavigationStack { AccountEditorView(account: nil) } }
+    }
+
+    private func serverLine(_ icon: String, user: String, host: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).font(.system(size: 13)).frame(width: 18)
+            Text("\(user) · \(host)").font(.system(size: 13)).lineLimit(1)
+        }
+        .foregroundStyle(Color.subtle)
     }
 
     private func dismiss() {

@@ -18,6 +18,20 @@ struct AppRelease: Identifiable {
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
+        AppRelease(version: "1.4.0", items: [
+            .init(icon: "book.fill", color: .indigo, title: "Audiobooks and podcasts",
+                  text: "Connect your Audiobookshelf server under Settings and listen in the same app, with chapters, speed, a sleep timer and your progress in sync."),
+            .init(icon: "arrow.down.circle.fill", color: .teal, title: "Listen offline",
+                  text: "Download books and episodes just like music. Your position goes to the server as soon as there's a connection again."),
+            .init(icon: "heart.fill", color: .pink, title: "Your favorites in the library",
+                  text: "Give books, podcasts and authors a heart and they show up in Your Library. Finished books have a check mark and a paler cover."),
+            .init(icon: "person.crop.circle", color: .orange, title: "Authors and series",
+                  text: "Open an author to see their books and series, sort them, and switch between tiles and a compact list."),
+            .init(icon: "network", color: .blue, title: "At home and on the go",
+                  text: "Audiobookshelf can have an address for outside and one for home, plus custom headers for Cloudflare Access and similar."),
+            .init(icon: "sparkles", color: .purple, title: "Small things",
+                  text: "Tapping the open tab again clears its filter, and the player and tabs no longer sit on top of the keyboard."),
+        ]),
         AppRelease(version: "1.3.0", items: [
             .init(icon: "desktopcomputer", color: .teal, title: "Play on your computer",
                   text: "Tonalo now runs on Windows too. Pair your PC under Devices, and it works like the TV: see what's playing there and send music to it."),

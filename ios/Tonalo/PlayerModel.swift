@@ -295,7 +295,7 @@ final class PlayerModel {
         }
         guard current != nil else { return }
         if player.currentItem == nil { load(autoplay: true, startAt: position); return }
-        if isPlaying { endFade(); player.pause(); persist(); syncToServer(force: true) } else { remoteOffer = nil; activateSession(); player.play(); preload() }
+        if isPlaying { endFade(); player.pause(); persist(); syncToServer(force: true) } else { app?.bookPlayer.close(); remoteOffer = nil; activateSession(); player.play(); preload() }
     }
 
     func seek(to seconds: Double) {
@@ -545,6 +545,7 @@ final class PlayerModel {
 
     private func load(autoplay: Bool, startAt: Double = 0, fadeIn: Double = 0) {
         guard tvName == nil, let song = current, let client = app?.client else { return }
+        if autoplay { app?.bookPlayer.close() }
         if resumedId != song.id { resumedId = nil }
         leaveStation()
         endFade()
@@ -757,6 +758,7 @@ final class PlayerModel {
     func play(_ station: Station, in list: [Station]) {
         if tvGuest { return hostOnly() }
         if tvName != nil { tv?.play(station, in: list); return }
+        app?.bookPlayer.close()
         stationLoad?.cancel()
         if self.station == nil, current != nil {
             // Remember where the queue was, it continues there later
@@ -952,7 +954,24 @@ final class PlayerModel {
         }
     }
 
+    /// An audiobook starts: the music stops where it is, without being forgotten. A TV keeps playing, the sound isn't here.
+    func pauseForBook() {
+        guard tvName == nil, isPlaying else { return }
+        if station != nil { player.pause(); return }
+        endFade()
+        player.pause()
+        persist()
+        syncToServer(force: true)
+    }
+
+    /// The audiobook is done: the lock screen is the music's again.
+    func bookEnded() { updateNowPlaying() }
+
+    /// The book that has the lock screen right now.
+    private var book: BookPlayer? { app?.bookPlayer.session != nil ? app?.bookPlayer : nil }
+
     private func updateNowPlaying() {
+        if book != nil { return }
         let commands = MPRemoteCommandCenter.shared()
         commands.changeShuffleModeCommand.currentShuffleType = shuffle ? .items : .off
         commands.changeRepeatModeCommand.currentRepeatType = repeatMode == .one ? .one : repeatMode == .all ? .all : .off
@@ -995,9 +1014,9 @@ final class PlayerModel {
 
     private func setupRemoteCommands() {
         let c = MPRemoteCommandCenter.shared()
-        c.playCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { if self?.isPlaying == false { self?.toggle() } }; return .success }
-        c.pauseCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { if self?.isPlaying == true { self?.toggle() } }; return .success }
-        c.togglePlayPauseCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { self?.toggle() }; return .success }
+        c.playCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { if let b = self?.book { if !b.isPlaying { b.toggle() } } else if self?.isPlaying == false { self?.toggle() } }; return .success }
+        c.pauseCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { if let b = self?.book { if b.isPlaying { b.toggle() } } else if self?.isPlaying == true { self?.toggle() } }; return .success }
+        c.togglePlayPauseCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { if let b = self?.book { b.toggle() } else { self?.toggle() } }; return .success }
         c.nextTrackCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { self?.next() }; return .success }
         c.previousTrackCommand.addTarget { [weak self] _ in MainActor.assumeIsolated { self?.previous() }; return .success }
         // Heart in the lock screen player and Control Center (where iOS shows it): adds to / removes from favorites
@@ -1024,7 +1043,7 @@ final class PlayerModel {
         }
         c.changePlaybackPositionCommand.addTarget { [weak self] e in
             guard let e = e as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
-            MainActor.assumeIsolated { self?.seek(to: e.positionTime) }
+            MainActor.assumeIsolated { if let b = self?.book { b.seek(to: e.positionTime) } else { self?.seek(to: e.positionTime) } }
             return .success
         }
     }

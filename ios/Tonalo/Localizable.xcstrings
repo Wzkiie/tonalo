@@ -67,6 +67,16 @@
         }
       }
     },
+    "%@ left" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch %@"
+          }
+        }
+      }
+    },
     "%@ skipped" : {
       "localizations" : {
         "de" : {
@@ -87,8 +97,38 @@
         }
       }
     },
+    "%lld books" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Bücher"
+          }
+        }
+      }
+    },
+    "%lld seconds" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Sekunden"
+          }
+        }
+      }
+    },
     "000000" : {
       "shouldTranslate" : false
+    },
+    "1 book" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 Buch"
+          }
+        }
+      }
     },
     "A Radio tab, colorful mixes, and shuffle, repeat and the heart show when they're on. A song that drops out goes on where it stopped." : {
       "localizations" : {
@@ -100,12 +140,252 @@
         }
       }
     },
+    "Add another account" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiteres Konto hinzufügen"
+          }
+        }
+      }
+    },
     "Added to the Jukebox" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zur Jukebox hinzugefügt"
+          }
+        }
+      }
+    },
+    "At home and on the go" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu Hause und unterwegs"
+          }
+        }
+      }
+    },
+    "At home Tonalo uses the home address, everywhere else the server address. For Cloudflare Zero Trust, add a service token under Custom headers." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu Hause nutzt Tonalo die Adresse im Heimnetz, sonst überall die Serveradresse. Für Cloudflare Zero Trust trägst du unter „Eigene Header“ ein Service-Token ein."
+          }
+        }
+      }
+    },
+    "At the end of the chapter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Am Ende des Kapitels"
+          }
+        }
+      }
+    },
+    "Audiobook" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbuch"
+          }
+        }
+      }
+    },
+    "Audiobooks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher"
+          }
+        }
+      }
+    },
+    "Audiobooks & podcasts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher & Podcasts"
+          }
+        }
+      }
+    },
+    "Audiobooks (Audiobookshelf)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher (Audiobookshelf)"
+          }
+        }
+      }
+    },
+    "Audiobooks and podcasts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher und Podcasts"
+          }
+        }
+      }
+    },
+    "Audiobooks and podcasts now show up under Home and Your Library. Your progress stays in sync with the server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher und Podcasts erscheinen jetzt unter Start und Bibliothek. Dein Fortschritt bleibt mit dem Server abgeglichen."
+          }
+        }
+      }
+    },
+    "Audiobooks are big, so without cellular they wait for Wi-Fi. Your position is sent to the server as soon as there's a connection again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher sind groß, ohne Mobilfunk warten sie deshalb auf WLAN. Deine Position geht an den Server, sobald wieder eine Verbindung besteht."
+          }
+        }
+      }
+    },
+    "Audiobooks at home" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher im Heimnetz"
+          }
+        }
+      }
+    },
+    "Audiobooks you're listening to, gave a heart or downloaded show up here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier erscheinen Hörbücher, die du gerade hörst, mit einem Herz markiert oder heruntergeladen hast."
+          }
+        }
+      }
+    },
+    "audiobooks.example.com or 192.168.1.10:13378" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "audiobooks.example.com oder 192.168.1.10:13378"
+          }
+        }
+      }
+    },
+    "Audiobookshelf address" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audiobookshelf-Adresse"
+          }
+        }
+      }
+    },
+    "Audiobookshelf can have an address for outside and one for home, plus custom headers for Cloudflare Access and similar." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audiobookshelf kann eine Adresse für unterwegs und eine für zu Hause haben, dazu eigene Header für Cloudflare Access und Ähnliches."
+          }
+        }
+      }
+    },
+    "Audiobookshelf isn't connected." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audiobookshelf ist nicht verbunden."
+          }
+        }
+      }
+    },
+    "Audiobookshelf: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audiobookshelf: %@"
+          }
+        }
+      }
+    },
+    "Author" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autor"
+          }
+        }
+      }
+    },
+    "Authors" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autoren"
+          }
+        }
+      }
+    },
+    "Authors and series" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autoren und Serien"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück"
+          }
+        }
+      }
+    },
+    "Back %lld seconds" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Sekunden zurück"
+          }
+        }
+      }
+    },
+    "Back 15 seconds" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 Sekunden zurück"
           }
         }
       }
@@ -130,12 +410,62 @@
         }
       }
     },
+    "Both" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beides"
+          }
+        }
+      }
+    },
+    "Browse all audiobooks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Hörbücher auf dem Server"
+          }
+        }
+      }
+    },
+    "Browse all podcasts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Podcasts auf dem Server"
+          }
+        }
+      }
+    },
+    "Chapters" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kapitel"
+          }
+        }
+      }
+    },
     "Connect" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verbinden"
+          }
+        }
+      }
+    },
+    "Connect your Audiobookshelf server under Settings and listen in the same app, with chapters, speed, a sleep timer and your progress in sync." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbinde deinen Audiobookshelf-Server in den Einstellungen und höre alles in derselben App, mit Kapiteln, Tempo, Schlaftimer und abgeglichenem Fortschritt."
           }
         }
       }
@@ -150,12 +480,82 @@
         }
       }
     },
+    "Connected through" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbunden über"
+          }
+        }
+      }
+    },
     "Connecting to %@ …" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verbinde mit %@ …"
+          }
+        }
+      }
+    },
+    "Continue listening" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiterhören"
+          }
+        }
+      }
+    },
+    "Continue the series" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie fortsetzen"
+          }
+        }
+      }
+    },
+    "Disconnect" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trennen"
+          }
+        }
+      }
+    },
+    "Disconnect the music server?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musikserver trennen?"
+          }
+        }
+      }
+    },
+    "Discover audiobooks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher entdecken"
+          }
+        }
+      }
+    },
+    "Download books and episodes just like music. Your position goes to the server as soon as there's a connection again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lade Bücher und Folgen genauso herunter wie Musik. Deine Position geht an den Server, sobald wieder eine Verbindung besteht."
           }
         }
       }
@@ -176,6 +576,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gib den Code ein, den %@ anzeigt"
+          }
+        }
+      }
+    },
+    "Episodes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folgen"
+          }
+        }
+      }
+    },
+    "Finished" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beendet"
+          }
+        }
+      }
+    },
+    "For another person on this iPhone." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für eine andere Person auf diesem iPhone."
+          }
+        }
+      }
+    },
+    "Forward" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vor"
+          }
+        }
+      }
+    },
+    "Forward %lld seconds" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Sekunden vor"
+          }
+        }
+      }
+    },
+    "Forward 30 seconds" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 Sekunden vor"
           }
         }
       }
@@ -206,6 +666,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geräte"
+          }
+        }
+      }
+    },
+    "General" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allgemein"
+          }
+        }
+      }
+    },
+    "Give books, podcasts and authors a heart and they show up in Your Library. Finished books have a check mark and a paler cover." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib Büchern, Podcasts und Autoren ein Herz, dann stehen sie in deiner Bibliothek. Beendete Bücher haben einen Haken und ein blasseres Cover."
+          }
+        }
+      }
+    },
+    "Headers for audiobooks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Header für Hörbücher"
+          }
+        }
+      }
+    },
+    "Headers for music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Header für Musik"
           }
         }
       }
@@ -310,12 +810,212 @@
         }
       }
     },
+    "Less" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weniger"
+          }
+        }
+      }
+    },
+    "Listen again" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nochmal hören"
+          }
+        }
+      }
+    },
+    "Listen offline" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline hören"
+          }
+        }
+      }
+    },
+    "Mark as finished" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als beendet markieren"
+          }
+        }
+      }
+    },
+    "Mark as not finished" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als nicht beendet markieren"
+          }
+        }
+      }
+    },
+    "More" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr"
+          }
+        }
+      }
+    },
+    "More by %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr von %@"
+          }
+        }
+      }
+    },
+    "Music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik"
+          }
+        }
+      }
+    },
+    "Music (Navidrome)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik (Navidrome)"
+          }
+        }
+      }
+    },
+    "Music server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musikserver"
+          }
+        }
+      }
+    },
+    "Narrator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprecher"
+          }
+        }
+      }
+    },
     "Nearby" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "In der Nähe"
+          }
+        }
+      }
+    },
+    "New audiobooks & podcasts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Hörbücher & Podcasts"
+          }
+        }
+      }
+    },
+    "New episodes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Folgen"
+          }
+        }
+      }
+    },
+    "Newest first" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neueste zuerst"
+          }
+        }
+      }
+    },
+    "Next chapter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächstes Kapitel"
+          }
+        }
+      }
+    },
+    "No audiobooks on your server yet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Hörbücher auf deinem Server."
+          }
+        }
+      }
+    },
+    "No favorite audiobooks yet. Tap the heart on a book or author to add them here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Lieblingshörbücher. Tippe bei einem Buch oder Autor aufs Herz, dann erscheint es hier."
+          }
+        }
+      }
+    },
+    "No favorite podcasts yet. Tap the heart on a podcast to add it here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Lieblingspodcasts. Tippe bei einem Podcast aufs Herz, dann erscheint er hier."
+          }
+        }
+      }
+    },
+    "No podcasts on your server yet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Podcasts auf deinem Server."
+          }
+        }
+      }
+    },
+    "Nothing downloaded yet. Tap the arrow on an audiobook or episode to listen offline." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nichts heruntergeladen. Tippe auf den Pfeil bei einem Hörbuch oder einer Folge, um offline zu hören."
           }
         }
       }
@@ -350,6 +1050,16 @@
         }
       }
     },
+    "Nothing here yet. Add books to your Audiobookshelf server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nichts da. Füge Bücher zu deinem Audiobookshelf-Server hinzu."
+          }
+        }
+      }
+    },
     "Nothing playing yet – pick something to add" : {
       "localizations" : {
         "de" : {
@@ -360,12 +1070,52 @@
         }
       }
     },
+    "Oldest first" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Älteste zuerst"
+          }
+        }
+      }
+    },
     "Only the host can do that" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das kann nur, wer die Jukebox startet"
+          }
+        }
+      }
+    },
+    "Open an author to see their books and series, sort them, and switch between tiles and a compact list." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne einen Autor, um seine Bücher und Serien zu sehen, sortiere sie und wechsle zwischen Kacheln und einer kompakten Liste."
+          }
+        }
+      }
+    },
+    "Other accounts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weitere Konten"
+          }
+        }
+      }
+    },
+    "Over a VPN or only at home? The home address is enough, like 192.168.1.10:13378." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur zu Hause oder per VPN? Dann reicht die Heimadresse, zum Beispiel 192.168.1.10:13378."
           }
         }
       }
@@ -410,6 +1160,246 @@
         }
       }
     },
+    "Playback speed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabetempo"
+          }
+        }
+      }
+    },
+    "Podcast" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podcast"
+          }
+        }
+      }
+    },
+    "Podcasts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podcasts"
+          }
+        }
+      }
+    },
+    "Podcasts you're listening to, gave a heart or downloaded show up here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier erscheinen Podcasts, die du gerade hörst, mit einem Herz markiert oder heruntergeladen hast."
+          }
+        }
+      }
+    },
+    "Previous chapter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorheriges Kapitel"
+          }
+        }
+      }
+    },
+    "Read by %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gelesen von %@"
+          }
+        }
+      }
+    },
+    "Recommended for you" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für dich empfohlen"
+          }
+        }
+      }
+    },
+    "Same headers for both" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gleiche Header für beide"
+          }
+        }
+      }
+    },
+    "Series" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serien"
+          }
+        }
+      }
+    },
+    "Skip buttons" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprungtasten"
+          }
+        }
+      }
+    },
+    "Small things" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kleinigkeiten"
+          }
+        }
+      }
+    },
+    "Stays the same for all audiobooks and podcasts." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gilt für alle Hörbücher und Podcasts."
+          }
+        }
+      }
+    },
+    "Stop the Jukebox to listen to an audiobook." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beende die Jukebox, um ein Hörbuch zu hören."
+          }
+        }
+      }
+    },
+    "Tapping the open tab again clears its filter, and the player and tabs no longer sit on top of the keyboard." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein erneuter Tipp auf den offenen Tab setzt seinen Filter zurück, und Player und Tabs liegen nicht mehr über der Tastatur."
+          }
+        }
+      }
+    },
+    "That doesn't look like an Audiobookshelf server. If it's behind a proxy such as Cloudflare Access, check the custom headers." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das sieht nicht nach einem Audiobookshelf-Server aus. Liegt er hinter einem Proxy wie Cloudflare Access, prüfe die eigenen Header."
+          }
+        }
+      }
+    },
+    "The address from outside, like audiobooks.example.com. If the server is only reachable at home or over a VPN, its home address goes here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Adresse von außen, zum Beispiel audiobooks.example.com. Ist der Server nur zu Hause oder per VPN erreichbar, kommt hier seine Heimadresse rein."
+          }
+        }
+      }
+    },
+    "The password is only used to sign in and isn't stored. Tonalo keeps a login token in the Keychain, only on this iPhone." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Passwort dient nur der Anmeldung und wird nicht gespeichert. Tonalo behält einen Anmelde-Token im Schlüsselbund, nur auf diesem iPhone."
+          }
+        }
+      }
+    },
+    "The server answered with error %lld." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Server hat mit Fehler %lld geantwortet."
+          }
+        }
+      }
+    },
+    "The server didn't accept your login. Is this really the same Audiobookshelf server?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Server hat deine Anmeldung nicht angenommen. Ist das wirklich derselbe Audiobookshelf-Server?"
+          }
+        }
+      }
+    },
+    "This address uses http, so your Audiobookshelf password travels unencrypted. Only use this inside a VPN." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Adresse nutzt http, dein Audiobookshelf-Passwort geht also unverschlüsselt durchs Netz. Nutze das nur innerhalb eines VPN."
+          }
+        }
+      }
+    },
+    "This address uses http, so your login and custom headers travel unencrypted. Use https." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Adresse nutzt http, deine Anmeldung und eigenen Header gehen also unverschlüsselt durchs Netz. Nutze https."
+          }
+        }
+      }
+    },
+    "This can't be downloaded right now." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das lässt sich gerade nicht herunterladen."
+          }
+        }
+      }
+    },
+    "This can't be played right now." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das lässt sich gerade nicht abspielen."
+          }
+        }
+      }
+    },
+    "Titles" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel"
+          }
+        }
+      }
+    },
     "Tonalo now runs on Windows too. Pair your PC under Devices, and it works like the TV: see what's playing there and send music to it." : {
       "localizations" : {
         "de" : {
@@ -426,6 +1416,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geräte und Jukebox"
+          }
+        }
+      }
+    },
+    "Turn off sleep timer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schlaftimer ausschalten"
+          }
+        }
+      }
+    },
+    "Use the headers of the music server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Header des Musikservers übernehmen"
+          }
+        }
+      }
+    },
+    "User" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzer"
+          }
+        }
+      }
+    },
+    "User name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzername"
+          }
+        }
+      }
+    },
+    "Wrong user name or password." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzername oder Passwort falsch."
+          }
+        }
+      }
+    },
+    "Your Audiobookshelf user isn't allowed to download." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Audiobookshelf-Benutzer darf nichts herunterladen."
+          }
+        }
+      }
+    },
+    "Your favorites in the library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Favoriten in der Bibliothek"
           }
         }
       }

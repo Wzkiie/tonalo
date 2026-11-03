@@ -60,6 +60,8 @@ final class AppModel {
     }
 
     let player = PlayerModel()
+    let books = AudiobookLibrary()
+    let bookPlayer = BookPlayer()
     /// The TV in the home network that can play for this phone.
     let tv = TVLink()
     /// This phone hosting a Jukebox (in the car, where there's no TV).
@@ -80,9 +82,11 @@ final class AppModel {
     @ObservationIgnored private var routeCheck: Task<Void, Never>?
     /// The network (see LocalNetwork.fingerprint) in which the home address was last confirmed.
     @ObservationIgnored private var homeNetwork: String?
+    @ObservationIgnored private var bookHomeNetwork: String?
+    @ObservationIgnored private var bookRouteCheck: Task<Void, Never>?
 
     var current: Account? { accounts.first { $0.id == currentId } }
-    var client: SubsonicClient? { current.map { SubsonicClient(account: $0, atHome: atHome) } }
+    var client: SubsonicClient? { current.flatMap { $0.hasMusic ? SubsonicClient(account: $0, atHome: atHome) : nil } }
 
     init() {
         accounts = Keychain.load([Account].self, key: "accounts") ?? []
@@ -105,15 +109,19 @@ final class AppModel {
             persist()
         }
         #endif
+        mergeAudiobookAccounts()
         if let s = UserDefaults.standard.string(forKey: "currentAccount"), let id = UUID(uuidString: s), accounts.contains(where: { $0.id == id }) {
             currentId = id
         } else {
             currentId = accounts.first?.id
         }
         player.app = self
+        books.app = self
+        bookPlayer.app = self
         tv.app = self
         jukeboxHost.app = self
         downloads.app = self
+        defer { books.restore() } // finished background downloads may report in before any page opens
         downloads.reload()
         player.restore()
         #if DEBUG
@@ -182,12 +190,19 @@ final class AppModel {
 
     /// Checks the login, then stores the account. Replaces an existing one for the same server and user.
     func save(_ account: Account) async throws {
-        try await SubsonicClient(account: account).ping()
+        if account.hasMusic { try await SubsonicClient(account: account).ping() }
+        // The same login signed in again stays one account, and keeps what only it knows
+        func same(_ a: Account) -> Bool {
+            if account.hasMusic { return a.serverURL == account.serverURL && a.username == account.username }
+            return !a.hasMusic && a.audiobooks?.url == account.audiobooks?.url && a.username == account.username
+        }
+        var saved = account
         if let i = accounts.firstIndex(where: { $0.id == account.id }) {
             accounts[i] = account
-        } else if let i = accounts.firstIndex(where: { $0.serverURL == account.serverURL && $0.username == account.username }) {
-            var a = account; a.id = accounts[i].id
-            accounts[i] = a
+        } else if let i = accounts.firstIndex(where: same) {
+            saved.id = accounts[i].id
+            if saved.audiobooks == nil { saved.audiobooks = accounts[i].audiobooks }
+            accounts[i] = saved
         } else {
             accounts.append(account)
         }
@@ -195,7 +210,7 @@ final class AppModel {
             accounts = Keychain.load([Account].self, key: "accounts") ?? []
             throw KeychainError.saveFailed
         }
-        select(accounts.first { $0.serverURL == account.serverURL && $0.username == account.username }!.id)
+        select(saved.id)
         checkRoute() // the home address may have changed
     }
 
@@ -203,6 +218,7 @@ final class AppModel {
     /// Fails closed: in another network than the one home was confirmed in, the outside address is used at once,
     /// and home only again after the check – a plain-http home address must never get the login in a stranger's network.
     func checkRoute() {
+        checkBookRoute()
         routeCheck?.cancel()
         let network = LocalNetwork.fingerprint(monitor.currentPath)
         if atHome, network != homeNetwork {
@@ -232,6 +248,33 @@ final class AppModel {
         }
     }
 
+    /// The same for Audiobookshelf, which has its own addresses. Fails closed the same way.
+    private func checkBookRoute() {
+        bookRouteCheck?.cancel()
+        let network = LocalNetwork.fingerprint(monitor.currentPath)
+        if books.atHome, network != bookHomeNetwork {
+            books.setAtHome(false)
+            ServerSession.shared.networkChanged()
+        }
+        guard let id = currentId, let server = current?.audiobooks, let local = server.localURL, isOnline, !cellularOnly,
+              let host = URL(string: local)?.host, SubsonicClient.isLocal(local),
+              LocalNetwork.sameSubnet(host) != false else { books.setAtHome(false); return }
+        bookRouteCheck = Task {
+            async let home = AudiobookLibrary.identity(server.route(atHome: true))
+            async let outside = AudiobookLibrary.identity(server)
+            let key = "bookServer." + id.uuidString
+            var ok = false
+            if let found = await home {
+                if let known = await outside { UserDefaults.standard.set(known, forKey: key) }
+                ok = UserDefaults.standard.string(forKey: key) == found
+            }
+            guard !Task.isCancelled, id == currentId else { return }
+            ok = ok && LocalNetwork.fingerprint(monitor.currentPath) == network
+            bookHomeNetwork = ok ? network : nil
+            books.setAtHome(ok)
+        }
+    }
+
     private func setAtHome(_ value: Bool) {
         // Away from home: downloads started at home (maybe before the app was even opened) can't finish there
         if !value, let home = current?.localURL.flatMap({ URL(string: $0)?.host }), home != current?.host {
@@ -244,8 +287,49 @@ final class AppModel {
         if !value { player.addressChanged() }
     }
 
+    /// Music and audiobooks belong in one account: one that only has audiobooks moves into a music account that has none.
+    private func mergeAudiobookAccounts() {
+        for books in accounts where !books.hasMusic {
+            guard let i = accounts.firstIndex(where: { $0.hasMusic && $0.audiobooks == nil }) else { return }
+            accounts[i].audiobooks = books.audiobooks
+            if UserDefaults.standard.string(forKey: "currentAccount") == books.id.uuidString {
+                UserDefaults.standard.set(accounts[i].id.uuidString, forKey: "currentAccount")
+            }
+            accounts.removeAll { $0.id == books.id }
+            persist()
+        }
+    }
+
+    /// Takes the music server out of the current account; its audiobooks stay.
+    func disconnectMusic() {
+        guard let i = accounts.firstIndex(where: { $0.id == currentId }), let books = accounts[i].audiobooks else { return }
+        let id = accounts[i].id
+        player.detach()
+        accounts[i].serverURL = ""; accounts[i].localURL = nil; accounts[i].headers = []
+        accounts[i].salt = ""; accounts[i].token = ""
+        accounts[i].username = books.username
+        forgetMusicData(of: id)
+        persist()
+        downloads.reload()
+        librarySync.show(id)
+        tv.accountChanged()
+        jukeboxHost.accountChanged()
+        checkRoute()
+    }
+
+    func setAudiobooks(_ server: AudiobookServer?) throws {
+        guard let i = accounts.firstIndex(where: { $0.id == currentId }) else { throw AudiobookError.notConnected }
+        let old = accounts[i].audiobooks
+        accounts[i].audiobooks = server
+        if !persist() {
+            accounts[i].audiobooks = old
+            throw KeychainError.saveFailed
+        }
+    }
+
     func select(_ id: UUID) {
         if id != currentId {
+            books.accountChanged()
             player.detach()
             ServerSession.shared.networkChanged() // drops the old account's proxy cookies
             atHome = false
@@ -263,19 +347,11 @@ final class AppModel {
     }
 
     func remove(_ account: Account) {
-        if account.id == currentId { jukeboxHost.accountChanged(); player.detach() }
+        if let server = account.audiobooks { books.logout(server) }
+        AudiobookFiles.deleteAccount(account.id)
+        if account.id == currentId { books.accountChanged(); jukeboxHost.accountChanged(); player.detach() }
         accounts.removeAll { $0.id == account.id }
-        UserDefaults.standard.removeObject(forKey: "queue." + account.id.uuidString)
-        UserDefaults.standard.removeObject(forKey: "scrobbles." + account.id.uuidString)
-        UserDefaults.standard.removeObject(forKey: "queue.dismissed." + account.id.uuidString)
-        UserDefaults.standard.removeObject(forKey: "server." + account.id.uuidString)
-        Keychain.save([TVLink.Pairing](), key: "tv." + account.id.uuidString)
-        Keychain.save([JukeboxHost.Guest](), key: "jukebox." + account.id.uuidString)
-        ServerSession.shared.networkChanged()
-        DownloadStore.deleteAccount(account.id)
-        LibraryCache.deleteAccount(account.id)
-        librarySync.forget(account.id)
-        ImageLoader.clearDisk()
+        forgetMusicData(of: account.id)
         persist()
         if account.id == currentId {
             currentId = accounts.first?.id
@@ -290,6 +366,20 @@ final class AppModel {
     }
 
     @discardableResult
+    private func forgetMusicData(of id: UUID) {
+        UserDefaults.standard.removeObject(forKey: "queue." + id.uuidString)
+        UserDefaults.standard.removeObject(forKey: "scrobbles." + id.uuidString)
+        UserDefaults.standard.removeObject(forKey: "queue.dismissed." + id.uuidString)
+        UserDefaults.standard.removeObject(forKey: "server." + id.uuidString)
+        Keychain.save([TVLink.Pairing](), key: "tv." + id.uuidString)
+        Keychain.save([JukeboxHost.Guest](), key: "jukebox." + id.uuidString)
+        ServerSession.shared.networkChanged()
+        DownloadStore.deleteAccount(id)
+        LibraryCache.deleteAccount(id)
+        librarySync.forget(id)
+        ImageLoader.clearDisk()
+    }
+
     private func persist() -> Bool { Keychain.save(accounts, key: "accounts") }
 }
 

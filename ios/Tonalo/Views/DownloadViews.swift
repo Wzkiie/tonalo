@@ -92,6 +92,20 @@ struct DownloadsView: View {
                 }
             }
 
+            if !app.books.downloads.books.isEmpty {
+                Section {
+                    NavigationLink(value: Route.bookDownloads) {
+                        LabeledContent("Audiobooks & podcasts") {
+                            if let value = app.books.downloads.batchProgress {
+                                ProgressRing(value: value).frame(width: 22, height: 22)
+                            } else {
+                                Text("\(app.books.downloads.books.count)")
+                            }
+                        }
+                    }
+                }
+            }
+
             if store.waitingForWiFi {
                 Section {
                     Label("Waiting for Wi-Fi", systemImage: "wifi.exclamationmark").font(.headline)
@@ -218,9 +232,15 @@ struct DownloadBar: View {
     @Environment(\.ui) private var ui
 
     var body: some View {
-        if let value = app.downloads.batchProgress {
-            let counts = app.downloads.batchCounts
-            Button { ui.open(.downloads) } label: {
+        // Songs and audiobooks together, one note for all of it
+        let music = app.downloads.batchProgress
+        let books = app.books.downloads.batchProgress
+        if music != nil || books != nil {
+            let m = music == nil ? (done: 0, total: 0) : app.downloads.batchCounts
+            let b = books == nil ? (done: 0, total: 0) : app.books.downloads.batchCounts
+            let counts = (done: m.done + b.done, total: m.total + b.total)
+            let value = ((music ?? 0) * Double(m.total) + (books ?? 0) * Double(b.total)) / Double(max(1, counts.total))
+            Button { ui.open(music == nil ? .bookDownloads : .downloads) } label: {
                 HStack(spacing: 8) {
                     ProgressRing(value: value, lineWidth: 2.5).frame(width: 16, height: 16)
                     Text("Downloading \(counts.done) of \(counts.total)")

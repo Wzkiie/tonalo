@@ -4,6 +4,8 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(AppModel.self) private var app
+    /// Goes up each time the open tab is tapped again.
+    var reselected = 0
     @State private var filter = Filter.all
     @State private var sections: [HomeSection] = []
     @State private var playlists: [Playlist] = []
@@ -12,7 +14,7 @@ struct HomeView: View {
     @State private var loading = true
     @State private var error: String?
 
-    enum Filter { case all, playlists, downloads }
+    enum Filter { case all, playlists, downloads, books }
     struct HomeSection: Identifiable { let id: String; let title: LocalizedStringKey; let albums: [Album] }
 
     var body: some View {
@@ -20,12 +22,15 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 28) {
                 header
                 if !app.isOnline { OfflineBanner() }
+                if !hasMusic { BooksHomeContent() } else {
                 switch filter {
                 case .all: allContent
+                case .books: BooksHomeContent()
                 case .playlists: grid(playlists.map { .playlist($0) }, empty: "No playlists yet.")
                 case .downloads:
                     grid(downloadItems,
                          empty: "Nothing downloaded yet. Use the download button on an album or playlist, or “Download” in a song’s menu.")
+                }
                 }
             }
             .padding(.bottom, 24)
@@ -33,17 +38,30 @@ struct HomeView: View {
         .scrollIndicators(.hidden)
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
-        .task(id: "\(app.currentId?.uuidString ?? "")\(Theme.shared.hiddenHomeRows.sorted())\(app.isOnline)\(app.playlistsVersion)") { await load() }
-        .refreshable { await Task { await load() }.value }
+        .task(id: "\(app.currentId?.uuidString ?? "")\(app.current?.serverURL ?? "")\(Theme.shared.hiddenHomeRows.sorted())\(app.isOnline)\(app.playlistsVersion)") { await load() }
+        .refreshable { await Task { await load() }.value; await app.books.load(force: true) }
+        .task(id: "\(app.currentId?.uuidString ?? "")\(app.books.connected)") { await app.books.load() }
+        .onChange(of: app.books.connected) { _, on in if !on && filter == .books { filter = .all } }
+        .onChange(of: reselected) { filter = .all }
     }
+
+    private var hasMusic: Bool { app.current?.hasMusic ?? true }
 
     private var header: some View {
         HStack(spacing: 8) {
             ProfileButton().padding(.trailing, 4)
-            Chip(title: "All", selected: filter == .all) { filter = .all }
-            Chip(title: "Playlists", selected: filter == .playlists) { filter = filter == .playlists ? .all : .playlists }
-            Chip(title: "Downloads", selected: filter == .downloads) { filter = filter == .downloads ? .all : .downloads }
-            Spacer(minLength: 0)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    if hasMusic {
+                        Chip(title: "All", selected: filter == .all) { filter = .all }
+                        Chip(title: "Playlists", selected: filter == .playlists) { filter = filter == .playlists ? .all : .playlists }
+                        Chip(title: "Downloads", selected: filter == .downloads) { filter = filter == .downloads ? .all : .downloads }
+                    }
+                    if app.books.connected {
+                        Chip(title: "Audiobooks", selected: filter == .books || !hasMusic) { if hasMusic { filter = filter == .books ? .all : .books } }
+                    }
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -51,6 +69,9 @@ struct HomeView: View {
 
     @ViewBuilder private var allContent: some View {
         quickGrid
+        if !app.books.continueListening.isEmpty {
+            BookShelf(title: String(localized: "Continue listening"), items: app.books.continueListening)
+        }
         mixes
         radioShelf
         LoadState(loading: loading && sections.allSatisfy { $0.albums.isEmpty }, error: error) { await load() }
@@ -65,8 +86,12 @@ struct HomeView: View {
                 }
             }
         }
-        ForEach(sections) { s in
-            if !s.albums.isEmpty { AlbumRow(title: s.title, albums: s.albums, more: .albums(s.id)) }
+        // Music and audiobooks take turns, it's one home page
+        let music = sections.filter { !$0.albums.isEmpty }
+        let books = app.books.shelves.filter { $0.id != "continue-listening" }
+        ForEach(0..<max(music.count, books.count), id: \.self) { i in
+            if i < music.count { AlbumRow(title: music[i].title, albums: music[i].albums, more: .albums(music[i].id)) }
+            if i < books.count { BookShelf(title: books[i].title, items: books[i].items) }
         }
     }
 
@@ -341,6 +366,9 @@ struct SearchView: View {
     @Environment(AppModel.self) private var app
     @State private var query = ""
     @State private var result: SearchBody?
+    @State private var books = ABSSearchResults()
+    /// Until both servers answered "nothing found" would be premature.
+    @State private var searching = false
     @State private var genres: [Genre] = []
     @State private var error: String?
     @FocusState private var focused: Bool
@@ -362,11 +390,32 @@ struct SearchView: View {
         .statusBarBackground()
         .task(id: query) {
             let q = query.trimmingCharacters(in: .whitespaces)
-            guard q.count >= 2 else { result = nil; return }
-            try? await Task.sleep(for: .milliseconds(350)) // wait until typing pauses
-            guard !Task.isCancelled, let client = app.client else { return }
-            do { result = try await client.search(q); error = nil } catch { self.error = error.userMessage }
+            guard q.count >= 2 else { result = nil; books = ABSSearchResults(); searching = false; return }
+            searching = true
+            try? await Task.sleep(for: .milliseconds(200)) // wait until typing pauses
+            guard !Task.isCancelled else { return }
+            // Each server shows its results as they arrive, the slower one doesn't hold up the other
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask { @MainActor in
+                    guard let client = app.client else { return }
+                    do {
+                        let found = try await client.search(q)
+                        if !Task.isCancelled { result = found; error = nil }
+                    } catch {
+                        if !Task.isCancelled { self.error = error.userMessage }
+                    }
+                }
+                group.addTask { @MainActor in
+                    let found = await app.books.search(q)
+                    if !Task.isCancelled { books = found }
+                }
+            }
+            if !Task.isCancelled { searching = false }
         }
+        #if DEBUG
+        // Test hook: -demoSearch <text> fills in the search field, typing doesn't reach it in the simulator
+        .onAppear { if query.isEmpty, let demo = UserDefaults.standard.string(forKey: "demoSearch") { query = demo } }
+        #endif
         .task {
             guard genres.isEmpty, let all = try? await app.client?.genres() else { return }
             genres = Array(all.filter { ($0.albumCount ?? 0) > 0 }.sorted { ($0.albumCount ?? 0) > ($1.albumCount ?? 0) }.prefix(30))
@@ -394,11 +443,11 @@ struct SearchView: View {
 
     private var browse: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Browse all").font(.system(size: 17, weight: .bold)).padding(.top, 8)
+            if app.client != nil { Text("Browse all").font(.system(size: 17, weight: .bold)).padding(.top, 8) }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                 ForEach(genres, id: \.value) { GenreTile(genre: $0.value) }
             }
-            if genres.isEmpty && app.isOnline { ProgressView().frame(maxWidth: .infinity).padding(30) }
+            if genres.isEmpty && app.isOnline && app.client != nil { ProgressView().frame(maxWidth: .infinity).padding(30) }
         }
         .padding(.horizontal, 16)
     }
@@ -406,12 +455,43 @@ struct SearchView: View {
     @ViewBuilder private var results: some View {
         LazyVStack(alignment: .leading, spacing: 12) {
             if let error { LoadState(loading: false, error: error) }
-            if let r = result {
+            let r = result ?? SearchBody()
+            Group {
                 ForEach(r.artist ?? []) { a in
                     NavigationLink(value: Route.artist(a.id)) {
                         ItemRow(title: a.name, subtitle: String(localized: "Artist")) {
                             CoverView(id: a.coverArt ?? a.id, size: 120, round: true).frame(width: 52)
                         }
+                    }
+                    .buttonStyle(.plain)
+                }
+                ForEach(books.authors) { a in
+                    NavigationLink(value: Route.bookAuthor(id: a.id, name: a.name)) {
+                        ItemRow(title: a.name, subtitle: String(localized: "Author")) { AuthorImage(id: a.id, name: a.name).frame(width: 52) }
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu { AuthorFavoriteMenu(id: a.id, name: a.name) }
+                }
+                ForEach(books.items) { b in
+                    NavigationLink(value: Route.audiobook(b.id)) {
+                        ItemRow(title: b.title, subtitle: [app.books.isFinished(b.id) ? String(localized: "Finished") : "", String(localized: b.isPodcast ? "Podcast" : "Audiobook"), b.creator].filter { !$0.isEmpty }.joined(separator: " • ")) {
+                            BookCover(itemId: b.id, width: 200, corner: 2)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                ForEach(books.series) { s in
+                    NavigationLink(value: Route.bookSeries(id: s.id, name: s.name, library: nil)) {
+                        ItemRow(title: s.name, subtitle: String(localized: "Series")) {
+                            Color.elevated.aspectRatio(1, contentMode: .fit).overlay { Image(systemName: "books.vertical").foregroundStyle(Color.subtle) }
+                                .clipShape(RoundedRectangle(cornerRadius: 2))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                ForEach(books.narrators, id: \.self) { n in
+                    NavigationLink(value: Route.bookNarrator(name: n, library: nil)) {
+                        ItemRow(title: n, subtitle: String(localized: "Narrator")) { AuthorImage(id: nil, name: n).frame(width: 52) }
                     }
                     .buttonStyle(.plain)
                 }
@@ -429,7 +509,11 @@ struct SearchView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                if (r.artist ?? []).isEmpty && (r.album ?? []).isEmpty && songs.isEmpty {
+                let nothing = (r.artist ?? []).isEmpty && (r.album ?? []).isEmpty && songs.isEmpty && books.items.isEmpty
+                    && books.authors.isEmpty && books.series.isEmpty && books.narrators.isEmpty
+                if nothing && searching {
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
+                } else if nothing {
                     VStack(spacing: 8) {
                         Text("No results for “\(query)”").font(.system(size: 18, weight: .bold))
                         Text("Check the spelling, or try fewer words.").foregroundStyle(Color.subtle)
@@ -485,6 +569,8 @@ struct GenreTile: View {
 
 struct LibraryView: View {
     @Environment(AppModel.self) private var app
+    /// Goes up each time the open tab is tapped again.
+    var reselected = 0
     @State private var filter: Filter?
     @State private var playlists: [Playlist] = []
     @State private var starred: SearchBody?
@@ -496,7 +582,7 @@ struct LibraryView: View {
     /// What you pinned to the top, newest first. Kept on this iPhone per account.
     @State private var pins: [String] = []
 
-    enum Filter { case playlists, albums, artists, downloads }
+    enum Filter { case playlists, albums, artists, downloads, books, podcasts }
 
     enum Sort: String, CaseIterable {
         case recent, name, creator
@@ -509,9 +595,9 @@ struct LibraryView: View {
         }
     }
 
-    /// One entry of the library, whatever it is.
+    /// One entry of the library, whatever it is. Of the books, the ones with a heart.
     enum Item: Identifiable {
-        case favorites, downloads, playlist(Playlist), album(Album), artist(Artist)
+        case favorites, downloads, playlist(Playlist), album(Album), artist(Artist), book(ABSItem, added: String), author(ABSAuthor, added: String)
         var id: String {
             switch self {
             case .favorites: "favorites"
@@ -519,6 +605,8 @@ struct LibraryView: View {
             case .playlist(let p): "p" + p.id
             case .album(let a): "a" + a.id
             case .artist(let a): "r" + a.id
+            case .book(let b, _): "b" + b.id
+            case .author(let a, _): "u" + a.id
             }
         }
         var name: String {
@@ -527,6 +615,8 @@ struct LibraryView: View {
             case .playlist(let p): p.name
             case .album(let a): a.name
             case .artist(let a): a.name
+            case .book(let b, _): b.title
+            case .author(let a, _): a.name
             }
         }
         var creator: String {
@@ -534,6 +624,8 @@ struct LibraryView: View {
             case .playlist(let p): p.owner ?? ""
             case .album(let a): a.artist ?? ""
             case .artist(let a): a.name
+            case .book(let b, _): b.creator
+            case .author(let a, _): a.name
             default: ""
             }
         }
@@ -543,6 +635,8 @@ struct LibraryView: View {
             case .playlist(let p): p.changed ?? ""
             case .album(let a): a.starred ?? ""
             case .artist(let a): a.starred ?? ""
+            case .book(_, let added): added
+            case .author(_, let added): added
             default: ""
             }
         }
@@ -554,7 +648,8 @@ struct LibraryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     TabHeader(title: "Your Library").padding(.top, 8).id(Self.top)
-                    chips
+                    // A new identity also scrolls the chips back to their start
+                    chips.id(reselected)
                     toolbar
                     if grid {
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], alignment: .leading, spacing: 18) {
@@ -571,8 +666,16 @@ struct LibraryView: View {
             .scrollDismissesKeyboard(.immediately)
             .toolbar(.hidden, for: .navigationBar)
             .statusBarBackground()
-            .task(id: "\(app.currentId?.uuidString ?? "")\(app.playlistsVersion)") { await load() }
-            .refreshable { await Task { await load() }.value }
+            .task(id: "\(app.currentId?.uuidString ?? "")\(app.current?.serverURL ?? "")\(app.playlistsVersion)") { await load() }
+            .refreshable { await Task { await load() }.value; await app.books.load(force: true) }
+            .task(id: "\(app.currentId?.uuidString ?? "")\(app.books.connected)") { await app.books.load() }
+            .onChange(of: app.currentId) { filter = nil }
+            .onChange(of: app.books.connected) { _, on in if !on && (filter == .books || filter == .podcasts) { filter = nil } }
+            .onChange(of: reselected) {
+                withAnimation(.easeOut(duration: 0.15)) { filter = nil; query = ""; searching = false }
+                searchFocused = false
+                scroller.scrollTo(Self.top, anchor: .top)
+            }
             .onAppear(perform: loadPins)
             .onChange(of: app.currentId) { loadPins() }
             .onChange(of: pins.first) { old, new in
@@ -618,13 +721,21 @@ struct LibraryView: View {
     private var chips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                chip("Playlists", .playlists)
-                chip("Albums", .albums)
-                chip("Artists", .artists)
-                chip("Downloads", .downloads)
+                if hasMusic {
+                    chip("Playlists", .playlists)
+                    chip("Albums", .albums)
+                    chip("Artists", .artists)
+                    chip("Downloads", .downloads)
+                }
+                if app.books.connected {
+                    if app.books.libraries.contains(where: { !$0.isPodcasts }) { chip("Audiobooks", .books) }
+                    if app.books.libraries.contains(where: \.isPodcasts) { chip("Podcasts", .podcasts) }
+                }
             }
         }
     }
+
+    private var hasMusic: Bool { app.current?.hasMusic ?? true }
 
     private func chip(_ title: LocalizedStringKey, _ f: Filter) -> some View {
         Chip(title: title, selected: filter == f) {
@@ -677,6 +788,12 @@ struct LibraryView: View {
                 .frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 40)
         }
         // The library holds what you saved; the whole server is one tap away
+        if app.books.connected, query.isEmpty, filter == .books || (filter == nil && !hasMusic), app.books.libraries.contains(where: { !$0.isPodcasts }) {
+            browseLink("Browse all audiobooks", icon: "book.closed", route: .booksAll(podcasts: false))
+        }
+        if app.books.connected, query.isEmpty, filter == .podcasts {
+            browseLink("Browse all podcasts", icon: "mic", route: .booksAll(podcasts: true))
+        }
         if filter == .albums || filter == .artists {
             NavigationLink(value: filter == .albums ? Route.albums("alphabeticalByName") : Route.artists) {
                 HStack {
@@ -694,8 +811,26 @@ struct LibraryView: View {
         }
     }
 
+    private func browseLink(_ title: LocalizedStringKey, icon: String, route: Route) -> some View {
+        NavigationLink(value: route) {
+            HStack {
+                Image(systemName: icon).foregroundStyle(Color.accent).frame(width: 28)
+                Text(title)
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.subtle)
+            }
+            .font(.system(size: 15, weight: .semibold))
+            .padding(.horizontal, 16).frame(height: 52)
+            .background(Color.elevated, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 8)
+    }
+
     private var emptyText: LocalizedStringKey {
         if !query.isEmpty { return "Nothing in your library matches “\(query)”." }
+        if filter == .books || (filter == nil && !hasMusic) { return "No favorite audiobooks yet. Tap the heart on a book or author to add them here." }
+        if filter == .podcasts { return "No favorite podcasts yet. Tap the heart on a podcast to add it here." }
         if filter == .albums { return "No favorite albums yet. Tap the heart on an album to add it here." }
         if filter == .artists { return "No favorite artists yet. Tap the heart on an artist to add them here." }
         return filter == .downloads ? "Nothing downloaded yet. Tap the arrow on an album, playlist or your favorites to listen offline." : "Nothing here yet."
@@ -713,24 +848,45 @@ struct LibraryView: View {
         var rest: [Item]
         switch filter {
         case nil:
-            pinned = [.favorites]
-            rest = playlists.map(Item.playlist) + (starred?.album ?? []).map(Item.album) + (starred?.artist ?? []).map(Item.artist)
+            pinned = hasMusic ? [.favorites] : []
+            rest = hasMusic ? playlists.map(Item.playlist) + (starred?.album ?? []).map(Item.album) + (starred?.artist ?? []).map(Item.artist) : []
+            rest += bookItems { _ in true } + authorItems
         case .playlists:
             pinned = [.favorites]
             rest = playlists.map(Item.playlist)
         case .albums:
             rest = (starred?.album ?? []).map(Item.album)
         case .artists:
-            rest = (starred?.artist ?? []).map(Item.artist)
+            rest = (starred?.artist ?? []).map(Item.artist) + authorItems
         case .downloads:
             pinned = [.downloads] + (downloadedFavorites > 0 ? [.favorites] : [])
             rest = dl.index.playlists.values.map(Item.playlist) + dl.index.albums.values.map(Item.album)
+            rest += app.books.downloads.sorted.map { .book($0.item, added: "") }
+        case .books:
+            rest = bookItems { !$0.isPodcast } + authorItems
+        case .podcasts:
+            rest = bookItems(\.isPodcast)
         }
         // Pinned ones first (newest pin on top), everything else in the chosen order
         let all = sorted(rest)
         let top = pins.compactMap { id in all.first { $0.id == id } }
         let list = top + all.filter { !pins.contains($0.id) }
         return query.isEmpty ? pinned + list : matching(list)
+    }
+
+    /// The books with a heart, like the albums and artists with one. Newest heart first.
+    private func bookItems(_ wanted: (ABSItem) -> Bool) -> [Item] {
+        let b = app.books
+        guard b.connected else { return [] }
+        let dates = ISO8601DateFormatter()
+        return b.favorites.values.filter { wanted($0.item) }.map { .book($0.item, added: dates.string(from: $0.date)) }
+    }
+
+    /// The authors with a heart. They count as artists too, and belong with the audiobooks.
+    private var authorItems: [Item] {
+        guard app.books.connected else { return [] }
+        let dates = ISO8601DateFormatter()
+        return app.books.favoriteAuthors.values.map { .author($0.author, added: dates.string(from: $0.date)) }
     }
 
     private func sorted(_ list: [Item]) -> [Item] {
@@ -763,6 +919,8 @@ struct LibraryView: View {
         case .playlist(let p): .playlist(p.id)
         case .album(let a): .album(a.id)
         case .artist(let a): .artist(a.id)
+        case .book(let b, _): .audiobook(b.id)
+        case .author(let a, _): .bookAuthor(id: a.id, name: a.name)
         }
     }
 
@@ -776,6 +934,9 @@ struct LibraryView: View {
         case .playlist(let p): [String(localized: "Playlist"), p.owner].compactMap { $0 }.joined(separator: " • ")
         case .album(let a): [String(localized: "Album"), a.artist].compactMap { $0 }.joined(separator: " • ")
         case .artist: String(localized: "Artist")
+        case .author: String(localized: "Author")
+        case .book(let b, _):
+            [app.books.isFinished(b.id) ? String(localized: "Finished") : nil, b.isPodcast ? String(localized: "Podcast") : String(localized: "Audiobook"), b.creator.isEmpty ? nil : b.creator].compactMap { $0 }.joined(separator: " • ")
         }
     }
 
@@ -786,6 +947,7 @@ struct LibraryView: View {
         case .album(let a): return store.index.albums[a.id].map { store.state($0.song ?? []) } ?? .none
         case .playlist(let p): return store.index.playlists[p.id].map { store.state($0.entry ?? []) } ?? .none
         case .favorites: return store.state(starred?.song ?? [])
+        case .book(let b, _): return app.books.downloads.mark(b)
         default: return .none
         }
     }
@@ -805,6 +967,12 @@ struct LibraryView: View {
         case .playlist(let p): CoverView(id: p.coverArt ?? p.id, size: size, corner: 2)
         case .album(let a): CoverView(id: a.coverArt ?? a.id, size: size, corner: 2)
         case .artist(let a): CoverView(id: a.coverArt ?? a.id, size: size, round: true)
+        case .book(let b, _):
+            BookCover(itemId: b.id, width: size, corner: 2)
+                .overlay(alignment: .bottom) {
+                    if !app.books.isFinished(b.id), let p = app.books.progress(of: b)?.progress, p > 0 { BookProgressBar(value: p) }
+                }
+        case .author(let a, _): AuthorImage(id: a.id, name: a.name, width: size, initial: CGFloat(size) / 8)
         }
     }
 
@@ -813,8 +981,17 @@ struct LibraryView: View {
             ItemRow(title: title(item), subtitle: subtitle(item), pinned: isPinned(item), download: download(item)) { art(item, size: 160) }
         }
         .buttonStyle(.plain)
-        .contextMenu { pinMenu(item) }
+        .contextMenu { pinMenu(item); bookMenu(item) }
         .transition(.opacity)
+    }
+
+    @ViewBuilder private func bookMenu(_ item: Item) -> some View {
+        if case .book(let b, _) = item {
+            Button { app.books.toggleFavorite(b) } label: {
+                app.books.isFavorite(b.id) ? Label("Remove from favorites", systemImage: "heart.slash") : Label("Add to favorites", systemImage: "heart")
+            }
+        }
+        if case .author(let a, _) = item { AuthorFavoriteMenu(id: a.id, name: a.name) }
     }
 
     /// Pinning gives a row a new identity, so it fades instead of sliding to its new place.
@@ -836,14 +1013,14 @@ struct LibraryView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .contextMenu { pinMenu(item) }
+        .contextMenu { pinMenu(item); bookMenu(item) }
         .transition(.opacity)
     }
 
     // MARK: Loading
 
     private func load() async {
-        guard let client = app.client else { return }
+        guard let client = app.client else { playlists = []; starred = nil; return }
         if playlists.isEmpty, let saved = client.cached("getPlaylists")?.playlists?.playlist { playlists = saved }
         if starred == nil, let saved = client.cached("getStarred2")?.starred2 { starred = saved }
         async let p = try? client.playlists()

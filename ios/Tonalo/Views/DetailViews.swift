@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Shared layout for albums and playlists: cover on a tinted gradient, left-aligned title, action row, songs.
-private struct DetailPage<Art: View, Info: View, Actions: View, Content: View>: View {
+struct DetailPage<Art: View, Info: View, Actions: View, Content: View>: View {
     let coverId: String?
     let title: String
     @ViewBuilder let art: () -> Art
@@ -38,7 +38,7 @@ private struct DetailPage<Art: View, Info: View, Actions: View, Content: View>: 
 }
 
 /// Gray icon button for the action row under a title.
-private struct ActionIcon: View {
+struct ActionIcon: View {
     let icon: String
     var active = false
     let label: LocalizedStringKey

@@ -64,8 +64,28 @@ struct AccountEditorView: View {
     @State private var confirmRemove = false
     @State private var showsOptions = false
     @FocusState private var focus: LoginField.Field?
+    /// What this login connects: music, audiobooks or both, each with its own address, login and headers.
+    enum Service { case music, books, both }
+    @State private var service = Service.music
+    @State private var bookServer = ""
+    @State private var bookUsername = ""
+    @State private var bookPassword = ""
+    @State private var bookHeaders: [HeaderField] = []
+    @State private var bookHome = ""
+    /// The same headers for both, for when one Cloudflare Access token opens both servers.
+    @State private var sameHeaders = false
 
-    private var canSave: Bool { !saving && !server.isEmpty && !username.isEmpty && (account != nil || !password.isEmpty) }
+    private var wantsMusic: Bool { service != .books }
+    private var wantsBooks: Bool { service != .music }
+    private var musicReady: Bool { !server.isEmpty && !username.isEmpty && !password.isEmpty }
+    private var booksReady: Bool { !bookServer.isEmpty && !bookUsername.isEmpty && !bookPassword.isEmpty }
+    private var canSignIn: Bool { !saving && (!wantsMusic || musicReady) && (!wantsBooks || booksReady) }
+    /// Editing: an audiobooks-only account can get a music server here, which needs a password the first time.
+    private var canSave: Bool {
+        guard let account else { return canSignIn }
+        return !saving && !server.isEmpty && !username.isEmpty && (account.hasMusic || !password.isEmpty)
+    }
+    private var namedBookHeaders: [HeaderField] { bookHeaders.filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty } }
     private var namedHeaders: [HeaderField] { headers.filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty } }
 
     var body: some View {
@@ -83,13 +103,41 @@ struct AccountEditorView: View {
                 }
                 .padding(.top, 28)
 
-                VStack(spacing: 12) {
-                    LoginField(icon: "server.rack", prompt: "Server address", text: $server,
-                               kind: .url, focus: $focus, field: .server) { focus = .username }
-                    LoginField(icon: "person.fill", prompt: "Username", text: $username,
-                               kind: .username, focus: $focus, field: .username) { focus = .password }
-                    LoginField(icon: "lock.fill", prompt: "Password", text: $password,
-                               kind: .password, focus: $focus, field: .password) { if canSave { Task { await save() } } }
+                HStack(spacing: 8) {
+                    Chip(title: "Music", selected: service == .music) { pick(.music) }
+                    Chip(title: "Audiobooks", selected: service == .books) { pick(.books) }
+                    Chip(title: "Both", selected: service == .both) { pick(.both) }
+                }
+
+                if wantsMusic {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if service == .both { fieldsTitle("Music (Navidrome)") }
+                        LoginField(icon: "server.rack", prompt: "Server address", text: $server,
+                                   kind: .url, focus: $focus, field: .server) { focus = .username }
+                        LoginField(icon: "person.fill", prompt: "Username", text: $username,
+                                   kind: .username, focus: $focus, field: .username) { focus = .password }
+                        LoginField(icon: "lock.fill", prompt: "Password", text: $password,
+                                   kind: .password, focus: $focus, field: .password) {
+                            if wantsBooks { focus = .bookServer } else if canSave { Task { await save() } }
+                        }
+                    }
+                }
+                if wantsBooks {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if service == .both { fieldsTitle("Audiobooks (Audiobookshelf)") }
+                        LoginField(icon: "book.closed.fill", prompt: "Audiobookshelf address", text: $bookServer,
+                                   kind: .url, focus: $focus, field: .bookServer) { focus = .bookUsername }
+                        LoginField(icon: "person.fill", prompt: "Username", text: $bookUsername,
+                                   kind: .username, focus: $focus, field: .bookUsername) { focus = .bookPassword }
+                        LoginField(icon: "lock.fill", prompt: "Password", text: $bookPassword,
+                                   kind: .password, focus: $focus, field: .bookPassword) { if canSave { Task { await save() } } }
+                    }
+                }
+
+                if wantsBooks, Self.plainOverInternet(bookServer) {
+                    Label("This address uses http, so your Audiobookshelf password travels unencrypted. Only use this inside a VPN.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote).foregroundStyle(.orange)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 if let error {
@@ -119,12 +167,36 @@ struct AccountEditorView: View {
                     }
                     if showsOptions {
                         VStack(spacing: 0) {
+                            if wantsMusic {
                             NavigationLink { HomeAddressView(address: $localServer) } label: {
                                 optionRow("house.fill", "Address at home", localServer.isEmpty ? String(localized: "Off") : localServer)
                             }
                             Divider().padding(.leading, 50)
                             NavigationLink { HeadersView(headers: $headers, server: server) } label: {
-                                optionRow("key.fill", "Custom headers", namedHeaders.isEmpty ? String(localized: "None") : "\(namedHeaders.count)")
+                                optionRow("key.fill", service == .both && !sameHeaders ? "Headers for music" : "Custom headers", namedHeaders.isEmpty ? String(localized: "None") : "\(namedHeaders.count)")
+                            }
+                            }
+                            if wantsBooks {
+                                if wantsMusic { Divider().padding(.leading, 50) }
+                                NavigationLink { HomeAddressView(address: $bookHome, placeholder: "192.168.1.10:13378") } label: {
+                                    optionRow("house.fill", service == .both ? "Audiobooks at home" : "Address at home", bookHome.isEmpty ? String(localized: "Off") : bookHome)
+                                }
+                            }
+                            if service == .both {
+                                Divider().padding(.leading, 50)
+                                Toggle(isOn: $sameHeaders) {
+                                    HStack(spacing: 14) {
+                                        Image(systemName: "link").foregroundStyle(Color.accent).frame(width: 22)
+                                        Text("Same headers for both").foregroundStyle(.white)
+                                    }
+                                }
+                                .padding(.horizontal, 16).frame(height: 52)
+                            }
+                            if service == .books || (service == .both && !sameHeaders) {
+                                Divider().padding(.leading, 50)
+                                NavigationLink { HeadersView(headers: $bookHeaders, server: bookServer) } label: {
+                                    optionRow("key.fill", service == .both ? "Headers for audiobooks" : "Custom headers", namedBookHeaders.isEmpty ? String(localized: "None") : "\(namedBookHeaders.count)")
+                                }
                             }
                         }
                         .background(Color.elevated, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -137,10 +209,22 @@ struct AccountEditorView: View {
                     }
                 }
 
+                if wantsBooks {
+                    Text("Over a VPN or only at home? The home address is enough, like 192.168.1.10:13378.")
+                        .font(.footnote).foregroundStyle(Color.subtle.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                }
+                if wantsMusic {
                 Text("For example music.example.com or 192.168.1.10:4533. Works with Navidrome and other Subsonic servers. Your password isn’t stored – only a salted token, in the Keychain.")
                     .font(.footnote).foregroundStyle(Color.subtle.opacity(0.8))
                     .multilineTextAlignment(.center)
                     .padding(.bottom, 24)
+                } else {
+                    Text("The password is only used to sign in and isn't stored. Tonalo keeps a login token in the Keychain, only on this iPhone.")
+                        .font(.footnote).foregroundStyle(Color.subtle.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 24)
+                }
             }
             .padding(.horizontal, 24)
             .frame(maxWidth: 460)
@@ -159,6 +243,35 @@ struct AccountEditorView: View {
             if !app.accounts.isEmpty { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
         }
         .navigationBarTitleDisplayMode(.inline)
+        #if DEBUG
+        // Test hook against the stand-in servers: -demoLogin "<music address>|<books address>|<header name>"
+        // Sign-in values come from the mocks; the header is shared, so one token opens both.
+        .onAppear {
+            let parts = (UserDefaults.standard.string(forKey: "demoLogin") ?? "").components(separatedBy: "|")
+            guard parts.count >= 2 else { return }
+            service = parts[0].isEmpty ? .books : parts[1].isEmpty ? .music : .both
+            server = parts[0]; username = "demo"; password = "demo"
+            bookServer = parts[1]; bookUsername = "demo"; bookPassword = "demo"
+            if parts.count > 2 {
+                headers = [HeaderField(name: parts[2], value: "test")]
+                sameHeaders = true
+                showsOptions = true
+            }
+        }
+        #endif
+    }
+
+    static func plainOverInternet(_ address: String) -> Bool {
+        address.lowercased().hasPrefix("http://") && !SubsonicClient.isLocal(address)
+    }
+
+    private func fieldsTitle(_ title: LocalizedStringKey) -> some View {
+        Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.subtle).padding(.leading, 4)
+    }
+
+    private func pick(_ new: Service) {
+        withAnimation(.easeOut(duration: 0.2)) { service = new }
+        error = nil
     }
 
     private func optionRow(_ icon: String, _ title: LocalizedStringKey, _ value: String) -> some View {
@@ -181,7 +294,7 @@ struct AccountEditorView: View {
             }
             Section("Login") {
                 TextField("Username", text: $username).textInputAutocapitalization(.never).autocorrectionDisabled()
-                SecureField(account == nil ? "Password" : "Password (leave empty to keep)", text: $password)
+                SecureField(account?.hasMusic == true ? "Password (leave empty to keep)" : "Password", text: $password)
             }
             Section {
                 NavigationLink { HomeAddressView(address: $localServer) } label: {
@@ -201,7 +314,21 @@ struct AccountEditorView: View {
 
             if let error { Section { Text(error).foregroundStyle(.red) } }
 
-            Section {
+            if account?.audiobooks != nil {
+                // The audiobooks keep the account going; without music there is nothing to take out here
+                if account?.hasMusic == true {
+                    Section {
+                        Button("Disconnect", role: .destructive) { confirmRemove = true }
+                            .frame(maxWidth: .infinity)
+                            .confirmationDialog("Disconnect the music server?", isPresented: $confirmRemove, titleVisibility: .visible) {
+                                Button("Disconnect", role: .destructive) { dismiss(); app.disconnectMusic() }
+                            } message: {
+                                Text("Its downloads and everything Tonalo keeps for it are deleted from this iPhone. Nothing changes on your server.")
+                            }
+                    }
+                }
+            } else {
+                Section {
                     Button("Remove account", role: .destructive) { confirmRemove = true }
                         .frame(maxWidth: .infinity)
                         .confirmationDialog("Remove this account?", isPresented: $confirmRemove, titleVisibility: .visible) {
@@ -211,9 +338,10 @@ struct AccountEditorView: View {
                         } message: {
                             Text("Its downloads and everything Tonalo keeps for it are deleted from this iPhone. Nothing changes on your server.")
                         }
+                }
             }
         }
-        .navigationTitle("Edit account")
+        .navigationTitle("Music server")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Pushed from the settings, so the back button cancels
@@ -223,13 +351,20 @@ struct AccountEditorView: View {
         }
         .onAppear {
             guard let a = account, server.isEmpty else { return }
-            server = a.serverURL; username = a.username; headers = a.headers; localServer = a.localURL ?? ""
+            server = a.serverURL; username = a.hasMusic ? a.username : ""; headers = a.headers; localServer = a.localURL ?? ""
+            #if DEBUG
+            // Test hook: -demoAddMusic <address> fills in a music server for an audiobooks-only account
+            if !a.hasMusic, let demo = UserDefaults.standard.string(forKey: "demoAddMusic") { server = demo; username = "demo"; password = "demo" }
+            #endif
         }
     }
 
     /// Custom headers usually hold secrets – on plain http to a public address anyone on the way could read them.
     private var sendsHeadersUnencrypted: Bool {
-        server.lowercased().hasPrefix("http://") && !SubsonicClient.isLocal(server) && !namedHeaders.isEmpty
+        let musicRisk = wantsMusic && server.lowercased().hasPrefix("http://") && !SubsonicClient.isLocal(server) && !namedHeaders.isEmpty
+        let sent = sameHeaders && service == .both ? namedHeaders : namedBookHeaders
+        let booksRisk = wantsBooks && bookServer.lowercased().hasPrefix("http://") && !SubsonicClient.isLocal(bookServer) && !sent.isEmpty
+        return musicRisk || booksRisk
     }
 
     private func save() async {
@@ -238,8 +373,45 @@ struct AccountEditorView: View {
             error = String(localized: "Only addresses in your home network work here, like 192.168.1.10 or nas.local.")
             return
         }
+        if wantsBooks, !bookHome.trimmingCharacters(in: .whitespaces).isEmpty, !SubsonicClient.isLocal(bookHome) {
+            error = String(localized: "Only addresses in your home network work here, like 192.168.1.10 or nas.local.")
+            return
+        }
         saving = true; error = nil
+        // The other half of the account you're in goes into it, not into a second account to switch to
+        if account == nil, service == .books, let current = app.current, current.hasMusic, current.audiobooks == nil {
+            do {
+                try await app.books.connect(address: bookServer, username: bookUsername.trimmingCharacters(in: .whitespaces), password: bookPassword, headers: namedBookHeaders,
+                                           home: SubsonicClient.normalizeLocal(bookHome))
+                bookPassword = ""
+                dismiss()
+            } catch {
+                self.error = String(localized: "Audiobookshelf: \(error.localizedDescription)")
+            }
+            saving = false
+            return
+        }
         var acc = account ?? Account(serverURL: "", username: "", salt: "", token: "")
+        if account == nil, service == .music, let current = app.current, !current.hasMusic { acc = current }
+        // Both have to work before anything is saved; a failed one says which it was
+        if account == nil, wantsBooks {
+            do {
+                let books = try await app.books.signIn(address: bookServer, username: bookUsername.trimmingCharacters(in: .whitespaces), password: bookPassword,
+                                                       headers: service == .both && sameHeaders ? namedHeaders : namedBookHeaders)
+                acc.audiobooks = books
+                acc.audiobooks?.localURL = SubsonicClient.normalizeLocal(bookHome)
+            } catch {
+                self.error = String(localized: "Audiobookshelf: \(error.localizedDescription)")
+                saving = false
+                return
+            }
+        }
+        if account == nil, service == .books {
+            acc.username = bookUsername.trimmingCharacters(in: .whitespaces)
+            do { try await app.save(acc); bookPassword = ""; dismiss() } catch { self.error = error.localizedDescription }
+            saving = false
+            return
+        }
         acc.serverURL = SubsonicClient.normalize(server)
         acc.localURL = SubsonicClient.normalizeLocal(localServer)
         acc.username = username.trimmingCharacters(in: .whitespaces)
@@ -270,6 +442,8 @@ struct AccountEditorView: View {
             } else {
                 self.error = first.localizedDescription
             }
+            // The music login failed: a new try signs in again, so this Audiobookshelf login isn't needed any more
+            if self.error != nil, account == nil, wantsBooks, let books = acc.audiobooks { app.books.logout(books) }
         }
         saving = false
     }
@@ -307,7 +481,7 @@ struct TonaloLogo: View {
 
 /// Text field of the sign-in screen: icon, rounded dark surface, keyboard and autofill set up for its kind.
 private struct LoginField: View {
-    enum Field { case server, username, password }
+    enum Field { case server, username, password, bookServer, bookUsername, bookPassword }
     enum Kind { case url, username, password }
 
     let icon: String
@@ -347,13 +521,14 @@ private struct LoginField: View {
 }
 
 /// Second address for the home network, used on Wi-Fi when it answers.
-private struct HomeAddressView: View {
+struct HomeAddressView: View {
     @Binding var address: String
+    var placeholder = "192.168.1.10:4533"
 
     var body: some View {
         Form {
             Section {
-                TextField("192.168.1.10:4533", text: $address)
+                TextField(placeholder, text: $address)
                     .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                 if !address.trimmingCharacters(in: .whitespaces).isEmpty && !SubsonicClient.isLocal(address) {
                     Label("Only addresses in your home network work here, like 192.168.1.10 or nas.local.", systemImage: "exclamationmark.triangle.fill")
@@ -369,7 +544,7 @@ private struct HomeAddressView: View {
 }
 
 /// Extra HTTP headers for Cloudflare Access, Authelia and similar proxies.
-private struct HeadersView: View {
+struct HeadersView: View {
     @Binding var headers: [HeaderField]
     let server: String
     @State private var revealed: Set<UUID> = []
@@ -428,27 +603,55 @@ struct SettingsView: View {
     @State private var adding = false
     @State private var confirmLogout = false
 
+    private var hasMusic: Bool { app.current?.hasMusic ?? false }
+
     var body: some View {
-        @Bindable var app = app
         List {
             if let acc = app.current {
                 Section {
-                    NavigationLink { AccountEditorView(account: acc) } label: {
-                        HStack(spacing: 14) {
-                            Avatar(name: acc.username, size: 52)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(acc.username).font(.title3.bold())
-                                Text(acc.host).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
-                                if app.atHome {
-                                    Label("Connected at home", systemImage: "house.fill").font(.caption).foregroundStyle(Color.accent)
-                                }
+                    HStack(spacing: 14) {
+                        Avatar(name: acc.username, size: 52)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(acc.username).font(.title3.bold())
+                            if app.atHome {
+                                Label("Connected at home", systemImage: "house.fill").font(.caption).foregroundStyle(Color.accent)
                             }
                         }
-                        .padding(.vertical, 4)
+                    }
+                    .padding(.vertical, 4)
+                }
+                Section("Music") {
+                    NavigationLink { AccountEditorView(account: acc) } label: {
+                        LabeledContent("Server", value: hasMusic ? URL(string: acc.serverURL)?.host ?? acc.serverURL : String(localized: "Not connected"))
+                    }
+                    if hasMusic {
+                        NavigationLink("Audio quality") { AudioQualitySettings() }
+                        NavigationLink("Playback") { PlaybackSettings() }
+                        NavigationLink("Offline") { OfflineSettings() }
+                        NavigationLink { DevicesView() } label: {
+                            LabeledContent("Devices", value: app.tv.pairings.first { $0.guest != true }?.name ?? String(localized: "Not connected"))
+                        }
+                        NavigationLink { JukeboxView() } label: {
+                            LabeledContent("Jukebox", value: app.jukeboxHost.running ? String(localized: "Jukebox on") : String(localized: "Off"))
+                        }
+                    }
+                }
+                Section("Audiobooks & podcasts") {
+                    NavigationLink { AudiobookshelfSettingsView() } label: {
+                        LabeledContent("Server", value: app.books.stored?.host ?? String(localized: "Not connected"))
+                    }
+                    if app.books.connected {
+                        NavigationLink("Playback") { BookPlaybackSettings() }
+                        NavigationLink { BookDownloadsView() } label: {
+                            LabeledContent("Downloads", value: ByteCountFormatter.string(fromByteCount: app.books.downloads.totalBytes, countStyle: .file))
+                        }
                     }
                 }
             }
-            Section("Accounts") {
+            Section("General") {
+                NavigationLink("Appearance") { AppearanceView() }
+            }
+            Section {
                 ForEach(app.accounts.filter { $0.id != app.currentId }) { acc in
                     Button { app.select(acc.id) } label: {
                         HStack(spacing: 12) {
@@ -465,61 +668,9 @@ struct SettingsView: View {
                         Button("Remove", role: .destructive) { app.remove(acc) }
                     }
                 }
-                Button { adding = true } label: { Label("Add account", systemImage: "plus") }
-            }
-            Section("Audio quality") {
-                NavigationLink { QualityPicker(title: "Streaming on Wi-Fi", selection: $app.wifiQuality) } label: {
-                    LabeledContent("Wi-Fi", value: app.wifiQuality.title)
-                }
-                NavigationLink { QualityPicker(title: "Streaming on cellular", selection: $app.cellularQuality) } label: {
-                    LabeledContent("Cellular", value: app.cellularQuality.title)
-                }
-                NavigationLink { QualityPicker(title: "Download quality", selection: Bindable(app.downloads).quality) } label: {
-                    LabeledContent("Downloads", value: app.downloads.quality.title)
-                }
-            }
-            Section {
-                VStack(alignment: .leading) {
-                    LabeledContent("Crossfade", value: app.crossfade == 0 ? String(localized: "Off") : "\(app.crossfade) s")
-                    Slider(value: Binding(get: { Double(app.crossfade) }, set: { app.crossfade = Int($0) }), in: 0...12, step: 1)
-                        .tint(.accent)
-                }
-                Picker("Volume leveling", selection: $app.volumeLeveling) {
-                    ForEach(VolumeLeveling.allCases) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.navigationLink)
-                Picker("Load next songs ahead", selection: $app.preloadCount) {
-                    Text("Off").tag(0)
-                    ForEach([1, 2, 3, 5], id: \.self) { Text("\($0)").tag($0) }
-                }
-                Toggle("Autoplay", isOn: $app.autoplay)
-                Toggle("Scrobble played songs", isOn: $app.scrobble)
-            } header: {
-                Text("Playback")
-            } footer: {
-                Text("Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Autoplay continues with similar songs when the queue ends. Scrobbling tells your server what you listened to.")
-            }
-            Section {
-                NavigationLink { DownloadsView() } label: {
-                    LabeledContent("Downloaded music", value: ByteCountFormatter.string(fromByteCount: app.downloads.totalBytes, countStyle: .file))
-                }
-                Toggle("Download over cellular", isOn: Bindable(app.downloads).allowCellular)
-                NavigationLink { LibrarySyncView() } label: {
-                    LabeledContent("Library offline", value: app.librarySync.running ? String(localized: "Syncing…")
-                                   : app.librarySync.summary.map { $0.date.formatted(.relative(presentation: .named)) } ?? String(localized: "Off"))
-                }
-                NavigationLink("Storage") { StorageView() }
-            } header: { Text("Offline") } footer: {
-                Text("Downloads keep going in the background. Without cellular, they wait for Wi-Fi.")
-            }
-            Section {
-                NavigationLink("Appearance") { AppearanceView() }
-                NavigationLink { DevicesView() } label: {
-                    LabeledContent("Devices", value: app.tv.pairings.first { $0.guest != true }?.name ?? String(localized: "Not connected"))
-                }
-                NavigationLink { JukeboxView() } label: {
-                    LabeledContent("Jukebox", value: app.jukeboxHost.running ? String(localized: "Jukebox on") : String(localized: "Off"))
-                }
+                Button { adding = true } label: { Label("Add another account", systemImage: "plus") }
+            } header: { Text("Other accounts") } footer: {
+                Text("For another person on this iPhone.")
             }
             Section {
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–")
@@ -540,6 +691,82 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .sheet(isPresented: $adding) { NavigationStack { AccountEditorView(account: nil) } }
+    }
+}
+
+private struct AudioQualitySettings: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        @Bindable var app = app
+        List {
+            NavigationLink { QualityPicker(title: "Streaming on Wi-Fi", selection: $app.wifiQuality) } label: {
+                LabeledContent("Wi-Fi", value: app.wifiQuality.title)
+            }
+            NavigationLink { QualityPicker(title: "Streaming on cellular", selection: $app.cellularQuality) } label: {
+                LabeledContent("Cellular", value: app.cellularQuality.title)
+            }
+            NavigationLink { QualityPicker(title: "Download quality", selection: Bindable(app.downloads).quality) } label: {
+                LabeledContent("Downloads", value: app.downloads.quality.title)
+            }
+        }
+        .navigationTitle("Audio quality")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct PlaybackSettings: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        @Bindable var app = app
+        List {
+            Section {
+                VStack(alignment: .leading) {
+                    LabeledContent("Crossfade", value: app.crossfade == 0 ? String(localized: "Off") : "\(app.crossfade) s")
+                    Slider(value: Binding(get: { Double(app.crossfade) }, set: { app.crossfade = Int($0) }), in: 0...12, step: 1)
+                        .tint(.accent)
+                }
+                Picker("Volume leveling", selection: $app.volumeLeveling) {
+                    ForEach(VolumeLeveling.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.navigationLink)
+                Picker("Load next songs ahead", selection: $app.preloadCount) {
+                    Text("Off").tag(0)
+                    ForEach([1, 2, 3, 5], id: \.self) { Text("\($0)").tag($0) }
+                }
+                Toggle("Autoplay", isOn: $app.autoplay)
+                Toggle("Scrobble played songs", isOn: $app.scrobble)
+            } footer: {
+                Text("Loading ahead keeps the music going when the connection drops for a moment. Volume leveling uses the ReplayGain tags of your files. Autoplay continues with similar songs when the queue ends. Scrobbling tells your server what you listened to.")
+            }
+        }
+        .navigationTitle("Playback")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct OfflineSettings: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        List {
+            Section {
+                NavigationLink { DownloadsView() } label: {
+                    LabeledContent("Downloaded music", value: ByteCountFormatter.string(fromByteCount: app.downloads.totalBytes, countStyle: .file))
+                }
+                Toggle("Download over cellular", isOn: Bindable(app.downloads).allowCellular)
+                NavigationLink { LibrarySyncView() } label: {
+                    LabeledContent("Library offline", value: app.librarySync.running ? String(localized: "Syncing…")
+                                   : app.librarySync.summary.map { $0.date.formatted(.relative(presentation: .named)) } ?? String(localized: "Off"))
+                }
+                NavigationLink("Storage") { StorageView() }
+            } footer: {
+                Text("Downloads keep going in the background. Without cellular, they wait for Wi-Fi.")
+            }
+        }
+        .navigationTitle("Offline")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
