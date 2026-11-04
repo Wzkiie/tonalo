@@ -37,7 +37,7 @@ struct AccountPickerView: View {
                 .padding(.horizontal, 24)
             }
             .frame(maxHeight: .infinity)
-            .background(Color.black)
+            .background(Color.canvas)
             .toolbar {
                 if app.current != nil {
                     Button("Cancel") { app.showsAccountPicker = false }
@@ -168,17 +168,17 @@ struct AccountEditorView: View {
                     if showsOptions {
                         VStack(spacing: 0) {
                             if wantsMusic {
-                            NavigationLink { HomeAddressView(address: $localServer) } label: {
+                            NavigationLink { HomeAddressView(address: $localServer).canvasBackground() } label: {
                                 optionRow("house.fill", "Address at home", localServer.isEmpty ? String(localized: "Off") : localServer)
                             }
                             Divider().padding(.leading, 50)
-                            NavigationLink { HeadersView(headers: $headers, server: server) } label: {
+                            NavigationLink { HeadersView(headers: $headers, server: server).canvasBackground() } label: {
                                 optionRow("key.fill", service == .both && !sameHeaders ? "Headers for music" : "Custom headers", namedHeaders.isEmpty ? String(localized: "None") : "\(namedHeaders.count)")
                             }
                             }
                             if wantsBooks {
                                 if wantsMusic { Divider().padding(.leading, 50) }
-                                NavigationLink { HomeAddressView(address: $bookHome, placeholder: "192.168.1.10:13378") } label: {
+                                NavigationLink { HomeAddressView(address: $bookHome, placeholder: "192.168.1.10:13378").canvasBackground() } label: {
                                     optionRow("house.fill", service == .both ? "Audiobooks at home" : "Address at home", bookHome.isEmpty ? String(localized: "Off") : bookHome)
                                 }
                             }
@@ -194,7 +194,7 @@ struct AccountEditorView: View {
                             }
                             if service == .books || (service == .both && !sameHeaders) {
                                 Divider().padding(.leading, 50)
-                                NavigationLink { HeadersView(headers: $bookHeaders, server: bookServer) } label: {
+                                NavigationLink { HeadersView(headers: $bookHeaders, server: bookServer).canvasBackground() } label: {
                                     optionRow("key.fill", service == .both ? "Headers for audiobooks" : "Custom headers", namedBookHeaders.isEmpty ? String(localized: "None") : "\(namedBookHeaders.count)")
                                 }
                             }
@@ -233,7 +233,7 @@ struct AccountEditorView: View {
         .scrollDismissesKeyboard(.interactively)
         .background {
             ZStack {
-                Color.black
+                Color.canvas
                 RadialGradient(colors: [Color.accent.opacity(0.38), .clear], center: .top, startRadius: 0, endRadius: 460)
             }
             .ignoresSafeArea()
@@ -297,10 +297,10 @@ struct AccountEditorView: View {
                 SecureField(account?.hasMusic == true ? "Password (leave empty to keep)" : "Password", text: $password)
             }
             Section {
-                NavigationLink { HomeAddressView(address: $localServer) } label: {
+                NavigationLink { HomeAddressView(address: $localServer).canvasBackground() } label: {
                     LabeledContent("Address at home", value: localServer.isEmpty ? String(localized: "Off") : localServer)
                 }
-                NavigationLink { HeadersView(headers: $headers, server: server) } label: {
+                NavigationLink { HeadersView(headers: $headers, server: server).canvasBackground() } label: {
                     LabeledContent("Custom headers", value: namedHeaders.isEmpty ? String(localized: "None") : "\(namedHeaders.count)")
                 }
             } header: {
@@ -621,35 +621,35 @@ struct SettingsView: View {
                     .padding(.vertical, 4)
                 }
                 Section("Music") {
-                    NavigationLink { AccountEditorView(account: acc) } label: {
+                    NavigationLink { AccountEditorView(account: acc).canvasBackground() } label: {
                         LabeledContent("Server", value: hasMusic ? URL(string: acc.serverURL)?.host ?? acc.serverURL : String(localized: "Not connected"))
                     }
                     if hasMusic {
-                        NavigationLink("Audio quality") { AudioQualitySettings() }
-                        NavigationLink("Playback") { PlaybackSettings() }
-                        NavigationLink("Offline") { OfflineSettings() }
-                        NavigationLink { DevicesView() } label: {
+                        NavigationLink("Audio quality") { AudioQualitySettings().canvasBackground() }
+                        NavigationLink("Playback") { PlaybackSettings().canvasBackground() }
+                        NavigationLink("Offline") { OfflineSettings().canvasBackground() }
+                        NavigationLink { DevicesView().canvasBackground() } label: {
                             LabeledContent("Devices", value: app.tv.pairings.first { $0.guest != true }?.name ?? String(localized: "Not connected"))
                         }
-                        NavigationLink { JukeboxView() } label: {
+                        NavigationLink { JukeboxView().canvasBackground() } label: {
                             LabeledContent("Jukebox", value: app.jukeboxHost.running ? String(localized: "Jukebox on") : String(localized: "Off"))
                         }
                     }
                 }
                 Section("Audiobooks & podcasts") {
-                    NavigationLink { AudiobookshelfSettingsView() } label: {
+                    NavigationLink { AudiobookshelfSettingsView().canvasBackground() } label: {
                         LabeledContent("Server", value: app.books.stored?.host ?? String(localized: "Not connected"))
                     }
                     if app.books.connected {
-                        NavigationLink("Playback") { BookPlaybackSettings() }
-                        NavigationLink { BookDownloadsView() } label: {
+                        NavigationLink("Playback") { BookPlaybackSettings().canvasBackground() }
+                        NavigationLink { BookDownloadsView().canvasBackground() } label: {
                             LabeledContent("Downloads", value: ByteCountFormatter.string(fromByteCount: app.books.downloads.totalBytes, countStyle: .file))
                         }
                     }
                 }
             }
             Section("General") {
-                NavigationLink("Appearance") { AppearanceView() }
+                NavigationLink("Appearance") { AppearanceView().canvasBackground() }
             }
             Section {
                 ForEach(app.accounts.filter { $0.id != app.currentId }) { acc in
@@ -674,7 +674,7 @@ struct SettingsView: View {
             }
             Section {
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–")
-                NavigationLink("What's New") { VersionHistoryView() }
+                NavigationLink("What's New") { VersionHistoryView().canvasBackground() }
                 Link(destination: URL(string: "https://github.com/Wzkiie/tonalo")!) {
                     HStack { Text("Tonalo on GitHub").foregroundStyle(.white); Spacer(); Image(systemName: "arrow.up.right").foregroundStyle(.secondary) }
                 }
@@ -700,13 +700,13 @@ private struct AudioQualitySettings: View {
     var body: some View {
         @Bindable var app = app
         List {
-            NavigationLink { QualityPicker(title: "Streaming on Wi-Fi", selection: $app.wifiQuality) } label: {
+            NavigationLink { QualityPicker(title: "Streaming on Wi-Fi", selection: $app.wifiQuality).canvasBackground() } label: {
                 LabeledContent("Wi-Fi", value: app.wifiQuality.title)
             }
-            NavigationLink { QualityPicker(title: "Streaming on cellular", selection: $app.cellularQuality) } label: {
+            NavigationLink { QualityPicker(title: "Streaming on cellular", selection: $app.cellularQuality).canvasBackground() } label: {
                 LabeledContent("Cellular", value: app.cellularQuality.title)
             }
-            NavigationLink { QualityPicker(title: "Download quality", selection: Bindable(app.downloads).quality) } label: {
+            NavigationLink { QualityPicker(title: "Download quality", selection: Bindable(app.downloads).quality).canvasBackground() } label: {
                 LabeledContent("Downloads", value: app.downloads.quality.title)
             }
         }
@@ -752,15 +752,15 @@ private struct OfflineSettings: View {
     var body: some View {
         List {
             Section {
-                NavigationLink { DownloadsView() } label: {
+                NavigationLink { DownloadsView().canvasBackground() } label: {
                     LabeledContent("Downloaded music", value: ByteCountFormatter.string(fromByteCount: app.downloads.totalBytes, countStyle: .file))
                 }
                 Toggle("Download over cellular", isOn: Bindable(app.downloads).allowCellular)
-                NavigationLink { LibrarySyncView() } label: {
+                NavigationLink { LibrarySyncView().canvasBackground() } label: {
                     LabeledContent("Library offline", value: app.librarySync.running ? String(localized: "Syncing…")
                                    : app.librarySync.summary.map { $0.date.formatted(.relative(presentation: .named)) } ?? String(localized: "Off"))
                 }
-                NavigationLink("Storage") { StorageView() }
+                NavigationLink("Storage") { StorageView().canvasBackground() }
             } footer: {
                 Text("Downloads keep going in the background. Without cellular, they wait for Wi-Fi.")
             }
@@ -871,7 +871,7 @@ private struct StorageView: View {
     var body: some View {
         List {
             Section {
-                NavigationLink { DownloadsView() } label: { LabeledContent("Downloaded music", value: bytes(app.downloads.totalBytes)) }
+                NavigationLink { DownloadsView().canvasBackground() } label: { LabeledContent("Downloaded music", value: bytes(app.downloads.totalBytes)) }
                 if app.downloads.totalBytes > 0 {
                     Button("Delete all downloads", role: .destructive) { confirmDownloads = true }
                         .confirmationDialog("Delete all downloads?", isPresented: $confirmDownloads, titleVisibility: .visible) {

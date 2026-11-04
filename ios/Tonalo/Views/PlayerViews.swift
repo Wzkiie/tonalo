@@ -540,14 +540,14 @@ struct QueueView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .listRowBackground(Color.clear)
-            .background(Color(white: 0.07))
+            .background(Color.canvas)
             .navigationTitle("Queue")
             .navigationBarTitleDisplayMode(.inline)
             // Sort mode: handles to drag songs up and down, and delete buttons
             .toolbar { if p.upNext.count > 1 { EditButton().foregroundStyle(Color.accent) } }
         }
         .presentationDetents([.medium, .large])
-        .presentationBackground(Color(white: 0.07))
+        .presentationBackground(Color.canvas)
     }
 
     private func header(_ title: LocalizedStringKey) -> some View {

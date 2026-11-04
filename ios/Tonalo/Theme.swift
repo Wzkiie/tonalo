@@ -19,6 +19,28 @@ final class Theme {
         ("random", "Discover"), ("starred", "Favorite albums"),
     ]
 
+    /// How light the background is. Cards and tiles keep their distance from it, whatever is chosen.
+    enum Backdrop: String, CaseIterable {
+        case gray, black
+        var lift: Double { self == .gray ? 0.07 : 0 }
+        var title: LocalizedStringKey { self == .gray ? "Dark gray" : "Black" }
+    }
+    /// Corners of covers and cards: the shapes in the code are the standard, these scale them.
+    enum CardShape: String, CaseIterable {
+        case sharp, standard, round
+        var scale: CGFloat { switch self { case .sharp: 0; case .standard: 1; case .round: 2.5 } }
+        var title: LocalizedStringKey { switch self { case .sharp: "Sharp"; case .standard: "Standard"; case .round: "Rounded" } }
+    }
+    /// Size of the covers in the shelves on the home page.
+    enum CoverSize: String, CaseIterable {
+        case small, standard, large
+        var scale: CGFloat { switch self { case .small: 0.85; case .standard: 1; case .large: 1.2 } }
+        var title: LocalizedStringKey { switch self { case .small: "Small"; case .standard: "Standard"; case .large: "Large" } }
+    }
+
+    var backdrop: Backdrop { didSet { defaults.set(backdrop.rawValue, forKey: "backdrop") } }
+    var cardShape: CardShape { didSet { defaults.set(cardShape.rawValue, forKey: "cardShape") } }
+    var coverSize: CoverSize { didSet { defaults.set(coverSize.rawValue, forKey: "coverSize") } }
     var accentHex: String { didSet { defaults.set(accentHex, forKey: "accentHex") } }
     var coverTint: Bool { didSet { defaults.set(coverTint, forKey: "coverTint") } }
     var lyricsFirst: Bool { didSet { defaults.set(lyricsFirst, forKey: "lyricsFirst") } }
@@ -28,6 +50,9 @@ final class Theme {
     var accent: Color { Color(hex: accentHex) ?? Color(hex: Self.defaultAccent)! }
 
     private init() {
+        backdrop = Backdrop(rawValue: defaults.string(forKey: "backdrop") ?? "") ?? .gray
+        cardShape = CardShape(rawValue: defaults.string(forKey: "cardShape") ?? "") ?? .standard
+        coverSize = CoverSize(rawValue: defaults.string(forKey: "coverSize") ?? "") ?? .standard
         accentHex = defaults.string(forKey: "accentHex") ?? Self.defaultAccent
         coverTint = defaults.object(forKey: "coverTint") as? Bool ?? true
         lyricsFirst = defaults.bool(forKey: "lyricsFirst")
@@ -38,7 +63,12 @@ final class Theme {
 
 extension Color {
     @MainActor static var accent: Color { Theme.shared.accent }
-    static let panel = Color(white: 0.11)
+    /// The page background, and the surfaces on it that keep their distance from it.
+    @MainActor static var canvas: Color { Color(white: Theme.shared.backdrop.lift) }
+    @MainActor static var elevated: Color { lifted(0.16) }   // tiles, chips, cards
+    @MainActor static var panel: Color { lifted(0.11) }
+    /// A gray that follows the background: `base` is how light it is on a black one.
+    @MainActor static func lifted(_ base: Double) -> Color { Color(white: base + Theme.shared.backdrop.lift) }
 
     init?(hex: String) {
         var s = hex.trimmingCharacters(in: .whitespaces)

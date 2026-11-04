@@ -18,6 +18,14 @@ struct AppRelease: Identifiable {
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
+        AppRelease(version: "1.4.1", items: [
+            .init(icon: "wrench.and.screwdriver.fill", color: .orange, title: "Fixes and speed",
+                  text: "Big playlists download much faster, Continue listening follows the book you're playing, and seeking in music works again after an audiobook."),
+            .init(icon: "applewatch", color: .pink, title: "Apple Watch and CarPlay",
+                  text: "Audiobooks and podcasts show up on the watch and in the car, and switching between music and a book follows along."),
+            .init(icon: "paintpalette.fill", color: .purple, title: "Look",
+                  text: "Dark gray instead of pure black, with corner shape and cover size under Settings, Appearance. The library can sort by Recently played."),
+        ]),
         AppRelease(version: "1.4.0", items: [
             .init(icon: "book.fill", color: .indigo, title: "Audiobooks and podcasts",
                   text: "Connect your Audiobookshelf server under Settings and listen in the same app, with chapters, speed, a sleep timer and your progress in sync."),
@@ -131,7 +139,7 @@ struct WhatsNewSheet: View {
             // A soft glow in the color of the page, changing with it
             RadialGradient(colors: [color.opacity(0.35), .clear], center: .init(x: 0.5, y: 0.38), startRadius: 10, endRadius: 360)
                 .animation(.easeInOut(duration: 0.4), value: page)
-                .background(Color.black)
+                .background(Color.canvas)
                 .ignoresSafeArea()
         }
         .presentationDragIndicator(.visible)
@@ -199,7 +207,7 @@ struct VersionHistoryView: View {
             }
             .padding(16)
         }
-        .background(Color.black)
+        .background(Color.canvas)
         .navigationTitle("What's New")
     }
 
@@ -230,7 +238,7 @@ struct VersionHistoryView: View {
                                     .foregroundStyle(.white)
                                     .frame(width: 26, height: 26)
                                     .background(item.color.gradient, in: Circle())
-                                    .overlay(Circle().stroke(Color(white: 0.11), lineWidth: 2))
+                                    .overlay(Circle().stroke(Color.panel, lineWidth: 2))
                             }
                         }
                     }
@@ -253,7 +261,7 @@ struct VersionHistoryView: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(Color(white: 0.11), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(Color.panel, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }

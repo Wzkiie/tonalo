@@ -3,7 +3,7 @@ import Foundation
 /// What the iPhone and the watch app tell each other over WatchConnectivity. Payloads travel as JSON in
 /// the "data" field so both sides share these types.
 enum Watch {
-    /// Commands from the watch: toggle, next, previous, favorite, shuffle, repeat, play, list, cover, state
+    /// Commands from the watch: toggle, next, previous, skip (seconds in `index`), favorite, shuffle, repeat, play, list, cover, state
     static let command = "cmd"
     static let data = "data"
     static let id = "id"
@@ -32,11 +32,18 @@ struct WatchNowPlaying: Codable, Equatable {
     var repeatMode: String
     var accentHex: String
     var cover: Data?
+    /// An audiobook or podcast episode: the watch shows skip buttons instead of next/previous, shuffle and the heart.
+    /// Optional, so a state from an older version still decodes.
+    var isBook: Bool?
+    /// How fast it plays (books only), so the position moves on at the right speed.
+    var rate: Double?
+    var skipBack: Int?
+    var skipForward: Int?
 }
 
 /// A row in the watch library: a playlist, album, mix or song.
 struct WatchItem: Codable, Hashable, Identifiable {
-    enum Kind: String, Codable { case favorites, mix, playlist, album, song }
+    enum Kind: String, Codable { case favorites, mix, playlist, album, song, book }
     var id: String
     var kind: Kind
     var title: String

@@ -43,8 +43,15 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func fillHome(_ t: CPListTemplate) async {
-        guard let client = app.client else { return }
         var sections: [CPListSection] = []
+        if app.books.connected {
+            if app.books.continueListening.isEmpty { await app.books.load() }
+            let started = app.books.continueListening.isEmpty ? app.books.inProgress : app.books.continueListening
+            if !started.isEmpty {
+                sections.append(CPListSection(items: started.prefix(10).map(bookItem), header: String(localized: "Continue listening"), sectionIndexTitle: nil))
+            }
+        }
+        guard let client = app.client else { t.updateSections(sections); return }
 
         // The same mixes as on the phone, in the same colors
         let mixes = [
@@ -76,7 +83,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             sections.append(CPListSection(items: playlists.prefix(limit).map(playlistItem), header: String(localized: "Your playlists"), sectionIndexTitle: nil))
         }
         t.updateSections(sections)
-        if sections.count == 1 && !app.isOnline { t.emptyViewSubtitleVariants = [String(localized: "You’re offline")] }
+        if sections.count <= 1 && !app.isOnline { t.emptyViewSubtitleVariants = [String(localized: "You’re offline")] }
     }
 
     /// The endless radios and the stations set up on the server – like the Radio page on the phone.
@@ -150,7 +157,20 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             guard let self, let list = try? await self.app.client?.artists() else { return }
             self.push(CPListTemplate(title: String(localized: "Artists"), sections: [CPListSection(items: list.prefix(self.limit).map(self.artistItem))]))
         }
-        let t = CPListTemplate(title: String(localized: "Library"), sections: [CPListSection(items: [favorites, playlists, albums, artists])])
+        var rows = [favorites, playlists, albums, artists]
+        if app.books.connected {
+            rows.append(item(String(localized: "Audiobooks & podcasts"), image: symbol("books.vertical")) { [weak self] in
+                guard let self else { return }
+                if self.app.books.continueListening.isEmpty { await self.app.books.load() }
+                let started = self.app.books.continueListening
+                var sections: [CPListSection] = []
+                if !started.isEmpty { sections.append(CPListSection(items: started.prefix(self.limit).map(self.bookItem), header: String(localized: "Continue listening"), sectionIndexTitle: nil)) }
+                let others = self.app.books.inProgress.filter { b in !started.contains { $0.id == b.id } }
+                if !others.isEmpty { sections.append(CPListSection(items: others.prefix(self.limit).map(self.bookItem), header: String(localized: "In progress"), sectionIndexTitle: nil)) }
+                self.push(CPListTemplate(title: String(localized: "Audiobooks & podcasts"), sections: sections))
+            })
+        }
+        let t = CPListTemplate(title: String(localized: "Library"), sections: [CPListSection(items: rows)])
         t.tabTitle = String(localized: "Library")
         t.tabImage = UIImage(systemName: "books.vertical.fill")
         return t
@@ -200,6 +220,21 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         let i = CPListItem(text: text, detailText: detail, image: image)
         i.handler = { _, done in
             Task { @MainActor in await action(); done() }
+        }
+        return i
+    }
+
+    /// A book or episode you are in the middle of: tapping continues where you stopped.
+    private func bookItem(_ b: ABSItem) -> CPListItem {
+        let progress = app.books.progress(of: b)?.progress.map { Int(($0 * 100).rounded()) }
+        let detail = [b.recentEpisode != nil ? b.title : b.creator, progress.map { "\($0) %" }].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+        let i = item(b.recentEpisode?.title ?? b.title, detail: detail, image: ArtTile.image(symbol: "book.fill", hue: stableHue(b.id))) { [weak self] in
+            guard let self else { return }
+            self.app.bookPlayer.play(b)
+            self.showNowPlaying()
+        }
+        Task { @MainActor in
+            if let img = await app.books.coverImage(b.id, width: 200) { i.setImage(img) }
         }
         return i
     }
@@ -304,6 +339,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             _ = app.player.shuffle
             _ = app.player.repeatMode
             _ = app.player.station
+            _ = (app.bookPlayer.session?.id, app.bookPlayer.isPlaying, app.bookPlayer.rate)
             _ = app.downloads.index.songs.count
             _ = Theme.shared.accentHex
         } onChange: { [weak self] in
@@ -321,6 +357,18 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     /// and a tap does exactly one thing. A station has no queue to shuffle and no song to like.
     private func updateButtons() {
         let p = app.player
+        if let b = p.book {
+            // Skip buttons come from the system (the lock screen commands); the speed is ours
+            let speed = CPNowPlayingPlaybackRateButton { _ in
+                MainActor.assumeIsolated {
+                    let rates = BookPlayer.rates
+                    let next = rates.firstIndex(of: b.rate).map { rates[($0 + 1) % rates.count] } ?? 1
+                    b.rate = next
+                }
+            }
+            CPNowPlayingTemplate.shared.updateNowPlayingButtons([speed])
+            return
+        }
         guard p.station == nil else { CPNowPlayingTemplate.shared.updateNowPlayingButtons([]); return }
         let starred = p.current.map(app.isFavorite) ?? false
         let shuffle = button("shuffle", on: p.shuffle) { p.toggleShuffle() }
@@ -346,6 +394,15 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     nonisolated func nowPlayingTemplateUpNextButtonTapped(_ nowPlayingTemplate: CPNowPlayingTemplate) {
         Task { @MainActor in
             let p = self.app.player
+            if let b = p.book {
+                let rows = b.chapters.prefix(self.limit).enumerated().map { n, c in
+                    let i = self.item(c.title ?? String(localized: "Chapter \(n + 1)"), detail: formatTime(c.start)) { b.seek(to: c.start) }
+                    i.isPlaying = b.chapterIndex == n
+                    return i
+                }
+                self.push(CPListTemplate(title: String(localized: "Chapters"), sections: [CPListSection(items: Array(rows))]))
+                return
+            }
             let rows = p.upNext.prefix(self.limit).enumerated().map { n, s in
                 let i = self.item(s.title, detail: s.artist) { p.jump(to: p.index + 1 + n) }
                 self.loadCover(s.coverArt ?? s.albumId) { i.setImage($0) }

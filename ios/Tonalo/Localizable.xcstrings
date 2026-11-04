@@ -440,6 +440,76 @@
         }
       }
     },
+    "In progress" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angefangen"
+          }
+        }
+      }
+    },
+    "Chapter %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kapitel %lld"
+          }
+        }
+      }
+    },
+    "Fixes and speed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Korrekturen und Tempo"
+          }
+        }
+      }
+    },
+    "Big playlists download much faster, Continue listening follows the book you're playing, and seeking in music works again after an audiobook." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Große Playlists laden viel schneller, Weiterhören folgt dem Buch, das du gerade hörst, und das Spulen in der Musik klappt nach einem Hörbuch wieder."
+          }
+        }
+      }
+    },
+    "Apple Watch and CarPlay" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Watch und CarPlay"
+          }
+        }
+      }
+    },
+    "Audiobooks and podcasts show up on the watch and in the car, and switching between music and a book follows along." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher und Podcasts erscheinen auf der Watch und im Auto, und der Wechsel zwischen Musik und Buch wird mitgemacht."
+          }
+        }
+      }
+    },
+    "Dark gray instead of pure black, with corner shape and cover size under Settings, Appearance. The library can sort by Recently played." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dunkelgrau statt reinem Schwarz, mit Eckenform und Cover-Größe unter Einstellungen, Darstellung. Die Bibliothek lässt sich nach „Zuletzt gespielt“ sortieren."
+          }
+        }
+      }
+    },
     "Chapters" : {
       "localizations" : {
         "de" : {
@@ -2188,6 +2258,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zurück zur Warteschlange"
+          }
+        }
+      }
+    },
+    "Dark gray" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dunkelgrau"
+          }
+        }
+      }
+    },
+    "Black" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schwarz"
+          }
+        }
+      }
+    },
+    "Sharp" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eckig"
+          }
+        }
+      }
+    },
+    "Standard" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard"
+          }
+        }
+      }
+    },
+    "Rounded" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rund"
+          }
+        }
+      }
+    },
+    "Small" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klein"
+          }
+        }
+      }
+    },
+    "Large" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Groß"
+          }
+        }
+      }
+    },
+    "Background" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hintergrund"
+          }
+        }
+      }
+    },
+    "Corners" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ecken"
+          }
+        }
+      }
+    },
+    "Cover size" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cover-Größe"
+          }
+        }
+      }
+    },
+    "Look" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aussehen"
+          }
+        }
+      }
+    },
+    "Cover size applies to the shelves on the home page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Cover-Größe gilt für die Reihen auf der Startseite."
           }
         }
       }

@@ -53,6 +53,11 @@ const playlists = [['Late Night Drive', 40], ['Sunday Coffee', 25], ['Deep Focus
     entry: Array.from({ length: n }, (_, k) => songs[(i * 37 + k * 11) % songs.length]) }))
   .map(p => Object.assign(p, { songCount: p.entry.length, duration: p.entry.reduce((s, x) => s + x.duration, 0) }));
 playlists[5].readonly = true; // like Navidrome's smart and auto-imported .m3u playlists: songs can't be changed by hand
+// MOCK_BIG_PLAYLIST=<n>: one more playlist with that many songs, to test long lists
+if (process.env.MOCK_BIG_PLAYLIST) {
+  const entry = songs.slice(0, Math.min(+process.env.MOCK_BIG_PLAYLIST, songs.length));
+  playlists.unshift({ id: 'plbig', name: 'Big Playlist', owner: 'demo', public: true, coverArt: albums[0].id, entry, songCount: entry.length, duration: entry.reduce((s, x) => s + x.duration, 0) });
+}
 const starred = { album: albums.filter((_, i) => i % 6 === 1), artist: artists.filter((_, i) => i % 5 === 2),
   song: songs.filter((_, i) => i % 13 === 4).map(s => Object.assign({}, s, { starred: '2026-01-01T00:00:00Z' })) };
 const coverTitle = id => (albums.find(a => a.id === id) || {}).name || '';
@@ -86,6 +91,7 @@ function wav(sec) {
   return b;
 }
 const WAV = wav(180);
+const FILE_BYTES = (+process.env.MOCK_FILE_MB || 0) * 1048576, FILE_PIECE = Buffer.alloc(65536);
 
 // MOCK_VERSION pretends to be another server version – a second instance with a different one stands in for a foreign server
 const SERVER = { version: '1.16.1', type: 'demo', serverVersion: process.env.MOCK_VERSION || '1.0', openSubsonic: true };
@@ -167,7 +173,15 @@ function handle(req, res, u) {
       // Byte ranges like a real server – AVPlayer on iOS refuses streams without them
       const r = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
       if (!r) {
-        res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': WAV.length, 'Accept-Ranges': 'bytes' });
+        res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': process.env.MOCK_FILE_MB ? FILE_BYTES : WAV.length, 'Accept-Ranges': 'bytes' });
+        // MOCK_TRANSCODE_MS=<ms>: a whole-file request waits that long first, like a server converting the song,
+        // then MOCK_FILE_MB=<n> megabytes arrive in small pieces, like a real download
+        if (process.env.MOCK_TRANSCODE_MS) return setTimeout(() => {
+          if (!process.env.MOCK_FILE_MB) return res.end(WAV);
+          let left = FILE_BYTES;
+          const piece = () => { if (res.destroyed) return; const n = Math.min(left, FILE_PIECE.length); res.write(FILE_PIECE.subarray(0, n)); left -= n; if (left > 0) setTimeout(piece, 10); else res.end(); };
+          piece();
+        }, +process.env.MOCK_TRANSCODE_MS);
         if (!process.env.MOCK_SLOW) return res.end(WAV);
         // MOCK_SLOW=1: whole-file requests (downloads) trickle in over ~20 s, to test what happens mid-download
         let at = 0;

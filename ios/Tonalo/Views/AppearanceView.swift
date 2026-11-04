@@ -52,6 +52,18 @@ struct AppearanceView: View {
             }
 
             Section {
+                Picker("Background", selection: $theme.backdrop) {
+                    ForEach(Theme.Backdrop.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                Picker("Corners", selection: $theme.cardShape) {
+                    ForEach(Theme.CardShape.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                Picker("Cover size", selection: $theme.coverSize) {
+                    ForEach(Theme.CoverSize.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+            } header: { Text("Look") } footer: { Text("Cover size applies to the shelves on the home page.") }
+
+            Section {
                 Toggle("Tint backgrounds with cover colors", isOn: $theme.coverTint)
                 Toggle("Show lyrics first in the player", isOn: $theme.lyricsFirst)
                 Picker("Start screen", selection: $theme.startTab) {
@@ -73,6 +85,9 @@ struct AppearanceView: View {
             Section {
                 Button("Reset to defaults", role: .destructive) {
                     theme.accentHex = Theme.defaultAccent
+                    theme.backdrop = .gray
+                    theme.cardShape = .standard
+                    theme.coverSize = .standard
                     theme.coverTint = true
                     theme.lyricsFirst = false
                     theme.startTab = 0

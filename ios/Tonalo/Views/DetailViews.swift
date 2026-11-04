@@ -31,7 +31,7 @@ struct DetailPage<Art: View, Info: View, Actions: View, Content: View>: View {
                 CoverTint(coverId: coverId, height: 560).padding(.horizontal, -16).offset(y: -200)
             }
         }
-        .background(Color.black)
+        .background(Color.canvas)
         .navigationTitle(titleHidden ? title : "")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -387,7 +387,7 @@ struct ArtistView: View {
                 }
                 .padding(.bottom, 24)
             }
-            .background(Color.black)
+            .background(Color.canvas)
             .ignoresSafeArea(.container, edges: .top)
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)

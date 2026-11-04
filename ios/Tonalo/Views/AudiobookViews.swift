@@ -36,7 +36,7 @@ struct BookCover: View {
                         .saturation(finished ? 0.15 : 1).opacity(finished ? 0.5 : 1)
                 } else { Image(systemName: "book.closed").font(.system(size: 26)).foregroundStyle(Color.subtle) }
             }
-            .clipShape(RoundedRectangle(cornerRadius: corner))
+            .clipShape(RoundedRectangle(cornerRadius: corner * Theme.shared.cardShape.scale))
             .overlay {
                 if finished {
                     GeometryReader { g in
@@ -88,7 +88,7 @@ struct BookCard: View {
                     Text(item.recentEpisode != nil ? item.title : item.creator).font(.system(size: 12)).foregroundStyle(Color.subtle).lineLimit(1)
                 }
             }
-            .frame(width: width, alignment: .leading)
+            .frame(width: width.map { $0 * Theme.shared.coverSize.scale }, alignment: .leading)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: .leading)
         }
         .buttonStyle(.plain)
@@ -112,7 +112,7 @@ struct BookShelf: View {
 }
 
 extension ABSItem {
-    fileprivate var shelfKey: String { id + (recentEpisode?.id ?? "") }
+    var shelfKey: String { id + (recentEpisode?.id ?? "") }
 }
 
 /// The audiobook part of the home page.
@@ -477,7 +477,7 @@ struct BooksBrowseView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
-        .background(Color.black)
+        .background(Color.canvas)
         .navigationTitle(podcasts ? "Podcasts" : "Audiobooks")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(section)\(sort)") { await show() }
@@ -638,7 +638,7 @@ struct BookGroupView: View {
                 LoadState(loading: error == nil, error: error).padding(.top, 60)
             }
         }
-        .background(Color.black)
+        .background(Color.canvas)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -746,7 +746,7 @@ struct BookAuthorView: View {
             }
             .padding(16)
         }
-        .background(Color.black)
+        .background(Color.canvas)
         .navigationTitle(name)
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -1143,10 +1143,10 @@ struct AudiobookshelfSettingsView: View {
 
     /// Home address, headers and whatever they can come from: the same whether signing in or changing them later.
     @ViewBuilder private var routeRows: some View {
-        NavigationLink { HomeAddressView(address: $home, placeholder: "192.168.1.10:13378") } label: {
+        NavigationLink { HomeAddressView(address: $home, placeholder: "192.168.1.10:13378").canvasBackground() } label: {
             LabeledContent("Address at home", value: home.isEmpty ? String(localized: "Off") : home)
         }
-        NavigationLink { HeadersView(headers: $headers, server: address) } label: {
+        NavigationLink { HeadersView(headers: $headers, server: address).canvasBackground() } label: {
             LabeledContent("Custom headers", value: named.isEmpty ? String(localized: "None") : "\(named.count)")
         }
         if named.isEmpty, let music = app.current?.headers, !music.isEmpty {

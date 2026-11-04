@@ -70,7 +70,7 @@ final class Connector: NSObject {
     /// The position right now, counted on from when the phone sent its state.
     func position(at date: Date) -> Double {
         guard let n = now else { return 0 }
-        let p = n.isPlaying ? n.position + date.timeIntervalSince(n.sentAt) : n.position
+        let p = n.isPlaying ? n.position + date.timeIntervalSince(n.sentAt) * (n.rate ?? 1) : n.position
         return min(max(p, 0), max(n.duration, 0))
     }
 
@@ -94,6 +94,12 @@ final class Connector: NSObject {
         }
     }
 
+    /// What the phone sent: a state, or nothing when it plays nothing any more.
+    fileprivate func receive(_ data: Data?) {
+        if let data, data.isEmpty { now = nil; return }
+        if let state = Watch.decode(WatchNowPlaying.self, data) { apply(state) }
+    }
+
     private func apply(_ state: WatchNowPlaying) {
         var s = state
         if s.cover == nil, s.songId == now?.songId { s.cover = now?.cover } // keep the cover we already have
@@ -105,14 +111,21 @@ extension Connector: WCSessionDelegate {
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         let context = session.receivedApplicationContext[Watch.data] as? Data
         Task { @MainActor in
-            if let state = Watch.decode(WatchNowPlaying.self, context) { self.apply(state) }
+            self.receive(context)
+        }
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        let data = message[Watch.data] as? Data
+        Task { @MainActor in
+            self.receive(data)
         }
     }
 
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         let data = applicationContext[Watch.data] as? Data
         Task { @MainActor in
-            if let state = Watch.decode(WatchNowPlaying.self, data) { self.apply(state) }
+            self.receive(data)
         }
     }
 }

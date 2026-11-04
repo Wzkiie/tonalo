@@ -75,9 +75,15 @@ struct PlayerPage: View {
                 }
                 .frame(height: 3)
             }
+            let book = n.isBook == true
             HStack {
-                Button { c.send("previous") } label: { Image(systemName: "backward.fill").font(.title3) }
-                    .accessibilityLabel("Previous")
+                if book {
+                    Button { c.send("skip", [Watch.index: -Double(n.skipBack ?? 15)]) } label: { Image(systemName: "gobackward.\(n.skipBack ?? 15)").font(.title3) }
+                        .accessibilityLabel("Skip back")
+                } else {
+                    Button { c.send("previous") } label: { Image(systemName: "backward.fill").font(.title3) }
+                        .accessibilityLabel("Previous")
+                }
                 Spacer()
                 Button { c.send("toggle") } label: {
                     Image(systemName: n.isPlaying ? "pause.fill" : "play.fill")
@@ -87,15 +93,26 @@ struct PlayerPage: View {
                 }
                 .accessibilityLabel(n.isPlaying ? Text("Pause") : Text("Play"))
                 Spacer()
-                Button { c.send("next") } label: { Image(systemName: "forward.fill").font(.title3) }
-                    .accessibilityLabel("Next")
+                if book {
+                    Button { c.send("skip", [Watch.index: Double(n.skipForward ?? 30)]) } label: { Image(systemName: "goforward.\(n.skipForward ?? 30)").font(.title3) }
+                        .accessibilityLabel("Skip forward")
+                } else {
+                    Button { c.send("next") } label: { Image(systemName: "forward.fill").font(.title3) }
+                        .accessibilityLabel("Next")
+                }
             }
             .buttonStyle(.plain)
             HStack {
-                Button { c.send("favorite") } label: {
-                    Image(systemName: n.starred ? "heart.fill" : "heart").foregroundStyle(n.starred ? c.accent : .white)
+                if book {
+                    // A book has no heart, shuffle or repeat: the crown's volume sits in the middle, chapters on both sides
+                    Button { c.send("previous") } label: { Image(systemName: "chevron.left.2") }
+                        .accessibilityLabel("Previous chapter")
+                } else {
+                    Button { c.send("favorite") } label: {
+                        Image(systemName: n.starred ? "heart.fill" : "heart").foregroundStyle(n.starred ? c.accent : .white)
+                    }
+                    .accessibilityLabel(n.starred ? Text("Remove from favorites") : Text("Add to favorites"))
                 }
-                .accessibilityLabel(n.starred ? Text("Remove from favorites") : Text("Add to favorites"))
                 Spacer()
                 // Apple's control ignores the frame and draws itself as big as the play button: scale it down,
                 // so it sits in the row like the heart and shuffle. It still follows the Digital Crown.
@@ -104,10 +121,15 @@ struct PlayerPage: View {
                     .scaleEffect(0.62)
                     .frame(width: 28, height: 28)
                 Spacer()
-                Button { c.send("shuffle") } label: {
-                    Image(systemName: "shuffle").foregroundStyle(n.shuffle ? c.accent : .white)
+                if book {
+                    Button { c.send("next") } label: { Image(systemName: "chevron.right.2") }
+                        .accessibilityLabel("Next chapter")
+                } else {
+                    Button { c.send("shuffle") } label: {
+                        Image(systemName: "shuffle").foregroundStyle(n.shuffle ? c.accent : .white)
+                    }
+                    .accessibilityLabel("Shuffle")
                 }
-                .accessibilityLabel("Shuffle")
             }
             .font(.system(size: 18))
             .buttonStyle(.plain)
@@ -120,7 +142,7 @@ struct PlayerPage: View {
         if let data = n.cover, let img = UIImage(data: data) {
             Image(uiImage: img).resizable().scaledToFill()
         } else {
-            Rectangle().fill(Color(white: 0.2)).overlay(Image(systemName: "music.note").foregroundStyle(.secondary))
+            Rectangle().fill(Color(white: 0.2)).overlay(Image(systemName: n.isBook == true ? "book.fill" : "music.note").foregroundStyle(.secondary))
         }
     }
 
@@ -158,8 +180,8 @@ struct LibraryPage: View {
                 ForEach(sections) { section in
                     Section(section.title) {
                         ForEach(section.items) { item in
-                            if item.kind == .mix {
-                                Button { c.play(item) } label: { ItemRow(item: item, symbol: "shuffle") }
+                            if item.kind == .mix || item.kind == .book {
+                                Button { c.play(item) } label: { ItemRow(item: item, symbol: item.kind == .book ? nil : "shuffle") }
                             } else {
                                 NavigationLink(value: item) {
                                     ItemRow(item: item, symbol: item.kind == .favorites ? "heart.fill" : nil)

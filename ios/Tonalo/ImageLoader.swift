@@ -86,7 +86,7 @@ struct CoverView: View {
     var body: some View {
         // The square sets the size and the image only fills it – inside a ZStack a portrait or landscape
         // image would grow the view past the square (a whole-screen artist photo, overlapping artist cards)
-        Rectangle().fill(Color(white: 0.16))
+        Rectangle().fill(Color.elevated)
             .aspectRatio(1, contentMode: .fit)
             .overlay {
                 if let image {
@@ -97,7 +97,7 @@ struct CoverView: View {
                         .foregroundStyle(Color(white: 0.45))
                 }
             }
-            .clipShape(round ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: corner)))
+            .clipShape(round ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: corner * Theme.shared.cardShape.scale)))
         // Again when leaving home: a cover that was on its way from the home address won't arrive
         .task(id: "\(id ?? "")|\(app.atHome)") {
             if image != nil, shown == id { return }

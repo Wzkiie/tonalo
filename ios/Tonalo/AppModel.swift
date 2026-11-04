@@ -375,6 +375,7 @@ final class AppModel {
         Keychain.save([JukeboxHost.Guest](), key: "jukebox." + id.uuidString)
         ServerSession.shared.networkChanged()
         DownloadStore.deleteAccount(id)
+        PlayHistory.forget(id)
         LibraryCache.deleteAccount(id)
         librarySync.forget(id)
         ImageLoader.clearDisk()

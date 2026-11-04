@@ -363,6 +363,32 @@ final class AudiobookLibrary {
         downloads.books.values.first { $0.item.id == id }?.item ?? favorites[id]?.item ?? inProgress.first { $0.id == id }
     }
 
+    /// What is playing right now: the progress bars and the "Continue listening" shelf follow it at once,
+    /// without waiting for the server. The server hears about it through the playback session.
+    func noteListening(_ item: ABSItem, episode: ABSEpisode?, currentTime: Double, duration: Double) {
+        let id = episode?.id ?? item.recentEpisode?.id
+        let key = ABSProgress.key(item.id, id)
+        var entry = progress[key] ?? ABSProgress(libraryItemId: item.id, episodeId: id)
+        entry.currentTime = currentTime
+        entry.duration = duration
+        entry.progress = duration > 0 ? min(1, currentTime / duration) : 0
+        entry.isFinished = duration > 0 && currentTime >= duration - 5
+        entry.lastUpdate = Date().timeIntervalSince1970 * 1000
+        progress[key] = entry
+        guard entry.isFinished != true else { return }
+        // A podcast episode other than the one the shelf shows comes with the next refresh from the server
+        guard episode == nil || episode?.id == item.recentEpisode?.id else { return }
+        let shown = item
+        let shelf = Shelf(id: "continue-listening", title: Self.title(of: "continue-listening", fallback: ""), items: [])
+        var list = shelves.first { $0.id == shelf.id } ?? shelf
+        if list.items.first?.shelfKey == shown.shelfKey { return }
+        list.items.removeAll { $0.shelfKey == shown.shelfKey }
+        list.items.insert(shown, at: 0)
+        if let i = shelves.firstIndex(where: { $0.id == shelf.id }) { shelves[i] = list } else { shelves.insert(list, at: 0) }
+        if !inProgress.contains(where: { $0.id == item.id }) { inProgress.insert(item, at: 0) }
+        saveState()
+    }
+
     /// Tells the server where a downloaded book stands; without a connection it's sent on the next occasion.
     func saveProgress(item: String, episode: String?, currentTime: Double, duration: Double) {
         var entry = ABSProgress(libraryItemId: item, episodeId: episode)

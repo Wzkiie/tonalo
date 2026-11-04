@@ -7,12 +7,12 @@ struct AlbumCard: View {
     var body: some View {
         NavigationLink(value: Route.album(album.id)) {
             VStack(alignment: .leading, spacing: 6) {
-                CoverView(id: album.coverArt ?? album.id, corner: 4)
+                CoverView(id: album.coverArt ?? album.id, size: Int(300 * Theme.shared.coverSize.scale), corner: 4)
                 Text(album.name).font(.system(size: 13, weight: .semibold)).lineLimit(1)
                 Text([album.year.map(String.init), album.artist].compactMap { $0 }.joined(separator: " • "))
                     .font(.system(size: 13)).foregroundStyle(Color.subtle).lineLimit(1)
             }
-            .frame(width: width)
+            .frame(width: width.map { $0 * Theme.shared.coverSize.scale })
         }
         .buttonStyle(.plain)
     }
@@ -27,7 +27,7 @@ struct ArtistCard: View {
                 Text(artist.name).font(.system(size: 13, weight: .semibold)).lineLimit(1)
                 Text("Artist").font(.system(size: 13)).foregroundStyle(Color.subtle)
             }
-            .frame(width: 140)
+            .frame(width: 140 * Theme.shared.coverSize.scale)
         }
         .buttonStyle(.plain)
     }
@@ -198,7 +198,7 @@ struct CoverTint: View {
     @State private var color = Color(white: 0.25)
 
     var body: some View {
-        LinearGradient(colors: [Theme.shared.coverTint ? color : Color(white: 0.2), .black], startPoint: .top, endPoint: .bottom)
+        LinearGradient(colors: [Theme.shared.coverTint ? color : Color(white: 0.2), Color.canvas], startPoint: .top, endPoint: .bottom)
             .frame(height: height)
             .task(id: coverId) {
                 if let c = await loadCoverColor(app, coverId) { withAnimation(.easeOut(duration: 0.4)) { color = c } }

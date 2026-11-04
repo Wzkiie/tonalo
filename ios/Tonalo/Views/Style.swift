@@ -3,7 +3,6 @@ import SwiftUI
 // Shared building blocks for the app's look: dark surfaces, pills, round play button, profile avatar.
 
 extension Color {
-    static let elevated = Color(white: 0.16)   // tiles, chips, cards
     static let subtle = Color(white: 0.70)     // secondary text
 }
 
@@ -119,7 +118,7 @@ struct ShelfHeader: View {
 struct FavoritesArt: View {
     var body: some View {
         LinearGradient(colors: [Color.accent, Color.accent.opacity(0.35)], startPoint: .topLeading, endPoint: .bottomTrailing)
-            .background(Color.black)
+            .background(Color.canvas)
             .overlay { Image(systemName: "heart.fill").font(.system(size: 22)).foregroundStyle(.white) }
             .aspectRatio(1, contentMode: .fit)
     }
@@ -183,8 +182,13 @@ extension AppModel {
 }
 
 extension View {
-    /// Solid black behind the status bar, so content scrolling up doesn't run into the clock.
+    /// Solid background behind the status bar, so content scrolling up doesn't run into the clock.
     func statusBarBackground() -> some View {
-        overlay(alignment: .top) { Color.black.frame(height: 0).ignoresSafeArea(edges: .top) }
+        overlay(alignment: .top) { Color.canvas.frame(height: 0).ignoresSafeArea(edges: .top) }
+    }
+
+    /// The page background (the chosen one, not the system's black), also behind lists and forms.
+    func canvasBackground() -> some View {
+        scrollContentBackground(.hidden).background(Color.canvas.ignoresSafeArea())
     }
 }

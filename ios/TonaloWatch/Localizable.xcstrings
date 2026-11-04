@@ -120,6 +120,46 @@
           }
         }
       }
+    },
+    "Skip back": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurückspulen"
+          }
+        }
+      }
+    },
+    "Skip forward": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorspulen"
+          }
+        }
+      }
+    },
+    "Previous chapter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorheriges Kapitel"
+          }
+        }
+      }
+    },
+    "Next chapter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nächstes Kapitel"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

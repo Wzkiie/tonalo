@@ -63,7 +63,7 @@ enum Route: Hashable {
 extension View {
     func routes() -> some View {
         navigationDestination(for: Route.self) { route in
-            switch route {
+            Group { switch route {
             case .album(let id): AlbumView(id: id)
             case .audiobook(let id): AudiobookView(id: id)
             case .bookAuthor(let id, let name): BookAuthorView(id: id, name: name)
@@ -83,7 +83,8 @@ extension View {
             case .settings: SettingsView()
             case .devices: DevicesView()
             case .jukebox: JukeboxView()
-            }
+            } }
+            .canvasBackground()
         }
     }
 }
@@ -180,7 +181,7 @@ struct RootView: View {
         // Continue where another device left off – and leave the queue on the server when going away
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { app.checkRoute(); app.tv.start(); Task { await app.player.checkServerQueue() } }
-            if phase == .background { app.player.syncBeforeLeaving(); app.tv.stop() }
+            if phase == .background { app.player.syncBeforeLeaving(); app.tv.stop(); app.downloads.saveNow(wait: true) }
         }
     }
 
@@ -193,7 +194,7 @@ struct RootView: View {
         ZStack {
             // All three stacks stay alive so each tab keeps its place, like the tab bar of a music app should
             ForEach(0..<3, id: \.self) { i in
-                NavigationStack(path: $paths[i]) { root(i).routes() }
+                NavigationStack(path: $paths[i]) { root(i).canvasBackground().routes() }
                     .opacity(tab == i ? 1 : 0)
                     .allowsHitTesting(tab == i)
             }
@@ -244,7 +245,7 @@ struct RootView: View {
     @ViewBuilder private func root(_ i: Int) -> some View {
         switch i {
         case 0: HomeView(reselected: reselected[0])
-        case 1: SearchView()
+        case 1: SearchView(reselected: reselected[1])
         default: LibraryView(reselected: reselected[2])
         }
     }
@@ -268,8 +269,8 @@ struct RootView: View {
             }
         }
         .background(alignment: .bottom) {
-            LinearGradient(stops: [.init(color: .black.opacity(0), location: 0), .init(color: .black.opacity(0.8), location: 0.45),
-                                   .init(color: .black, location: 1)], startPoint: .top, endPoint: .bottom)
+            LinearGradient(stops: [.init(color: Color.canvas.opacity(0), location: 0), .init(color: Color.canvas.opacity(0.8), location: 0.45),
+                                   .init(color: Color.canvas, location: 1)], startPoint: .top, endPoint: .bottom)
                 .padding(.top, -24)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
@@ -334,7 +335,7 @@ struct ProfileMenu: View {
                     }
                     .padding(.bottom, 18)
                 }
-                Rectangle().fill(Color(white: 0.22)).frame(height: 1).padding(.bottom, 12)
+                Rectangle().fill(Color.lifted(0.22)).frame(height: 1).padding(.bottom, 12)
                 ForEach(app.accounts.filter { $0.id != app.currentId }) { acc in
                     row(label: Text(acc.username), sub: acc.host) { Avatar(name: acc.username, size: 28) } action: {
                         dismiss(); app.select(acc.id)
@@ -360,7 +361,7 @@ struct ProfileMenu: View {
             .padding(.top, 24)
             .frame(width: 310)
             .frame(maxHeight: .infinity, alignment: .top)
-            .background(Color(white: 0.1).ignoresSafeArea())
+            .background(Color.lifted(0.1).ignoresSafeArea())
             .offset(x: shown ? 0 : -330)
             .gesture(DragGesture().onEnded { if $0.translation.width < -60 { dismiss() } })
         }

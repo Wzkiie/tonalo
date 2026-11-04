@@ -155,6 +155,7 @@ final class BookPlayer {
         if start >= new.duration - 5 { start = 0 }
         position = start
         lastSync = Date()
+        if let item, let library { library.noteListening(item, episode: episode, currentTime: start, duration: new.duration) } // shows up at once
         try? AVAudioSession.sharedInstance().setActive(true)
         configureCommands(active: true)
         loadArtwork(itemId)
@@ -370,6 +371,7 @@ final class BookPlayer {
         let at = position
         listened = 0
         lastSync = Date()
+        if let item { library.noteListening(item, episode: episode, currentTime: at, duration: s.duration) }
         if s.isLocal, serverSession == nil {
             library.saveProgress(item: s.libraryItemId, episode: s.episodeId, currentTime: at, duration: s.duration)
             return

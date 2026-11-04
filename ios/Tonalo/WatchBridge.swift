@@ -24,6 +24,8 @@ final class WatchBridge: NSObject {
         withObservationTracking {
             let p = app.player
             _ = (p.current?.id, p.current?.starred, p.isPlaying, p.shuffle, p.repeatMode, p.duration, p.context)
+            let b = app.bookPlayer
+            _ = (b.item?.id, b.session?.id, b.isPlaying, b.rate, b.chapter?.title)
             _ = Theme.shared.accentHex
         } onChange: { [weak self] in
             Task { @MainActor in
@@ -36,6 +38,14 @@ final class WatchBridge: NSObject {
 
     private var state: WatchNowPlaying? {
         let p = app.player
+        if let b = p.book, let item = b.item {
+            let id = "abs:" + item.id
+            return WatchNowPlaying(songId: id, title: b.chapter?.title ?? b.title, artist: b.chapter != nil ? b.title : b.creator, context: b.creator,
+                                   isPlaying: b.isPlaying, position: b.position, duration: b.duration, sentAt: .now,
+                                   starred: false, shuffle: false, repeatMode: "off",
+                                   accentHex: Theme.shared.accentHex, cover: cover?.id == id ? cover?.data : nil,
+                                   isBook: true, rate: Double(b.rate), skipBack: b.skipBack, skipForward: b.skipForward)
+        }
         guard let song = p.current else { return nil }
         let coverId = song.coverArt ?? song.albumId ?? song.id
         return WatchNowPlaying(songId: song.id, title: song.title, artist: song.artist ?? "", context: p.context?.name ?? song.album,
@@ -45,10 +55,23 @@ final class WatchBridge: NSObject {
     }
 
     private func push() {
-        guard WCSession.default.activationState == .activated, WCSession.default.isPaired, WCSession.default.isWatchAppInstalled,
-              var s = state else { return }
+        #if DEBUG
+        let ready = WCSession.default.activationState == .activated // the simulator doesn't report the watch app as installed
+        #else
+        let ready = WCSession.default.activationState == .activated && WCSession.default.isPaired && WCSession.default.isWatchAppInstalled
+        #endif
+        guard ready else { return }
+        guard var s = state else {
+            // Nothing plays any more (the book ended, the queue is gone): the watch shouldn't keep showing the last thing
+            if lastSent != nil {
+                lastSent = nil
+                try? WCSession.default.updateApplicationContext([Watch.data: Data()])
+                if WCSession.default.isReachable { WCSession.default.sendMessage([Watch.data: Data()], replyHandler: nil, errorHandler: nil) }
+            }
+            return
+        }
         // The cover only changes with the song: load it once, then send the state again with it
-        let coverId = app.player.current?.coverArt ?? app.player.current?.albumId ?? s.songId
+        let coverId = app.player.book != nil ? s.songId : (app.player.current?.coverArt ?? app.player.current?.albumId ?? s.songId)
         if cover?.id != coverId {
             Task {
                 guard let data = await thumbnail(coverId, size: 300) else { return }
@@ -61,23 +84,30 @@ final class WatchBridge: NSObject {
         if compare == lastSent && abs((lastSent?.position ?? 0) - s.position) < 3 { return }
         s.sentAt = .now
         lastSent = s
-        if let data = Watch.encode(s) { try? WCSession.default.updateApplicationContext([Watch.data: data]) }
+        if let data = Watch.encode(s) {
+            try? WCSession.default.updateApplicationContext([Watch.data: data])
+            // The context may wait a while; with the watch app open, a message gets there at once (music ↔ book switches)
+            if WCSession.default.isReachable { WCSession.default.sendMessage([Watch.data: data], replyHandler: nil, errorHandler: nil) }
+        }
     }
 
     // MARK: Commands from the watch
 
     fileprivate func handle(_ message: [String: Any]) async -> [String: Any] {
         let p = app.player
+        let book = p.book
         switch message[Watch.command] as? String {
-        case "toggle": p.toggle()
-        case "next": p.next()
-        case "previous": p.previous()
-        case "shuffle": p.toggleShuffle()
-        case "repeat": p.cycleRepeat()
+        case "toggle": if let book { book.toggle() } else { p.toggle() }
+        case "next": if let book { book.nextChapter() } else { p.next() }
+        case "previous": if let book { book.previousChapter() } else { p.previous() }
+        case "skip":
+            if let book, let s = message[Watch.index] as? Double { book.skip(s) }
+        case "shuffle": if book == nil { p.toggleShuffle() }
+        case "repeat": if book == nil { p.cycleRepeat() }
         case "favorite":
-            if let song = p.current { await app.setFavorite(song, song.starred == nil) }
+            if book == nil, let song = p.current { await app.setFavorite(song, song.starred == nil) }
         case "seek":
-            if let s = message[Watch.index] as? Double { p.seek(to: s) }
+            if let s = message[Watch.index] as? Double { if let book { book.seek(to: s) } else { p.seek(to: s) } }
         case "list":
             let kind = (message[Watch.kind] as? String).flatMap(WatchItem.Kind.init)
             let sections = await list(kind, id: message[Watch.id] as? String)
@@ -97,7 +127,7 @@ final class WatchBridge: NSObject {
 
     /// Home screen of the watch, or the songs of a playlist/album/favorites.
     private func list(_ kind: WatchItem.Kind?, id: String?) async -> [WatchSection] {
-        guard let client = app.client else { return [] }
+        guard let client = app.client else { return kind == nil ? bookSections() : [] }
         func songs(_ list: [Song]) -> [WatchSection] {
             [WatchSection(title: "", items: list.prefix(200).map {
                 WatchItem(id: $0.id, kind: .song, title: $0.title, subtitle: $0.artist, coverId: $0.coverArt ?? $0.albumId)
@@ -127,11 +157,32 @@ final class WatchBridge: NSObject {
                     WatchItem(id: $0.id, kind: .album, title: $0.name, subtitle: $0.artist, coverId: $0.coverArt ?? $0.id)
                 }))
             }
-            return sections
+            return bookSections() + sections
         }
     }
 
+    /// The books and episodes you are in the middle of – first on the watch, they are what you pick up again.
+    private func bookSections() -> [WatchSection] {
+        guard app.books.connected else { return [] }
+        let started = app.books.continueListening.isEmpty ? app.books.inProgress : app.books.continueListening
+        guard !started.isEmpty else { return [] }
+        return [WatchSection(title: String(localized: "Continue listening"), items: started.prefix(10).map {
+            WatchItem(id: $0.id + ($0.recentEpisode.map { "|" + $0.id } ?? ""), kind: .book, title: $0.recentEpisode?.title ?? $0.title,
+                      subtitle: $0.recentEpisode != nil ? $0.title : $0.creator, coverId: "abs:" + $0.id)
+        })]
+    }
+
     private func play(_ kind: WatchItem.Kind, id: String?, index: Int, shuffled: Bool) async {
+        if kind == .book, let id {
+            // "item" or "item|episode"
+            let parts = id.split(separator: "|", maxSplits: 1).map(String.init)
+            let known = (app.books.continueListening + app.books.inProgress).first { $0.id == parts[0] }
+            var found = known
+            if found == nil { found = try? await app.books.item(parts[0]) }
+            guard let item = found else { return }
+            app.bookPlayer.play(item) // continues with the episode in progress
+            return
+        }
         guard let client = app.client else { return }
         switch kind {
         case .mix:
@@ -148,15 +199,16 @@ final class WatchBridge: NSObject {
         case .album:
             guard let id, let a = (try? await client.album(id)) ?? app.downloads.index.albums[id] else { return }
             app.player.play(a.song ?? [], from: index, shuffled: shuffled, context: .init(kind: .album, id: a.id, name: a.name))
-        case .song: break
+        case .song, .book: break
         }
     }
 
     /// Small JPEG of a cover for the watch (WatchConnectivity messages have to stay small).
     private func thumbnail(_ id: String, size: CGFloat) async -> Data? {
         var image: UIImage?
-        if let local = app.downloads.localCover(id) { image = UIImage(contentsOfFile: local.path) }
-        if image == nil, let client = app.client, let url = client.coverURL(id, size: 300) {
+        if id.hasPrefix("abs:") { image = await app.books.coverImage(String(id.dropFirst(4)), width: 300) }
+        else if let local = app.downloads.localCover(id) { image = UIImage(contentsOfFile: local.path) }
+        if image == nil, !id.hasPrefix("abs:"), let client = app.client, let url = client.coverURL(id, size: 300) {
             image = await ImageLoader.shared.image(url, headers: client.headers)
         }
         guard let image else { return nil }

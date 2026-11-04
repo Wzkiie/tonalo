@@ -18,9 +18,10 @@ struct HomeView: View {
     struct HomeSection: Identifiable { let id: String; let title: LocalizedStringKey; let albums: [Album] }
 
     var body: some View {
+        ScrollViewReader { scroller in
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                header
+                header.id(Self.top)
                 if !app.isOnline { OfflineBanner() }
                 if !hasMusic { BooksHomeContent() } else {
                 switch filter {
@@ -42,8 +43,15 @@ struct HomeView: View {
         .refreshable { await Task { await load() }.value; await app.books.load(force: true) }
         .task(id: "\(app.currentId?.uuidString ?? "")\(app.books.connected)") { await app.books.load() }
         .onChange(of: app.books.connected) { _, on in if !on && filter == .books { filter = .all } }
-        .onChange(of: reselected) { filter = .all }
+        .onChange(of: reselected) {
+            // Like the tab bar of any iPhone app: the open tab tapped again goes to the top
+            filter = .all
+            withAnimation(.easeOut(duration: 0.3)) { scroller.scrollTo(Self.top, anchor: .top) }
+        }
+        }
     }
+
+    private static let top = "home.top"
 
     private var hasMusic: Bool { app.current?.hasMusic ?? true }
 
@@ -312,11 +320,11 @@ struct PlaylistCard: View {
     var body: some View {
         NavigationLink(value: Route.playlist(playlist.id)) {
             VStack(alignment: .leading, spacing: 6) {
-                CoverView(id: playlist.coverArt ?? playlist.id, corner: 4)
+                CoverView(id: playlist.coverArt ?? playlist.id, size: Int(300 * Theme.shared.coverSize.scale), corner: 4)
                 Text(playlist.name).font(.system(size: 13, weight: .semibold)).lineLimit(1)
                 Text("\(playlist.songCount ?? 0) songs").font(.system(size: 13)).foregroundStyle(Color.subtle).lineLimit(1)
             }
-            .frame(width: width)
+            .frame(width: width.map { $0 * Theme.shared.coverSize.scale })
         }
         .buttonStyle(.plain)
     }
@@ -364,6 +372,8 @@ struct MixCard: View {
 
 struct SearchView: View {
     @Environment(AppModel.self) private var app
+    /// Goes up each time the open tab is tapped again.
+    var reselected = 0
     @State private var query = ""
     @State private var result: SearchBody?
     @State private var books = ABSSearchResults()
@@ -374,13 +384,14 @@ struct SearchView: View {
     @FocusState private var focused: Bool
 
     var body: some View {
+        ScrollViewReader { scroller in
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
-                TabHeader(title: "Search").padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
+                TabHeader(title: "Search").padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14).id("search.top")
                 Section {
                     if query.trimmingCharacters(in: .whitespaces).count >= 2 { results } else { browse }
                 } header: {
-                    field.padding(.horizontal, 16).padding(.bottom, 12).background(Color.black)
+                    field.padding(.horizontal, 16).padding(.bottom, 12).background(Color.canvas)
                 }
             }
             .padding(.bottom, 24)
@@ -388,6 +399,7 @@ struct SearchView: View {
         .scrollDismissesKeyboard(.immediately)
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
+        .onChange(of: reselected) { withAnimation(.easeOut(duration: 0.3)) { scroller.scrollTo("search.top", anchor: .top) } }
         .task(id: query) {
             let q = query.trimmingCharacters(in: .whitespaces)
             guard q.count >= 2 else { result = nil; books = ABSSearchResults(); searching = false; return }
@@ -419,6 +431,7 @@ struct SearchView: View {
         .task {
             guard genres.isEmpty, let all = try? await app.client?.genres() else { return }
             genres = Array(all.filter { ($0.albumCount ?? 0) > 0 }.sorted { ($0.albumCount ?? 0) > ($1.albumCount ?? 0) }.prefix(30))
+        }
         }
     }
 
@@ -585,10 +598,11 @@ struct LibraryView: View {
     enum Filter { case playlists, albums, artists, downloads, books, podcasts }
 
     enum Sort: String, CaseIterable {
-        case recent, name, creator
+        case recent, played, name, creator
         var title: LocalizedStringKey {
             switch self {
             case .recent: "Recently added"
+            case .played: "Recently played"
             case .name: "Alphabetical"
             case .creator: "Artist or creator"
             }
@@ -889,8 +903,25 @@ struct LibraryView: View {
         return app.books.favoriteAuthors.values.map { .author($0.author, added: dates.string(from: $0.date)) }
     }
 
+    /// When it was last played: music from what this iPhone noted, audiobooks from the server's progress.
+    private func lastPlayed(_ item: Item, _ history: [String: Double]) -> Double {
+        switch item {
+        case .book(let b, _): (app.books.progress(of: b)?.lastUpdate ?? 0) / 1000
+        default: history[item.id] ?? 0
+        }
+    }
+
     private func sorted(_ list: [Item]) -> [Item] {
         switch sort {
+        case .played:
+            // Last played first; what was never played follows, newest hearts first
+            _ = app.player.context // what is played now changes the list, so the page follows it
+            let history = PlayHistory.dates(app.currentId)
+            return list.enumerated().sorted { a, b in
+                let (x, y) = (lastPlayed(a.element, history), lastPlayed(b.element, history))
+                if x != y { return x > y }
+                return a.element.date != b.element.date ? a.element.date > b.element.date : a.offset < b.offset
+            }.map(\.element)
         case .recent:
             // Newest first; things without a date keep the server's order behind them
             return list.enumerated().sorted { a, b in

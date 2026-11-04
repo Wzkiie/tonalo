@@ -130,6 +130,8 @@ final class PlayerModel {
                 // While the TV plays, the state here is the TV's – the paused player here mustn't overwrite it
                 guard let self, p === self.player, self.tvName == nil else { return }
                 self.isPlaying = playing
+                // Sound from the music wins: a book that is only paused must not keep the lock screen, the car or the watch
+                if playing, let b = self.app?.bookPlayer, b.session != nil, !b.isPlaying { b.close() }
                 self.updateNowPlaying()
             }
         }
@@ -147,6 +149,7 @@ final class PlayerModel {
             app?.notify(String(localized: "Added to the Jukebox"))
             return
         }
+        PlayHistory.note(context, account: app?.currentId)
         if tvName != nil { tv?.play(songs, from: start, shuffled: shuffled, context: context); return }
         self.context = context
         if shuffled {
@@ -301,6 +304,7 @@ final class PlayerModel {
     func seek(to seconds: Double) {
         guard station == nil else { return }
         if tvGuest { return hostOnly() }
+        if tvName == nil, let b = app?.bookPlayer, b.session != nil, !b.isPlaying { b.close() } // a forgotten, paused book
         if tvName != nil {
             tv?.command("seek", ["position": seconds])
             position = max(0, seconds)
@@ -968,7 +972,10 @@ final class PlayerModel {
     func bookEnded() { updateNowPlaying() }
 
     /// The book that has the lock screen right now.
-    private var book: BookPlayer? { app?.bookPlayer.session != nil ? app?.bookPlayer : nil }
+    var book: BookPlayer? {
+        guard let b = app?.bookPlayer, b.session != nil else { return nil }
+        return b.isPlaying || !isPlaying ? b : nil // whoever makes sound owns the controls
+    }
 
     private func updateNowPlaying() {
         if book != nil { return }

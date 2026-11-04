@@ -118,15 +118,7 @@ struct DownloadsView: View {
             if !active.isEmpty {
                 Section {
                     ForEach(active) { s in
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(s.title).lineLimit(1)
-                                Text(store.bytes[s.id].map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? String(localized: "Waiting…"))
-                                    .font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            ProgressRing(value: store.progress[s.id] ?? 0).frame(width: 22, height: 22)
-                        }
+                        ActiveDownloadRow(song: s, store: store)
                         .swipeActions {
                             Button("Cancel", role: .destructive) { store.cancel([s.id]) }
                         }
@@ -207,6 +199,24 @@ struct DownloadsView: View {
     }
 }
 
+/// Reads the progress here, so only the rows on screen follow it and not the whole page with all its songs.
+private struct ActiveDownloadRow: View {
+    let song: Song
+    let store: DownloadStore
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(song.title).lineLimit(1)
+                Text(store.bytes[song.id].map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? String(localized: "Waiting…"))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            ProgressRing(value: store.progress[song.id] ?? 0).frame(width: 22, height: 22)
+        }
+    }
+}
+
 /// Small sign next to a subtitle: downloaded (like on songs) or the progress while it loads.
 struct DownloadMark: View {
     let state: DownloadState
@@ -275,7 +285,7 @@ struct OfflineBanner: View {
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
             .padding(14)
-            .background(Color(white: 0.15), in: RoundedRectangle(cornerRadius: 12))
+            .background(Color.lifted(0.15), in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
         .padding(.horizontal)
