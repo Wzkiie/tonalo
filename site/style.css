@@ -493,3 +493,15 @@ section[class*="tint-"]::before {
   .log .meta { flex-direction: row; align-items: center; gap: 12px; }
 }
 code.url { word-break: break-all; }
+
+/* Phone pairs next to a text block (audiobooks, customization) */
+.trio { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; max-width: 520px; margin: 0 auto; }
+.trio figure:nth-child(2) { margin-top: 44px; }
+.trio .phone { width: 100%; }
+.ticks { margin: 22px 0 0; padding: 0; list-style: none; }
+.ticks li { padding: 12px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 16px; }
+.ticks b { color: var(--text, #fff); }
+.wcard .watches:has(> :nth-child(3)) { gap: 12px; }
+.wcard .watches:has(> :nth-child(3)) .watch-case { width: 124px; padding: 8px; border-radius: 34px; }
+.wcard .watches:has(> :nth-child(3)) .watch-case img { border-radius: 26px; }
+@media (max-width: 980px) { .trio { max-width: 420px; } }

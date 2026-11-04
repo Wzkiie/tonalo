@@ -16,9 +16,9 @@ function silence(seconds) {
   b.writeUInt16LE(1, 32); b.writeUInt16LE(8, 34); b.write('data', 36); b.writeUInt32LE(n, 40);
   return b;
 }
-const FILE = 120, WAV = silence(FILE); // every file is 2 minutes
+const FILE = +process.env.MOCK_FILE_SECONDS || 120, WAV = silence(FILE); // every file is 2 minutes (MOCK_FILE_SECONDS for longer ones)
 
-const chapters = (titles) => titles.map((title, i) => ({ id: i, start: i * 80, end: (i + 1) * 80, title }));
+const chapters = (titles) => titles.map((title, i) => { const len = (FILE * 3) / titles.length * (FILE === 120 ? 0.75 : 1) ; return { id: i, start: i * len, end: (i + 1) * len, title }; });
 const BOOKS = [
   { id: 'book-1', title: 'Das stille Buch', authorName: 'Nora Vale', narratorName: 'Milo Ferro', seriesName: 'Stille, Band 1', files: 3,
     description: '<p>Ein erfundenes <b>Hörbuch</b> zum Testen, aufgeteilt auf drei Dateien.</p>',
@@ -30,6 +30,21 @@ const BOOKS = [
 const EPISODES = [1, 2, 3].map((n) => ({ id: 'ep-' + n, title: 'Folge ' + n, subtitle: '', duration: FILE, publishedAt: n * 1000, audioFile: { ino: 'ep-' + n, duration: FILE, metadata: { ext: '.wav', size: 960044 } } }));
 const PODCAST = { id: 'pod-1', title: 'Der stille Podcast', author: 'Echo Park Social', description: 'Ein erfundener Podcast.' };
 
+// MOCK_EN=1: invented English books for screenshots, with some of them started. MOCK_BOOK_COVERS=<dir>: <id>.png is the cover of that item
+if (process.env.MOCK_EN) {
+  const EN = [
+    ['The Last Lighthouse', 'Nora Vale', 'Milo Ferro', 'Tidewater, Book 1', ['The Keeper', 'Storm Season', 'Salt on the Glass', 'The Long Night', 'Morning Tide']],
+    ['Paper Cities', 'Ellis Moor', 'Ines Harlow', '', ['Folded Maps', 'The Cartographer', 'Rain on Paper', 'A Door in the Margin']],
+    ['Salt and Static', 'Saffron Lane', 'Ravi Kade', '', ['Signal', 'Noise', 'Between Stations', 'Clear Channel']],
+    ['A Field Guide to Quiet', 'Glass Harbor', null, '', ['Morning', 'Midday', 'Evening']],
+    ['Midnight Orchard', 'Ravi Kade', 'Nora Vale', 'Tidewater, Book 2', ['Windfall', 'The Gate', 'Frost', 'Blossom', 'Harvest']],
+  ];
+  BOOKS.length = 0;
+  EN.forEach(([title, authorName, narratorName, seriesName, ch], i) => BOOKS.push({ id: 'book-' + (i + 1), title, authorName, narratorName, seriesName, files: 3,
+    description: '<p>An invented audiobook, made up for this demo.</p>', chapters: chapters(ch) }));
+  EPISODES.forEach((e, i) => { e.title = 'Episode ' + (i + 1); });
+  PODCAST.title = 'The Quiet Hour'; PODCAST.description = 'An invented podcast.';
+}
 const authorId = (name) => 'aut-' + name.toLowerCase().replace(/\W+/g, '-');
 const tracks = (b) => Array.from({ length: b.files }, (_, i) => ({ index: i + 1, ino: b.id + '-' + (i + 1), startOffset: i * FILE, duration: FILE, metadata: { ext: '.wav', size: WAV.length } }));
 const book = (b) => ({
@@ -37,7 +52,7 @@ const book = (b) => ({
   media: { duration: b.files * FILE, chapters: b.chapters, numTracks: b.files, tracks: tracks(b),
     metadata: { title: b.title, authorName: b.authorName, narratorName: b.narratorName, seriesName: b.seriesName, description: b.description, publishedYear: '2026',
       authors: [{ id: authorId(b.authorName), name: b.authorName }], narrators: b.narratorName ? [b.narratorName] : [],
-      series: b.seriesName ? [{ id: 'ser-1', name: 'Stille', sequence: '1' }] : [] } },
+      series: b.seriesName ? [{ id: 'ser-' + b.seriesName.split(',')[0].toLowerCase().replace(/\W+/g, '-'), name: b.seriesName.split(',')[0], sequence: (b.seriesName.match(/\d+/) || ['1'])[0] }] : [] } },
 });
 const podcast = () => ({
   id: PODCAST.id, libraryId: 'lib-pods', mediaType: 'podcast', addedAt: Date.now(),
@@ -58,6 +73,11 @@ function save(item, episode, currentTime, duration, finished) {
   const key = episode ? item + '/' + episode : item;
   const isFinished = finished ?? currentTime >= duration - 10;
   progress.set(key, { libraryItemId: item, episodeId: episode || null, currentTime, duration, progress: duration ? Math.min(1, currentTime / duration) : 0, isFinished, lastUpdate: Date.now() });
+}
+
+if (process.env.MOCK_EN) {
+  const dur = (b) => b.files * FILE;
+  [['book-1', 0.38], ['book-3', 0.62], ['book-5', 0.12], ['book-2', 1]].forEach(([id, f]) => { const b = BOOKS.find((x) => x.id === id); save(id, null, dur(b) * f, dur(b)); });
 }
 
 function shelves(lib) {
@@ -190,6 +210,8 @@ http.createServer((req, res) => {
         narrators: BOOKS.filter((b) => (b.narratorName || '').toLowerCase().includes(q)).map((b) => ({ name: b.narratorName, numBooks: 1 })) });
     }
     if ((x = m(/^\/api\/items\/([^/]+)\/cover$/))) {
+      const file = process.env.MOCK_BOOK_COVERS && require('path').join(process.env.MOCK_BOOK_COVERS, x[1] + '.png');
+      if (file && require('fs').existsSync(file)) { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(require('fs').readFileSync(file)); }
       res.writeHead(200, { 'Content-Type': 'image/png' });
       // 1x1 PNG, enough to see a cover arrive
       return res.end(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEBgIApD5fRAAAAABJRU5ErkJggg==', 'base64'));
