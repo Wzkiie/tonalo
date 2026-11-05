@@ -178,6 +178,11 @@ function handle(req, res, u) {
         res.writeHead(bad('MOCK_BAD_ALL') ? 500 : 415, { 'Content-Type': 'text/plain' }); return res.end('unsupported');
       }
     }
+    // MOCK_STALL_RAW=<ids>: the original file never answers (a TV that stays silent without an error); converted works
+    if (m === 'stream' && !q.format && (process.env.MOCK_STALL_RAW || '').split(',').filter(Boolean).includes(q.id)) {
+      if (process.env.MOCK_LOG) console.log('STALL stream', q.id);
+      return; // no answer
+    }
     if (m === 'stream' || m === 'download') {
       // Byte ranges like a real server – AVPlayer on iOS refuses streams without them
       const r = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');

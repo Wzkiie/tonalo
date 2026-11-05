@@ -117,6 +117,34 @@ var Player = (function () {
   function savePos(v, at) { U.ustore.set('pos', v); U.ustore.set('posAt', at || Date.now()); }
   function freshPos() { return Date.now() - (U.ustore.get('posAt', 0) || 0) < RESUME_MS ? (U.ustore.get('pos', 0) || 0) : 0; }
 
+  // Der TV spielt den Song im Original nicht: einmal als MP3 vom Server, an derselben Stelle. false, wenn das schon versucht wurde.
+  function retryAsMp3() {
+    var cur = current();
+    if (!cur || station || transcoding()) return false;
+    fallbackId = cur.id;
+    var at = Math.floor(pendingSeek || position());
+    offset = at > 1 ? at : 0;
+    pendingSeek = 0;
+    audio.src = API.streamUrl(cur.id, { maxBitRate: 320, format: 'mp3', offset: offset });
+    var q = audio.play();
+    if (q && q.catch) q.catch(function () { /* egal */ });
+    emit('state');
+    return true;
+  }
+
+  // Manche Formate meldet der TV nicht als Fehler, er bleibt einfach stumm: kommt nach 8 s kein Ton, geht es als MP3 weiter
+  var silentWatch = null;
+  function watchStart(el, id) {
+    clearTimeout(silentWatch);
+    silentWatch = setTimeout(function () {
+      var s = current();
+      if (el !== audio || station || !s || s.id !== id || transcoding()) return;
+      if ((el.currentTime || 0) > 0.5 || (el.paused && el.readyState >= 2)) return; // läuft, oder wurde angehalten
+      console.warn('Kein Ton nach 8 s – als MP3 neu versucht');
+      retryAsMp3();
+    }, 8000);
+  }
+
   function load(startAt, autoplay) {
     var s = current();
     if (!s) return;
@@ -135,6 +163,7 @@ var Player = (function () {
     audio.src = API.streamUrl(s.id, opts);
     applyVolume();
     if (autoplay !== false) {
+      watchStart(audio, s.id);
       var p = audio.play();
       if (p && p.catch) p.catch(function (e) { console.warn('play()', e); });
     }
@@ -519,18 +548,7 @@ var Player = (function () {
       if (station) { U.toast(T('Dieser Sender kann gerade nicht abgespielt werden.')); emit('state'); return; }
       if (!audio.src || !current()) return;
       // Ein Format, das der TV nicht abspielt (z. B. ALAC, Opus): einmal vom Server als MP3 umwandeln lassen, an derselben Stelle
-      var cur = current();
-      if (cur && !transcoding()) {
-        fallbackId = cur.id;
-        var at = Math.floor(pendingSeek || position());
-        offset = at > 1 ? at : 0;
-        pendingSeek = 0;
-        audio.src = API.streamUrl(cur.id, { maxBitRate: 320, format: 'mp3', offset: offset });
-        var q = audio.play();
-        if (q && q.catch) q.catch(function () { /* egal */ });
-        emit('state');
-        return;
-      }
+      if (retryAsMp3()) return;
       errorStreak++;
       var code = audio.error ? audio.error.code : '?';
       U.toast(T(errorStreak < 4 ? 'Wiedergabefehler ({code}) – Song wird übersprungen' : 'Wiedergabefehler ({code}) – gestoppt', { code: code }));
