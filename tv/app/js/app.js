@@ -728,9 +728,13 @@ var App = (function () {
     Book.init();
     Link.init();
 
-    // Beim Start immer die Benutzerauswahl zeigen (oder Login, wenn noch kein Konto existiert)
+    // Am TV beim Start immer die Benutzerauswahl zeigen (oder Login, wenn noch kein Konto existiert).
+    // Am PC geht es mit dem zuletzt benutzten Konto gleich los: erst dann ist die Verbindung zum iPhone da,
+    // und wer die App nebenher laufen lässt, will nicht jedes Mal ein Profil anklicken
     migrate();
-    if (accounts().length) showUsers(); else showLogin();
+    var last = U.desktop && accounts().filter(function (a) { return a.id === U.store.get('lastAccount', null); })[0];
+    if (last) selectAccount(last);
+    else if (accounts().length) showUsers(); else showLogin();
   }
 
   return {
