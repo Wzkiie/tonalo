@@ -367,7 +367,7 @@ var Views = (function () {
   // ---------------- Suche
   function search() {
     var el = view();
-    var input = h('input.search-input.focusable', { type: 'text', placeholder: T('Künstler, Alben oder Songs'), 'data-autofocus': true });
+    var input = h('input.search-input.focusable', { type: 'text', placeholder: ABS.connected() ? T('Künstler, Alben, Songs oder Hörbücher') : T('Künstler, Alben oder Songs'), 'data-autofocus': true });
     var bar = h('div.search-bar', null, Icon.el('search', 34), input);
     var results = h('div.results');
     var lastQ = U.ustore.get('lastSearch', '');
@@ -401,11 +401,18 @@ var Views = (function () {
       var my = ++seq;
       results.innerHTML = '';
       results.appendChild(UI.loading());
-      API.search(q).then(function (r) {
+      // Hörbücher und Podcasts werden mitgesucht; scheitert Audiobookshelf, bleibt die Musiksuche trotzdem
+      var books = ABS.connected() ? ABS.search(q).catch(function () { return []; }) : Promise.resolve([]);
+      Promise.all([API.search(q), books]).then(function (both) {
+        var r = both[0], bk = both[1].slice(0, 12);
         if (my !== seq) return;
         results.innerHTML = '';
-        if (!r.artists.length && !r.albums.length && !r.songs.length) {
+        if (!r.artists.length && !r.albums.length && !r.songs.length && !bk.length) {
           results.appendChild(h('div.empty', { text: T('Keine Ergebnisse für „{q}“', { q: q }) }));
+          return;
+        }
+        if (!r.artists.length && !r.albums.length && !r.songs.length) {
+          results.appendChild(UI.row(T('Hörbücher & Podcasts'), bk, BookViews.card));
           return;
         }
         var left = h('div', null, h('h2.section-title', { text: T('Top-Ergebnis'), style: 'margin-top:0' }), h('div.nav-container', null, topCard(r)));
@@ -414,6 +421,7 @@ var Views = (function () {
         results.appendChild(h('div.top-result', null, left, right));
         if (r.artists.length) results.appendChild(UI.row(T('Künstler'), r.artists, UI.artistCard));
         if (r.albums.length) results.appendChild(UI.row(T('Alben'), r.albums, UI.albumCard));
+        if (bk.length) results.appendChild(UI.row(T('Hörbücher & Podcasts'), bk, BookViews.card));
         if (r.songs.length > 4) {
           results.appendChild(h('h2.section-title', { text: T('Alle Songs') }));
           results.appendChild(UI.trackList(r.songs, { showCover: true, showAlbum: true }));

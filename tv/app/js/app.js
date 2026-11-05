@@ -217,8 +217,8 @@ var App = (function () {
   var wantAbs = false; // Haken „Auch Audiobookshelf verbinden“: nach dem Navidrome-Login folgt gleich die zweite Maske
   function paintWantAbs() {
     var b = U.$('#btn-login-abs');
-    b.textContent = (wantAbs ? '✓ ' : '') + T('Auch Audiobookshelf verbinden');
     b.classList.toggle('on', wantAbs);
+    b.setAttribute('aria-checked', wantAbs ? 'true' : 'false');
   }
   function showLogin(msg, opts) {
     loginOpts = opts || {};

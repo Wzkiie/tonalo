@@ -101,8 +101,13 @@ var BookViews = (function () {
     async(el, ABS.home(), function (r) {
       var bar = h('div.action-bar.nav-container', null,
         UI.button(T('Suchen'), function () { App.go('booksearch'); }, 'primary', 'search'));
+      var shelvesOnly = r.libraries.filter(function (lib) { return lib.mediaType !== 'podcast'; });
       r.libraries.forEach(function (lib) {
         bar.appendChild(UI.button(lib.name, function () { App.go('booklib', { id: lib.id, name: lib.name }); }, 'outline', 'library'));
+      });
+      // Serien gibt es nur bei Hörbüchern, nicht bei Podcasts
+      shelvesOnly.forEach(function (lib) {
+        bar.appendChild(UI.button(shelvesOnly.length > 1 ? T('Serien') + ' – ' + lib.name : T('Serien'), function () { App.go('bookseries', { id: lib.id, name: lib.name }); }, 'outline', 'queue'));
       });
       el.appendChild(bar);
       if (!r.shelves.length) el.appendChild(h('div.empty', { text: T('Noch nichts da – in Audiobookshelf gibt es hier noch keine Bücher.') }));
@@ -125,6 +130,42 @@ var BookViews = (function () {
     el.appendChild(h('div.filters', null, chips));
     var g = UI.grid(card, function (offset, size) {
       return ABS.items(params.id, Math.floor(offset / size), size, sort[0], sort[1]).then(function (r) { return r.items; });
+    }, 60);
+    el.appendChild(g.el);
+    g.more().then(function () { App.viewReady(el); });
+    return { el: el };
+  }
+
+  // ---------- Serien einer Bibliothek
+  function seriesCard(lib) {
+    return function (s) {
+      var n = A(s.books).length || s.numBooks || 0;
+      var first = A(s.books)[0];
+      return h('button.card.focusable.bk', { onclick: function () { App.go('bookserie', { lib: lib, id: s.id, name: s.name }); } },
+        cover(first && first.id, 400),
+        h('div.card-title.ellipsis', { text: s.name }),
+        h('div.card-sub', { text: n ? T.n(n, '{n} Buch', '{n} Bücher') : '' }));
+    };
+  }
+  function bookseries(params) {
+    var el = view();
+    el.appendChild(h('h1.page-title', { text: T('Serien') }));
+    var g = UI.grid(seriesCard(params.id), function (offset, size) {
+      return ABS.series(params.id, Math.floor(offset / size), size).then(function (r) { return r.items; });
+    }, 40);
+    el.appendChild(g.el);
+    g.more().then(function () {
+      if (!g.el.children.length) g.el.appendChild(h('div.empty', { text: T('Nichts gefunden.') }));
+      App.viewReady(el);
+    });
+    return { el: el };
+  }
+  // Die Bücher einer Serie, in der Reihenfolge der Serie
+  function bookserie(params) {
+    var el = view();
+    el.appendChild(UI.header(params.name || T('Serien')));
+    var g = UI.grid(card, function (offset, size) {
+      return ABS.items(params.lib, Math.floor(offset / size), size, 'media.metadata.series', false, ['series', params.id]).then(function (r) { return r.items; });
     }, 60);
     el.appendChild(g.el);
     g.more().then(function () { App.viewReady(el); });
@@ -398,6 +439,6 @@ var BookViews = (function () {
     };
   }
 
-  return { views: { books: books, booklib: booklib, booksearch: booksearch, book: book, bookplayer: bookplayer }, start: startPlayback, card: card };
+  return { views: { books: books, booklib: booklib, bookseries: bookseries, bookserie: bookserie, booksearch: booksearch, book: book, bookplayer: bookplayer }, start: startPlayback, card: card };
 })();
 Object.keys(BookViews.views).forEach(function (k) { Views[k] = BookViews.views[k]; });

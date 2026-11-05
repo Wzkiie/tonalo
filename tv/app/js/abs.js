@@ -203,9 +203,16 @@ var ABS = (function () {
   }
 
   // Eine Seite einer Bibliothek
-  function items(lib, page, size, sort, desc) {
+  function items(lib, page, size, sort, desc, filter) {
     return req('/api/libraries/' + lib + '/items?limit=' + size + '&page=' + page + '&sort=' + encodeURIComponent(sort || 'media.metadata.title') +
-      '&desc=' + (desc ? 1 : 0) + '&minified=1').then(function (r) { return { items: A(r && r.results), total: (r && r.total) || 0 }; });
+      '&desc=' + (desc ? 1 : 0) + '&minified=1' + (filter ? '&filter=' + encodeURIComponent(filter[0] + '.' + btoa(filter[1])) : '')).then(function (r) { return { items: A(r && r.results), total: (r && r.total) || 0 }; });
+  }
+
+  // Die Serien einer Bibliothek, jede mit ihren Büchern (das erste liefert das Cover)
+  function series(lib, page, size) {
+    return req('/api/libraries/' + lib + '/series?limit=' + size + '&page=' + page + '&sort=name&minified=1').then(function (r) {
+      return { items: A(r && r.results), total: (r && r.total) || 0 };
+    });
   }
 
   function item(id) { return req('/api/items/' + encodeURIComponent(id) + '?expanded=1'); }
@@ -323,7 +330,7 @@ var ABS = (function () {
     config: function () { return cfg; },
     // Nummern der Bibliotheken (nur Zahlen, ohne Namen): daran erkennt das iPhone, dass es derselbe Server ist, auch unter anderer Adresse
     libraryIds: function () { return (libs || []).map(function (l) { return l.id; }).slice(0, 8); },
-    login: login, logout: logout, libraries: libraries, home: home, items: items, item: item, search: search,
+    login: login, logout: logout, libraries: libraries, home: home, items: items, series: series, item: item, search: search,
     progressOf: progressOf, finished: finished, noteListening: noteListening, noteProgress: noteProgress, setFinished: setFinished,
     startSession: startSession, syncSession: syncSession, saveProgress: saveProgress, trackUrl: trackUrl, cover: cover,
     req: req, shelfTitle: shelfTitle
