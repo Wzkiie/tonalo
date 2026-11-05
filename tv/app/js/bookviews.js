@@ -33,19 +33,20 @@ var BookViews = (function () {
   }, { rootMargin: '600px' }) : null;
 
   function fill(img) {
-    var id = img.getAttribute('data-item'), w = +img.getAttribute('data-w') || 400;
+    var id = img.getAttribute('data-item'), w = +img.getAttribute('data-w') || 400, kind = img.getAttribute('data-kind') || '';
     if (!id) return;
     img.removeAttribute('data-item');
-    ABS.cover(id, w).then(function (url) {
+    ABS.cover(id, w, kind).then(function (url) {
       img.onload = function () { img.classList.add('loaded'); };
       img.src = url;
     }).catch(function () { img.classList.add('broken'); });
   }
 
-  function cover(id, width, cls) {
+  function cover(id, width, cls, kind) {
     var wrap = h('div.cover' + (cls ? '.' + cls : ''));
     var img = h('img', { alt: '' });
     if (id) {
+      if (kind) img.setAttribute('data-kind', kind);
       img.setAttribute('data-item', id);
       img.setAttribute('data-w', width || 400);
       if (io) io.observe(img); else fill(img);
@@ -140,7 +141,7 @@ var BookViews = (function () {
   function seriesCard(lib) {
     return function (s) {
       lib = lib || s.lib;
-      var n = s.numBooks || A(s.books).length || 0;
+      var n = s.noCount ? 0 : (s.numBooks || A(s.books).length || 0);
       var first = A(s.books)[0];
       return h('button.card.focusable.bk', { onclick: function () { App.go('bookserie', { lib: lib, id: s.id, name: s.name }); } },
         cover(first && first.id, 400),
@@ -176,13 +177,14 @@ var BookViews = (function () {
   // ---------- Autoren
   function authorCard(a) {
     return h('button.card.focusable.bk', { onclick: function () { App.go('bookauthor', { id: a.id, name: a.name }); } },
-      cover(null, 400, 'round'),
+      cover(a.id, 400, 'round', 'author'),
       h('div.card-title.ellipsis', { text: a.name }),
       h('div.card-sub', { text: a.numBooks ? T.n(a.numBooks, '{n} Buch', '{n} Bücher') : T('Autor') }));
   }
   function bookauthor(params) {
     var el = view();
-    el.appendChild(UI.header(params.name || T('Autor')));
+    var pic = h('div', { style: 'width:160px;flex:none' }, cover(params.id, 400, 'round', 'author'));
+    el.appendChild(h('div', { style: 'display:flex;align-items:center;gap:36px;margin-bottom:12px' }, pic, UI.header(params.name || T('Autor'))));
     async(el, ABS.author(params.id), function (r) {
       var items = A(r && r.libraryItems), series = A(r && r.series);
       var desc = ((r && r.description) || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();

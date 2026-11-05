@@ -234,7 +234,7 @@ var ABS = (function () {
         if (!w) return;
         A(w.a.book).concat(A(w.a.podcast)).forEach(function (m) { if (m && m.libraryItem && !seen[m.libraryItem.id]) { seen[m.libraryItem.id] = 1; out.items.push(m.libraryItem); } });
         A(w.a.authors).forEach(function (m) { if (m && m.id && m.name) out.authors.push({ id: m.id, name: m.name, numBooks: m.numBooks, lib: w.lib }); });
-        A(w.a.series).forEach(function (m) { if (m && m.series) out.series.push({ id: m.series.id, name: m.series.name, books: A(m.books), lib: w.lib }); });
+        A(w.a.series).forEach(function (m) { if (m && m.series) out.series.push({ id: m.series.id, name: m.series.name, books: A(m.books).slice(0, 1), lib: w.lib, noCount: true }); // die Suche liefert nur die Treffer, nicht alle Bücher der Serie });
       });
       return out;
     });
@@ -305,7 +305,7 @@ var ABS = (function () {
     while (busy < 4 && queue.length) {
       (function (job) {
         busy++;
-        req('/api/items/' + encodeURIComponent(job.id) + '/cover?width=' + job.width + '&format=jpeg', { binary: true, timeout: 20000 })
+        req((job.kind === 'author' ? '/api/authors/' : '/api/items/') + encodeURIComponent(job.id) + (job.kind === 'author' ? '/image?width=' : '/cover?width=') + job.width + '&format=jpeg', { binary: true, timeout: 20000 })
           .then(function (r) {
             if (!/^image\//.test(r.type || 'image/jpeg')) throw new Error('type');
             return 'data:' + (r.type || 'image/jpeg').split(';')[0] + ';base64,' + r.body;
@@ -321,13 +321,13 @@ var ABS = (function () {
     }
   }
 
-  function cover(id, width) {
+  function cover(id, width, kind) {
     width = width || 400;
-    var k = id + '@' + width;
+    var k = (kind ? kind + ':' : '') + id + '@' + width;
     if (covers[k]) return Promise.resolve(covers[k]);
     return new Promise(function (resolve, reject) {
       var job = jobs[k];
-      if (!job) { job = jobs[k] = { k: k, id: id, width: width, done: [] }; queue.push(job); }
+      if (!job) { job = jobs[k] = { k: k, id: id, width: width, kind: kind || '', done: [] }; queue.push(job); }
       job.done.push({ resolve: resolve, reject: reject });
       pump();
     });
