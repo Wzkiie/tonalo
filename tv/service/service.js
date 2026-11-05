@@ -276,6 +276,9 @@ function handle(req, res, body) {
     return reply(res, 200, { id: entry.id, pub: ecdh.getPublicKey('hex'), tv: tv.id, name: tv.name });
   }
 
+  // Noch keine Oberfläche da, die die Schlüssel hält (App eben gestartet, Profilauswahl): nicht „unbekannt“ antworten,
+  // sonst vergisst das iPhone die Kopplung. Es versucht es später wieder.
+  if (!app && (path === '/events' || path === '/command')) return reply(res, 503, { error: 'not running' });
   var who = authorized(req, body);
   // Geht nur die Uhr falsch, erfährt das iPhone die Zeit hier und rechnet ab dann damit
   if (typeof who === 'string') return reply(res, 401, who === 'clock' ? { error: who, now: Math.floor(Date.now() / 1000) } : { error: who });
