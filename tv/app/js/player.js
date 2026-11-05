@@ -110,7 +110,22 @@ var Player = (function () {
   }
   // Song, den der TV nicht im Original abspielt: er läuft ab dann als MP3 vom Server (auch beim Spulen und Neuladen)
   var fallbackId = null;
-  function fellBack() { var s = current(); return !!s && fallbackId === s.id; }
+  function fellBack() { var s = current(); return !!s && (fallbackId === s.id || knownBad(s)); }
+
+  // Welche Formate dieser TV nicht im Original abspielt, merkt er sich: Songs davon kommen gleich als MP3, ohne Wartezeit.
+  // Erst nach zwei bestätigten Fällen (das Original hing, MP3 lief) – ein Netzwerkaussetzer soll kein Format sperren.
+  function fmtKey(s) { return (s.suffix || '').toLowerCase() + ((+s.bitDepth > 16 || +s.samplingRate > 48000) ? '|hd' : ''); }
+  function badFormats() { return U.store.get('badFormats', {}) || {}; }
+  function knownBad(s) { return !!s && !!s.suffix && fmtKey(s).indexOf('mp3') !== 0 && (badFormats()[fmtKey(s)] || 0) >= 2; }
+  var learnFor = null; // Song-ID: läuft er jetzt als MP3, nachdem das Original hing, ist das Format als schlecht bestätigt
+  function learn(s) {
+    if (!s || !s.suffix || fmtKey(s).indexOf('mp3') === 0) return;
+    var b = badFormats(), k = fmtKey(s);
+    b[k] = (b[k] || 0) + 1;
+    U.store.set('badFormats', b);
+    // Neutral gehalten, ohne Worte: so sieht man, welches Format hängt
+    U.toast(k.toUpperCase().replace('|HD', ' (Hi-Res)') + ' → MP3', 4000);
+  }
   function transcoding() { return !!settings().maxBitRate || fellBack(); }
   // Position zum Weitermachen: nur kurz gemerkt (Anruf, kurze Pause), nicht nach Stunden oder Tagen
   var RESUME_MS = 30 * 60 * 1000;
@@ -123,6 +138,7 @@ var Player = (function () {
     var cur = current();
     if (!cur || station || transcoding()) return false;
     fallbackId = cur.id;
+    learnFor = cur.id;
     var at = Math.floor(pendingSeek || position());
     offset = at > 1 ? at : 0;
     pendingSeek = 0;
@@ -133,7 +149,7 @@ var Player = (function () {
     return true;
   }
 
-  // Manche Formate meldet der TV nicht als Fehler, er bleibt einfach stumm: kommt nach 8 s kein Ton, geht es als MP3 weiter
+  // Manche Formate meldet der TV nicht als Fehler, er bleibt einfach stumm: kommt nach 5 s kein Ton, geht es als MP3 weiter
   var silentWatch = null;
   function watchStart(el, id) {
     clearTimeout(silentWatch);
@@ -141,9 +157,9 @@ var Player = (function () {
       var s = current();
       if (el !== audio || station || !s || s.id !== id || transcoding()) return;
       if ((el.currentTime || 0) > 0.5 || (el.paused && el.readyState >= 2)) return; // läuft, oder wurde angehalten
-      console.warn('Kein Ton nach 8 s – als MP3 neu versucht');
+      console.warn('Kein Ton nach 5 s – als MP3 neu versucht');
       retryAsMp3();
-    }, 8000);
+    }, 5000);
   }
 
   function load(startAt, autoplay) {
@@ -540,6 +556,7 @@ var Player = (function () {
     listen('timeupdate', function () {
       emit('time');
       if (station) return;
+      if (learnFor && audio.currentTime > 1) { var ls = current(); if (ls && ls.id === learnFor) learn(ls); learnFor = null; }
       maybeCrossfade();
       var s = current(), d = duration(), p = position();
       if (s && !scrobbled && settings().scrobble && d && (p > d / 2 || p > 240)) {
