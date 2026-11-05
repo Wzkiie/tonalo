@@ -115,7 +115,21 @@ final class TVLink {
     private(set) var guestOnly: Set<String> = []
 
     @ObservationIgnored private var browser: NWBrowser?
-    @ObservationIgnored private var listener: Task<Void, Never>?
+    /// One connection per own device (TV, computer): the phone follows all of them and shows the one that plays.
+    @ObservationIgnored private var listeners: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored private var listener: Task<Void, Never>? {
+        get { listeners.values.first }
+        set {
+            if newValue == nil {
+                listeners.values.forEach { $0.cancel() }
+                listeners = [:]; primary = nil; activity = [:]; appliers = [:]
+            }
+        }
+    }
+    /// The device whose music or book this phone shows right now, whether each device is playing, and how to show one again.
+    @ObservationIgnored private var primary: String?
+    @ObservationIgnored private var activity: [String: Bool] = [:]
+    @ObservationIgnored private var appliers: [String: () -> Void] = [:]
     @ObservationIgnored private var listening: (device: Device, pairing: Pairing)?
     /// Where commands go – kept while the app is in the background, so a pause on the lock screen still reaches the TV.
     @ObservationIgnored private var target: (device: Device, pairing: Pairing)?
@@ -147,6 +161,7 @@ final class TVLink {
 
     func start() {
         loadPairings()
+        NSLog("LINKDBG start pairings=%d saved=%d browser=%@ listener=%@", pairings.count, fallbackCount(), browser == nil ? "nil" : "yes", listener == nil ? "nil" : "yes")
         if jukebox == nil, let saved = UserDefaults.standard.array(forKey: "jukebox.joined"), let id = saved.first as? String,
            let at = saved.last as? Double, Date().timeIntervalSince1970 - at < 6 * 3600, pairings.contains(where: { $0.tv == id }) {
             jukebox = id
@@ -261,7 +276,10 @@ final class TVLink {
         connect()
     }
 
+    private func fallbackCount() -> Int { (UserDefaults.standard.data(forKey: "link.addresses").flatMap { try? JSONDecoder().decode([String: Saved].self, from: $0) } ?? [:]).count }
+
     private func found(_ list: [Device]) {
+        NSLog("LINKDBG found %@", list.map { $0.name + "/" + $0.id.prefix(6) }.joined(separator: ","))
         // A device in the network more than one way (Wi-Fi and cable, or peer to peer) shows up once
         var all: [String: [NWEndpoint]] = [:]
         for d in list { all[d.id, default: []].append(d.endpoint) }
@@ -305,6 +323,7 @@ final class TVLink {
     }
 
     func unpair(_ tv: String) {
+        NSLog("LINKDBG UNPAIR %@", tv)
         pairings.removeAll { $0.tv == tv }
         savePairings()
         if jukebox == tv { jukebox = nil }
@@ -362,18 +381,38 @@ final class TVLink {
         app?.bookPlayer.tvGone()
     }
 
-    /// Follows the joined Jukebox, or else the first own TV nearby: its state comes in as long as the connection lasts.
+    /// Follows the joined Jukebox, or else all own devices nearby at once: the one that plays is shown.
     private func connect() {
-        guard listener == nil else { return }
-        let target: (Device, Pairing)?
+        var targets: [(Device, Pairing)] = []
         if let jukebox {
-            target = pool.first { $0.id == jukebox }.flatMap { d in pairing(for: d).map { (d, $0) } }
+            if let one = pool.first(where: { $0.id == jukebox }).flatMap({ d in pairing(for: d).map { (d, $0) } }) { targets = [one] }
         } else {
-            target = pool.lazy.compactMap { d in self.pairing(for: d).flatMap { $0.guest == true ? nil : (d, $0) } }.first
+            targets = pool.compactMap { d in self.pairing(for: d).flatMap { $0.guest == true ? nil : (d, $0) } }
         }
-        guard let (device, pairing) = target else { return }
+        NSLog("LINKDBG connect targets=%@ pool=%d pairings=%d running=%d", targets.map { $0.0.name }.joined(separator: ","), pool.count, pairings.count, listeners.count)
+        for (device, pairing) in targets where listeners[device.id] == nil { startListening(device, pairing) }
+    }
+
+    /// The device stops being followed: if its state was shown, the player lets go – and another device that is connected takes over.
+    private func release(_ id: String) {
+        activity[id] = nil
+        appliers[id] = nil
+        guard primary == id else { return }
+        primary = nil
+        listening = nil
+        target = nil
+        ownTV = nil
+        ownBooks = nil
+        app?.player.tvGone()
+        app?.bookPlayer.tvGone()
+        // The others only report when something changes: show the newest report of the one that plays, or any
+        let next = appliers.keys.first { activity[$0] == true } ?? appliers.keys.first
+        if let next { appliers[next]?() }
+    }
+
+    private func startListening(_ device: Device, _ pairing: Pairing) {
         generation += 1
-        listener = Task { [weak self] in
+        listeners[device.id] = Task { [weak self] in
             // A dropped connection gets a few more tries before the phone takes over again
             var misses = 0
             while misses < 3, !Task.isCancelled, let self, self.pool.contains(where: { $0.id == device.id }) {
@@ -385,23 +424,21 @@ final class TVLink {
                 if let direct = self.fallback[device.id] { ways.append(direct.endpoint) }
                 if ways.isEmpty { ways = [known.endpoint] }
                 let device = Device(id: known.id, name: known.name, endpoint: ways[misses % ways.count], isPhone: known.isPhone, isPC: known.isPC)
+                NSLog("LINKDBG follow try %@ %@ misses=%d", device.name, "\(device.endpoint)", misses)
                 let got = await self.follow(device, pairing)
+                NSLog("LINKDBG follow result %@ got=%@", device.name, got ? "yes" : "no")
                 misses = got ? 0 : misses + 1
                 guard !Task.isCancelled else { break }
                 // Connected but not a word came back: it accepts connections (or the router does) and nothing answers – gone too
-                if !got { self.ownTV = nil; self.ownBooks = nil; self.app?.player.tvGone(); self.app?.bookPlayer.tvGone() }
+                if !got { self.release(device.id) }
                 // The stream ended: unless the TV answers again right away it's gone – the player lets go of it now
                 // instead of showing music that isn't playing until the last try has failed
-                if !(await self.reachable(device)) { self.ownTV = nil; self.ownBooks = nil; self.app?.player.tvGone(); self.app?.bookPlayer.tvGone() }
+                if !(await self.reachable(device)) { self.release(device.id) }
                 try? await Task.sleep(for: .seconds(2))
             }
             guard let self, !Task.isCancelled else { return }
-            self.listener = nil
-            self.listening = nil
-            self.target = nil
-            self.ownBooks = nil
-            self.app?.player.tvGone()
-            self.app?.bookPlayer.tvGone()
+            self.listeners[device.id] = nil
+            self.release(device.id)
             // A Jukebox that dropped out (the host's phone locked for a moment) is joined again once it's back
             self.retry = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(20))
@@ -440,10 +477,10 @@ final class TVLink {
     /// True when anything came from the other side before the connection ended.
     private func follow(_ device: Device, _ pairing: Pairing) async -> Bool {
         guard let key = Data(hex: pairing.key) else { return false }
-        listening = (device, pairing)
-        target = (device, pairing)
         // Joined as a guest: a Jukebox – or the own TV while someone else is signed in there
         let guest = pairing.guest == true || jukebox == device.id
+        if guest { listening = (device, pairing); target = (device, pairing) }
+        var received = false
         var wasPlaying = false, first = true
         var wasBookPlaying = false, firstBook = true
         var latest: State? // the newest report – the server check below can take a moment, the old one would be stale
@@ -451,6 +488,20 @@ final class TVLink {
         // What the other side reports, shown here – again once the server check below says it's the same server
         func apply(_ s: State) {
             self.lastEvent = .now
+            received = true
+            if !guest, s.jukebox != true {
+                // Several own devices are followed at once: this one is shown while it plays, or while nothing else does
+                let active = (s.active && s.playing == true) || (s.book?.id != nil && s.book?.playing == true)
+                self.activity[device.id] = active
+                if let p = self.primary, p != device.id, !(active && self.activity[p] != true) { return }
+                if self.primary != device.id {
+                    NSLog("LINKDBG show %@ (playing=%@)", device.name, active ? "yes" : "no")
+                    self.primary = device.id
+                    self.listening = (device, pairing)
+                    self.target = (device, pairing)
+                    first = true; wasPlaying = false; firstBook = true; wasBookPlaying = false
+                }
+            }
             if pairing.guest != true {
                 if s.jukebox == true { self.guestOnly.insert(device.id) } else { self.guestOnly.remove(device.id) }
                 // Joined as a guest, and now the TV is back on this account: it's the own TV again
@@ -458,7 +509,10 @@ final class TVLink {
             }
             if !guest {
                 // Someone else is signed in on the TV: nothing of theirs shows here until this phone joins
-                guard s.jukebox != true else { self.ownTV = nil; self.ownBooks = nil; self.app?.player.tvGone(); self.app?.bookPlayer.tvGone(); first = false; return }
+                guard s.jukebox != true else {
+                    if self.primary == nil || self.primary == device.id { self.ownTV = nil; self.ownBooks = nil; self.app?.player.tvGone(); self.app?.bookPlayer.tvGone() }
+                    first = false; return
+                }
                 self.ownTV = device.name
                 self.ownIsPC = device.isPC
                 // Audiobooks: the TV has the same Audiobookshelf account, so a book can go there and come back
@@ -505,6 +559,7 @@ final class TVLink {
             wasPlaying = playing
             first = false
         }
+        self.appliers[device.id] = { if let now = latest { apply(now) } }
         let status = await LinkHTTP.stream(device.endpoint, "/events", headers: ["Authorization": auth], ready: { remote in Task { @MainActor in self.remember(device, remote) } }) { line in
             guard line.starts(with: Data("data: ".utf8)), let s = try? JSONDecoder().decode(State.self, from: Data(line.dropFirst(6))) else { return }
             guard !Task.isCancelled else { return }
@@ -512,14 +567,16 @@ final class TVLink {
             apply(s)
         }
         // A connection that was cancelled on purpose belongs to the past: the new one may already be showing its state
-        guard !Task.isCancelled else { return !first }
-        if !guest { ownTV = nil; ownBooks = nil }
+        self.appliers[device.id] = nil
+        guard !Task.isCancelled else { return received }
+        if !guest, primary == device.id { ownTV = nil; ownBooks = nil }
         // The other side forgot this phone – but not when only its clock is off: then the next try uses its time
+        NSLog("LINKDBG stream ended status=%d", status?.status ?? -1)
         if status?.status == 401 {
             if !learnClock(status?.body, pairing.tv) { unpair(pairing.tv) }
             return false
         }
-        return !first
+        return received
     }
 
     /// The own TV: same account on the same server – another person's music is none of this phone's business.
