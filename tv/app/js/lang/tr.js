@@ -305,6 +305,7 @@ I18N.add('tr', {
   'Autoren': 'Yazarlar',
   'Bücher': 'Kitaplar',
   'Autor': 'Yazar',
+  'Einen Schritt zurück': 'Bir adım geri',
   'Noch nichts da – in Audiobookshelf gibt es hier noch keine Bücher.': 'Henüz bir şey yok – Audiobookshelf\'te henüz kitap yok.',
   'Nächstes Kapitel': 'Sonraki bölüm',
   'Podcast': 'Podcast',
@@ -331,6 +332,7 @@ I18N.add('tr', {
   'Nochmal hören': 'Tekrar dinle',
   'Hörbücher entdecken': 'Sesli kitapları keşfet',
   'Autor': 'Yazar',
+  'Einen Schritt zurück': 'Bir adım geri',
   'Dieses Hörbuch hat das Format Opus, das der Fernseher nicht abspielen kann.': 'Bu sesli kitap, televizyonun oynatamadığı Opus biçiminde.',
   'Das sieht nicht nach einem Audiobookshelf-Server aus. Liegt er hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Bu bir Audiobookshelf sunucusuna benzemiyor. Cloudflare Access veya başka bir proxy arkasındaysa özel başlıkları kontrol edin.'
 });

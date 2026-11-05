@@ -304,6 +304,7 @@ I18N.add('fr', {
   'Autoren': 'Auteurs',
   'Bücher': 'Livres',
   'Autor': 'Auteur',
+  'Einen Schritt zurück': 'Un pas en arrière',
   'Noch nichts da – in Audiobookshelf gibt es hier noch keine Bücher.': 'Rien ici pour l\'instant – il n\'y a pas encore de livres dans Audiobookshelf.',
   'Nächstes Kapitel': 'Chapitre suivant',
   'Podcast': 'Podcast',
@@ -330,6 +331,7 @@ I18N.add('fr', {
   'Nochmal hören': 'Écouter à nouveau',
   'Hörbücher entdecken': 'Découvrir des livres audio',
   'Autor': 'Auteur',
+  'Einen Schritt zurück': 'Un pas en arrière',
   'Dieses Hörbuch hat das Format Opus, das der Fernseher nicht abspielen kann.': 'Ce livre audio est au format Opus, que le téléviseur ne peut pas lire.',
   'Das sieht nicht nach einem Audiobookshelf-Server aus. Liegt er hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Cela ne ressemble pas à un serveur Audiobookshelf. S\'il est derrière Cloudflare Access ou un autre proxy, vérifiez les en-têtes personnalisés.'
 });

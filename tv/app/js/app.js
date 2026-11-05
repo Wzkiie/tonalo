@@ -324,6 +324,13 @@ var App = (function () {
       focusView(entry);
     }
     UI.refreshPlaying();
+    updateBack();
+  }
+
+  // Der Zurück-Knopf oben links (nur am PC): blass, solange es nichts gibt, wohin man zurück kann
+  function updateBack() {
+    var b = U.$('#btn-back');
+    if (b) b.classList.toggle('dim', stack.length <= 1);
   }
 
   function focusView(entry) {
@@ -680,6 +687,8 @@ var App = (function () {
     });
 
     U.$('#nav-user').addEventListener('click', showUsers);
+    U.$('#btn-back').title = T('Einen Schritt zurück');
+    U.$('#btn-back').addEventListener('click', function () { if (stack.length > 1) back(); });
     U.$('#btn-login').addEventListener('click', doLogin);
     U.$('#btn-login-cancel').addEventListener('click', cancelLogin);
     U.$('#btn-login-abs').addEventListener('click', function () { wantAbs = !wantAbs; paintWantAbs(); });
