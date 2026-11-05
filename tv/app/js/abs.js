@@ -220,13 +220,15 @@ var ABS = (function () {
   function search(q) {
     return libraries().then(function (list) {
       return Promise.all(list.map(function (lib) {
-        return req('/api/libraries/' + lib.id + '/search?q=' + encodeURIComponent(q) + '&limit=12').catch(function () { return null; });
+        return req('/api/libraries/' + lib.id + '/search?q=' + encodeURIComponent(q) + '&limit=12').then(function (a) { return a && { lib: lib.id, a: a }; }, function () { return null; });
       }));
     }).then(function (answers) {
-      var out = [];
-      answers.forEach(function (a) {
-        if (!a) return;
-        A(a.book).concat(A(a.podcast)).forEach(function (m) { if (m && m.libraryItem) out.push(m.libraryItem); });
+      // Bücher und Podcasts, dazu Serien: bei einer Serie wie „Die drei ???“ trifft der Suchbegriff oft nur den Serien-Namen
+      var out = { items: [], series: [] }, seen = {};
+      answers.forEach(function (w) {
+        if (!w) return;
+        A(w.a.book).concat(A(w.a.podcast)).forEach(function (m) { if (m && m.libraryItem && !seen[m.libraryItem.id]) { seen[m.libraryItem.id] = 1; out.items.push(m.libraryItem); } });
+        A(w.a.series).forEach(function (m) { if (m && m.series) out.series.push({ id: m.series.id, name: m.series.name, books: A(m.books), lib: w.lib }); });
       });
       return out;
     });

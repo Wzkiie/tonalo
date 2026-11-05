@@ -402,17 +402,18 @@ var Views = (function () {
       results.innerHTML = '';
       results.appendChild(UI.loading());
       // Hörbücher und Podcasts werden mitgesucht; scheitert Audiobookshelf, bleibt die Musiksuche trotzdem
-      var books = ABS.connected() ? ABS.search(q).catch(function () { return []; }) : Promise.resolve([]);
+      var books = ABS.connected() ? ABS.search(q).catch(function () { return { items: [], series: [] }; }) : Promise.resolve({ items: [], series: [] });
       Promise.all([API.search(q), books]).then(function (both) {
-        var r = both[0], bk = both[1].slice(0, 12);
+        var r = both[0], bk = both[1].items.slice(0, 12), ser = both[1].series.slice(0, 12);
         if (my !== seq) return;
         results.innerHTML = '';
-        if (!r.artists.length && !r.albums.length && !r.songs.length && !bk.length) {
+        if (!r.artists.length && !r.albums.length && !r.songs.length && !bk.length && !ser.length) {
           results.appendChild(h('div.empty', { text: T('Keine Ergebnisse für „{q}“', { q: q }) }));
           return;
         }
         if (!r.artists.length && !r.albums.length && !r.songs.length) {
-          results.appendChild(UI.row(T('Hörbücher & Podcasts'), bk, BookViews.card));
+          if (bk.length) results.appendChild(UI.row(T('Hörbücher & Podcasts'), bk, BookViews.card));
+          if (ser.length) results.appendChild(UI.row(T('Serien'), ser, BookViews.seriesCard));
           return;
         }
         var left = h('div', null, h('h2.section-title', { text: T('Top-Ergebnis'), style: 'margin-top:0' }), h('div.nav-container', null, topCard(r)));
@@ -422,6 +423,7 @@ var Views = (function () {
         if (r.artists.length) results.appendChild(UI.row(T('Künstler'), r.artists, UI.artistCard));
         if (r.albums.length) results.appendChild(UI.row(T('Alben'), r.albums, UI.albumCard));
         if (bk.length) results.appendChild(UI.row(T('Hörbücher & Podcasts'), bk, BookViews.card));
+        if (ser.length) results.appendChild(UI.row(T('Serien'), ser, BookViews.seriesCard));
         if (r.songs.length > 4) {
           results.appendChild(h('h2.section-title', { text: T('Alle Songs') }));
           results.appendChild(UI.trackList(r.songs, { showCover: true, showAlbum: true }));

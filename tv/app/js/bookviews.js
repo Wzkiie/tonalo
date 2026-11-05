@@ -139,6 +139,7 @@ var BookViews = (function () {
   // ---------- Serien einer Bibliothek
   function seriesCard(lib) {
     return function (s) {
+      lib = lib || s.lib;
       var n = A(s.books).length || s.numBooks || 0;
       var first = A(s.books)[0];
       return h('button.card.focusable.bk', { onclick: function () { App.go('bookserie', { lib: lib, id: s.id, name: s.name }); } },
@@ -189,11 +190,12 @@ var BookViews = (function () {
       results.innerHTML = '';
       if (q.length < 2) return;
       results.appendChild(UI.loading());
-      ABS.search(q).then(function (list) {
+      ABS.search(q).then(function (found) {
         if (my !== seq) return;
         results.innerHTML = '';
-        if (!list.length) { results.appendChild(h('div.empty', { text: T('Keine Ergebnisse für „{q}“', { q: q }) })); return; }
-        results.appendChild(UI.staticGrid(list, card));
+        if (!found.items.length && !found.series.length) { results.appendChild(h('div.empty', { text: T('Keine Ergebnisse für „{q}“', { q: q }) })); return; }
+        if (found.series.length) results.appendChild(UI.row(T('Serien'), found.series, function (s) { return seriesCard(s.lib)(s); }));
+        if (found.items.length) results.appendChild(UI.staticGrid(found.items, card));
       }).catch(function (e) { if (my === seq) { results.innerHTML = ''; results.appendChild(h('div.empty', { text: e.message })); } });
     }
     input.addEventListener('input', U.debounce(run, 700));
@@ -439,6 +441,6 @@ var BookViews = (function () {
     };
   }
 
-  return { views: { books: books, booklib: booklib, bookseries: bookseries, bookserie: bookserie, booksearch: booksearch, book: book, bookplayer: bookplayer }, start: startPlayback, card: card };
+  return { views: { books: books, booklib: booklib, bookseries: bookseries, bookserie: bookserie, booksearch: booksearch, book: book, bookplayer: bookplayer }, start: startPlayback, card: card, seriesCard: function (s) { return seriesCard(s.lib)(s); } };
 })();
 Object.keys(BookViews.views).forEach(function (k) { Views[k] = BookViews.views[k]; });
