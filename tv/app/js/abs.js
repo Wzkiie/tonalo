@@ -234,7 +234,8 @@ var ABS = (function () {
         if (!w) return;
         A(w.a.book).concat(A(w.a.podcast)).forEach(function (m) { if (m && m.libraryItem && !seen[m.libraryItem.id]) { seen[m.libraryItem.id] = 1; out.items.push(m.libraryItem); } });
         A(w.a.authors).forEach(function (m) { if (m && m.id && m.name) out.authors.push({ id: m.id, name: m.name, numBooks: m.numBooks, lib: w.lib }); });
-        A(w.a.series).forEach(function (m) { if (m && m.series) out.series.push({ id: m.series.id, name: m.series.name, books: A(m.books).slice(0, 1), lib: w.lib, noCount: true }); // die Suche liefert nur die Treffer, nicht alle Bücher der Serie });
+        // Bei Serien liefert die Suche nur die Treffer, nicht alle Bücher: darum noCount
+        A(w.a.series).forEach(function (m) { if (m && m.series) out.series.push({ id: m.series.id, name: m.series.name, books: A(m.books).slice(0, 1), lib: w.lib, noCount: true }); });
       });
       return out;
     });
