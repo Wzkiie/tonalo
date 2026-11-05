@@ -120,6 +120,9 @@ final class TVLink {
     /// Where commands go – kept while the app is in the background, so a pause on the lock screen still reaches the TV.
     @ObservationIgnored private var target: (device: Device, pairing: Pairing)?
     @ObservationIgnored private var retry: Task<Void, Never>?
+    @ObservationIgnored private var watch: Task<Void, Never>?
+    /// Every way a device was found (Wi-Fi, cable, peer to peer): when one doesn't answer, the next gets a try.
+    @ObservationIgnored private var endpoints: [String: [NWEndpoint]] = [:]
     /// Counts connections: an answer to an old one (a command that was slow) must not tear down the new one.
     @ObservationIgnored private var generation = 0
     /// When the other side last reported anything, and when the search began – see `checkGone`.
@@ -144,6 +147,22 @@ final class TVLink {
         startedAt = .now
         checkGone()
         guard browser == nil else { connect(); return }
+        startBrowser()
+        // The search sometimes stalls right after the app opened (nothing found although the TV is there):
+        // looking again a few seconds later finds it – without this the app had to be restarted
+        watch?.cancel()
+        watch = Task { [weak self] in
+            for wait in [4, 6, 10, 15] {
+                try? await Task.sleep(for: .seconds(wait))
+                guard !Task.isCancelled, let self, self.browser != nil, !self.pairings.isEmpty else { return }
+                if self.listener != nil || self.devices.contains(where: { self.pairing(for: $0) != nil }) { return }
+                self.browser?.cancel()
+                self.startBrowser()
+            }
+        }
+    }
+
+    private func startBrowser() {
         let b = NWBrowser(for: .bonjourWithTXTRecord(type: LinkHTTP.serviceType, domain: nil), using: LinkHTTP.parameters)
         b.browseResultsChangedHandler = { [weak self] results, _ in
             let found = results.compactMap { r -> Device? in
@@ -172,6 +191,7 @@ final class TVLink {
 
     /// Going to the background: the connection ends, the player keeps showing the other side until it's back.
     func stop() {
+        watch?.cancel()
         browser?.cancel()
         browser = nil
         checking = []
@@ -198,6 +218,9 @@ final class TVLink {
 
     private func found(_ list: [Device]) {
         // A device in the network more than one way (Wi-Fi and cable, or peer to peer) shows up once
+        var all: [String: [NWEndpoint]] = [:]
+        for d in list { all[d.id, default: []].append(d.endpoint) }
+        endpoints = all
         var seen = Set<String>()
         devices = list.filter { $0.id != app?.jukeboxHost.id && seen.insert($0.id).inserted }
         connect()
@@ -310,7 +333,10 @@ final class TVLink {
             var misses = 0
             while misses < 3, !Task.isCancelled, let self, self.devices.contains(where: { $0.id == device.id }) {
                 // The address can change (Wi-Fi switched, TV got a new IP): always the one Bonjour knows now
-                let device = self.devices.first { $0.id == device.id } ?? device
+                let known = self.devices.first { $0.id == device.id } ?? device
+                // The first way found may be one that hangs (a second network interface): after a miss the next one is tried
+                let ways = self.endpoints[device.id] ?? [known.endpoint]
+                let device = Device(id: known.id, name: known.name, endpoint: ways[misses % ways.count], isPhone: known.isPhone, isPC: known.isPC)
                 let got = await self.follow(device, pairing)
                 misses = got ? 0 : misses + 1
                 guard !Task.isCancelled else { break }
@@ -437,6 +463,8 @@ final class TVLink {
             latest = s
             apply(s)
         }
+        // A connection that was cancelled on purpose belongs to the past: the new one may already be showing its state
+        guard !Task.isCancelled else { return !first }
         if !guest { ownTV = nil; ownBooks = nil }
         // The other side forgot this phone – but not when only its clock is off: then the next try uses its time
         if status?.status == 401 {
