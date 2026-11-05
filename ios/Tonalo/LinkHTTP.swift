@@ -9,7 +9,13 @@ enum LinkHTTP {
     static let serviceType = "_tonalo._tcp"
 
     static var parameters: NWParameters {
-        let p = NWParameters.tcp
+        // Keepalive: a TV switched off at the wall never says goodbye – the dead connection shows after ~25 s
+        let tcp = NWProtocolTCP.Options()
+        tcp.enableKeepalive = true
+        tcp.keepaliveIdle = 10
+        tcp.keepaliveInterval = 5
+        tcp.keepaliveCount = 3
+        let p = NWParameters(tls: nil, tcp: tcp)
         p.includePeerToPeer = true
         return p
     }
@@ -58,11 +64,11 @@ enum LinkHTTP {
 
     /// A stream of server-sent events: `line` gets every line of the body as it comes.
     /// Returns the status (and for an error the body), once the connection has ended.
-    /// Both sides send a ping every 20 s – nothing for 50 s means the other side is gone without saying so.
+    /// Both sides send a ping every 20 s – nothing for 35 s means the other side is gone without saying so.
     @MainActor
     static func stream(_ endpoint: NWEndpoint, _ path: String, headers: [String: String], line: (Data) -> Void) async -> Response? {
         let c = LinkConnection(endpoint)
-        c.idle = 50
+        c.idle = 35
         defer { c.close() }
         return await withTaskCancellationHandler {
             do {
@@ -70,7 +76,9 @@ enum LinkHTTP {
                 try await c.send(head("GET", path, body: Data(), headers: headers))
                 var buffer = Data()
                 var code: Int?
+                c.idle = 8 // a healthy TV answers at once – a connection that stays silent from the start is a dead one
                 while let chunk = try await c.receive() {
+                    c.idle = 35
                     buffer.append(chunk)
                     if code == nil {
                         guard let split = buffer.range(of: Data("\r\n\r\n".utf8)) else { continue }

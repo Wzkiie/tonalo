@@ -40,6 +40,7 @@ service.register('attach', function (msg) {
   gone.forEach(function (c) { c.res.end(); });
   if (app && app !== msg) { try { app.cancel(); } catch (e) { /* schon weg */ } }
   app = msg;
+  wantNet = true;
   startServer();
   startMdns();
   msg.respond({ returnValue: true, port: PORT });
@@ -58,7 +59,10 @@ service.register('stop', function (msg) {
   clients = [];
   pairing = null;
   if (server) { server.close(); server = null; }
-  if (mdns) { try { mdns.close(); } catch (e) { /* egal */ } mdns = null; }
+  wantNet = false;
+  clearTimeout(netRetry);
+  // „Ich bin weg“ (TTL 0): iPhones im Netz nehmen den Eintrag sofort aus der Liste, statt bis zu 2 Minuten zu warten
+  if (mdns) { try { announce(null, null, 0); announce(null, null, 0); } catch (e) { /* egal */ } var m = mdns; setTimeout(function () { try { m.close(); } catch (e) { /* egal */ } }, 100); mdns = null; }
   clearInterval(announcer);
   msg.respond({ returnValue: true });
 });
@@ -83,7 +87,11 @@ function line(guest) {
 
 function broadcast() {
   var forHost = line(false), forGuest = line(true);
-  clients.forEach(function (c) { c.res.write(c.entry.guest ? forGuest : forHost); });
+  clients.forEach(function (c) {
+    // Ein Gerät, das nichts mehr annimmt (Verbindung tot, aber noch nicht erkannt), staut Daten auf: dann trennen
+    if (c.res.writableLength > 1000000) { try { c.res.destroy(); } catch (e) { /* egal */ } return; }
+    c.res.write(c.entry.guest ? forGuest : forHost);
+  });
 }
 
 // Der App sagen, welche iPhones gerade verbunden sind – die Windows-App zeigt das unten an
@@ -247,18 +255,24 @@ function startServer() {
   if (server) return;
   server = http.createServer(function (req, res) {
     if (!local(req.socket.remoteAddress)) { req.socket.destroy(); return; }
+    // Ein iPhone, das ohne Abschied verschwindet (WLAN weg, Gerät aus), soll nicht ewig als verbunden gelten
+    req.socket.setKeepAlive(true, 10000);
     var chunks = [], size = 0;
     req.on('data', function (c) { size += c.length; if (size > 2000000) req.destroy(); else chunks.push(c); });
     req.on('end', function () { handle(req, res, Buffer.concat(chunks).toString('utf8')); });
   });
-  server.on('error', function (e) { console.error('server', e); server = null; });
+  server.on('error', function (e) {
+    console.error('server', e); server = null;
+    // Der Port war kurz belegt oder das Netz wurde gewechselt: nach ein paar Sekunden neu versuchen
+    if (wantNet) { clearTimeout(netRetry); netRetry = setTimeout(function () { if (wantNet) startServer(); }, 3000); }
+  });
   server.listen(PORT);
   // Läuft weiter, auch wenn gerade keine Anfrage kommt
   service.activityManager.create('keepAlive', function () {});
 }
 
 // ---------- Im WLAN auffindbar (mDNS / Bonjour): _tonalo._tcp
-var mdns = null, announcer = null;
+var mdns = null, announcer = null, wantNet = false, netRetry = null, netSig = '';
 var TYPE = '_tonalo._tcp.local';
 
 // Adressen im Heimnetz, die beste zuerst. Ein Windows-PC hat oft virtuelle Netze (WSL, Hyper-V, VPN …),
@@ -312,7 +326,8 @@ function record(name, type, cls, ttl, data) {
 function instanceName() { return tv.name.replace(/\./g, ' ') + '.' + TYPE; }
 function hostName() { return 'tonalo-' + tv.id.slice(0, 8) + '.local'; }
 
-function answer(query, peer) {
+function answer(query, peer, ttl) {
+  if (ttl === undefined) ttl = 120;
   var ip = lanIp(peer);
   if (!ip || !tv.id) return null;
   var instance = instanceName();
@@ -324,10 +339,10 @@ function answer(query, peer) {
   }));
   var only = query ? 1 : 0x8001; // „nur dieser Eintrag gilt“ – nicht bei direkten Antworten
   var records = [
-    record(TYPE, 12, 1, 120, encodeName(instance)),
-    record(instance, 33, only, 120, Buffer.concat([srv, encodeName(host)])),
-    record(instance, 16, only, 120, txt),
-    record(host, 1, only, 120, Buffer.from(ip.split('.').map(Number)))
+    record(TYPE, 12, 1, ttl, encodeName(instance)),
+    record(instance, 33, only, ttl, Buffer.concat([srv, encodeName(host)])),
+    record(instance, 16, only, ttl, txt),
+    record(host, 1, only, ttl, Buffer.from(ip.split('.').map(Number)))
   ];
   var header = Buffer.alloc(12);
   header.writeUInt16BE(0x8400, 2); header.writeUInt16BE(records.length, 6);
@@ -362,8 +377,8 @@ function asksForUs(buf) {
   return ours && off <= buf.length ? off : 0;
 }
 
-function announce(to, peer) {
-  var packet = answer(to && to.query, peer || (to && to.address));
+function announce(to, peer, ttl) {
+  var packet = answer(to && to.query, peer || (to && to.address), ttl);
   if (packet && mdns) mdns.send(packet, 0, packet.length, to ? to.port : 5353, to ? to.address : '224.0.0.251');
 }
 
@@ -375,7 +390,14 @@ function startMdns() {
     var asked = asksForUs(buf);
     if (asked && local(from.address)) announce(from.port !== 5353 ? { port: from.port, address: from.address, query: buf.slice(0, asked) } : null, from.address);
   });
-  mdns.on('error', function (e) { console.error('mdns', e); try { mdns.close(); } catch (x) { /* egal */ } mdns = null; });
+  var mine = mdns;
+  mdns.on('error', function (e) {
+    console.error('mdns', e); try { mine.close(); } catch (x) { /* egal */ }
+    if (mdns !== mine) return;
+    mdns = null;
+    // Der Socket ist weg (Netz gewechselt, Ruhezustand): neu aufbauen, solange die App läuft
+    if (wantNet) { clearTimeout(netRetry); netRetry = setTimeout(function () { if (wantNet) startMdns(); }, 3000); }
+  });
   mdns.bind(5353, function () {
     // In jedem Netz zuhören, gesendet wird ins beste (sonst landet es am PC womöglich im virtuellen Netz)
     var joined = 0, list = lanAddrs();
@@ -386,6 +408,13 @@ function startMdns() {
     setTimeout(announce, 1000);
     // Zur Sicherheit regelmäßig von selbst melden – manche Router reichen Suchanfragen nicht zuverlässig weiter
     clearInterval(announcer);
-    announcer = setInterval(function () { if (app) announce(); }, 60000);
+    netSig = lanAddrs().map(function (a) { return a.ip; }).join(',');
+    announcer = setInterval(function () {
+      if (!app) return;
+      // Anderes Netz oder andere Adresse (WLAN gewechselt, VPN an/aus): neu verbinden, sonst findet das iPhone uns nicht mehr
+      var sig = lanAddrs().map(function (a) { return a.ip; }).join(',');
+      if (sig !== netSig && mdns) { var old = mdns; mdns = null; try { old.close(); } catch (e) { /* egal */ } startMdns(); return; }
+      announce();
+    }, 60000);
   });
 }

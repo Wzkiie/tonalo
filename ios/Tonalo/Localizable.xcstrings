@@ -37,6 +37,16 @@
         }
       }
     },
+    "%@ didn't start the music – playing here again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hat die Musik nicht gestartet – sie läuft wieder hier."
+          }
+        }
+      }
+    },
     "%@ isn't answering." : {
       "localizations" : {
         "de" : {
@@ -5347,6 +5357,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "deinem TV"
+          }
+        }
+      }
+    },
+    "TV connection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TV-Verbindung"
+          }
+        }
+      }
+    },
+    "Songs the TV can't play are converted, a switched-off TV is let go of sooner, and it's found again by itself." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lieder, die der TV nicht abspielt, werden umgewandelt, ein ausgeschalteter TV wird schneller losgelassen und von selbst wiedergefunden."
+          }
+        }
+      }
+    },
+    "Starting over" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von vorn"
+          }
+        }
+      }
+    },
+    "A song you stopped long ago starts from the beginning. Audiobooks still continue where you were." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Lied, das du vor langer Zeit gestoppt hast, startet von vorn. Hörbücher machen weiter, wo du warst."
           }
         }
       }

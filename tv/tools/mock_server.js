@@ -169,6 +169,15 @@ function handle(req, res, u) {
       res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(fs.readFileSync(path.join(COVERS, q.id + '.png')));
     }
     if (m === 'getCoverArt') { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Access-Control-Allow-Origin': '*' }); return res.end(coverSvg(q.id || '')); }
+    if (m === 'stream' && (process.env.MOCK_BAD_RAW || process.env.MOCK_BAD_ALL)) {
+      // For tests of the player's fallback: MOCK_BAD_RAW=<ids> can't be played as the original file (like ALAC on a TV),
+      // only converted (format given); MOCK_BAD_ALL=<ids> can't be played at all
+      const bad = (v) => (process.env[v] || '').split(',').filter(Boolean).includes(q.id);
+      if (bad('MOCK_BAD_ALL') || (bad('MOCK_BAD_RAW') && !q.format)) {
+        if (process.env.MOCK_LOG) console.log('BAD stream', q.id, q.format || 'raw');
+        res.writeHead(bad('MOCK_BAD_ALL') ? 500 : 415, { 'Content-Type': 'text/plain' }); return res.end('unsupported');
+      }
+    }
     if (m === 'stream' || m === 'download') {
       // Byte ranges like a real server – AVPlayer on iOS refuses streams without them
       const r = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');

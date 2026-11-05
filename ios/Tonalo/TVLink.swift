@@ -91,6 +91,12 @@ final class TVLink {
     /// Where commands go – kept while the app is in the background, so a pause on the lock screen still reaches the TV.
     @ObservationIgnored private var target: (device: Device, pairing: Pairing)?
     @ObservationIgnored private var retry: Task<Void, Never>?
+    /// Counts connections: an answer to an old one (a command that was slow) must not tear down the new one.
+    @ObservationIgnored private var generation = 0
+    /// When the other side last reported anything, and when the search began – see `checkGone`.
+    @ObservationIgnored private var lastEvent: Date = .distantPast
+    @ObservationIgnored private var startedAt: Date = .distantPast
+    @ObservationIgnored private var goneCheck: Task<Void, Never>?
     /// TV and server ("id|address") where the server turned out to be this account's under another address –
     /// the TV knows it by its home IP, the phone by its domain. Checked once by asking for a song playing there.
     @ObservationIgnored private var sameServer: Set<String> = []
@@ -106,6 +112,8 @@ final class TVLink {
            let at = saved.last as? Double, Date().timeIntervalSince1970 - at < 6 * 3600, pairings.contains(where: { $0.tv == id }) {
             jukebox = id
         }
+        startedAt = .now
+        checkGone()
         guard browser == nil else { connect(); return }
         let b = NWBrowser(for: .bonjourWithTXTRecord(type: LinkHTTP.serviceType, domain: nil), using: LinkHTTP.parameters)
         b.browseResultsChangedHandler = { [weak self] results, _ in
@@ -119,10 +127,25 @@ final class TVLink {
         browser = b
     }
 
+    /// The app came back and the player still shows a TV: if nothing has been heard from it since – it was switched
+    /// off in the meantime, or isn't found any more – the player lets go of it, instead of showing it forever.
+    private func checkGone() {
+        goneCheck?.cancel()
+        goneCheck = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(8))
+            guard !Task.isCancelled, let self, self.app?.player.tvName != nil, self.lastEvent < self.startedAt else { return }
+            self.ownTV = nil
+            self.app?.player.tvGone()
+        }
+    }
+
     /// Going to the background: the connection ends, the player keeps showing the other side until it's back.
     func stop() {
         browser?.cancel()
         browser = nil
+        checking = []
+        goneCheck?.cancel()
+        generation += 1
         listener?.cancel()
         listener = nil
         listening = nil
@@ -161,7 +184,7 @@ final class TVLink {
     func finishPairing(_ device: Device, code: String, guest: Bool) async -> PairResult {
         let mine = P256.KeyAgreement.PrivateKey()
         let pub = mine.publicKey.x963Representation
-        let body = (try? JSONSerialization.data(withJSONObject: ["device": deviceName, "guest": guest, "pub": pub.hex,
+        let body = (try? JSONSerialization.data(withJSONObject: ["device": deviceName, "uid": installId, "guest": guest, "pub": pub.hex,
                                                                  "proof": LinkHTTP.proof(code: code, pub: pub).hex])) ?? Data()
         guard let r = try? await LinkHTTP.request(device.endpoint, "POST", "/pair/finish", body: body) else { return .failed }
         switch r.status {
@@ -191,6 +214,14 @@ final class TVLink {
     /// The name others see when this phone pairs or adds songs: the account's user name, which they know anyway.
     private var deviceName: String { app?.current?.username ?? UIDevice.current.name }
 
+    /// Stays the same for this installation: a Jukebox tells two guests with the same name apart by it.
+    private var installId: String {
+        if let id = UserDefaults.standard.string(forKey: "link.install") { return id }
+        let id = LinkHTTP.random(8).hex
+        UserDefaults.standard.set(id, forKey: "link.install")
+        return id
+    }
+
     private func loadPairings() {
         pairings = storageKey.flatMap { Keychain.load([Pairing].self, key: $0) } ?? []
     }
@@ -217,6 +248,7 @@ final class TVLink {
     // MARK: Live
 
     private func disconnect() {
+        generation += 1
         checking = []
         listener?.cancel()
         listener = nil
@@ -237,11 +269,21 @@ final class TVLink {
             target = devices.lazy.compactMap { d in self.pairing(for: d).flatMap { $0.guest == true ? nil : (d, $0) } }.first
         }
         guard let (device, pairing) = target else { return }
+        generation += 1
         listener = Task { [weak self] in
             // A dropped connection gets a few more tries before the phone takes over again
             var misses = 0
             while misses < 3, !Task.isCancelled, let self, self.devices.contains(where: { $0.id == device.id }) {
-                misses = await self.follow(device, pairing) ? 0 : misses + 1
+                // The address can change (Wi-Fi switched, TV got a new IP): always the one Bonjour knows now
+                let device = self.devices.first { $0.id == device.id } ?? device
+                let got = await self.follow(device, pairing)
+                misses = got ? 0 : misses + 1
+                guard !Task.isCancelled else { break }
+                // Connected but not a word came back: it accepts connections (or the router does) and nothing answers – gone too
+                if !got { self.ownTV = nil; self.app?.player.tvGone() }
+                // The stream ended: unless the TV answers again right away it's gone – the player lets go of it now
+                // instead of showing music that isn't playing until the last try has failed
+                if !(await self.reachable(device)) { self.ownTV = nil; self.app?.player.tvGone() }
                 try? await Task.sleep(for: .seconds(2))
             }
             guard let self, !Task.isCancelled else { return }
@@ -258,6 +300,30 @@ final class TVLink {
         }
     }
 
+    /// A quick check whether the other side still answers (a signed request would need the key; opening the connection is enough).
+    private func reachable(_ device: Device) async -> Bool {
+        let c = LinkConnection(device.endpoint)
+        defer { c.close() }
+        return (try? await c.open(timeout: 8)) != nil
+    }
+
+    /// The other side doesn't answer: let go of it at once and look again, instead of showing music that isn't playing.
+    private func lost(_ gen: Int? = nil) {
+        guard listener != nil, gen == nil || gen == generation else { return }
+        generation += 1
+        listener?.cancel()
+        listener = nil
+        listening = nil
+        ownTV = nil
+        app?.player.tvGone()
+        retry?.cancel()
+        retry = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled, let self, self.browser != nil else { return }
+            self.connect()
+        }
+    }
+
     /// True when anything came from the other side before the connection ended.
     private func follow(_ device: Device, _ pairing: Pairing) async -> Bool {
         guard let key = Data(hex: pairing.key) else { return false }
@@ -266,9 +332,11 @@ final class TVLink {
         // Joined as a guest: a Jukebox – or the own TV while someone else is signed in there
         let guest = pairing.guest == true || jukebox == device.id
         var wasPlaying = false, first = true
+        var latest: State? // the newest report – the server check below can take a moment, the old one would be stale
         let auth = LinkHTTP.authorization("GET", "/events", body: Data(), keyId: pairing.keyId, key: key, offset: clockOffset[pairing.tv] ?? 0)
         // What the other side reports, shown here – again once the server check below says it's the same server
         func apply(_ s: State) {
+            self.lastEvent = .now
             if pairing.guest != true {
                 if s.jukebox == true { self.guestOnly.insert(device.id) } else { self.guestOnly.remove(device.id) }
                 // Joined as a guest, and now the TV is back on this account: it's the own TV again
@@ -282,7 +350,13 @@ final class TVLink {
             }
             let playing = s.active && s.playing == true
             let same = self.matches(s, guest: guest, device: device.id)
-            if s.active, !same { self.checkServer(s, device: device.id) { if !Task.isCancelled, self.listening?.device.id == device.id { apply(s) } } }
+            if s.active, !same {
+                // Once it turns out to be the same server (the TV knows it by its IP, the phone by its domain) this is like
+                // connecting anew: the TV takes over if it plays – not only at its next pause and play
+                self.checkServer(s, device: device.id) {
+                    if !Task.isCancelled, self.listening?.device.id == device.id, let now = latest { first = true; wasPlaying = false; apply(now) }
+                }
+            }
             if guest {
                 // A guest follows the Jukebox all the time, also before anything plays there – what it picks is the first song
                 if !s.active || same { self.app?.player.tvUpdate(s, name: device.name, guest: true, started: true) }
@@ -300,6 +374,7 @@ final class TVLink {
         let status = await LinkHTTP.stream(device.endpoint, "/events", headers: ["Authorization": auth]) { line in
             guard line.starts(with: Data("data: ".utf8)), let s = try? JSONDecoder().decode(State.self, from: Data(line.dropFirst(6))) else { return }
             guard !Task.isCancelled else { return }
+            latest = s
             apply(s)
         }
         if !guest { ownTV = nil }
@@ -335,6 +410,11 @@ final class TVLink {
         Task {
             // Asked once per connection: an unknown song stays a different server until the phone connects again
             if (try? await client.call("getSong", ["id": song.id])) != nil { sameServer.insert(key); then() }
+            else {
+                // Not known – or the request failed: asked again after a while, not with every report
+                try? await Task.sleep(for: .seconds(30))
+                checking.remove(key)
+            }
         }
     }
 
@@ -363,8 +443,10 @@ final class TVLink {
     }
 
     private func command(_ cmd: [String: Any]) {
-        guard let (device, pairing) = listening ?? target, let key = Data(hex: pairing.key),
+        guard let (found, pairing) = listening ?? target, let key = Data(hex: pairing.key),
               let body = try? JSONSerialization.data(withJSONObject: cmd) else { return }
+        let device = devices.first { $0.id == found.id } ?? found
+        let gen = generation
         Task {
             var answer: LinkHTTP.Response?
             // Twice at most: the second time with the other side's clock, if only that was off
@@ -373,7 +455,16 @@ final class TVLink {
                 answer = try? await LinkHTTP.request(device.endpoint, "POST", "/command", body: body, headers: ["Authorization": auth])
                 guard answer?.status == 401, learnClock(answer?.body, pairing.tv) else { break }
             }
-            if answer?.status != 200 { app?.player.lastError = String(localized: "\(device.name) isn't answering.") }
+            guard answer?.status != 200 else { return }
+            app?.player.lastError = String(localized: "\(device.name) isn't answering.")
+            guard gen == generation, listening?.device.id == device.id else { return }
+            if answer == nil, !(await reachable(device)) { lost(gen); return } // nothing came back and it doesn't open: off or away
+            // What the phone showed in advance (paused, moved on) didn't happen over there: look at the real state again
+            generation += 1
+            listener?.cancel()
+            listener = nil
+            listening = nil
+            connect()
         }
     }
 

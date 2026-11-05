@@ -82,7 +82,7 @@ var Player = (function () {
         var t = Math.min(1, (Date.now() - t0) / (cf * 1000));
         if (!started && !audio.paused && audio.currentTime > 0) started = true;
         // Der Fernseher bekommt den zweiten Player nicht zum Laufen: zurück zum normalen Songwechsel
-        if (!started && Date.now() - t0 > 4000) { giveUp(); return; }
+        if (!started && Date.now() - t0 > (fellBack() ? 12000 : 4000)) { giveUp(); return; }
         xfIn = started ? t : 0;
         applyVolume();
         from.volume = Math.max(0, fromVol * (1 - t));
@@ -108,7 +108,14 @@ var Player = (function () {
     xf = null; xfIn = 1;
     applyVolume();
   }
-  function transcoding() { return !!settings().maxBitRate; }
+  // Song, den der TV nicht im Original abspielt: er läuft ab dann als MP3 vom Server (auch beim Spulen und Neuladen)
+  var fallbackId = null;
+  function fellBack() { var s = current(); return !!s && fallbackId === s.id; }
+  function transcoding() { return !!settings().maxBitRate || fellBack(); }
+  // Position zum Weitermachen: nur kurz gemerkt (Anruf, kurze Pause), nicht nach Stunden oder Tagen
+  var RESUME_MS = 30 * 60 * 1000;
+  function savePos(v, at) { U.ustore.set('pos', v); U.ustore.set('posAt', at || Date.now()); }
+  function freshPos() { return Date.now() - (U.ustore.get('posAt', 0) || 0) < RESUME_MS ? (U.ustore.get('pos', 0) || 0) : 0; }
 
   function load(startAt, autoplay) {
     var s = current();
@@ -118,7 +125,9 @@ var Player = (function () {
     scrobbled = false;
     offset = 0;
     pendingSeek = 0;
+    if (fallbackId && fallbackId !== s.id) fallbackId = null;
     var opts = { maxBitRate: settings().maxBitRate, format: settings().format };
+    if (fellBack() && !opts.maxBitRate) { opts.maxBitRate = 320; opts.format = 'mp3'; }
     if (startAt > 1) {
       if (transcoding()) { opts.offset = startAt; offset = Math.floor(startAt); }
       else pendingSeek = startAt;
@@ -251,7 +260,7 @@ var Player = (function () {
     stopFade();
     if (station) { if (audio.paused) playStation(station); else audio.pause(); return; }
     if (!current()) return;
-    if (!audio.src) { load(U.ustore.get('pos', 0), true); return; }
+    if (!audio.src) { load(freshPos(), true); return; }
     if (audio.paused) audio.play(); else audio.pause();
   }
   function play() { if (audio.paused) toggle(); }
@@ -323,7 +332,7 @@ var Player = (function () {
 
   function playStation(st, list) {
     if (list) stations = list;
-    if (!station && audio.src && current()) U.ustore.set('pos', Math.floor(position()));
+    if (!station && audio.src && current()) savePos(Math.floor(position()));
     stopFade();
     station = st; offset = 0; pendingSeek = 0; errorStreak = 0;
     var my = ++stationSeq;
@@ -392,7 +401,7 @@ var Player = (function () {
     U.ustore.set('shuffle', shuffleOn);
     U.ustore.set('context', context);
     // Ohne geladenen Stream ist die Position 0 – gespeicherte Position dann nicht überschreiben
-    if (audio.src && !station) U.ustore.set('pos', Math.floor(position()));
+    if (audio.src && !station) savePos(Math.floor(position()));
   }
   function persist() {
     clearTimeout(persistTimer);
@@ -410,7 +419,7 @@ var Player = (function () {
     var sig = ids.join(',') + '|' + s.id;
     if (!force && sig === remoteSig && Date.now() - remoteAt < 30000) return;
     remoteSig = sig; remoteAt = Date.now();
-    API.savePlayQueue(ids, s.id, audio.src ? position() : U.ustore.get('pos', 0) || 0);
+    API.savePlayQueue(ids, s.id, audio.src ? position() : freshPos());
   }
 
   function parseDate(iso) {
@@ -447,7 +456,7 @@ var Player = (function () {
       audio.pause();
       audio.removeAttribute('src');
       try { audio.load(); } catch (e) { /* egal */ }
-      U.ustore.set('pos', Math.floor(offer.pos));
+      savePos(Math.floor(offer.pos), parseDate(offer.changed) || Date.now());
       U.ustore.set('changed', parseDate(offer.changed));
       persistNow(true);
       emit('track', current());
@@ -509,10 +518,24 @@ var Player = (function () {
     listen('error', function () {
       if (station) { U.toast(T('Dieser Sender kann gerade nicht abgespielt werden.')); emit('state'); return; }
       if (!audio.src || !current()) return;
+      // Ein Format, das der TV nicht abspielt (z. B. ALAC, Opus): einmal vom Server als MP3 umwandeln lassen, an derselben Stelle
+      var cur = current();
+      if (cur && !transcoding()) {
+        fallbackId = cur.id;
+        var at = Math.floor(pendingSeek || position());
+        offset = at > 1 ? at : 0;
+        pendingSeek = 0;
+        audio.src = API.streamUrl(cur.id, { maxBitRate: 320, format: 'mp3', offset: offset });
+        var q = audio.play();
+        if (q && q.catch) q.catch(function () { /* egal */ });
+        emit('state');
+        return;
+      }
       errorStreak++;
       var code = audio.error ? audio.error.code : '?';
       U.toast(T(errorStreak < 4 ? 'Wiedergabefehler ({code}) – Song wird übersprungen' : 'Wiedergabefehler ({code}) – gestoppt', { code: code }));
       if (errorStreak < 4 && queue.length > 1) setTimeout(function () { next(true); }, 1200);
+      else { try { audio.pause(); } catch (e) { /* egal */ } }
       emit('state');
     });
   });

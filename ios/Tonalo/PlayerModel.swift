@@ -443,7 +443,16 @@ final class PlayerModel {
     private struct Saved: Codable {
         var queue: [Song]; var index: Int; var position: Double; var repeatMode: RepeatMode; var shuffle: Bool; var context: Context?
         var changed: Date?
+        /// When the position was saved – a song left half played days ago starts from the beginning.
+        var savedAt: Date?
     }
+
+    /// When the position last really moved – adding songs to a paused queue doesn't make an old position fresh.
+    @ObservationIgnored private var positionMovedAt: Date = .now
+    @ObservationIgnored private var lastSavedPosition: Double = 0
+
+    /// A song stopped in the middle goes on from there only for a while (a call, a short break), not after hours or days.
+    static let resumeWindow: TimeInterval = 30 * 60
 
     private var storageKey: String? { app?.current.map { "queue." + $0.id.uuidString } }
 
@@ -452,7 +461,10 @@ final class PlayerModel {
               let s = try? JSONDecoder().decode(Saved.self, from: data) else { return }
         queue = s.queue
         index = queue.indices.contains(s.index) ? s.index : (queue.isEmpty ? -1 : 0)
-        position = s.position
+        let fresh = Date().timeIntervalSince(s.savedAt ?? .distantPast) < Self.resumeWindow
+        position = fresh ? s.position : 0
+        positionMovedAt = fresh ? (s.savedAt ?? .now) : .now
+        lastSavedPosition = position
         repeatMode = s.repeatMode
         shuffle = s.shuffle
         context = s.context
@@ -464,8 +476,9 @@ final class PlayerModel {
     private func persist(sync: Bool = true) {
         guard tvName == nil, let key = storageKey else { return }
         if sync { localChange = .now }
+        if position != lastSavedPosition { lastSavedPosition = position; positionMovedAt = .now }
         let s = Saved(queue: Array(queue.prefix(1000)), index: index, position: station == nil ? position : queuePosition, repeatMode: repeatMode, shuffle: shuffle,
-                      context: context, changed: localChange)
+                      context: context, changed: localChange, savedAt: positionMovedAt)
         UserDefaults.standard.set(try? JSONEncoder().encode(s), forKey: key)
         if sync { syncToServer() }
     }
@@ -535,10 +548,10 @@ final class PlayerModel {
         queue = offer.songs; index = offer.index; original = nil; shuffle = false; context = nil
         errorStreak = 0
         if play {
-            load(autoplay: true, startAt: offer.position)
+            load(autoplay: true, startAt: offer.position) // chosen on purpose: from where the other device stopped
         } else {
             endFade(); player.pause(); player.replaceCurrentItem(with: nil)
-            position = offer.position
+            position = Date().timeIntervalSince(offer.changedDate) < Self.resumeWindow ? offer.position : 0
             duration = Double(offer.song.duration ?? 0)
             localChange = offer.changedDate
             persist(sync: false) // the server already has this queue
@@ -854,6 +867,8 @@ final class PlayerModel {
             }
             cancelSleepTimer()
             prefetcher.stop()
+            handoff?.cancel()
+            if let b = app?.bookPlayer, b.session != nil { b.close() } // the TV has the sound now – a book here would keep the lock screen
             remoteOffer = nil
             qualityLabel = nil
             playingDownload = false
@@ -909,8 +924,20 @@ final class PlayerModel {
         if let station { tv.play(station, in: stations) }
         else if current != nil { tv.play(queue, from: index, shuffled: false, context: context, at: position) }
         else { return }
-        if isPlaying { endFade(); player.pause(); persist() }
+        guard isPlaying else { return }
+        endFade(); player.pause(); persist()
+        // The TV takes over once it reports playing. If it never does (a song it can't play, the TV just went off),
+        // the music goes on here from where it stopped instead of the phone sitting there silent.
+        let name = tv.ownTV ?? "TV", at = position, st = station
+        handoff?.cancel()
+        handoff = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(12))
+            guard !Task.isCancelled, let self, self.tvName == nil, !self.isPlaying else { return }
+            self.lastError = String(localized: "\(name) didn't start the music – playing here again.")
+            if let st { self.play(st, in: self.stations) } else { self.load(autoplay: true, startAt: at) }
+        }
     }
+    @ObservationIgnored private var handoff: Task<Void, Never>?
 
     /// "Play on iPhone": the TV pauses, the music goes on here from the same spot.
     func continueHere() {

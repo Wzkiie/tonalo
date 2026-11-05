@@ -14,6 +14,8 @@ final class JukeboxHost {
         var keyId: String
         var key: String
         var name: String
+        /// Stays the same for the guest's installation (older guests have none): two guests with one name don't push each other out.
+        var uid: String?
     }
 
     /// A guest wants to join: the code to show on this phone.
@@ -57,6 +59,9 @@ final class JukeboxHost {
     @ObservationIgnored private var told: (position: Double, at: Date, playing: Bool)?
     /// Counts up with every start, so an observation left from before a restart ends by itself.
     @ObservationIgnored private var generation = 0
+    @ObservationIgnored private var restarts = 0
+    /// Switched on by the user (and not off since): only then a listener that failed is started again.
+    @ObservationIgnored private var wanted = false
 
     private var storageKey: String? { app?.current.map { "jukebox." + $0.id.uuidString } }
     /// What everyone nearby sees before pairing – no user name, that's for those who joined.
@@ -66,6 +71,7 @@ final class JukeboxHost {
 
     func start() {
         guard !running else { return }
+        wanted = true
         guests = storageKey.flatMap { Keychain.load([Guest].self, key: $0) } ?? []
         guard let l = try? NWListener(using: LinkHTTP.parameters) else { return }
         l.service = NWListener.Service(name: name, type: LinkHTTP.serviceType, txtRecord: NWTXTRecord(["id": id, "kind": "phone"]))
@@ -73,8 +79,19 @@ final class JukeboxHost {
             Task { @MainActor in await self?.handle(LinkConnection(c)) }
         }
         l.stateUpdateHandler = { [weak self] state in
-            // No local network permission, or the system took the listener away: off, so the switch says so
-            if case .failed = state { Task { @MainActor in self?.stop() } }
+            // The system took the listener away (network change, sleep): started again a few times; without the local
+            // network permission that fails every time – then it stays off, so the switch says so
+            if case .ready = state { Task { @MainActor in self?.restarts = 0 } }
+            if case .failed = state {
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.halt()
+                    guard self.wanted, self.restarts < 3 else { return }
+                    self.restarts += 1
+                    try? await Task.sleep(for: .seconds(3))
+                    if self.wanted, !self.running { self.start() }
+                }
+            }
         }
         l.start(queue: .main)
         listener = l
@@ -88,6 +105,11 @@ final class JukeboxHost {
     }
 
     func stop() {
+        wanted = false
+        halt()
+    }
+
+    private func halt() {
         listener?.cancel()
         listener = nil
         sync?.invalidate()
@@ -198,9 +220,10 @@ final class JukeboxHost {
             }
             let mine = P256.KeyAgreement.PrivateKey()
             guard let key = LinkHTTP.pairingKey(mine, other: pub, code: pairing.code) else { return await reply(c, 400, ["error": "bad key"]) }
-            let guest = Guest(keyId: LinkHTTP.random(8).hex, key: key.hex, name: String((p["device"] as? String ?? "Guest").prefix(60)))
-            // Pairing again replaces the old pairing of the same guest
-            for old in guests where old.name == guest.name { remove(old) }
+            let guest = Guest(keyId: LinkHTTP.random(8).hex, key: key.hex, name: String((p["device"] as? String ?? "Guest").prefix(60)),
+                              uid: (p["uid"] as? String).map { String($0.prefix(32)) })
+            // Pairing again replaces the old pairing of the same guest: the same installation – or, with an older app, the same name
+            for old in guests where (old.uid != nil && old.uid == guest.uid) || (old.name == guest.name && (old.uid == nil || guest.uid == nil)) { remove(old) }
             guests.append(guest)
             save()
             cancelRequest()
@@ -226,6 +249,7 @@ final class JukeboxHost {
             // Waits for the guest to go away
             while (try? await c.receive()) != nil {}
             streams.removeAll { $0.connection === c }
+            c.close()
             updatePresent()
         case ("POST", "/command"):
             run(p, from: guest)
