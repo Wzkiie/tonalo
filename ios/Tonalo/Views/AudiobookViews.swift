@@ -907,6 +907,7 @@ struct BookMiniBar: View {
                 Text(b.chapter != nil ? b.title : b.creator).font(.system(size: 13)).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
             }
             Spacer(minLength: 8)
+            if b.tvName != nil { Image(systemName: app.tv.ownIsPC ? "desktopcomputer" : "tv.fill").font(.system(size: 14)).foregroundStyle(Color.accent) }
             Button { b.skip(-Double(b.skipBack)) } label: { Image(systemName: "gobackward.\(b.skipBack)").font(.system(size: 20)).frame(width: 36, height: 36) }
                 .accessibilityLabel("Back \(b.skipBack) seconds")
             if b.isLoading {
@@ -931,6 +932,29 @@ struct BookMiniBar: View {
 }
 
 // MARK: - Full player
+
+/// Where the book plays: this iPhone or the own TV, while it's connected and signed in to the same Audiobookshelf.
+/// Switching takes the book along, from the same spot.
+struct BookDeviceButton: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        let b = app.bookPlayer
+        let onTV = b.tvName != nil
+        Menu {
+            Button { if onTV { b.continueHere() } } label: {
+                Label("This iPhone", systemImage: onTV ? "iphone" : "checkmark")
+            }
+            Button { if !onTV { b.playOnTV() } } label: {
+                Label(b.tvName ?? app.tv.ownBooks ?? "TV", systemImage: onTV ? "checkmark" : app.tv.ownIsPC ? "desktopcomputer" : "tv")
+            }
+        } label: {
+            Image(systemName: app.tv.ownIsPC ? "desktopcomputer" : onTV ? "tv.fill" : "tv").font(.system(size: 20)).frame(minWidth: 52, minHeight: 40)
+                .foregroundStyle(onTV ? Color.accent : .white)
+        }
+        .accessibilityLabel("Play on")
+    }
+}
 
 struct BookPlayerView: View {
     @Environment(AppModel.self) private var app
@@ -957,7 +981,7 @@ struct BookPlayerView: View {
                 Spacer()
                 Text(b.item?.title ?? "").font(.system(size: 13, weight: .semibold)).lineLimit(1)
                 Spacer()
-                Button { b.close(); close() } label: { Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).frame(width: 44, height: 44) }
+                Button { b.stop(); close() } label: { Image(systemName: "xmark").font(.system(size: 16, weight: .semibold)).frame(width: 44, height: 44) }
                     .accessibilityLabel("Stop")
             }
             Spacer(minLength: 0)
@@ -968,6 +992,10 @@ struct BookPlayerView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(b.chapter?.title ?? b.title).font(.system(size: 21, weight: .bold)).lineLimit(2)
                 Text(b.chapter != nil ? b.title : b.creator).font(.system(size: 15)).foregroundStyle(Color.subtle).lineLimit(1)
+                if let name = b.tvName {
+                    Label("Playing on \(name)", systemImage: app.tv.ownIsPC ? "desktopcomputer" : "tv")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.accent).lineLimit(1).padding(.top, 2)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -1034,6 +1062,7 @@ struct BookPlayerView: View {
                 Spacer()
                 sleepMenu
                 Spacer()
+                if b.tvName != nil || app.tv.ownBooks != nil { BookDeviceButton(); Spacer() }
                 Button { showChapters = true } label: { Image(systemName: "list.bullet").font(.system(size: 20)).frame(minWidth: 52, minHeight: 40) }
                     .accessibilityLabel("Chapters").disabled(b.chapters.isEmpty)
             }

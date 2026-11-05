@@ -739,6 +739,12 @@ final class AudiobookLibrary {
         if libraries.isEmpty, let libs = try? await fetchLibraries() { libraries = libs }
     }
 
+    /// The ids of this server's libraries – the same server shows the same ones, under whatever address.
+    func libraryIds() async -> [String] {
+        await ensureLibraries()
+        return libraries.map(\.id)
+    }
+
     /// The libraries of one kind, what the overview pages go through.
     func libraries(podcasts: Bool) async -> [ABSLibrary] {
         await ensureLibraries()

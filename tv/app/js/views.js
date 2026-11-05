@@ -76,7 +76,19 @@ var Views = (function () {
       recent.slice(0, 8 - tiles.length).forEach(function (a) {
         tiles.push(UI.shortcut({ coverId: a.coverArt || a.id, label: a.name, onClick: function () { App.go('album', { id: a.id }); }, onOptions: function () { Menus.album(a); } }));
       });
-      el.appendChild(h('div.shortcuts.nav-container', null, tiles));
+      var shortcutBox = h('div.shortcuts.nav-container', null, tiles);
+      el.appendChild(shortcutBox);
+      // Ein angefangenes Hörbuch geht mit einem Tastendruck weiter
+      if (ABS.connected()) {
+        ABS.req('/api/me/items-in-progress?limit=1').then(function (r) {
+          var it = r && r.libraryItems && r.libraryItems[0];
+          if (!it || shortcutBox.children.length >= 8) return;
+          var ep = it.recentEpisode, name = (ep && ep.title) || (it.media && it.media.metadata && it.media.metadata.title) || '';
+          shortcutBox.appendChild(UI.shortcut({ art: { cls: 'mix', icon: 'book' }, label: T('Hörbuch weiterhören: {title}', { title: name }), onClick: function () {
+            BookViews.start(it.id, ep ? ep.id : null, null); App.go('bookplayer');
+          } }));
+        }).catch(function () { });
+      }
       var radioHolder = h('div');
       el.appendChild(radioHolder);
       Promise.all([API.genres().catch(function () { return []; }), API.stations().catch(function () { return []; })]).then(function (r) {
@@ -775,6 +787,20 @@ var Views = (function () {
       UI.button(T('Konto entfernen'), function () { UI.confirm(T(U.desktop ? 'Konto „{name}“ von diesem PC entfernen?' : 'Konto „{name}“ von diesem TV entfernen?', { name: cfg.user }), T('Entfernen'), App.logout, 'trash'); }, 'danger', 'logout'),
       UI.button(T('App beenden'), App.exit, 'outline', 'power')
     ));
+
+    el.appendChild(h('div.settings-section', { text: 'Audiobookshelf' }));
+    if (ABS.connected()) {
+      el.appendChild(h('div.setting', null, h('div', null,
+        h('div.setting-label', { text: T('Verbunden als {name}', { name: ABS.user() }) }), h('div.setting-desc', { text: ABS.server() }))));
+      el.appendChild(h('div.settings-actions.nav-container', null,
+        UI.button(T('Hörbücher öffnen'), function () { App.go('books', null, { root: true }); }, 'primary', 'book'),
+        UI.button(T('Trennen'), function () { UI.confirm(T('Audiobookshelf von diesem Konto trennen?'), T('Trennen'), function () { App.disconnectAbs(); App.reload(); }, 'logout'); }, 'danger', 'logout')));
+    } else {
+      el.appendChild(h('div.setting', null, h('div', null,
+        h('div.setting-label', { text: T('Hörbücher und Podcasts') }),
+        h('div.setting-desc', { text: T('Spiele Hörbücher und Podcasts von deinem Audiobookshelf-Server ab – Fortschritt und Bibliothek wie in der iPhone-App.') }))));
+      el.appendChild(h('div.settings-actions.nav-container', null, UI.button(T('Mit Audiobookshelf verbinden'), App.absLogin, 'primary', 'book')));
+    }
 
     el.appendChild(h('div.settings-section', { text: T('iPhone') }));
     var phones = Link.phones();

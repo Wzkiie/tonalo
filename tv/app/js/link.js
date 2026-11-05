@@ -80,6 +80,13 @@ var Link = (function () {
     else if (n > 1) U.toast(T('{name} hat {n} Songs hinzugefügt', { name: c.by, n: n }), 4000);
   }
 
+  // Ein Hörbuch, das auf dem iPhone lief, geht hier weiter – nur beim selben Audiobookshelf-Konto
+  function playBook(c) {
+    if (!ABS.connected() || !c.itemId) { U.toast(T('Audiobookshelf ist hier nicht verbunden.'), 4000); return; }
+    if (c.user && String(c.user).toLowerCase() !== ABS.user().toLowerCase()) return;
+    BookViews.start(String(c.itemId), c.episodeId ? String(c.episodeId) : null, c.position != null ? +c.position || 0 : null, null);
+  }
+
   function run(c) {
     switch (c.cmd) {
       case 'play':
@@ -99,6 +106,20 @@ var Link = (function () {
       case 'repeat':
         for (var i = 0; i < 3 && Player.repeat() !== c.mode; i++) Player.cycleRepeat();
         break;
+      // Hörbücher (Audiobookshelf): das iPhone schickt eins her, steuert es oder holt es zurück
+      case 'bookPlay': playBook(c); break;
+      case 'bookToggle': Book.toggle(); break;
+      case 'bookPlayPause': if (c.playing) Book.play(); else Book.pause(); break;
+      case 'bookSeek': Book.seek(+c.position || 0); break;
+      case 'bookSkip': Book.skip(+c.seconds || 0); break;
+      case 'bookChapter': if (+c.dir > 0) Book.nextChapter(); else Book.prevChapter(); break;
+      case 'bookRate': Book.setRate(+c.rate); break;
+      case 'bookSleep':
+        if (c.mode === 'chapter') Book.setSleepChapter();
+        else if (+c.minutes > 0) Book.setSleep(Math.min(+c.minutes, 600));
+        else Book.cancelSleep();
+        break;
+      case 'bookStop': Book.close(); break;
       case 'star':
         var s = Player.current();
         if (s && s.id === c.id) Player.setStarred(s, !!c.on); // der Server weiß es schon vom iPhone
@@ -114,11 +135,26 @@ var Link = (function () {
   function snapshot() {
     var acc = App.account(), cfg = API.getConfig();
     var st = Player.station(), song = Player.current();
-    if (!acc || !cfg || (!song && !st)) return { active: false };
+    // Audiobookshelf-Konto hier: so weiß das iPhone, dass es Hörbücher hierher schicken kann
+    var abs = ABS.connected() ? { server: ABS.server(), user: ABS.user(), libs: ABS.libraryIds() } : null;
+    if (acc && cfg && App.bookMode()) {
+      var bc = Book.chapter();
+      return {
+        active: false, user: cfg.user, server: cfg.url, abs: abs, at: Date.now(),
+        book: {
+          id: Book.itemId(), episode: Book.episodeId(), title: Book.title(), author: Book.author(),
+          chapter: bc ? bc.title || '' : '', chapterIndex: Book.chapterIndex(),
+          position: Book.position(), duration: Book.duration(), playing: Book.playing(), loading: Book.loading(),
+          rate: Book.rate(), sleep: Book.sleepLeft(), server: abs && abs.server, user: abs && abs.user
+        }
+      };
+    }
+    if (!acc || !cfg || (!song && !st)) return acc && cfg ? { active: false, user: cfg.user, server: cfg.url, abs: abs } : { active: false };
     var q = Player.queue(), i = Player.index(), from = Math.max(0, i - 20);
     var ctx = Player.context();
     return {
       active: true,
+      abs: abs,
       user: cfg.user,
       server: cfg.url,
       playing: !Player.paused(),
@@ -140,7 +176,7 @@ var Link = (function () {
     clearTimeout(pushTimer);
     pushTimer = setTimeout(function () {
       lastPush = Date.now();
-      lastPos = Player.position();
+      lastPos = App.bookMode() ? Book.position() : Player.position();
       call('state', { state: snapshot() });
     }, 150);
   }
@@ -157,10 +193,16 @@ var Link = (function () {
     };
     b.call('luna://com.webos.service.settings/getSystemSettings', JSON.stringify({ category: 'network', keys: ['deviceName'] }));
     ['track', 'state', 'queue', 'mode'].forEach(function (evt) { Player.on(evt, push); });
+    ['track', 'state', 'sleep'].forEach(function (evt) { Book.on(evt, push); });
     // Die Zeit rechnet das iPhone selbst weiter – nur ab und zu abgleichen, und sofort nach dem Spulen
     Player.on('time', function () {
       var expected = lastPos + (Player.paused() ? 0 : (Date.now() - lastPush) / 1000);
       if (Date.now() - lastPush > 10000 || Math.abs(Player.position() - expected) > 3) push();
+    });
+    Book.on('time', function () {
+      if (!App.bookMode()) return;
+      var expected = lastPos + (Book.playing() ? (Date.now() - lastPush) / 1000 * Book.rate() : 0);
+      if (Date.now() - lastPush > 10000 || Math.abs(Book.position() - expected) > 3) push();
     });
   }
 

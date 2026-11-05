@@ -40,6 +40,33 @@ final class TVLink {
         var guests: [String]?
         /// This phone is only a guest there: on the TV someone with another account is signed in.
         var jukebox: Bool?
+        /// The Audiobookshelf account signed in on the TV, if any – books can be sent there when it's this phone's.
+        var abs: Audiobookshelf?
+        /// An audiobook or podcast episode playing on the TV (then `active` stays false: no music).
+        var book: Book?
+    }
+
+    struct Audiobookshelf: Decodable, Hashable {
+        var server: String?
+        var user: String?
+        /// Library ids: the same server shows the same ones, whatever address each side knows it by.
+        var libs: [String]?
+    }
+
+    struct Book: Decodable {
+        var id: String?
+        var episode: String?
+        var title: String?
+        var author: String?
+        var chapter: String?
+        var chapterIndex: Int?
+        var position: Double?
+        var duration: Double?
+        var playing: Bool?
+        var loading: Bool?
+        var rate: Double?
+        /// Sleep timer on the TV: milliseconds left, -1 at the end of the chapter, 0 off.
+        var sleep: Double?
     }
 
     struct Device: Identifiable, Hashable {
@@ -82,6 +109,8 @@ final class TVLink {
     private(set) var ownTV: String?
     /// The own TV is Tonalo on a computer – shown with a computer instead of a TV.
     private(set) var ownIsPC = false
+    /// The own TV's name while it's signed in to this account's Audiobookshelf – books can move over to it.
+    private(set) var ownBooks: String?
     /// Own TVs where someone with another account is signed in right now: this phone can join their Jukebox.
     private(set) var guestOnly: Set<String> = []
 
@@ -133,9 +162,11 @@ final class TVLink {
         goneCheck?.cancel()
         goneCheck = Task { [weak self] in
             try? await Task.sleep(for: .seconds(8))
-            guard !Task.isCancelled, let self, self.app?.player.tvName != nil, self.lastEvent < self.startedAt else { return }
+            guard !Task.isCancelled, let self, self.app?.player.tvName != nil || self.app?.bookPlayer.tvName != nil, self.lastEvent < self.startedAt else { return }
             self.ownTV = nil
+            self.ownBooks = nil
             self.app?.player.tvGone()
+            self.app?.bookPlayer.tvGone()
         }
     }
 
@@ -150,6 +181,7 @@ final class TVLink {
         listener = nil
         listening = nil
         ownTV = nil
+        ownBooks = nil
         guestOnly = []
         retry?.cancel()
         devices = []
@@ -159,6 +191,7 @@ final class TVLink {
         disconnect()
         jukebox = nil
         sameServer = []
+        sameBooks = [:]
         loadPairings()
         connect()
     }
@@ -255,8 +288,10 @@ final class TVLink {
         listening = nil
         target = nil
         ownTV = nil
+        ownBooks = nil
         retry?.cancel()
         app?.player.tvGone()
+        app?.bookPlayer.tvGone()
     }
 
     /// Follows the joined Jukebox, or else the first own TV nearby: its state comes in as long as the connection lasts.
@@ -280,17 +315,19 @@ final class TVLink {
                 misses = got ? 0 : misses + 1
                 guard !Task.isCancelled else { break }
                 // Connected but not a word came back: it accepts connections (or the router does) and nothing answers – gone too
-                if !got { self.ownTV = nil; self.app?.player.tvGone() }
+                if !got { self.ownTV = nil; self.ownBooks = nil; self.app?.player.tvGone(); self.app?.bookPlayer.tvGone() }
                 // The stream ended: unless the TV answers again right away it's gone – the player lets go of it now
                 // instead of showing music that isn't playing until the last try has failed
-                if !(await self.reachable(device)) { self.ownTV = nil; self.app?.player.tvGone() }
+                if !(await self.reachable(device)) { self.ownTV = nil; self.ownBooks = nil; self.app?.player.tvGone(); self.app?.bookPlayer.tvGone() }
                 try? await Task.sleep(for: .seconds(2))
             }
             guard let self, !Task.isCancelled else { return }
             self.listener = nil
             self.listening = nil
             self.target = nil
+            self.ownBooks = nil
             self.app?.player.tvGone()
+            self.app?.bookPlayer.tvGone()
             // A Jukebox that dropped out (the host's phone locked for a moment) is joined again once it's back
             self.retry = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(20))
@@ -315,7 +352,9 @@ final class TVLink {
         listener = nil
         listening = nil
         ownTV = nil
+        ownBooks = nil
         app?.player.tvGone()
+        app?.bookPlayer.tvGone()
         retry?.cancel()
         retry = Task { [weak self] in
             try? await Task.sleep(for: .seconds(2))
@@ -332,6 +371,7 @@ final class TVLink {
         // Joined as a guest: a Jukebox – or the own TV while someone else is signed in there
         let guest = pairing.guest == true || jukebox == device.id
         var wasPlaying = false, first = true
+        var wasBookPlaying = false, firstBook = true
         var latest: State? // the newest report – the server check below can take a moment, the old one would be stale
         let auth = LinkHTTP.authorization("GET", "/events", body: Data(), keyId: pairing.keyId, key: key, offset: clockOffset[pairing.tv] ?? 0)
         // What the other side reports, shown here – again once the server check below says it's the same server
@@ -344,9 +384,29 @@ final class TVLink {
             }
             if !guest {
                 // Someone else is signed in on the TV: nothing of theirs shows here until this phone joins
-                guard s.jukebox != true else { self.ownTV = nil; self.app?.player.tvGone(); first = false; return }
+                guard s.jukebox != true else { self.ownTV = nil; self.ownBooks = nil; self.app?.player.tvGone(); self.app?.bookPlayer.tvGone(); first = false; return }
                 self.ownTV = device.name
                 self.ownIsPC = device.isPC
+                // Audiobooks: the TV has the same Audiobookshelf account, so a book can go there and come back
+                let booksSame = self.booksMatch(s, device: device.id) {
+                    if !Task.isCancelled, self.listening?.device.id == device.id, let now = latest { firstBook = true; wasBookPlaying = false; apply(now) }
+                }
+                self.ownBooks = booksSame ? device.name : nil
+                if booksSame, let b = s.book, b.id != nil {
+                    let local = self.app?.bookPlayer.tvName == nil && self.app?.bookPlayer.isPlaying == true
+                    let bookPlaying = b.playing == true
+                    self.app?.bookPlayer.tvUpdate(s, book: b, name: device.name, started: bookPlaying && (firstBook ? !local : !wasBookPlaying))
+                    wasBookPlaying = bookPlaying
+                    firstBook = false
+                    self.app?.player.tvGone() // the TV plays a book now, not the music this phone mirrored
+                    wasPlaying = false
+                    first = false
+                    return
+                } else {
+                    if self.app?.bookPlayer.tvName != nil { self.app?.bookPlayer.tvGone() }
+                    wasBookPlaying = false
+                    firstBook = false
+                }
             }
             let playing = s.active && s.playing == true
             let same = self.matches(s, guest: guest, device: device.id)
@@ -377,7 +437,7 @@ final class TVLink {
             latest = s
             apply(s)
         }
-        if !guest { ownTV = nil }
+        if !guest { ownTV = nil; ownBooks = nil }
         // The other side forgot this phone – but not when only its clock is off: then the next try uses its time
         if status?.status == 401 {
             if !learnClock(status?.body, pairing.tv) { unpair(pairing.tv) }
@@ -399,6 +459,35 @@ final class TVLink {
         let other = norm(server)
         return other != nil && (other == norm(acc.serverURL) || other == norm(acc.localURL))
     }
+
+    /// The TV is signed in to this account's Audiobookshelf: the same user, and the same server – by its libraries,
+    /// which don't depend on the address, or else by the address itself. The libraries are asked for once; until the
+    /// answer is there this says no, and `recheck` runs when it has come.
+    private func booksMatch(_ s: State, device: String, recheck: @escaping () -> Void) -> Bool {
+        guard let mine = app?.current?.audiobooks, let theirs = s.abs, let user = theirs.user,
+              user.caseInsensitiveCompare(mine.username) == .orderedSame else { return false }
+        func norm(_ url: String?) -> String? {
+            guard let url, let u = URL(string: url.trimmingCharacters(in: .whitespaces)), let host = u.host?.lowercased() else { return nil }
+            return host + ":" + String(u.port ?? (u.scheme == "https" ? 443 : 80))
+        }
+        let other = norm(theirs.server)
+        if other != nil, other == norm(mine.url) || other == norm(mine.localURL) { return true }
+        guard let libs = theirs.libs, !libs.isEmpty else { return false }
+        let key = device + "|" + libs.joined(separator: ",")
+        if let known = sameBooks[key] { return known }
+        if checkingBooks.insert(key).inserted {
+            Task { @MainActor in
+                let ids = await self.app?.books.libraryIds() ?? []
+                // No answer (no connection): not remembered, the next report asks again
+                if !ids.isEmpty { self.sameBooks[key] = !Set(ids).isDisjoint(with: libs) }
+                self.checkingBooks.remove(key)
+                if !ids.isEmpty { recheck() }
+            }
+        }
+        return false
+    }
+    @ObservationIgnored private var sameBooks: [String: Bool] = [:]
+    @ObservationIgnored private var checkingBooks: Set<String> = []
 
     /// The address differs: asks this account's server for a song playing over there. If it knows it, it's the same server.
     private func checkServer(_ s: State, device: String, then: @escaping () -> Void) {
@@ -432,6 +521,14 @@ final class TVLink {
 
     func play(_ station: Station, in list: [Station]) {
         command(["cmd": "station", "station": json(station), "list": json(list)])
+    }
+
+    /// Starts an audiobook or episode over there, `position` seconds into it.
+    func playBook(item: String, episode: String?, position: Double?) {
+        var cmd: [String: Any] = ["cmd": "bookPlay", "itemId": item, "user": app?.current?.audiobooks?.username ?? ""]
+        if let episode { cmd["episodeId"] = episode }
+        if let position { cmd["position"] = position }
+        command(cmd)
     }
 
     func command(_ name: String, _ extra: [String: Any] = [:]) {

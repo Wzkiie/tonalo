@@ -3,6 +3,7 @@
 // Usage: node ios/tools/abs_mock.js [port]   login: any user with password "demo"
 // MOCK_TOKEN_SECONDS=<n>: access tokens run out after n seconds, to try the renewal. MOCK_LOG=1: print the requests.
 // MOCK_REQUIRE_HEADER=<name>: answers 403 without that header, like Cloudflare Access.
+// MOCK_CORS=1: allows requests from web pages (for testing the TV app in a browser; the real server doesn't).
 // MOCK_SLOW_DOWNLOAD=1: a file takes 12 seconds, to watch the progress. MOCK_NO_DOWNLOAD=1: this user isn't allowed to download. MOCK_ANY_TOKEN=1: a login from before a restart still counts.
 const http = require('http'), crypto = require('crypto');
 const PORT = +process.argv[2] || 4610;
@@ -107,6 +108,10 @@ function startSession(itemId, episodeId, res, json) {
 }
 
 http.createServer((req, res) => {
+  if (process.env.MOCK_CORS) {
+    res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Headers', '*'); res.setHeader('Access-Control-Allow-Methods', '*');
+    if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
+  }
   const u = new URL(req.url, 'http://x'), path = u.pathname;
   let raw = '';
   req.on('data', (c) => { raw += c; });

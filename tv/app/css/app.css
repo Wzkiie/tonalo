@@ -372,3 +372,15 @@ button, input { font: inherit; color: inherit; background: none; border: 0; outl
 /* Kopplungscode für das iPhone – groß genug, um ihn vom Sofa abzulesen */
 .modal.pair-code .mh-title { font-size: 96px; font-weight: 800; letter-spacing: 10px; }
 .modal.pair-code .mh-sub { white-space: normal; }
+
+/* Hörbücher */
+.bk .cover { overflow: hidden; }
+.bk-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: rgba(0,0,0,.55); z-index: 2; }
+.bk-bar span { display: block; height: 100%; background: var(--accent); }
+.bk-done { position: absolute; right: 10px; bottom: 10px; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; z-index: 2; }
+.bk-desc { max-width: 1200px; font-size: 22px; line-height: 1.5; color: var(--sub); margin: 8px 0 10px; }
+.bk-chapter { text-align: center; font-size: 22px; color: rgba(255,255,255,.8); margin-bottom: 4px; min-height: 28px; }
+.bk-rate { font-size: 24px; font-weight: 800; width: auto; padding: 0 22px; border-radius: 38px; }
+.bk-chapters .t-num { width: 52px; }
+.filters { margin: 0 0 20px; }
+#miniplayer.book #mp-shuffle, #miniplayer.book #mp-repeat, #miniplayer.book #mp-heart, #miniplayer.book #mp-lyrics, #miniplayer.book #mp-queue { display: none; }

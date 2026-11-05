@@ -201,6 +201,7 @@ if (!app.requestSingleInstanceLock()) {
     // Die App braucht keine Kamera, kein Mikrofon, keinen Standort …
     session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
     setupHeaders();
+    global.tonaloHeaders = (url, h) => headers.apply(url, h); // der Dienst stellt Anfragen an Audiobookshelf mit denselben Headern
     startService();
     createWindow();
     setupUpdater();

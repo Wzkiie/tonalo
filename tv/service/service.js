@@ -80,7 +80,7 @@ function setState(s) {
 // Gäste der Jukebox sehen nicht, wessen Konto das ist – nur was läuft und wer gerade mit dabei ist
 function line(guest) {
   var s = Object.assign({}, state, { guests: guestNames() });
-  if (guest) { delete s.user; s.jukebox = true; } // so weiß ein iPhone, dass es hier nur Gast sein kann
+  if (guest) { delete s.user; delete s.book; delete s.abs; s.jukebox = true; } // so weiß ein iPhone, dass es hier nur Gast sein kann
   s.sent = Date.now(); // mit „at“ zusammen rechnet das iPhone die Position aus, ohne dass beide Uhren stimmen müssen
   return 'data: ' + JSON.stringify(s) + '\n\n';
 }
@@ -93,6 +93,51 @@ function broadcast() {
     c.res.write(c.entry.guest ? forGuest : forHost);
   });
 }
+
+// ---------- Anfragen der App an Audiobookshelf. Aus der Oberfläche geht das nicht (der Server erlaubt fremde Web-Apps nicht),
+// also stellt der Dienst sie. Keine Weiterleitungen (die Anmeldung geht nie an einen anderen Server), nur http(s), begrenzte Größe.
+var https = require('https');
+var URL_ = require('url').URL;
+var HTTP_MAX = 12 * 1024 * 1024;
+service.register('http', function (msg) {
+  var p = msg.payload || {}, u;
+  function fail(text) { msg.respond({ returnValue: false, errorText: text }); }
+  try { u = new URL_(String(p.url)); } catch (e) { return fail('url'); }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return fail('url');
+  var method = ['GET', 'POST', 'PATCH', 'DELETE'].indexOf(p.method) >= 0 ? p.method : 'GET';
+  var headers = {};
+  if (p.headers && typeof p.headers === 'object') {
+    Object.keys(p.headers).slice(0, 30).forEach(function (k) { if (typeof p.headers[k] === 'string') headers[k] = p.headers[k].slice(0, 4096); });
+  }
+  // Der PC ergänzt hier seine eigenen Header (Cloudflare Access …), die die Oberfläche nie zu sehen bekommt
+  if (global.tonaloHeaders) { try { headers = global.tonaloHeaders(u.href, headers); } catch (e) { /* ohne */ } }
+  var body = typeof p.body === 'string' ? Buffer.from(p.body, 'utf8') : null;
+  if (body) headers['Content-Length'] = body.length;
+  headers['User-Agent'] = 'Tonalo';
+  var done = false;
+  var req = (u.protocol === 'https:' ? https : http).request({
+    hostname: u.hostname.replace(/^\[|\]$/g, ''), port: u.port || undefined, path: u.pathname + u.search, method: method, headers: headers
+  }, function (res) {
+    var chunks = [], size = 0;
+    res.on('data', function (c) {
+      size += c.length;
+      if (size > HTTP_MAX) { if (!done) { done = true; fail('size'); } req.abort(); return; }
+      chunks.push(c);
+    });
+    res.on('end', function () {
+      if (done) return;
+      done = true;
+      var buf = Buffer.concat(chunks);
+      msg.respond({ returnValue: true, status: res.statusCode, type: String(res.headers['content-type'] || ''),
+        body: p.binary ? buf.toString('base64') : buf.toString('utf8') });
+    });
+    res.on('error', function () { if (!done) { done = true; fail('read'); } });
+  });
+  req.setTimeout(Math.min(+p.timeout || 20000, 60000), function () { if (!done) { done = true; fail('timeout'); } req.abort(); });
+  req.on('error', function (e) { if (!done) { done = true; fail(e && e.code ? String(e.code) : 'network'); } });
+  if (body) req.write(body);
+  req.end();
+});
 
 // Der App sagen, welche iPhones gerade verbunden sind – die Windows-App zeigt das unten an
 function report() {

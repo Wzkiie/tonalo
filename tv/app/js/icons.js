@@ -40,6 +40,7 @@ var Icon = (function () {
     refresh: ['s', 'M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4v4.5H15'],
     logout: ['s', 'M9.5 20H5.5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h4M15.5 16.5 20 12l-4.5-4.5M20 12H9.5'],
     power: ['s', 'M12 3v8M7 5.8a8 8 0 1 0 10 0'],
+    book: ['s', 'M5.5 4h11A2.5 2.5 0 0 1 19 6.5V20H8a2.5 2.5 0 0 1-2.5-2.5V4zM5.5 17.5A2.5 2.5 0 0 1 8 15h11M9.5 8h5'],
     trash: ['s', 'M4.5 6.5h15M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13']
   };
 
@@ -60,6 +61,13 @@ var Icon = (function () {
       '<path d="' + P.repeat[1] + '"/><text x="12" y="14.6" font-size="7.5" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none">1</text></svg>';
   }
 
+  // Springen: Pfeil im Kreis mit der Sekundenzahl (dir -1 zurück, 1 vor)
+  function skip(dir, secs, size) {
+    var s = size || 24, d = dir < 0 ? 'M4.5 12a7.5 7.5 0 1 1 2.2 5.3M4.5 4.2v4.6h4.6' : 'M19.5 12a7.5 7.5 0 1 0-2.2 5.3M19.5 4.2v4.6h-4.6';
+    return '<svg class="ic" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="' + d + '"/><text x="12" y="15.2" font-size="7.6" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none">' + secs + '</text></svg>';
+  }
+
   function el(name, size, extraCls) {
     var span = document.createElement('span');
     span.className = 'ic-wrap';
@@ -67,5 +75,5 @@ var Icon = (function () {
     return span.firstChild;
   }
 
-  return { svg: svg, el: el, repeatOne: repeatOne };
+  return { svg: svg, el: el, repeatOne: repeatOne, skip: skip };
 })();

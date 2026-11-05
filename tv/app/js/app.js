@@ -6,7 +6,10 @@ var App = (function () {
 
   var DEFAULTS = { maxBitRate: 0, format: 'mp3', scrobble: true, screensaver: U.desktop ? 0 : 3, startView: 'home', autoplay: true, leveling: 'off', crossfade: 0 };
   var settings = Object.assign({}, DEFAULTS);
-  var account = null;   // aktives Konto {id, url, user, salt, token}
+  var account = null;   // aktives Konto {id, url, user, salt, token, abs?}
+  var lastKind = 'music'; // was zuletzt lief: 'music' oder 'book' – danach richten sich Mini-Player und Tasten
+  // Hörbuch-Modus: ein Hörbuch ist offen und es lief zuletzt (oder es läuft gar keine Musik)
+  function bookMode() { return Book.active() && (lastKind === 'book' || (!Player.current() && !Player.station())); }
 
   var stack = [];       // [{name, params, view, scroll, focus}]
   var content, main, login, users;
@@ -120,12 +123,16 @@ var App = (function () {
     if (account && account.id === acc.id) {
       Link.detach();
       Player.detach();
+      Book.close();
       account = null;
       API.setConfig(null);
+      ABS.setConfig(null);
+      showBooksNav();
       stack = []; content.innerHTML = '';
     }
     saveAccounts(accounts().filter(function (a) { return a.id !== acc.id; }));
     if (U.desktop) Desktop.keepHeaders(accounts());
+    if (acc.abs) ABS.logout(acc.abs);
     U.ustore.clear(acc.id);
     if (U.store.get('lastAccount') === acc.id) U.store.del('lastAccount');
     U.toast(T('Konto „{name}“ entfernt', { name: acc.user }));
@@ -134,10 +141,14 @@ var App = (function () {
 
   function selectAccount(acc) {
     if (account && account.id === acc.id && stack.length) { backToMain(); return; }
-    if (account) { Link.detach(); Player.detach(); }
+    if (account) { Link.detach(); Player.detach(); Book.close(); }
     account = acc;
     U.ustore.setNs(acc.id);
     API.setConfig(acc);
+    ABS.setConfig(acc.abs || null);
+    lastKind = 'music';
+    showBooksNav();
+    if (ABS.connected()) ABS.libraries().then(function () { Link.push(); }).catch(function () { });
     settings = Object.assign({}, DEFAULTS, U.ustore.get('settings', {}));
     U.store.set('lastAccount', acc.id);
     startMain();
@@ -145,6 +156,42 @@ var App = (function () {
       if (e.code === 40) showLogin(T('Anmeldung für „{name}“ abgelaufen – bitte Passwort neu eingeben.', { name: acc.user }), { prefill: acc, adding: true });
       else U.toast(T('Server nicht erreichbar: {msg}', { msg: e.message }), 4000);
     });
+  }
+
+  function showBooksNav() { var b = U.$('#nav-books'); if (b) b.classList.toggle('hidden', !ABS.connected()); }
+
+  // ---------------- Audiobookshelf (gehört zum Konto, wie am iPhone)
+  function saveAbs(c) {
+    if (!account) return;
+    if (c) account.abs = c; else delete account.abs;
+    saveAccounts(accounts().map(function (a) { return a.id === account.id ? account : a; }));
+  }
+
+  function connectAbs(url, user, pass) {
+    var u = API.normalizeUrl(url);
+    return (U.desktop ? Desktop.tryHeaders(u) : Promise.resolve()).then(function () { return ABS.login(url, user, pass); }).then(function (c) {
+      if (U.desktop) Desktop.commitHeaders();
+      var old = account.abs;
+      saveAbs(c);
+      ABS.setConfig(c);
+      U.store.set('lastAbsUrl', c.url);
+      if (old) ABS.logout(old);
+      showBooksNav();
+      Link.push();
+      ABS.libraries().then(function () { Link.push(); }).catch(function () { });
+    }, function (e) { if (U.desktop) Desktop.dropHeaders(); throw e; });
+  }
+
+  function disconnectAbs() {
+    Book.close();
+    var old = account && account.abs;
+    saveAbs(null);
+    ABS.setConfig(null);
+    if (old) ABS.logout(old);
+    showBooksNav();
+    lastKind = 'music';
+    updateMini('init');
+    Link.push();
   }
 
   function backToMain() {
@@ -171,8 +218,9 @@ var App = (function () {
     hideAllScreens();
     login.classList.remove('hidden');
     var pre = loginOpts.prefill;
-    U.$('#in-url').value = (pre && pre.url) || U.store.get('lastUrl', '');
-    U.$('#in-user').value = (pre && pre.user) || '';
+    U.$('#login-title').textContent = loginOpts.abs ? T('Mit Audiobookshelf verbinden') : T('Mit Navidrome verbinden');
+    U.$('#in-url').value = loginOpts.abs ? U.store.get('lastAbsUrl', '') : (pre && pre.url) || U.store.get('lastUrl', '');
+    U.$('#in-user').value = loginOpts.abs ? (account ? account.user : '') : (pre && pre.user) || '';
     U.$('#in-pass').value = '';
     U.$('#login-msg').textContent = msg || '';
     U.$('#login-msg').className = 'msg';
@@ -192,6 +240,22 @@ var App = (function () {
     var url = U.$('#in-url').value, user = U.$('#in-user').value.trim(), pass = U.$('#in-pass').value;
     var msg = U.$('#login-msg');
     if (!url || !user || !pass) { msg.textContent = T('Bitte alle Felder ausfüllen.'); return; }
+    if (loginOpts.abs) {
+      msg.textContent = T('Verbinde …');
+      msg.className = 'msg';
+      connectAbs(url, user, pass).then(function () {
+        U.$('#in-pass').value = '';
+        U.toast(T('Audiobookshelf verbunden'));
+        loginOpts = {};
+        backToMain();
+        go('books', null, { root: true });
+      }).catch(function (e) {
+        msg.className = 'msg error';
+        if (U.desktop && Desktop.headerProblem(e, msg)) return;
+        msg.textContent = e.message;
+      });
+      return;
+    }
     var creds = API.makeCreds(url, user, pass);
     var prev = API.getConfig();
     API.setConfig(creds);
@@ -236,7 +300,7 @@ var App = (function () {
     content.appendChild(entry.view.el);
     entry.view.el.scrollTop = entry.scroll || 0;
     U.$$('.nav-item').forEach(function (b) { b.classList.toggle('active', b.dataset.view === rootName()); });
-    U.$('#miniplayer').classList.toggle('np-hidden', entry.name === 'nowplaying');
+    U.$('#miniplayer').classList.toggle('np-hidden', entry.name === 'nowplaying' || entry.name === 'bookplayer');
     syncMiniLayout();
     if (fresh) {
       entry.pendingFocus = true;
@@ -317,7 +381,41 @@ var App = (function () {
   }
 
   // ---------------- Mini-Player
+  function updateMiniBook(evt) {
+    var mp = U.$('#miniplayer');
+    mp.classList.remove('hidden');
+    mp.classList.remove('live');
+    mp.classList.add('book');
+    syncMiniLayout();
+    var id = Book.itemId();
+    if (evt === 'track' || evt === 'init' || mp.dataset.kind !== 'book' || mp.dataset.item !== String(id)) {
+      mp.dataset.kind = 'book';
+      mp.dataset.item = String(id);
+      U.$('#mp-cover').removeAttribute('src');
+      if (id) ABS.cover(id, 160).then(function (url) { if (Book.itemId() === id) U.$('#mp-cover').src = url; }).catch(function () { });
+      U.$('#mp-prev').innerHTML = Icon.skip(-1, Book.back, 30);
+      U.$('#mp-next').innerHTML = Icon.skip(1, Book.forward, 30);
+    }
+    U.$('#mp-title').textContent = Book.title() || (Book.loading() ? T('Lädt …') : '');
+    U.$('#mp-artist').textContent = (Book.chapter() && Book.chapter().title) || Book.author();
+    U.$('#mp-play').innerHTML = Icon.svg(Book.playing() || Book.loading() ? 'pause' : 'play');
+    var p = Book.position(), d = Book.duration();
+    U.$('#mp-bar').style.width = (d ? Math.min(100, p / d * 100) : 0) + '%';
+    U.$('#mp-pos').textContent = U.fmtTime(p);
+    U.$('#mp-dur').textContent = U.fmtTime(d);
+  }
+
   function updateMini(evt) {
+    var mp0 = U.$('#miniplayer');
+    if (bookMode()) { updateMiniBook(evt); return; }
+    if (mp0.classList.contains('book')) {
+      // Zurück zur Musik: Knöpfe und Anzeige wieder wie sonst
+      mp0.classList.remove('book');
+      mp0.dataset.kind = 'music';
+      U.$('#mp-prev').innerHTML = Icon.svg('prev');
+      U.$('#mp-next').innerHTML = Icon.svg('next');
+      evt = 'init';
+    }
     var s = Player.current(), st = Player.station();
     var mp = U.$('#miniplayer');
     mp.classList.toggle('hidden', !s && !st);
@@ -378,6 +476,14 @@ var App = (function () {
   }
   // Cover und Titel des laufenden Songs – auch bei jedem Songwechsel, solange der Schoner läuft
   function ssFill() {
+    if (bookMode()) {
+      U.$('#ss-cover').style.display = '';
+      var bid = Book.itemId();
+      if (bid) ABS.cover(bid, 400).then(function (url) { if (Book.itemId() === bid) U.$('#ss-cover').src = url; }).catch(function () { });
+      U.$('#ss-title').textContent = Book.title();
+      U.$('#ss-artist').textContent = Book.author();
+      return;
+    }
     var s = Player.current(), st = Player.station();
     U.$('#ss-cover').style.display = s || st ? '' : 'none';
     if (st) U.$('#ss-cover').src = UI.radioArt(st.name);
@@ -415,7 +521,7 @@ var App = (function () {
   function blockTvScreensaver() {
     luna('luna://com.webos.service.tvpower/power/registerScreenSaverRequest', { subscribe: true, clientName: APP_ID }, function (msg) {
       if (!msg || !msg.timestamp) return;
-      var playing = !Player.paused();
+      var playing = !Player.paused() || Book.playing();
       luna('luna://com.webos.service.tvpower/power/responseScreenSaverRequest', { clientName: APP_ID, ack: !playing && !ssActive, timestamp: msg.timestamp });
     });
   }
@@ -443,6 +549,19 @@ var App = (function () {
     if (code === K.BACK || code === K.ESC || (code === K.BACKSPACE && !inInput)) {
       if (inInput) { document.activeElement.blur(); return true; }
       return back();
+    }
+    if (bookMode()) {
+      switch (code) {
+        case K.PLAY: Book.play(); return true;
+        case K.PAUSE: Book.pause(); return true;
+        case K.PLAYPAUSE: case K.BLUE: Book.toggle(); return true;
+        case K.STOP: Book.pause(); return true;
+        case K.NEXT: Book.nextChapter(); return true;
+        case K.PREV: Book.prevChapter(); return true;
+        case K.FF: Book.skipForward(); return true;
+        case K.RW: Book.skipBack(); return true;
+        case K.RED: go('bookplayer'); return true;
+      }
     }
     switch (code) {
       case K.PLAY: Player.play(); return true;
@@ -529,11 +648,11 @@ var App = (function () {
     });
     U.$('#sidebar').classList.add('nav-container');
     U.$('#miniplayer')._lastFocused = U.$('#mp-play'); // beim ersten Betreten auf Play/Pause landen
-    U.$('#mp-info').addEventListener('click', function () { go('nowplaying'); });
-    U.$('#mp-open').addEventListener('click', function () { go('nowplaying'); });
-    U.$('#mp-play').addEventListener('click', function () { Player.toggle(); });
-    U.$('#mp-prev').addEventListener('click', function () { Player.prev(); });
-    U.$('#mp-next').addEventListener('click', function () { Player.next(); });
+    U.$('#mp-info').addEventListener('click', function () { go(bookMode() ? 'bookplayer' : 'nowplaying'); });
+    U.$('#mp-open').addEventListener('click', function () { go(bookMode() ? 'bookplayer' : 'nowplaying'); });
+    U.$('#mp-play').addEventListener('click', function () { if (bookMode()) Book.toggle(); else Player.toggle(); });
+    U.$('#mp-prev').addEventListener('click', function () { if (bookMode()) Book.skipBack(); else Player.prev(); });
+    U.$('#mp-next').addEventListener('click', function () { if (bookMode()) Book.skipForward(); else Player.next(); });
     U.$('#mp-shuffle').addEventListener('click', function () { Player.setShuffle(!Player.shuffle()); });
     U.$('#mp-repeat').addEventListener('click', function () { Player.cycleRepeat(); });
     U.$('#mp-queue').addEventListener('click', function () { go('queue'); });
@@ -560,8 +679,19 @@ var App = (function () {
       });
     });
 
+    ['track', 'state', 'time', 'sleep'].forEach(function (evt) {
+      Book.on(evt, function () {
+        if (evt === 'state' && Book.playing()) lastKind = 'book';
+        if (evt === 'track' && Book.active()) lastKind = 'book';
+        updateMini(evt);
+        if (evt === 'track') { UI.refreshPlaying(); if (ssActive) ssFill(); }
+        var top = stack[stack.length - 1];
+        if (top && top.view.update) top.view.update('bk' + evt);
+      });
+    });
     ['track', 'state', 'time', 'queue', 'mode', 'sleep'].forEach(function (evt) {
       Player.on(evt, function () {
+        if ((evt === 'state' && !Player.paused()) || (evt === 'track' && (Player.current() || Player.station()))) lastKind = 'music';
         updateMini(evt);
         if (evt === 'track') { UI.refreshPlaying(); if (ssActive) ssFill(); }
         var top = stack[stack.length - 1];
@@ -572,6 +702,7 @@ var App = (function () {
     document.addEventListener('webOSRelaunch', function () { touch(); if (ssActive) ssHide(); });
     document.addEventListener('visibilitychange', function () { if (!document.hidden) touch(); });
     blockTvScreensaver();
+    Book.init();
     Link.init();
 
     // Beim Start immer die Benutzerauswahl zeigen (oder Login, wenn noch kein Konto existiert)
@@ -582,6 +713,7 @@ var App = (function () {
   return {
     init: init, go: go, back: back, reload: reload, viewReady: viewReady, updateScope: updateScope,
     error: error, logout: logout, exit: exit, showUsers: showUsers,
+    saveAbs: saveAbs, bookMode: bookMode, absLogin: function () { showLogin(null, { abs: true }); }, disconnectAbs: disconnectAbs,
     // Etwas kam vom iPhone: Bildschirmschoner weg, wie bei einem Tastendruck
     wake: function () { touch(); if (ssActive) ssHide(); },
     account: function () { return account; },

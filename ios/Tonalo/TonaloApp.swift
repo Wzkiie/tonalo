@@ -144,7 +144,7 @@ struct RootView: View {
             let args = ProcessInfo.processInfo.arguments
             if args.contains("-demoJukebox") { app.jukeboxHost.start() }
             // -demoBooks <url> connects to a test server (ios/tools/abs_mock.js)
-            if let b = args.firstIndex(of: "-demoBooks"), b + 1 < args.count, !app.books.connected {
+            if let b = args.firstIndex(of: "-demoBooks"), b + 1 < args.count, app.books.stored?.url != args[b + 1] {
                 try? await app.books.connect(address: args[b + 1], username: "demo", password: "demo", headers: [])
             }
             guard let i = args.firstIndex(of: "-demoOpen"), i + 1 < args.count else { return }

@@ -25,6 +25,9 @@ final class BookPlayer {
     var lastError: String?
     var rate = UserDefaults.standard.object(forKey: "book.rate") as? Float ?? 1 {
         didSet {
+            if applyingRemote { return }
+            // Playing on the TV: the speed is the TV's, and this phone's own stays as it was
+            if tvName != nil { app?.tv.command("bookRate", ["rate": Double(rate)]); return }
             UserDefaults.standard.set(rate, forKey: "book.rate")
             player.defaultRate = rate
             if isPlaying { player.rate = rate }
@@ -47,6 +50,16 @@ final class BookPlayer {
     /// Sleep timer: when it stops, or at the end of the chapter.
     private(set) var sleepAt: Date?
     private(set) var sleepAtChapterEnd = false
+
+    /// The TV that plays this book instead of this phone (its name): the player here shows and controls what plays there.
+    private(set) var tvName: String?
+    @ObservationIgnored private var tvBook: TVLink.Book?
+    /// When the TV's last report counts from (ms since 1970, this phone's clock).
+    @ObservationIgnored private var tvAt: Double = 0
+    @ObservationIgnored private var tvClock: Timer?
+    @ObservationIgnored private var tvLoad: Task<Void, Never>?
+    @ObservationIgnored private var handoff: Task<Void, Never>?
+    @ObservationIgnored private var applyingRemote = false
 
     @ObservationIgnored private let player = AVPlayer()
     @ObservationIgnored private var trackIndex = 0
@@ -106,6 +119,16 @@ final class BookPlayer {
             return
         }
         let episode = episode ?? item.recentEpisode
+        // The TV is where books play right now: it gets this one, from the server's position unless a spot was given
+        if tvName != nil, let tv = app?.tv {
+            if self.item?.id == item.id, self.episode?.id == episode?.id {
+                if let at { seek(to: at) }
+                if !isPlaying { toggle() }
+            } else {
+                tv.playBook(item: item.id, episode: episode?.id, position: at)
+            }
+            return
+        }
         if self.item?.id == item.id, self.episode?.id == episode?.id, session != nil {
             if let at { seek(to: at) }
             if !isPlaying { toggle() }
@@ -173,6 +196,8 @@ final class BookPlayer {
 
     /// Stops and reports the final position. Also when music starts playing.
     func close() {
+        // The TV keeps playing; this phone only lets go of it (the stop button asks the TV to stop: see `stop`)
+        if tvName != nil { endRemote(); return }
         starting?.cancel()
         starting = nil
         let wasActive = session != nil
@@ -195,6 +220,12 @@ final class BookPlayer {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
             app?.player.bookEnded()
         }
+    }
+
+    /// The stop button: ends the book wherever it plays.
+    func stop() {
+        if tvName != nil { app?.tv.command("bookStop") }
+        close()
     }
 
     // MARK: Files
@@ -284,6 +315,16 @@ final class BookPlayer {
 
     func toggle() {
         guard session != nil else { return }
+        if tvName != nil {
+            // Shown at once, the TV's report follows
+            let now = Date().timeIntervalSince1970 * 1000
+            tvBook?.position = position
+            tvAt = now
+            tvBook?.playing = !isPlaying
+            isPlaying.toggle()
+            app?.tv.command("bookPlayPause", ["playing": isPlaying])
+            return
+        }
         if isPlaying {
             player.pause()
             sync()
@@ -302,6 +343,13 @@ final class BookPlayer {
     func seek(to time: Double) {
         guard let s = session else { return }
         let target = max(0, min(time, s.duration - 1))
+        if tvName != nil {
+            tvBook?.position = target
+            tvAt = Date().timeIntervalSince1970 * 1000
+            position = target
+            app?.tv.command("bookSeek", ["position": target])
+            return
+        }
         position = target
         let track = s.audioTracks[trackIndex]
         if target >= track.startOffset, target < track.startOffset + track.duration, player.currentItem != nil {
@@ -325,9 +373,18 @@ final class BookPlayer {
         seek(to: position - chapters[i].start > 5 || i == 0 ? chapters[i].start : chapters[i - 1].start)
     }
 
-    func setSleep(minutes: Int) { sleepAt = Date().addingTimeInterval(Double(minutes) * 60); sleepAtChapterEnd = false }
-    func setSleepAtChapterEnd() { sleepAtChapterEnd = true; sleepAt = nil }
-    func cancelSleep() { sleepAt = nil; sleepAtChapterEnd = false }
+    func setSleep(minutes: Int) {
+        if tvName != nil { app?.tv.command("bookSleep", ["minutes": minutes]) }
+        sleepAt = Date().addingTimeInterval(Double(minutes) * 60); sleepAtChapterEnd = false
+    }
+    func setSleepAtChapterEnd() {
+        if tvName != nil { app?.tv.command("bookSleep", ["mode": "chapter"]) }
+        sleepAtChapterEnd = true; sleepAt = nil
+    }
+    func cancelSleep() {
+        if tvName != nil { app?.tv.command("bookSleep", ["minutes": 0]) }
+        sleepAt = nil; sleepAtChapterEnd = false
+    }
 
     // MARK: Clock
 
@@ -361,6 +418,7 @@ final class BookPlayer {
     }
 
     func sync() {
+        if tvName != nil { return } // the TV reports to the server
         if let session { report(session, close: false) }
     }
 
@@ -392,6 +450,140 @@ final class BookPlayer {
         }
     }
 
+    // MARK: On the TV
+
+    /// News from the TV about a book playing there. `started`: it just began – then it takes over and this phone goes quiet.
+    func tvUpdate(_ s: TVLink.State, book b: TVLink.Book, name: String, started: Bool) {
+        guard let id = b.id else { return }
+        if tvName == nil {
+            guard started else { return }
+            // The TV has the sound now: a book here would only keep the lock screen, music here would play over it
+            if session != nil { close() }
+            app?.player.pauseForBook()
+            handoff?.cancel()
+            tvName = name
+            lastError = nil
+            tvClock = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.tvTick() }
+            }
+            configureCommands(active: true)
+        }
+        tvBook = b
+        // From here on the report is on this phone's clock: the TV's or computer's clock may be off
+        let now = Date().timeIntervalSince1970 * 1000
+        tvAt = now - (s.sent.flatMap { sent in s.at.map { max(0, sent - $0) } } ?? 0)
+        if let r = b.rate, Float(r) != rate { applyingRemote = true; rate = Float(r); applyingRemote = false }
+        if let left = b.sleep {
+            sleepAtChapterEnd = left < 0
+            sleepAt = left > 0 ? Date().addingTimeInterval(left / 1000) : nil
+        }
+        let different = item?.id != id || episode?.id != b.episode
+        if different { showRemote(id: id, b) }
+        else if let old = session, old.duration != (b.duration ?? old.duration) || old.displayTitle != b.title {
+            session = Self.remoteSession(id: id, b, chapters: old.chapters ?? [])
+        }
+        tvTick()
+        if let item { library?.noteListening(item, episode: episode, currentTime: position, duration: duration) }
+    }
+
+    /// A stand-in until the real item arrives from the server (with the chapters).
+    private func showRemote(id: String, _ b: TVLink.Book) {
+        let podcast = b.episode != nil
+        let stub: [String: Any] = ["id": id, "mediaType": podcast ? "podcast" : "book",
+                                   "media": ["metadata": ["title": podcast ? (b.author ?? "") : (b.title ?? ""), "authorName": podcast ? "" : (b.author ?? "")],
+                                             "duration": b.duration ?? 0]]
+        item = (try? JSONSerialization.data(withJSONObject: stub)).flatMap { try? JSONDecoder().decode(ABSItem.self, from: $0) }
+        episode = nil
+        session = Self.remoteSession(id: id, b, chapters: [])
+        isLoading = false
+        cover = nil
+        coverTint = nil
+        coverFor = nil
+        artwork = nil
+        loadArtwork(id)
+        tvLoad?.cancel()
+        tvLoad = Task { [weak self] in
+            guard let full = try? await self?.library?.item(id), !Task.isCancelled, let self, self.tvName != nil, self.item?.id == id,
+                  let b = self.tvBook else { return }
+            self.item = full
+            self.episode = b.episode.flatMap { e in full.media.episodes?.first { $0.id == e } }
+            self.session = Self.remoteSession(id: id, b, chapters: full.media.chapters ?? [])
+            self.updateNowPlaying()
+        }
+    }
+
+    private static func remoteSession(id: String, _ b: TVLink.Book, chapters: [ABSChapter]) -> ABSSession {
+        ABSSession(id: "tv-" + id, libraryItemId: id, episodeId: b.episode, displayTitle: b.title, displayAuthor: b.author,
+                   duration: b.duration ?? 0, currentTime: b.position ?? 0, chapters: chapters, audioTracks: [])
+    }
+
+    /// The position counts on from the TV's last report, like a clock – the TV only reports now and then.
+    private func tvTick() {
+        guard let b = tvBook else { return }
+        let since = b.playing == true ? max(0, (Date().timeIntervalSince1970 * 1000 - tvAt) / 1000) * (b.rate ?? 1) : 0
+        let p = (b.position ?? 0) + since
+        let total = session?.duration ?? 0
+        position = total > 0 ? min(p, total) : p
+        isPlaying = b.playing == true
+        isLoading = b.loading == true
+        if Date().timeIntervalSince(lastNowPlaying) >= 5 { updateNowPlaying() }
+    }
+
+    /// The TV went away (switched off, app closed): nothing of the book is left here – the server has where it stopped.
+    func tvGone() {
+        guard tvName != nil else { return }
+        endRemote()
+    }
+
+    private func endRemote() {
+        tvClock?.invalidate()
+        tvClock = nil
+        tvLoad?.cancel()
+        tvName = nil
+        tvBook = nil
+        applyingRemote = true
+        rate = UserDefaults.standard.object(forKey: "book.rate") as? Float ?? 1
+        applyingRemote = false
+        sleepAt = nil
+        sleepAtChapterEnd = false
+        session = nil
+        item = nil
+        episode = nil
+        isPlaying = false
+        isLoading = false
+        position = 0
+        configureCommands(active: false)
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        app?.player.bookEnded()
+    }
+
+    /// "Play on iPhone": the TV stops, the book goes on here from the same spot.
+    func continueHere() {
+        guard tvName != nil, let item else { return }
+        let ep = episode, at = position
+        app?.tv.command("bookStop")
+        endRemote()
+        play(item, episode: ep, at: at)
+    }
+
+    /// The other way round: the book playing here goes on on the own TV, from the same spot. The TV takes over once it
+    /// reports playing; if it never does, this phone goes on by itself instead of sitting there silent.
+    func playOnTV() {
+        guard tvName == nil, let tv = app?.tv, let name = tv.ownBooks, let item, session != nil else { return }
+        let at = position
+        tv.playBook(item: item.id, episode: episode?.id, position: at)
+        guard isPlaying else { return }
+        player.pause()
+        sync()
+        handoff?.cancel()
+        handoff = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(12))
+            guard !Task.isCancelled, let self, self.tvName == nil, self.session != nil, !self.isPlaying else { return }
+            self.app?.notify(String(localized: "\(name) didn't start the audiobook – playing here again."))
+            self.toggle()
+        }
+    }
+
     // MARK: Lock screen
 
     private func loadArtwork(_ itemId: String) {
@@ -414,7 +606,7 @@ final class BookPlayer {
             MPMediaItemPropertyAlbumTitle: creator,
             MPMediaItemPropertyPlaybackDuration: duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
-            MPNowPlayingInfoPropertyPlaybackRate: player.timeControlStatus == .playing ? Double(rate) : 0.0,
+            MPNowPlayingInfoPropertyPlaybackRate: (tvName != nil ? isPlaying : player.timeControlStatus == .playing) ? Double(rate) : 0.0,
             MPNowPlayingInfoPropertyDefaultPlaybackRate: Double(rate),
         ]
         if let artwork {

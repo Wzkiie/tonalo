@@ -37,6 +37,7 @@ Navidrome's web UI technically works in the TV browser, but it's made for a mous
 - **Continue on another device**: the queue is kept on your server, so the TV offers to pick up where the iPhone left off (and the other way round)
 - **Control it from your iPhone**: pair once with a code shown on the TV. The iPhone then shows what's playing and the queue, works as a remote, and sends albums, playlists and radio to the TV – or moves the song you're hearing over, at the same second. Everything stays in your home network
 - **Jukebox**: friends nearby join with a code on the TV, add up to 20 songs to what's playing and skip. They need an account on the same server and don't see whose account is playing; the TV briefly shows who added what
+- **Audiobooks and podcasts from Audiobookshelf** (optional): connect your server under Settings, per account. A *Hörbücher* page with Continue listening and new books, libraries, search, chapters, podcast episodes, speed, skip buttons and a sleep timer, and your progress stays in sync with the server. A book you started on the iPhone moves to the TV at the same second and back, and the phone works as a remote for it – the same way as music
 - Several people on one TV: everyone signs in once, then picks their profile on start. Queues and settings stay separate.
 - Transcoding options for weaker Wi-Fi, scrobbling, and a moving screensaver so the OLED doesn't burn in
 - English, German, Spanish, French, Italian, Portuguese, Dutch, Polish and Turkish – it follows the TV's language
@@ -102,6 +103,7 @@ The same app as on the TV, made for mouse and keyboard: the same screens and fea
 - Media keys and the Windows media overlay show and control what's playing
 - **Control it from your iPhone and host a Jukebox**, just like the TV: pair under *Devices* in the iPhone app, guests join under *Jukebox*. Windows asks once whether Tonalo may use the network – allow it for private networks
 - **Custom HTTP headers per server**, entered under *Custom headers* at sign-in, for servers behind Cloudflare Access (service token), Authelia or a similar proxy. There's a one-click preset for the two Cloudflare Access headers. The values are stored encrypted with Windows' own data protection, go out with every request to that server including music and cover art, and never to any other address, not even after a redirect
+- **Audiobookshelf** works like on the TV, and custom headers entered for that server are used for it too
 - **Updates install from inside the app**: Tonalo checks GitHub for a new release on start, asks, downloads it and restarts. Settings → Updates checks by hand
 
 ### Installing on Windows
@@ -239,6 +241,7 @@ The screenshots in this README use a made-up demo library (`tv/tools/mock_server
 - Your password is never stored. Like every Subsonic client, Tonalo keeps the salted token derived from it, and that token is sent with each request. Anyone who gets hold of it can use your server account (but not learn the password) – so use https for any server reachable from the internet.
 - iPhone: the token and custom headers live in the Keychain, only on that device. Library info and covers are kept on the device so pages open at once and offline, but never the request addresses, which carry the token. Custom headers never follow a redirect to another host, and plain http is only tried automatically for home-network addresses.
 - Windows: custom header values are encrypted on disk (Windows data protection) and stay in the app's main process, which adds them to requests for exactly that server. The screens can set them but never read them back. Over plain http they only go to home-network addresses.
+- Audiobookshelf on the TV and PC: only the tokens are kept (the password never), in the same place as the Navidrome token. Audiobookshelf doesn't let web apps talk to it, so the app's background service makes these requests; it only speaks http or https, never follows a redirect (the login can't be sent to another server) and limits the size of answers. The audio itself plays through a listening session, so no token ends up in a stream address.
 - TV and iPhone pairing: the code shown on the screen never goes over the network. Both sides agree on a key (ECDH) and the phone proves it knows the code; every request after that is signed and can't be replayed. Each iPhone gets its own key, and nothing leaves your home network.
 - TV: webOS has no secure storage, so the token sits in the app's local storage. Without a scheme, addresses in the home network use http and all others https.
 
