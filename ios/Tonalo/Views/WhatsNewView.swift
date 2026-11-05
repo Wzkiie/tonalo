@@ -18,6 +18,12 @@ struct AppRelease: Identifiable {
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
+        AppRelease(version: "1.4.3", items: [
+            .init(icon: "book.fill", color: .indigo, title: "Audiobooks on the TV",
+                  text: "A book playing on your TV or computer shows up here, and you control it from the phone. Play on moves it over, from the same spot."),
+            .init(icon: "wifi", color: .blue, title: "Steadier connection",
+                  text: "The phone finds your TV or computer more reliably after the app opens."),
+        ]),
         AppRelease(version: "1.4.2", items: [
             .init(icon: "tv", color: .blue, title: "TV connection",
                   text: "Songs the TV can't play are converted, a switched-off TV is let go of sooner, and it's found again by itself."),

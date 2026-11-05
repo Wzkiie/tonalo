@@ -5361,6 +5361,46 @@
         }
       }
     },
+    "Audiobooks on the TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher am TV"
+          }
+        }
+      }
+    },
+    "A book playing on your TV or computer shows up here, and you control it from the phone. Play on moves it over, from the same spot." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Hörbuch, das auf deinem TV oder Computer läuft, erscheint hier, und du steuerst es vom iPhone aus. „Spielen auf“ bringt es an derselben Stelle hinüber."
+          }
+        }
+      }
+    },
+    "Steadier connection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stabilere Verbindung"
+          }
+        }
+      }
+    },
+    "The phone finds your TV or computer more reliably after the app opens." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das iPhone findet deinen TV oder Computer nach dem Öffnen der App zuverlässiger."
+          }
+        }
+      }
+    },
     "TV connection" : {
       "localizations" : {
         "de" : {
