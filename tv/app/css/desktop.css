@@ -8,6 +8,7 @@ html.desktop #titlebar { position: fixed; left: 0; top: 0; right: 0; background:
 /* Mit der Maus: kein Fokusring, dafür ein Zeiger */
 html.desktop.mouse .focused { box-shadow: none; }
 html.desktop.mouse input.focused { box-shadow: 0 0 0 3px var(--ring); }
+html.desktop.mouse .search-input.focused { box-shadow: none; }
 html.desktop .mp-progress, html.desktop .np-progress { cursor: pointer; }
 html.desktop .mp-progressrow { padding: 6px 0; }
 html.desktop ::selection { background: var(--accent); color: #000; }

@@ -99,6 +99,28 @@ function broadcast() {
 var https = require('https');
 var URL_ = require('url').URL;
 var HTTP_MAX = 12 * 1024 * 1024;
+var HTTP_MAX_SLIM = 48 * 1024 * 1024; // nur mit "slim": die Antwort wird hier verkleinert, bevor sie zur App geht
+
+// Audiobookshelf liefert bei Suche und Serien jedes Buch mit allen Dateien und Kapiteln, eine Serie mit hunderten Folgen sind
+// dann Dutzende MB. Die Übersicht braucht davon nur Titel, Autor und das erste Buch einer Serie fürs Cover.
+function slimItem(o) {
+  var m = (o.media && o.media.metadata) || {}, e = o.recentEpisode;
+  return {
+    id: o.id, libraryId: o.libraryId, mediaType: o.mediaType, addedAt: o.addedAt,
+    recentEpisode: e ? { id: e.id, title: e.title, subtitle: e.subtitle, season: e.season, episode: e.episode, publishedAt: e.publishedAt, duration: e.duration, audioFile: e.audioFile && { duration: e.audioFile.duration } } : undefined,
+    media: { duration: o.media && o.media.duration, numEpisodes: o.media && o.media.numEpisodes,
+      metadata: { title: m.title, subtitle: m.subtitle, authorName: m.authorName, narratorName: m.narratorName, seriesName: m.seriesName } }
+  };
+}
+function slimWalk(v, depth) {
+  if (!v || typeof v !== 'object' || depth > 6) return v;
+  if (Array.isArray(v)) return v.map(function (x) { return slimWalk(x, depth + 1); });
+  if (v.mediaType && v.media) return slimItem(v);
+  var out = {};
+  Object.keys(v).forEach(function (k) { out[k] = slimWalk(v[k], depth + 1); });
+  if (Array.isArray(out.books) && out.books.length > 1) { out.numBooks = out.books.length; out.books = out.books.slice(0, 1); }
+  return out;
+}
 service.register('http', function (msg) {
   var p = msg.payload || {}, u;
   function fail(text) { msg.respond({ returnValue: false, errorText: text }); }
@@ -123,15 +145,18 @@ service.register('http', function (msg) {
     var chunks = [], size = 0;
     res.on('data', function (c) {
       size += c.length;
-      if (size > HTTP_MAX) { if (!done) { done = true; fail('size'); } req.abort(); return; }
+      if (size > (p.slim ? HTTP_MAX_SLIM : HTTP_MAX)) { if (!done) { done = true; fail('size'); } req.abort(); return; }
       chunks.push(c);
     });
     res.on('end', function () {
       if (done) return;
       done = true;
-      var buf = Buffer.concat(chunks);
-      msg.respond({ returnValue: true, status: res.statusCode, type: String(res.headers['content-type'] || ''),
-        body: p.binary ? buf.toString('base64') : buf.toString('utf8') });
+      var buf = Buffer.concat(chunks), text = p.binary ? buf.toString('base64') : buf.toString('utf8');
+      if (p.slim && !p.binary) {
+        try { text = JSON.stringify(slimWalk(JSON.parse(text), 0)); } catch (e) { /* kein JSON: unverändert */ }
+        if (text.length > HTTP_MAX) return fail('size');
+      }
+      msg.respond({ returnValue: true, status: res.statusCode, type: String(res.headers['content-type'] || ''), body: text });
     });
     res.on('error', function () { if (!done) { done = true; fail('read'); } });
   });

@@ -68,7 +68,7 @@ var ABS = (function () {
         if (!m.returnValue) return reject(new Error(m.errorText || 'network'));
         resolve({ status: m.status, type: m.type, body: m.body });
       };
-      b.call('luna://tonalo.service/http', JSON.stringify({ url: url, method: method, headers: headers, body: body, binary: !!o.binary, timeout: o.timeout || 20000 }));
+      b.call('luna://tonalo.service/http', JSON.stringify({ url: url, method: method, headers: headers, body: body, binary: !!o.binary, slim: !!o.slim, timeout: o.timeout || 20000 }));
     });
   }
 
@@ -210,7 +210,7 @@ var ABS = (function () {
 
   // Die Serien einer Bibliothek, jede mit ihren Büchern (das erste liefert das Cover)
   function series(lib, page, size) {
-    return req('/api/libraries/' + lib + '/series?limit=' + size + '&page=' + page + '&sort=name&minified=1').then(function (r) {
+    return req('/api/libraries/' + lib + '/series?limit=' + size + '&page=' + page + '&sort=name&minified=1', { slim: true, timeout: 40000 }).then(function (r) {
       return { items: A(r && r.results), total: (r && r.total) || 0 };
     });
   }
@@ -220,7 +220,7 @@ var ABS = (function () {
   function search(q) {
     return libraries().then(function (list) {
       return Promise.all(list.map(function (lib) {
-        return req('/api/libraries/' + lib.id + '/search?q=' + encodeURIComponent(q) + '&limit=12').then(function (a) { return a && { lib: lib.id, a: a }; }, function () { return null; });
+        return req('/api/libraries/' + lib.id + '/search?q=' + encodeURIComponent(q) + '&limit=12', { slim: true, timeout: 40000 }).then(function (a) { return a && { lib: lib.id, a: a }; }, function () { return null; });
       }));
     }).then(function (answers) {
       // Bücher und Podcasts, dazu Serien: bei einer Serie wie „Die drei ???“ trifft der Suchbegriff oft nur den Serien-Namen

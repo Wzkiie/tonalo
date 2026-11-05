@@ -140,7 +140,7 @@ var BookViews = (function () {
   function seriesCard(lib) {
     return function (s) {
       lib = lib || s.lib;
-      var n = A(s.books).length || s.numBooks || 0;
+      var n = s.numBooks || A(s.books).length || 0;
       var first = A(s.books)[0];
       return h('button.card.focusable.bk', { onclick: function () { App.go('bookserie', { lib: lib, id: s.id, name: s.name }); } },
         cover(first && first.id, 400),

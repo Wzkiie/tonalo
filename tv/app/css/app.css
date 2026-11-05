@@ -225,7 +225,7 @@ button, input { font: inherit; color: inherit; background: none; border: 0; outl
 /* ---------- Suche ---------- */
 .search-bar { display: flex; align-items: center; height: 84px; border-radius: 42px; background: var(--elev2); color: var(--fg); padding: 0 30px; margin-bottom: 34px; width: 900px; box-shadow: inset 0 0 0 3px transparent; transition: box-shadow .12s; }
 .search-bar .ic { color: var(--sub); width: 34px; height: 34px; margin-right: 18px; }
-.search-input { flex: 1; height: 100%; font-size: 30px; color: var(--fg); }
+.search-input { flex: 1; height: 100%; font-size: 30px; color: var(--fg); background: transparent; border: 0; outline: 0; padding: 0; }
 .search-input::placeholder { color: var(--dim); }
 .search-bar.focus-in { box-shadow: inset 0 0 0 3px var(--ring); }
 .search-bar.focus-in .ic { color: var(--fg); }
