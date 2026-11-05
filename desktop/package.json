@@ -2,7 +2,7 @@
   "name": "tonalo-desktop",
   "productName": "Tonalo",
   "version": "1.8.11",
-  "description": "Unofficial Navidrome/Subsonic client for Windows",
+  "description": "Unofficial Navidrome/Subsonic client for Windows and macOS",
   "homepage": "https://tonalo.app",
   "author": "Wzkiie",
   "license": "MIT",
@@ -11,7 +11,8 @@
   "scripts": {
     "sync": "node tools/sync.js",
     "start": "node tools/sync.js && electron .",
-    "dist": "node tools/sync.js && electron-builder --win --x64 --publish never"
+    "dist": "node tools/sync.js && electron-builder --win --x64 --publish never",
+    "dist:mac": "node tools/sync.js && electron-builder --mac --publish never"
   },
   "dependencies": {
     "electron-updater": "6.8.10"
@@ -52,7 +53,8 @@
       "perMachine": false,
       "artifactName": "Tonalo-Setup-${version}.${ext}",
       "shortcutName": "Tonalo",
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "differentialPackage": false
     },
     "publish": [
       {
@@ -61,6 +63,25 @@
         "repo": "tonalo",
         "releaseType": "release"
       }
-    ]
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.music",
+      "identity": "-",
+      "artifactName": "Tonalo-${version}-mac-${arch}.${ext}",
+      "hardenedRuntime": false
+    },
+    "dmg": {
+      "title": "Tonalo ${version}"
+    }
   }
 }

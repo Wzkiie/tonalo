@@ -2,9 +2,9 @@
 
 <h1 align="center">Tonalo</h1>
 
-<p align="center">A Navidrome client for LG TVs, Windows and the iPhone. Play your own music library from the couch with nothing but the remote, or take it with you.</p>
+<p align="center">A Navidrome client for LG TVs, Windows, Mac and the iPhone. Play your own music library from the couch with nothing but the remote, or take it with you.</p>
 
-<p align="center"><a href="https://tonalo.app">tonalo.app</a> · <a href="https://tonalo.app/changelog">Changelog</a> · <a href="https://testflight.apple.com/join/vKkNhNZJ">iPhone beta</a> · <a href="https://github.com/Wzkiie/tonalo/releases/latest">Windows &amp; TV download</a></p>
+<p align="center"><a href="https://tonalo.app">tonalo.app</a> · <a href="https://tonalo.app/changelog">Changelog</a> · <a href="https://testflight.apple.com/join/vKkNhNZJ">iPhone beta</a> · <a href="https://github.com/Wzkiie/tonalo/releases/latest">Windows, Mac &amp; TV download</a></p>
 
 <p align="center">
   <img src="assets/screenshots/tv/home.jpg" width="74%" alt="TV app home screen">
@@ -110,6 +110,10 @@ The same app as on the TV, made for mouse and keyboard: the same screens and fea
 
 Download `Tonalo-Setup-<version>.exe` from the [latest release](../../releases/latest) and run it. It installs for your user only, no admin rights needed. The installer isn't code-signed, so Windows SmartScreen warns the first time: click *More info* → *Run anyway*.
 
+### Installing on the Mac
+
+The same app also runs on macOS. Download `Tonalo-<version>-mac-arm64.dmg` (Apple Silicon) or `Tonalo-<version>-mac-x64.dmg` (Intel) from the [latest release](../../releases/latest), open it and drag Tonalo into *Applications*. The app isn't notarized by Apple, so macOS refuses it the first time: right-click Tonalo, choose *Open*, then *Open* again (or allow it under *System Settings → Privacy & Security*). It has no automatic updates; download the new `.dmg` when there's one. Custom header values are kept encrypted in the Keychain.
+
 ## iPhone app
 
 A native SwiftUI app that feels like the big streaming apps rather than a classic Subsonic client.
@@ -205,7 +209,7 @@ In a desktop browser the UI scales to the window, and arrow keys, Enter and Esc 
 
 **Translations:** German is the source language. The code uses `T('German text')` and each file in `tv/app/js/lang/` maps those strings to another language. To add a language, copy `en.js`, translate it, and register it in `index.html` and `tv/app/js/i18n.js`. Corrections from native speakers are very welcome.
 
-**Releases:** bump the version in `tv/app/appinfo.json` and `tv/app/js/util.js`, commit, then push a tag (`git tag v1.5.1 && git push origin v1.5.1`). GitHub Actions builds the TV package and the Windows installer and publishes both in one release.
+**Releases:** bump the version in `tv/app/appinfo.json` and `tv/app/js/util.js`, commit, then push a tag (`git tag v1.5.1 && git push origin v1.5.1`). GitHub Actions builds the TV package, the Windows installer and the two Mac images and publishes them in one release.
 
 ### Windows app
 
@@ -217,7 +221,7 @@ npm start               # run it from source (copies tv/app into desktop/web fir
 npm run dist            # build the installer into desktop/dist
 ```
 
-The release workflow attaches the installer to the same release as the TV app, together with the `latest.yml` the installed apps read their updates from. *Windows-Testbuild* in the Actions tab builds an installer to try out without releasing anything.
+The release workflow attaches the installer to the same release as the TV app, together with the `latest.yml` the installed apps read their updates from. The Mac images are built the same way (`npm run dist:mac` in `desktop/`), ad-hoc signed, and don't update themselves. *Windows-Testbuild* in the Actions tab builds an installer to try out without releasing anything.
 
 ### iPhone app
 

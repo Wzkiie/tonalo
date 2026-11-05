@@ -160,6 +160,7 @@ function shortError(err) {
 
 function setupUpdater() {
   if (!app.isPackaged) return; // aus dem Quellcode gestartet: nichts zu aktualisieren
+  if (MAC) return; // die Mac-App ist nicht notarisiert, macOS erlaubt ihr kein stilles Update: neue Version von Hand laden
   updater = require('electron-updater').autoUpdater;
   updater.autoDownload = false;
   updater.autoInstallOnAppQuit = true;

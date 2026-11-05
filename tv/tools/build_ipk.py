@@ -138,7 +138,7 @@ def main():
             "id": app_id,
             "title": info["title"],
             "iconUri": icon,
-            "manifestUrl": "https://github.com/%s/releases/download/v%s/%s.manifest.json" % (repo, version, app_id),
+            "manifestUrl": "https://raw.githubusercontent.com/%s/repo/%s.manifest.json" % (repo, app_id),
             "manifest": manifest,
             "pool": "main",
             "requirements": {"webosRelease": ">=5.0"},
