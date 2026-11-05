@@ -528,7 +528,7 @@ final class PlayerModel {
                                 changed: stamp, changedDate: changed)
         if queue.isEmpty {
             take(offer, play: false)
-        } else if current?.id != offer.song.id || abs(position - offer.position) > 15 {
+        } else if Date().timeIntervalSince(changed) < 3 * 3600, current?.id != offer.song.id || abs(position - offer.position) > 15 { // not an old queue from hours ago
             remoteOffer = offer
         }
     }

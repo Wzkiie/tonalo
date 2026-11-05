@@ -114,6 +114,7 @@ var Player = (function () {
   function transcoding() { return !!settings().maxBitRate || fellBack(); }
   // Position zum Weitermachen: nur kurz gemerkt (Anruf, kurze Pause), nicht nach Stunden oder Tagen
   var RESUME_MS = 30 * 60 * 1000;
+  var OFFER_MS = 3 * 60 * 60 * 1000; // so lange gilt die Warteschlange eines anderen Geräts als Angebot
   function savePos(v, at) { U.ustore.set('pos', v); U.ustore.set('posAt', at || Date.now()); }
   function freshPos() { return Date.now() - (U.ustore.get('posAt', 0) || 0) < RESUME_MS ? (U.ustore.get('pos', 0) || 0) : 0; }
 
@@ -465,9 +466,12 @@ var Player = (function () {
       if (!songs || !songs.length || !audio.paused || !r.changedBy || r.changedBy === API.client) return null;
       if (parseDate(r.changed) <= (U.ustore.get('changed', 0) || 0) + 10000) return null;
       if (r.changed === U.ustore.get('queueDismissed', '')) return null;
+      // Eine Warteschlange von vor Stunden oder Tagen ist kein „Weiterhören“ mehr – heute lief dort vielleicht nur ein Hörbuch
+      var age = Date.now() - parseDate(r.changed);
+      if (age > OFFER_MS && queue.length) return null; // ohne eigene Warteschlange wird sie still (pausiert) übernommen
       var i = 0;
       songs.forEach(function (x, k) { if (x.id === r.current && !i) i = k; });
-      var offer = { songs: songs, index: i, pos: (r.position || 0) / 1000, changed: r.changed,
+      var offer = { songs: songs, index: i, pos: age > RESUME_MS ? 0 : (r.position || 0) / 1000, changed: r.changed,
         device: { 'Tonalo-iOS': 'iPhone', 'Tonalo-Windows': 'PC', 'Tonalo': 'TV' }[r.changedBy] || r.changedBy };
       if (!queue.length) { take(offer, false); return null; }
       var cur = current();
