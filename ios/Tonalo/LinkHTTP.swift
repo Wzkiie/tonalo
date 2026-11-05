@@ -66,13 +66,14 @@ enum LinkHTTP {
     /// Returns the status (and for an error the body), once the connection has ended.
     /// Both sides send a ping every 20 s – nothing for 35 s means the other side is gone without saying so.
     @MainActor
-    static func stream(_ endpoint: NWEndpoint, _ path: String, headers: [String: String], line: (Data) -> Void) async -> Response? {
+    static func stream(_ endpoint: NWEndpoint, _ path: String, headers: [String: String], ready: ((NWEndpoint) -> Void)? = nil, line: (Data) -> Void) async -> Response? {
         let c = LinkConnection(endpoint)
         c.idle = 35
         defer { c.close() }
         return await withTaskCancellationHandler {
             do {
                 try await c.open(timeout: 8)
+                if let r = c.remote { ready?(r) }
                 try await c.send(head("GET", path, body: Data(), headers: headers))
                 var buffer = Data()
                 var code: Int?
@@ -159,6 +160,8 @@ final class LinkConnection: @unchecked Sendable {
     var idle: TimeInterval?
     /// The other side has closed: nothing more to wait for.
     private var ended = false
+    /// Where the connection really goes (the address behind a Bonjour name), known once it's open.
+    private(set) var remote: NWEndpoint?
 
     init(_ endpoint: NWEndpoint) { connection = NWConnection(to: endpoint, using: LinkHTTP.parameters) }
     init(_ connection: NWConnection) { self.connection = connection }
@@ -168,7 +171,7 @@ final class LinkConnection: @unchecked Sendable {
             let once = OnceThrowing(done)
             connection.stateUpdateHandler = { state in
                 switch state {
-                case .ready: once.finish(nil)
+                case .ready: self.remote = self.connection.currentPath?.remoteEndpoint; once.finish(nil)
                 case .failed(let e): once.finish(e)
                 case .cancelled: once.finish(CancellationError())
                 default: break

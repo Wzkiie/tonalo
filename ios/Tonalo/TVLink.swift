@@ -123,6 +123,13 @@ final class TVLink {
     @ObservationIgnored private var watch: Task<Void, Never>?
     /// Every way a device was found (Wi-Fi, cable, peer to peer): when one doesn't answer, the next gets a try.
     @ObservationIgnored private var endpoints: [String: [NWEndpoint]] = [:]
+    /// Where each paired device was reached last (its address in the home network). Used right away when the app opens,
+    /// without waiting for Bonjour – on Wi-Fi the search is sometimes slow or misses a try, which made only every
+    /// third or fourth opening connect.
+    @ObservationIgnored private var fallback: [String: Device] = [:]
+    private struct Saved: Codable, Equatable { var ip: String; var port: UInt16; var pc: Bool }
+    /// Devices known by Bonjour, plus those only known by their last address.
+    private var pool: [Device] { devices + fallback.values.filter { f in !devices.contains { $0.id == f.id } } }
     /// Counts connections: an answer to an old one (a command that was slow) must not tear down the new one.
     @ObservationIgnored private var generation = 0
     /// When the other side last reported anything, and when the search began – see `checkGone`.
@@ -148,6 +155,7 @@ final class TVLink {
         checkGone()
         guard browser == nil else { connect(); return }
         startBrowser()
+        useSavedAddresses()
         // The search sometimes stalls right after the app opened (nothing found although the TV is there):
         // looking again a few seconds later finds it – without this the app had to be restarted
         watch?.cancel()
@@ -160,6 +168,43 @@ final class TVLink {
                 self.startBrowser()
             }
         }
+    }
+
+    /// Tries the paired devices at the address they had last time, if it's in the same home network as this phone now.
+    private func useSavedAddresses() {
+        let saved = (UserDefaults.standard.data(forKey: "link.addresses").flatMap { try? JSONDecoder().decode([String: Saved].self, from: $0) }) ?? [:]
+        guard let mine = Self.networkPrefix() else { fallback = [:]; return }
+        var list: [String: Device] = [:]
+        for p in pairings {
+            guard let s = saved[p.tv], s.ip.hasPrefix(mine), let port = NWEndpoint.Port(rawValue: s.port) else { continue }
+            list[p.tv] = Device(id: p.tv, name: p.name, endpoint: .hostPort(host: NWEndpoint.Host(s.ip), port: port), isPhone: false, isPC: s.pc)
+        }
+        fallback = list
+        connect()
+    }
+
+    private func remember(_ device: Device, _ remote: NWEndpoint) {
+        guard case let .hostPort(host, port) = remote, case let .ipv4(address) = host else { return }
+        var saved = (UserDefaults.standard.data(forKey: "link.addresses").flatMap { try? JSONDecoder().decode([String: Saved].self, from: $0) }) ?? [:]
+        let entry = Saved(ip: "\(address)", port: port.rawValue, pc: device.isPC)
+        guard saved[device.id] != entry else { return }
+        saved[device.id] = entry
+        if let data = try? JSONEncoder().encode(saved) { UserDefaults.standard.set(data, forKey: "link.addresses") }
+    }
+
+    /// The first three numbers of this phone's Wi-Fi address, e.g. the first three of a typical home network – a saved address only counts in the same network.
+    private static func networkPrefix() -> String? {
+        var list: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&list) == 0, let first = list else { return nil }
+        defer { freeifaddrs(list) }
+        for p in sequence(first: first, next: { $0.pointee.ifa_next }) {
+            guard let a = p.pointee.ifa_addr, a.pointee.sa_family == UInt8(AF_INET), String(cString: p.pointee.ifa_name) == "en0" else { continue }
+            var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+            guard getnameinfo(a, socklen_t(a.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST) == 0 else { continue }
+            let parts = String(cString: host).split(separator: ".")
+            if parts.count == 4 { return parts[0...2].joined(separator: ".") + "." }
+        }
+        return nil
     }
 
     private func startBrowser() {
@@ -322,20 +367,23 @@ final class TVLink {
         guard listener == nil else { return }
         let target: (Device, Pairing)?
         if let jukebox {
-            target = devices.first { $0.id == jukebox }.flatMap { d in pairing(for: d).map { (d, $0) } }
+            target = pool.first { $0.id == jukebox }.flatMap { d in pairing(for: d).map { (d, $0) } }
         } else {
-            target = devices.lazy.compactMap { d in self.pairing(for: d).flatMap { $0.guest == true ? nil : (d, $0) } }.first
+            target = pool.lazy.compactMap { d in self.pairing(for: d).flatMap { $0.guest == true ? nil : (d, $0) } }.first
         }
         guard let (device, pairing) = target else { return }
         generation += 1
         listener = Task { [weak self] in
             // A dropped connection gets a few more tries before the phone takes over again
             var misses = 0
-            while misses < 3, !Task.isCancelled, let self, self.devices.contains(where: { $0.id == device.id }) {
+            while misses < 3, !Task.isCancelled, let self, self.pool.contains(where: { $0.id == device.id }) {
                 // The address can change (Wi-Fi switched, TV got a new IP): always the one Bonjour knows now
-                let known = self.devices.first { $0.id == device.id } ?? device
-                // The first way found may be one that hangs (a second network interface): after a miss the next one is tried
-                let ways = self.endpoints[device.id] ?? [known.endpoint]
+                let known = self.pool.first { $0.id == device.id } ?? device
+                // The first way found may be one that hangs (a second network interface): after a miss the next one is tried,
+                // the last known address among them
+                var ways = self.endpoints[device.id] ?? []
+                if let direct = self.fallback[device.id] { ways.append(direct.endpoint) }
+                if ways.isEmpty { ways = [known.endpoint] }
                 let device = Device(id: known.id, name: known.name, endpoint: ways[misses % ways.count], isPhone: known.isPhone, isPC: known.isPC)
                 let got = await self.follow(device, pairing)
                 misses = got ? 0 : misses + 1
@@ -457,7 +505,7 @@ final class TVLink {
             wasPlaying = playing
             first = false
         }
-        let status = await LinkHTTP.stream(device.endpoint, "/events", headers: ["Authorization": auth]) { line in
+        let status = await LinkHTTP.stream(device.endpoint, "/events", headers: ["Authorization": auth], ready: { remote in Task { @MainActor in self.remember(device, remote) } }) { line in
             guard line.starts(with: Data("data: ".utf8)), let s = try? JSONDecoder().decode(State.self, from: Data(line.dropFirst(6))) else { return }
             guard !Task.isCancelled else { return }
             latest = s
