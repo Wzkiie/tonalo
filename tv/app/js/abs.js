@@ -82,12 +82,13 @@ var ABS = (function () {
   function renew() {
     if (refreshing) return refreshing;
     if (!cfg || !cfg.refreshToken) return Promise.resolve(false);
-    var saved = cfg.url;
+    var saved = cfg.url, mine = cfg;
     refreshing = raw('POST', cfg.url + '/auth/refresh', { 'x-refresh-token': cfg.refreshToken, 'x-return-tokens': 'true' }, null)
       .then(function (r) {
         refreshing = null;
-        if (r.status !== 200 || !cfg || cfg.url !== saved) return false;
-        var u = JSON.parse(r.body).user;
+        if (r.status !== 200 || cfg !== mine || cfg.url !== saved) return false;
+        var u;
+        try { u = JSON.parse(r.body).user; } catch (e) { return false; }
         if (!u || !u.accessToken) return false;
         cfg.accessToken = u.accessToken;
         cfg.refreshToken = u.refreshToken || cfg.refreshToken;

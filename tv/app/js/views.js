@@ -73,7 +73,7 @@ var Views = (function () {
       ];
       var cur = Player.current();
       if (cur) tiles.push(UI.shortcut({ coverId: cur.coverArt || cur.albumId, label: T('Weiterhören: {title}', { title: cur.title }), onClick: function () { Player.play(); App.go('nowplaying'); } }));
-      recent.slice(0, 8 - tiles.length).forEach(function (a) {
+      recent.slice(0, 8 - tiles.length - (ABS.connected() ? 1 : 0)).forEach(function (a) {
         tiles.push(UI.shortcut({ coverId: a.coverArt || a.id, label: a.name, onClick: function () { App.go('album', { id: a.id }); }, onOptions: function () { Menus.album(a); } }));
       });
       var shortcutBox = h('div.shortcuts.nav-container', null, tiles);

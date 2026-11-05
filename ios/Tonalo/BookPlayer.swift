@@ -501,6 +501,8 @@ final class BookPlayer {
         coverFor = nil
         artwork = nil
         loadArtwork(id)
+        // The big player's .task doesn't fire again for the same book: fetch the cover right here
+        Task { [weak self] in await self?.prepareCover() }
         tvLoad?.cancel()
         tvLoad = Task { [weak self] in
             guard let full = try? await self?.library?.item(id), !Task.isCancelled, let self, self.tvName != nil, self.item?.id == id,

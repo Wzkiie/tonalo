@@ -197,15 +197,16 @@ var BookViews = (function () {
       var target = chosenEp || null;
       var label = progress && !progress.isFinished && progress.currentTime > 10
         ? T('Weiterhören bei {time}', { time: U.fmtTime(progress.currentTime) }) : T('Abspielen');
-      var actions = h('div.action-bar.nav-container', null,
-        UI.button(label, function () { startPlayback(it.id, target ? target.id : null); App.go('bookplayer'); }, 'primary', 'play'));
+      var actions = h('div.action-bar.nav-container', null);
+      // Ein Podcast braucht eine Folge: erst unten eine wählen
+      if (!podcast || chosenEp) actions.appendChild(UI.button(label, function () { startPlayback(it.id, target ? target.id : null); App.go('bookplayer'); }, 'primary', 'play'));
       if (!podcast || chosenEp) {
         var done = ABS.finished(it.id, target ? target.id : null);
         actions.appendChild(UI.button(done ? T('Als ungehört markieren') : T('Als gehört markieren'), function () {
           ABS.setFinished(it.id, target ? target.id : null, !done).then(function () { App.reload(); }).catch(App.error);
         }, 'outline', done ? 'refresh' : 'clock'));
       }
-      el.appendChild(actions);
+      if (actions.children.length) el.appendChild(actions);
       if (desc) el.appendChild(h('p.bk-desc', { text: desc.length > 700 ? desc.slice(0, 697) + '…' : desc }));
 
       if (podcast && !chosenEp) {
@@ -364,8 +365,7 @@ var BookViews = (function () {
     function renderState() {
       UI.setIcon(btnPlay, Book.playing() || Book.loading() ? 'pause' : 'play');
       btnRate.textContent = Book.rate() + '×';
-      title.textContent = Book.title();
-      sub.textContent = Book.author();
+      if (Book.active()) { title.textContent = Book.title(); sub.textContent = Book.author(); }
     }
 
     var lastChapter = -2;

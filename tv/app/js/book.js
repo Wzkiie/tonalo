@@ -18,7 +18,7 @@ var Book = (function () {
   var listened = 0, lastTick = 0, lastSync = 0;
   var retried = false;
   var watchdog = null;
-  var sleepAt = 0, sleepChapter = false;
+  var sleepAt = 0, sleepChapter = false, sleepEnd = null;
   var rate = +U.store.get('bookRate', 1) || 1;
   var RATES = [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5];
   var BACK = 15, FORWARD = 30;
@@ -150,6 +150,7 @@ var Book = (function () {
     retried = true;
     var at = position();
     var old = session;
+    pendingPos = at;
     session = null;
     loading = true;
     emit('state');
@@ -167,7 +168,7 @@ var Book = (function () {
     try { audio.load(); } catch (e) { /* egal */ }
     var was = active();
     session = null; loading = false; itemId = null; episodeId = null; info = null;
-    pendingPos = 0; seekTarget = null; listened = 0; lastTick = 0; sleepAt = 0; sleepChapter = false;
+    pendingPos = 0; seekTarget = null; listened = 0; lastTick = 0; sleepAt = 0; sleepChapter = false; sleepEnd = null;
     if (was) { emit('track'); emit('state'); }
   }
 
@@ -223,8 +224,8 @@ var Book = (function () {
 
   // Einschlaf-Timer: Minuten, oder bis zum Ende des Kapitels
   function setSleep(min) { sleepAt = Date.now() + min * 60000; sleepChapter = false; emit('sleep'); }
-  function setSleepChapter() { sleepChapter = true; sleepAt = 0; emit('sleep'); }
-  function cancelSleep() { sleepAt = 0; sleepChapter = false; emit('sleep'); }
+  function setSleepChapter() { sleepChapter = true; sleepEnd = null; sleepAt = 0; emit('sleep'); }
+  function cancelSleep() { sleepAt = 0; sleepChapter = false; sleepEnd = null; emit('sleep'); }
   // Restzeit in ms, -1 = am Ende des Kapitels, 0 = aus
   function sleepLeft() { return sleepChapter ? -1 : sleepAt ? Math.max(1, sleepAt - Date.now()) : 0; }
   function sleepFired() { cancelSleep(); audio.pause(); report(false); }
@@ -232,13 +233,13 @@ var Book = (function () {
   // ---------- Meldungen an den Server
   function report(closing) {
     if (!session) return;
-    var s = session, at = position(), amount = listened;
+    var s = session, at = position(), amount = listened, iid = itemId, eid = episodeId;
     listened = 0;
     lastSync = Date.now();
-    ABS.noteListening(itemId, episodeId, at, s.duration);
+    ABS.noteListening(iid, eid, at, s.duration);
     ABS.syncSession(s.id, at, amount, s.duration, closing).catch(function (e) {
       // Sitzung beim Server weg: wenigstens die Position sichern
-      if (e && e.status === 404) ABS.saveProgress(itemId, episodeId, at, s.duration).catch(function () { });
+      if (e && e.status === 404) ABS.saveProgress(iid, eid, at, s.duration).catch(function () { });
       else if (!closing) listened += amount;
     });
     ABS.emit();
@@ -272,8 +273,13 @@ var Book = (function () {
       lastTick = 0;
     }
     if (sleepAt && now >= sleepAt) sleepFired();
-    var c = chapter();
-    if (sleepChapter && !audio.paused && c && position() >= c.end - 0.6) sleepFired();
+    if (sleepChapter && !audio.paused) {
+      // Das Kapitelende einmal merken: chapter() schaut 0,5 s voraus und wäre kurz vor dem Ende schon im nächsten Kapitel
+      var pos = position();
+      if (sleepEnd != null && pos > sleepEnd + 2) sleepEnd = null; // vorgespult: neues Kapitel
+      if (sleepEnd == null) { var c = chapter(); sleepEnd = c ? c.end : null; }
+      if (sleepEnd != null && pos >= sleepEnd - 0.3) sleepFired();
+    }
     emit('time');
   });
   audio.addEventListener('ended', function () {

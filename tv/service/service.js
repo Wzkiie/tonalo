@@ -115,7 +115,9 @@ service.register('http', function (msg) {
   if (body) headers['Content-Length'] = body.length;
   headers['User-Agent'] = 'Tonalo';
   var done = false;
-  var req = (u.protocol === 'https:' ? https : http).request({
+  var req;
+  try {
+  req = (u.protocol === 'https:' ? https : http).request({
     hostname: u.hostname.replace(/^\[|\]$/g, ''), port: u.port || undefined, path: u.pathname + u.search, method: method, headers: headers
   }, function (res) {
     var chunks = [], size = 0;
@@ -133,6 +135,7 @@ service.register('http', function (msg) {
     });
     res.on('error', function () { if (!done) { done = true; fail('read'); } });
   });
+  } catch (e) { return fail('header'); } // z. B. ein Header-Wert mit Zeilenumbruch: Node wirft sofort
   req.setTimeout(Math.min(+p.timeout || 20000, 60000), function () { if (!done) { done = true; fail('timeout'); } req.abort(); });
   req.on('error', function (e) { if (!done) { done = true; fail(e && e.code ? String(e.code) : 'network'); } });
   if (body) req.write(body);
