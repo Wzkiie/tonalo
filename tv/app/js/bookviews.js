@@ -173,6 +173,31 @@ var BookViews = (function () {
     return { el: el };
   }
 
+  // ---------- Autoren
+  function authorCard(a) {
+    return h('button.card.focusable.bk', { onclick: function () { App.go('bookauthor', { id: a.id, name: a.name }); } },
+      cover(null, 400, 'round'),
+      h('div.card-title.ellipsis', { text: a.name }),
+      h('div.card-sub', { text: a.numBooks ? T.n(a.numBooks, '{n} Buch', '{n} Bücher') : T('Autor') }));
+  }
+  function bookauthor(params) {
+    var el = view();
+    el.appendChild(UI.header(params.name || T('Autor')));
+    async(el, ABS.author(params.id), function (r) {
+      var items = A(r && r.libraryItems), series = A(r && r.series);
+      var desc = ((r && r.description) || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (desc) el.appendChild(h('p.bk-desc', { text: desc.length > 500 ? desc.slice(0, 497) + '…' : desc }));
+      if (series.length) {
+        el.appendChild(UI.row(T('Serien'), series.map(function (s) {
+          return { id: s.id, name: s.name, books: A(s.items).slice(0, 1), numBooks: A(s.items).length, lib: (items[0] && items[0].libraryId) || params.lib };
+        }), function (s) { return seriesCard(s.lib)(s); }));
+      }
+      el.appendChild(h('h2.section-title', { text: T('Bücher') }));
+      el.appendChild(UI.staticGrid(items, card));
+    });
+    return { el: el };
+  }
+
   // ---------- Suche
   function booksearch() {
     var el = view();
@@ -193,7 +218,8 @@ var BookViews = (function () {
       ABS.search(q).then(function (found) {
         if (my !== seq) return;
         results.innerHTML = '';
-        if (!found.items.length && !found.series.length) { results.appendChild(h('div.empty', { text: T('Keine Ergebnisse für „{q}“', { q: q }) })); return; }
+        if (!found.items.length && !found.series.length && !found.authors.length) { results.appendChild(h('div.empty', { text: T('Keine Ergebnisse für „{q}“', { q: q }) })); return; }
+        if (found.authors.length) results.appendChild(UI.row(T('Autoren'), found.authors, authorCard));
         if (found.series.length) results.appendChild(UI.row(T('Serien'), found.series, function (s) { return seriesCard(s.lib)(s); }));
         if (found.items.length) results.appendChild(UI.staticGrid(found.items, card));
       }).catch(function (e) { if (my === seq) { results.innerHTML = ''; results.appendChild(h('div.empty', { text: e.message })); } });
@@ -248,6 +274,15 @@ var BookViews = (function () {
         actions.appendChild(UI.button(done ? T('Als ungehört markieren') : T('Als gehört markieren'), function () {
           ABS.setFinished(it.id, target ? target.id : null, !done).then(function () { App.reload(); }).catch(App.error);
         }, 'outline', done ? 'refresh' : 'clock'));
+      }
+      // Zum Autor und zur Serie springen
+      if (!podcast) {
+        A(m.authors).slice(0, 2).forEach(function (au) {
+          if (au && au.id && au.name) actions.appendChild(UI.button(au.name, function () { App.go('bookauthor', { id: au.id, name: au.name, lib: it.libraryId }); }, 'outline', 'artist'));
+        });
+        A(m.series).slice(0, 2).forEach(function (se) {
+          if (se && se.id && se.name) actions.appendChild(UI.button(se.name + (se.sequence ? ' #' + se.sequence : ''), function () { App.go('bookserie', { lib: it.libraryId, id: se.id, name: se.name }); }, 'outline', 'queue'));
+        });
       }
       if (actions.children.length) el.appendChild(actions);
       if (desc) el.appendChild(h('p.bk-desc', { text: desc.length > 700 ? desc.slice(0, 697) + '…' : desc }));
@@ -441,6 +476,6 @@ var BookViews = (function () {
     };
   }
 
-  return { views: { books: books, booklib: booklib, bookseries: bookseries, bookserie: bookserie, booksearch: booksearch, book: book, bookplayer: bookplayer }, start: startPlayback, card: card, seriesCard: function (s) { return seriesCard(s.lib)(s); } };
+  return { views: { books: books, booklib: booklib, bookseries: bookseries, bookserie: bookserie, bookauthor: bookauthor, booksearch: booksearch, book: book, bookplayer: bookplayer }, start: startPlayback, card: card, seriesCard: function (s) { return seriesCard(s.lib)(s); }, authorCard: authorCard };
 })();
 Object.keys(BookViews.views).forEach(function (k) { Views[k] = BookViews.views[k]; });

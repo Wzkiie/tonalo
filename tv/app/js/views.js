@@ -402,16 +402,17 @@ var Views = (function () {
       results.innerHTML = '';
       results.appendChild(UI.loading());
       // Hörbücher und Podcasts werden mitgesucht; scheitert Audiobookshelf, bleibt die Musiksuche trotzdem
-      var books = ABS.connected() ? ABS.search(q).catch(function () { return { items: [], series: [] }; }) : Promise.resolve({ items: [], series: [] });
+      var books = ABS.connected() ? ABS.search(q).catch(function () { return { items: [], series: [], authors: [] }; }) : Promise.resolve({ items: [], series: [], authors: [] });
       Promise.all([API.search(q), books]).then(function (both) {
-        var r = both[0], bk = both[1].items.slice(0, 12), ser = both[1].series.slice(0, 12);
+        var r = both[0], bk = both[1].items.slice(0, 12), ser = both[1].series.slice(0, 12), aut = both[1].authors.slice(0, 12);
         if (my !== seq) return;
         results.innerHTML = '';
-        if (!r.artists.length && !r.albums.length && !r.songs.length && !bk.length && !ser.length) {
+        if (!r.artists.length && !r.albums.length && !r.songs.length && !bk.length && !ser.length && !aut.length) {
           results.appendChild(h('div.empty', { text: T('Keine Ergebnisse für „{q}“', { q: q }) }));
           return;
         }
         if (!r.artists.length && !r.albums.length && !r.songs.length) {
+          if (aut.length) results.appendChild(UI.row(T('Autoren'), aut, BookViews.authorCard));
           if (bk.length) results.appendChild(UI.row(T('Hörbücher & Podcasts'), bk, BookViews.card));
           if (ser.length) results.appendChild(UI.row(T('Serien'), ser, BookViews.seriesCard));
           return;
@@ -422,6 +423,7 @@ var Views = (function () {
         results.appendChild(h('div.top-result', null, left, right));
         if (r.artists.length) results.appendChild(UI.row(T('Künstler'), r.artists, UI.artistCard));
         if (r.albums.length) results.appendChild(UI.row(T('Alben'), r.albums, UI.albumCard));
+        if (aut.length) results.appendChild(UI.row(T('Autoren'), aut, BookViews.authorCard));
         if (bk.length) results.appendChild(UI.row(T('Hörbücher & Podcasts'), bk, BookViews.card));
         if (ser.length) results.appendChild(UI.row(T('Serien'), ser, BookViews.seriesCard));
         if (r.songs.length > 4) {

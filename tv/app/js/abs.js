@@ -215,6 +215,11 @@ var ABS = (function () {
     });
   }
 
+  // Ein Autor mit seinen Büchern und Serien
+  function author(id) {
+    return req('/api/authors/' + encodeURIComponent(id) + '?include=items,series', { slim: true, timeout: 40000 });
+  }
+
   function item(id) { return req('/api/items/' + encodeURIComponent(id) + '?expanded=1'); }
 
   function search(q) {
@@ -224,10 +229,11 @@ var ABS = (function () {
       }));
     }).then(function (answers) {
       // Bücher und Podcasts, dazu Serien: bei einer Serie wie „Die drei ???“ trifft der Suchbegriff oft nur den Serien-Namen
-      var out = { items: [], series: [] }, seen = {};
+      var out = { items: [], series: [], authors: [] }, seen = {};
       answers.forEach(function (w) {
         if (!w) return;
         A(w.a.book).concat(A(w.a.podcast)).forEach(function (m) { if (m && m.libraryItem && !seen[m.libraryItem.id]) { seen[m.libraryItem.id] = 1; out.items.push(m.libraryItem); } });
+        A(w.a.authors).forEach(function (m) { if (m && m.id && m.name) out.authors.push({ id: m.id, name: m.name, numBooks: m.numBooks, lib: w.lib }); });
         A(w.a.series).forEach(function (m) { if (m && m.series) out.series.push({ id: m.series.id, name: m.series.name, books: A(m.books), lib: w.lib }); });
       });
       return out;
@@ -332,7 +338,7 @@ var ABS = (function () {
     config: function () { return cfg; },
     // Nummern der Bibliotheken (nur Zahlen, ohne Namen): daran erkennt das iPhone, dass es derselbe Server ist, auch unter anderer Adresse
     libraryIds: function () { return (libs || []).map(function (l) { return l.id; }).slice(0, 8); },
-    login: login, logout: logout, libraries: libraries, home: home, items: items, series: series, item: item, search: search,
+    login: login, logout: logout, libraries: libraries, home: home, items: items, series: series, author: author, item: item, search: search,
     progressOf: progressOf, finished: finished, noteListening: noteListening, noteProgress: noteProgress, setFinished: setFinished,
     startSession: startSession, syncSession: syncSession, saveProgress: saveProgress, trackUrl: trackUrl, cover: cover,
     req: req, shelfTitle: shelfTitle
