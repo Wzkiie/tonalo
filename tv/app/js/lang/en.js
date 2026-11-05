@@ -296,6 +296,7 @@ I18N.add('en', {
   'Kapitel {n}': 'Chapter {n}',
   'Lädt …': 'Loading …',
   'Mit Audiobookshelf verbinden': 'Connect to Audiobookshelf',
+  'Auch Audiobookshelf verbinden': 'Also connect Audiobookshelf',
   'Noch nichts da – in Audiobookshelf gibt es hier noch keine Bücher.': 'Nothing here yet – there are no books in Audiobookshelf.',
   'Nächstes Kapitel': 'Next chapter',
   'Podcast': 'Podcast',

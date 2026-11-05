@@ -296,6 +296,7 @@ I18N.add('nl', {
   'Kapitel {n}': 'Hoofdstuk {n}',
   'Lädt …': 'Laden …',
   'Mit Audiobookshelf verbinden': 'Verbinden met Audiobookshelf',
+  'Auch Audiobookshelf verbinden': 'Ook Audiobookshelf verbinden',
   'Noch nichts da – in Audiobookshelf gibt es hier noch keine Bücher.': 'Nog niets hier – er staan nog geen boeken in Audiobookshelf.',
   'Nächstes Kapitel': 'Volgend hoofdstuk',
   'Podcast': 'Podcast',

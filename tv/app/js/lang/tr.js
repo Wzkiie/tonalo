@@ -297,6 +297,7 @@ I18N.add('tr', {
   'Kapitel {n}': 'Bölüm {n}',
   'Lädt …': 'Yükleniyor …',
   'Mit Audiobookshelf verbinden': 'Audiobookshelf\'e bağlan',
+  'Auch Audiobookshelf verbinden': 'Audiobookshelf\'e de bağlan',
   'Noch nichts da – in Audiobookshelf gibt es hier noch keine Bücher.': 'Henüz bir şey yok – Audiobookshelf\'te henüz kitap yok.',
   'Nächstes Kapitel': 'Sonraki bölüm',
   'Podcast': 'Podcast',

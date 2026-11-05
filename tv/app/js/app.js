@@ -214,6 +214,12 @@ var App = (function () {
 
   // ---------------- Login
   var loginOpts = {};
+  var wantAbs = false; // Haken „Auch Audiobookshelf verbinden“: nach dem Navidrome-Login folgt gleich die zweite Maske
+  function paintWantAbs() {
+    var b = U.$('#btn-login-abs');
+    b.textContent = (wantAbs ? '✓ ' : '') + T('Auch Audiobookshelf verbinden');
+    b.classList.toggle('on', wantAbs);
+  }
   function showLogin(msg, opts) {
     loginOpts = opts || {};
     hideAllScreens();
@@ -226,13 +232,17 @@ var App = (function () {
     U.$('#login-msg').textContent = msg || '';
     U.$('#login-msg').className = 'msg';
     U.$('#btn-login-cancel').classList.toggle('hidden', !accounts().length);
+    wantAbs = false;
+    U.$('#btn-login-abs').classList.toggle('hidden', !!(loginOpts.abs || pre));
+    paintWantAbs();
     if (U.desktop) Desktop.showHeaders(U.$('#in-url').value);
     updateScope();
     Nav.focus(U.$('#in-url').value ? U.$('#in-user').value ? U.$('#in-pass') : U.$('#in-user') : U.$('#in-url'), { noInputFocus: true });
   }
 
   function cancelLogin() {
-    if (account && stack.length && !loginOpts.adding) backToMain();
+    if (account && loginOpts.abs) backToMain();
+    else if (account && stack.length && !loginOpts.adding) backToMain();
     else if (accounts().length) showUsers();
     else confirmExit();
   }
@@ -269,7 +279,9 @@ var App = (function () {
       saveAccounts(accounts().filter(function (a) { return a.id !== acc.id; }).concat([acc]));
       U.store.set('lastUrl', creds.url);
       if (account && account.id === acc.id) { Link.detach(); Player.detach(); account = null; } // gleiches Konto neu angemeldet -> frisch laden
+      var next = wantAbs;
       selectAccount(acc);
+      if (next && account) showLogin(null, { abs: true });
     }).catch(function (e) {
       API.setConfig(prev);
       msg.className = 'msg error';
@@ -670,6 +682,7 @@ var App = (function () {
     U.$('#nav-user').addEventListener('click', showUsers);
     U.$('#btn-login').addEventListener('click', doLogin);
     U.$('#btn-login-cancel').addEventListener('click', cancelLogin);
+    U.$('#btn-login-abs').addEventListener('click', function () { wantAbs = !wantAbs; paintWantAbs(); });
     ['#in-url', '#in-user', '#in-pass'].forEach(function (sel, i, arr) {
       U.$(sel).addEventListener('keydown', function (e) {
         if (e.keyCode !== 13) return;
