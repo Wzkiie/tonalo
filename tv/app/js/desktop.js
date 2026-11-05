@@ -23,11 +23,12 @@ var Desktop = (function () {
   function typing() { var a = document.activeElement; return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA'); }
 
   Nav.onKey(function (e, code) {
-    if (code === 32 && !typing() && mainOpen()) { Player.toggle(); return true; }
+    if (code === 32 && !typing() && mainOpen()) { if (App.bookMode()) Book.toggle(); else Player.toggle(); return true; }
     if (!(e.ctrlKey || e.metaKey) || !mainOpen()) return false;
     if (code === 70) { App.go('search', null, { root: true }); return true; }
-    if (code === Nav.KEY.RIGHT && !typing()) { Player.next(); return true; }
-    if (code === Nav.KEY.LEFT && !typing()) { Player.prev(); return true; }
+    // Bei einem Hörbuch springen die Pfeile: Kapitel statt Song
+    if (code === Nav.KEY.RIGHT && !typing()) { if (App.bookMode()) Book.nextChapter(); else Player.next(); return true; }
+    if (code === Nav.KEY.LEFT && !typing()) { if (App.bookMode()) Book.prevChapter(); else Player.prev(); return true; }
     return false;
   });
 
@@ -46,10 +47,12 @@ var Desktop = (function () {
   // Klick in den Fortschrittsbalken springt dorthin
   document.addEventListener('click', function (e) {
     var bar = e.target.closest && e.target.closest('.mp-progress, .np-progress');
-    if (!bar || Player.station() || !Player.duration()) return;
+    var book = App.bookMode();
+    if (!bar || (book ? !Book.duration() : (Player.station() || !Player.duration()))) return;
     e.preventDefault(); e.stopPropagation();
     var r = (U.$('.np-bar', bar) || bar).getBoundingClientRect();
-    Player.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * Player.duration());
+    var f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    if (book) Book.seek(f * Book.duration()); else Player.seek(f * Player.duration());
   }, true);
 
   // ---------------- Lautstärke: im Mini-Player und in der Vollbildansicht (dort ist der Mini-Player weg)
@@ -86,6 +89,14 @@ var Desktop = (function () {
   // ---------------- Medientasten und Windows-Medienanzeige
   var ms = navigator.mediaSession;
   function media() {
+    if (App.bookMode()) {
+      document.title = Book.title() ? Book.title() + ' · Tonalo' : 'Tonalo';
+      if (!ms) return;
+      var bid = Book.itemId();
+      ms.metadata = new MediaMetadata({ title: Book.title(), artist: Book.author(), album: T('Hörbuch'), artwork: [] });
+      if (bid) ABS.cover(bid, 512).then(function (url) { if (Book.itemId() === bid) ms.metadata = new MediaMetadata({ title: Book.title(), artist: Book.author(), album: T('Hörbuch'), artwork: [{ src: url, sizes: '512x512' }] }); }).catch(function () { });
+      return;
+    }
     var s = Player.current(), st = Player.station();
     document.title = st ? st.name + ' · Tonalo' : s ? s.title + (s.artist ? ' · ' + s.artist : '') : 'Tonalo';
     if (!ms) return;
@@ -98,14 +109,20 @@ var Desktop = (function () {
       artwork: art ? [{ src: art, sizes: '512x512' }] : []
     });
   }
-  function mediaState() { if (ms) ms.playbackState = Player.current() || Player.station() ? (Player.paused() ? 'paused' : 'playing') : 'none'; }
+  function mediaState() {
+    if (!ms) return;
+    if (App.bookMode()) { ms.playbackState = Book.playing() ? 'playing' : 'paused'; return; }
+    ms.playbackState = Player.current() || Player.station() ? (Player.paused() ? 'paused' : 'playing') : 'none';
+  }
   if (ms) {
-    ms.setActionHandler('play', function () { Player.play(); });
-    ms.setActionHandler('pause', function () { Player.pause(); });
-    ms.setActionHandler('stop', function () { Player.pause(); });
-    ms.setActionHandler('previoustrack', function () { Player.prev(); });
-    ms.setActionHandler('nexttrack', function () { Player.next(); });
-    ms.setActionHandler('seekto', function (d) { if (!Player.station()) Player.seek(d.seekTime || 0); });
+    ms.setActionHandler('play', function () { if (App.bookMode()) Book.play(); else Player.play(); });
+    ms.setActionHandler('pause', function () { if (App.bookMode()) Book.pause(); else Player.pause(); });
+    ms.setActionHandler('stop', function () { if (App.bookMode()) Book.pause(); else Player.pause(); });
+    ms.setActionHandler('previoustrack', function () { if (App.bookMode()) Book.prevChapter(); else Player.prev(); });
+    ms.setActionHandler('nexttrack', function () { if (App.bookMode()) Book.nextChapter(); else Player.next(); });
+    ms.setActionHandler('seekto', function (d) { if (App.bookMode()) Book.seek(d.seekTime || 0); else if (!Player.station()) Player.seek(d.seekTime || 0); });
+    ms.setActionHandler('seekbackward', function () { if (App.bookMode()) Book.skipBack(); });
+    ms.setActionHandler('seekforward', function () { if (App.bookMode()) Book.skipForward(); });
   }
 
   // ---------------- Updates: kommen als neues Release auf GitHub, geladen und installiert wird in der App
@@ -265,7 +282,7 @@ var Desktop = (function () {
     U.$('#main').appendChild(linkbar);
     mini = volumeControl(false);
     U.$('.mp-right').insertBefore(mini, U.$('.mp-right').firstChild);
-    ['track', 'state'].forEach(function (evt) { Player.on(evt, function () { media(); mediaState(); }); });
+    ['track', 'state'].forEach(function (evt) { Player.on(evt, function () { media(); mediaState(); }); Book.on(evt, function () { media(); mediaState(); }); });
     N.updates.ready();
   });
 
@@ -284,7 +301,8 @@ var Desktop = (function () {
 
   return { showHeaders: showHeaders, tryHeaders: tryHeaders, commitHeaders: commitHeaders,
     dropHeaders: function () { N.headers.discard(); },
-    keepHeaders: function (list) { N.headers.keepOnly(list.map(function (a) { return a.url; })); },
+    // Auch die Adressen von Audiobookshelf: ihre Header bleiben, solange das Konto da ist
+    keepHeaders: function (list) { var urls = []; list.forEach(function (a) { urls.push(a.url); if (a.abs && a.abs.url) urls.push(a.abs.url); }); N.headers.keepOnly(urls); },
     headerProblem: headerProblem,
     updateSetting: updateSetting, volume: function () { return volumeControl(true); }, linked: linked };
 })();

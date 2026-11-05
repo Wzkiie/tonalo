@@ -88,6 +88,8 @@ var Link = (function () {
   }
 
   function run(c) {
+    // Gäste der Jukebox (c.by) haben mit einem laufenden Hörbuch nichts zu tun: ihre Songs würden es still unterbrechen
+    if (c.by && App.bookMode()) return;
     switch (c.cmd) {
       case 'play':
         if (c.songs && c.songs.length) Player.playList(c.songs, c.index || 0, { shuffle: !!c.shuffle, keepStart: !c.shuffle || c.index > 0, context: c.context || null, at: +c.position || 0 });

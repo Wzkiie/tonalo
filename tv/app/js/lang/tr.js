@@ -323,5 +323,6 @@ I18N.add('tr', {
   'Nochmal hören': 'Tekrar dinle',
   'Hörbücher entdecken': 'Sesli kitapları keşfet',
   'Autor': 'Yazar',
-  'Dieses Hörbuch hat das Format Opus, das der Fernseher nicht abspielen kann.': 'Bu sesli kitap, televizyonun oynatamadığı Opus biçiminde.'
+  'Dieses Hörbuch hat das Format Opus, das der Fernseher nicht abspielen kann.': 'Bu sesli kitap, televizyonun oynatamadığı Opus biçiminde.',
+  'Das sieht nicht nach einem Audiobookshelf-Server aus. Liegt er hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'Bu bir Audiobookshelf sunucusuna benzemiyor. Cloudflare Access veya başka bir proxy arkasındaysa özel başlıkları kontrol edin.'
 });

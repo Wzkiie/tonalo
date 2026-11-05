@@ -123,24 +123,26 @@ var Book = (function () {
   }
 
   // Bleibt es still, ohne dass ein Fehler kommt (z. B. ein Format, das der TV nicht abspielen kann): einmal neu versuchen
+  // Opus/Ogg: am echten TV hängt das still (und ein neuer Versuch ändert daran nichts) – dort schnell und ohne Wiederholung
+  function opusOnTv() { var t = tracks()[trackIndex]; return !U.desktop && !!t && /ogg|opus/i.test(t.mimeType || ''); }
+
   function watch(mine) {
     clearTimeout(watchdog);
     watchdog = setTimeout(function () {
       if (mine !== token || !session || audio.paused) return;
       if (audio.currentTime > 0.2 && audio.readyState >= 3) return;
       failed();
-    }, 12000);
+    }, opusOnTv() ? 5000 : 12000);
   }
 
   function failed() {
     clearTimeout(watchdog);
     if (!session) return;
-    if (retried) {
+    if (retried || opusOnTv()) {
       audio.pause();
       emit('state');
-      var t = tracks()[trackIndex];
       // Der TV hängt bei Opus still, ohne Fehler (am echten TV gesehen) – dann lieber sagen, woran es liegt
-      if (!U.desktop && t && /ogg|opus/i.test(t.mimeType || '')) U.toast(T('Dieses Hörbuch hat das Format Opus, das der Fernseher nicht abspielen kann.'), 6000);
+      if (opusOnTv()) U.toast(T('Dieses Hörbuch hat das Format Opus, das der Fernseher nicht abspielen kann.'), 6000);
       else U.toast(T('Das kann gerade nicht abgespielt werden.'), 4000);
       return;
     }
@@ -297,6 +299,8 @@ var Book = (function () {
 
   // Läuft Musik an, ruht das Hörbuch
   function init() {
+    // Die Lautstärke-Regler am PC gelten auch fürs Hörbuch
+    try { audio.volume = Player.volume(); Player.on('volume', function () { audio.volume = Player.volume(); }); } catch (e) { /* ohne */ }
     try { Player.on('state', function () { if (session && !audio.paused && !Player.paused()) { audio.pause(); report(false); } }); } catch (e) { /* egal */ }
   }
 

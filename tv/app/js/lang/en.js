@@ -322,5 +322,6 @@ I18N.add('en', {
   'Nochmal hören': 'Listen again',
   'Hörbücher entdecken': 'Discover audiobooks',
   'Autor': 'Author',
-  'Dieses Hörbuch hat das Format Opus, das der Fernseher nicht abspielen kann.': 'This audiobook is in Opus format, which the TV can\'t play.'
+  'Dieses Hörbuch hat das Format Opus, das der Fernseher nicht abspielen kann.': 'This audiobook is in Opus format, which the TV can\'t play.',
+  'Das sieht nicht nach einem Audiobookshelf-Server aus. Liegt er hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.': 'That doesn\'t look like an Audiobookshelf server. If it\'s behind Cloudflare Access or another proxy, check the custom headers.'
 });

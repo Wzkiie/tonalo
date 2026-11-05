@@ -188,6 +188,7 @@ var App = (function () {
     saveAbs(null);
     ABS.setConfig(null);
     if (old) ABS.logout(old);
+    if (U.desktop) Desktop.keepHeaders(accounts());
     showBooksNav();
     lastKind = 'music';
     updateMini('init');

@@ -134,7 +134,8 @@ var ABS = (function () {
       try { j = JSON.parse(r.body); } catch (e) { /* unten */ }
       var u = j && j.user;
       var token = u && (u.accessToken || u.token);
-      if (r.status !== 200 || !token) throw new Error(T('Das sieht nicht nach einem Audiobookshelf-Server aus.'));
+      // Am PC kann ein Proxy davor sitzen (Cloudflare Access …), dort gibt es eigene Header
+      if (r.status !== 200 || !token) throw new Error(U.desktop ? T('Das sieht nicht nach einem Audiobookshelf-Server aus. Liegt er hinter Cloudflare Access oder einem anderen Proxy, prüfe die eigenen Header.') : T('Das sieht nicht nach einem Audiobookshelf-Server aus.'));
       return { url: url, user: username, accessToken: token, refreshToken: u.refreshToken || null, deviceId: randomId() };
     });
   }
