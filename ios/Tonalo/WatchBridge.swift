@@ -16,6 +16,8 @@ final class WatchBridge: NSObject {
         WCSession.default.delegate = self
         WCSession.default.activate()
         watchPlayer()
+        // Seeking doesn't change anything the tracking above sees: look for a jump in the position every few seconds
+        Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in Task { @MainActor in WatchBridge.shared.push() } }
     }
 
     // MARK: Player state → watch
@@ -81,7 +83,10 @@ final class WatchBridge: NSObject {
         }
         // Positions keep changing; only send when something the watch shows has changed
         var compare = s; compare.position = lastSent?.position ?? 0; compare.sentAt = lastSent?.sentAt ?? .now
-        if compare == lastSent && abs((lastSent?.position ?? 0) - s.position) < 3 { return }
+        // Compare with where the watch counts to by now, so a jump (seeking on the phone) is sent, normal playing is not
+        var expected = lastSent?.position ?? 0
+        if let last = lastSent, last.isPlaying { expected += Date.now.timeIntervalSince(last.sentAt) * (last.rate ?? 1) }
+        if compare == lastSent && abs(expected - s.position) < 2 { return }
         s.sentAt = .now
         lastSent = s
         if let data = Watch.encode(s) {
