@@ -98,6 +98,8 @@ final class WatchBridge: NSObject {
         let book = p.book
         switch message[Watch.command] as? String {
         case "toggle": if let book { book.toggle() } else { p.toggle() }
+        case "resume": if let book { if !book.isPlaying { book.toggle() } } else if !p.isPlaying { p.toggle() }
+        case "pause": if let book { if book.isPlaying { book.toggle() } } else if p.isPlaying { p.toggle() }
         case "next": if let book { book.nextChapter() } else { p.next() }
         case "previous": if let book { book.previousChapter() } else { p.previous() }
         case "skip":

@@ -29,10 +29,14 @@ final class Connector: NSObject {
 
     /// Sends a player command; the phone answers with its new state.
     func send(_ command: String, _ extra: [String: Any] = [:]) {
+        // "Toggle" would turn the wrong way when the watch shows an old state (the phone started or stopped in the
+        // meantime): say what is wanted instead, so the phone does nothing if it already is that way.
+        var command = command
+        if command == "toggle" { command = (now?.isPlaying ?? false) ? "pause" : "resume" }
         // Feels instant: show the expected result before the phone confirms it
         if var n = now {
             switch command {
-            case "toggle": n.isPlaying.toggle(); n.position = position(at: .now); n.sentAt = .now
+            case "pause", "resume": n.isPlaying = command == "resume"; n.position = position(at: .now); n.sentAt = .now
             case "favorite": n.starred.toggle()
             case "shuffle": n.shuffle.toggle()
             default: break
@@ -45,6 +49,12 @@ final class Connector: NSObject {
                 apply(state)
             }
         }
+    }
+
+    /// Asks the phone for its state, e.g. when the watch app comes to the front: the background delivery can be late.
+    func refresh() {
+        receive(WCSession.default.receivedApplicationContext[Watch.data] as? Data)
+        Task { if let reply = await request([Watch.command: "state"]) { receive(reply[Watch.data] as? Data) } }
     }
 
     func play(_ item: WatchItem, index: Int = 0, shuffled: Bool = false) {

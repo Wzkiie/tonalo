@@ -4,6 +4,7 @@ import WatchKit
 @main
 struct TonaloWatchApp: App {
     @State private var connector = Connector.shared
+    @Environment(\.scenePhase) private var phase
 
     init() {
         Connector.shared.start()
@@ -15,6 +16,7 @@ struct TonaloWatchApp: App {
     var body: some Scene {
         WindowGroup {
             RootView().environment(connector)
+                .onChange(of: phase) { if phase == .active { connector.refresh() } }
         }
     }
 }
