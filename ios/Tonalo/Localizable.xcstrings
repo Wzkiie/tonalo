@@ -5381,6 +5381,46 @@
         }
       }
     },
+    "Better on the watch" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besser auf der Uhr"
+          }
+        }
+      }
+    },
+    "Play and pause on the watch no longer stop the phone by mistake, covers show up, and skipping on the phone shows on the watch too." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play und Pause auf der Uhr stoppen das iPhone nicht mehr aus Versehen, Cover werden angezeigt, und Vorspulen am iPhone zeigt sich auch auf der Uhr."
+          }
+        }
+      }
+    },
+    "Connection to TV and computer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbindung zu TV und Computer"
+          }
+        }
+      }
+    },
+    "The phone follows your TV and your computer at once and shows the one that is playing, also when the app is opened several times in a row." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das iPhone folgt deinem TV und deinem Computer gleichzeitig und zeigt das, auf dem gerade etwas läuft, auch wenn die App mehrmals schnell hintereinander geöffnet wird."
+          }
+        }
+      }
+    },
     "Steadier connection" : {
       "localizations" : {
         "de" : {

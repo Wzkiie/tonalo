@@ -161,7 +161,6 @@ final class TVLink {
 
     func start() {
         loadPairings()
-        NSLog("LINKDBG start pairings=%d saved=%d browser=%@ listener=%@", pairings.count, fallbackCount(), browser == nil ? "nil" : "yes", listener == nil ? "nil" : "yes")
         if jukebox == nil, let saved = UserDefaults.standard.array(forKey: "jukebox.joined"), let id = saved.first as? String,
            let at = saved.last as? Double, Date().timeIntervalSince1970 - at < 6 * 3600, pairings.contains(where: { $0.tv == id }) {
             jukebox = id
@@ -279,7 +278,6 @@ final class TVLink {
     private func fallbackCount() -> Int { (UserDefaults.standard.data(forKey: "link.addresses").flatMap { try? JSONDecoder().decode([String: Saved].self, from: $0) } ?? [:]).count }
 
     private func found(_ list: [Device]) {
-        NSLog("LINKDBG found %@", list.map { $0.name + "/" + $0.id.prefix(6) }.joined(separator: ","))
         // A device in the network more than one way (Wi-Fi and cable, or peer to peer) shows up once
         var all: [String: [NWEndpoint]] = [:]
         for d in list { all[d.id, default: []].append(d.endpoint) }
@@ -323,7 +321,6 @@ final class TVLink {
     }
 
     func unpair(_ tv: String) {
-        NSLog("LINKDBG UNPAIR %@", tv)
         pairings.removeAll { $0.tv == tv }
         savePairings()
         if jukebox == tv { jukebox = nil }
@@ -389,7 +386,6 @@ final class TVLink {
         } else {
             targets = pool.compactMap { d in self.pairing(for: d).flatMap { $0.guest == true ? nil : (d, $0) } }
         }
-        NSLog("LINKDBG connect targets=%@ pool=%d pairings=%d running=%d", targets.map { $0.0.name }.joined(separator: ","), pool.count, pairings.count, listeners.count)
         for (device, pairing) in targets where listeners[device.id] == nil { startListening(device, pairing) }
     }
 
@@ -424,9 +420,7 @@ final class TVLink {
                 if let direct = self.fallback[device.id] { ways.append(direct.endpoint) }
                 if ways.isEmpty { ways = [known.endpoint] }
                 let device = Device(id: known.id, name: known.name, endpoint: ways[misses % ways.count], isPhone: known.isPhone, isPC: known.isPC)
-                NSLog("LINKDBG follow try %@ %@ misses=%d", device.name, "\(device.endpoint)", misses)
                 let got = await self.follow(device, pairing)
-                NSLog("LINKDBG follow result %@ got=%@", device.name, got ? "yes" : "no")
                 misses = got ? 0 : misses + 1
                 guard !Task.isCancelled else { break }
                 // Connected but not a word came back: it accepts connections (or the router does) and nothing answers – gone too
@@ -495,7 +489,6 @@ final class TVLink {
                 self.activity[device.id] = active
                 if let p = self.primary, p != device.id, !(active && self.activity[p] != true) { return }
                 if self.primary != device.id {
-                    NSLog("LINKDBG show %@ (playing=%@)", device.name, active ? "yes" : "no")
                     self.primary = device.id
                     self.listening = (device, pairing)
                     self.target = (device, pairing)
@@ -571,7 +564,6 @@ final class TVLink {
         guard !Task.isCancelled else { return received }
         if !guest, primary == device.id { ownTV = nil; ownBooks = nil }
         // The other side forgot this phone – but not when only its clock is off: then the next try uses its time
-        NSLog("LINKDBG stream ended status=%d", status?.status ?? -1)
         if status?.status == 401 {
             if !learnClock(status?.body, pairing.tv) { unpair(pairing.tv) }
             return false
