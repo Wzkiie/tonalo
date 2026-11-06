@@ -74,7 +74,7 @@ final class WatchBridge: NSObject {
         let coverId = app.player.book != nil ? s.songId : (app.player.current?.coverArt ?? app.player.current?.albumId ?? s.songId)
         if cover?.id != coverId {
             Task {
-                guard let data = await thumbnail(coverId, size: 300) else { return }
+                guard let data = await thumbnail(coverId, size: 200, quality: 0.5) else { return } // small: every state update carries it
                 cover = (coverId, data)
                 push()
             }
@@ -85,7 +85,7 @@ final class WatchBridge: NSObject {
         s.sentAt = .now
         lastSent = s
         if let data = Watch.encode(s) {
-            try? WCSession.default.updateApplicationContext([Watch.data: data])
+            do { try WCSession.default.updateApplicationContext([Watch.data: data]) } catch { NSLog("WATCHDBG context failed (%d bytes): %@", data.count, "\(error)") }
             // The context may wait a while; with the watch app open, a message gets there at once (music ↔ book switches)
             if WCSession.default.isReachable { WCSession.default.sendMessage([Watch.data: data], replyHandler: nil, errorHandler: nil) }
         }
@@ -206,7 +206,7 @@ final class WatchBridge: NSObject {
     }
 
     /// Small JPEG of a cover for the watch (WatchConnectivity messages have to stay small).
-    private func thumbnail(_ id: String, size: CGFloat) async -> Data? {
+    private func thumbnail(_ id: String, size: CGFloat, quality: CGFloat = 0.7) async -> Data? {
         var image: UIImage?
         if id.hasPrefix("abs:") { image = await app.books.coverImage(String(id.dropFirst(4)), width: 300) }
         else if let local = app.downloads.localCover(id) { image = UIImage(contentsOfFile: local.path) }
@@ -216,7 +216,7 @@ final class WatchBridge: NSObject {
         guard let image else { return nil }
         let target = CGSize(width: size, height: size)
         let small = UIGraphicsImageRenderer(size: target).image { _ in image.draw(in: CGRect(origin: .zero, size: target)) }
-        return small.jpegData(compressionQuality: 0.7)
+        return small.jpegData(compressionQuality: quality)
     }
 }
 
