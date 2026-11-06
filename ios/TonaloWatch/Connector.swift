@@ -57,6 +57,25 @@ final class Connector: NSObject {
         Task { if let reply = await request([Watch.command: "state"]) { receive(reply[Watch.data] as? Data) } }
     }
 
+    #if DEBUG
+    /// Simulator test: presses the buttons one after the other and logs what the watch shows.
+    func selfTest() {
+        Task { @MainActor in
+            @MainActor func log(_ what: String) {
+                let n = self.now
+                let pos = n == nil ? -1 : self.position(at: .now)
+                NSLog("WTEST %@ | title=%@ playing=%@ cover=%d pos=%.0f", what, n?.title ?? "-", n.map { $0.isPlaying ? "yes" : "no" } ?? "-", n?.cover?.count ?? 0, pos)
+            }
+            try? await Task.sleep(for: .seconds(6)); log("start")
+            for step in ["toggle", "toggle", "next", "next", "previous", "favorite", "favorite", "toggle", "toggle"] {
+                self.send(step); try? await Task.sleep(for: .milliseconds(300)); log("\(step) (optimistic)")
+                try? await Task.sleep(for: .seconds(3)); log("\(step) (after 3s)")
+            }
+            for i in 1...20 { try? await Task.sleep(for: .seconds(2)); log("poll \(i)") } // seek on the phone meanwhile
+        }
+    }
+    #endif
+
     func play(_ item: WatchItem, index: Int = 0, shuffled: Bool = false) {
         send("play", [Watch.kind: item.kind.rawValue, Watch.id: item.id, Watch.index: index, Watch.shuffle: shuffled])
         path = NavigationPath()

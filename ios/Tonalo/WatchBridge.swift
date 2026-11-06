@@ -220,7 +220,9 @@ final class WatchBridge: NSObject {
         }
         guard let image else { return nil }
         let target = CGSize(width: size, height: size)
-        let small = UIGraphicsImageRenderer(size: target).image { _ in image.draw(in: CGRect(origin: .zero, size: target)) }
+        // Scale 1: the default is the phone's screen scale, which makes a 200 point image 600 pixels wide (3x the bytes)
+        let format = UIGraphicsImageRendererFormat(); format.scale = 1
+        let small = UIGraphicsImageRenderer(size: target, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: target)) }
         return small.jpegData(compressionQuality: quality)
     }
 }

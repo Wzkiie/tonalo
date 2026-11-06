@@ -10,12 +10,14 @@ struct TonaloWatchApp: App {
         Connector.shared.start()
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-library") { Connector.shared.page = 1 } // simulator test hook
+        if ProcessInfo.processInfo.arguments.contains("-selftest") { Connector.shared.selfTest() } // simulator test hook
         #endif
     }
 
     var body: some Scene {
         WindowGroup {
             RootView().environment(connector)
+                .task { connector.refresh() } // the first opening doesn't count as a change below
                 .onChange(of: phase) { if phase == .active { connector.refresh() } }
         }
     }
