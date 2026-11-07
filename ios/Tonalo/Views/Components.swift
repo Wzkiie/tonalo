@@ -57,6 +57,8 @@ struct SongRow: View {
     let song: Song
     var number: Int?
     var showCover = false
+    /// Off in the queue: there holding a song picks it up to move it (the "…" button still has the menu)
+    var holdMenu = true
     let onTap: () -> Void
 
     var body: some View {
@@ -99,7 +101,17 @@ struct SongRow: View {
         .padding(.vertical, 2)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
-        .contextMenu { SongMenuItems(song: song) }
+        .modifier(HoldMenu(song: song, on: holdMenu))
+    }
+}
+
+/// The song menu on a long press – unless the long press is meant for something else.
+private struct HoldMenu: ViewModifier {
+    let song: Song
+    let on: Bool
+
+    func body(content: Content) -> some View {
+        if on { content.contextMenu { SongMenuItems(song: song) } } else { content }
     }
 }
 

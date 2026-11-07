@@ -531,7 +531,7 @@ struct QueueView: View {
                 }
                 Section {
                     ForEach(rows(p.upNext)) { row in
-                        SongRow(song: row.song, showCover: true) { p.jump(to: p.index + 1 + row.offset) }
+                        SongRow(song: row.song, showCover: true, holdMenu: false) { p.jump(to: p.index + 1 + row.offset) }
                     }
                     .onDelete { set in set.sorted(by: >).forEach { p.remove(at: p.index + 1 + $0) } }
                     .onMove { from, to in p.moveUpNext(from: from, to: to) }
@@ -543,8 +543,7 @@ struct QueueView: View {
             .background(Color.canvas)
             .navigationTitle("Queue")
             .navigationBarTitleDisplayMode(.inline)
-            // Sort mode: handles to drag songs up and down, and delete buttons
-            .toolbar { if p.upNext.count > 1 { EditButton().foregroundStyle(Color.accent) } }
+            // No edit mode needed: hold a song and drag it up or down, swipe it away to remove it
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(Color.canvas)
