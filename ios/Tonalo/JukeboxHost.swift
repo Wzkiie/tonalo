@@ -291,15 +291,15 @@ final class JukeboxHost {
     private func run(_ c: [String: Any], from guest: Guest) {
         let player = app?.player
         // No more than 20 at once, whatever a guest's phone sends
-        let songs = Array(((c["songs"] as? [Any]).flatMap { try? JSONSerialization.data(withJSONObject: $0) }
+        var songs = Array(((c["songs"] as? [Any]).flatMap { try? JSONSerialization.data(withJSONObject: $0) }
             .flatMap { try? JSONDecoder().decode([Song].self, from: $0) } ?? []).prefix(20))
+        // The guest's songs carry the guest's hearts and play counts, not this account's: drop them
+        for i in songs.indices { songs[i].starred = nil; songs[i].playCount = nil }
         switch c["cmd"] as? String {
         case "enqueue" where !songs.isEmpty:
-            player?.enqueue(songs)
-            app?.notify(added(songs, by: guest))
+            Task { player?.enqueue(await ownHearts(songs)); app?.notify(added(songs, by: guest)); push() }
         case "playNext" where !songs.isEmpty:
-            player?.playNext(songs)
-            app?.notify(added(songs, by: guest))
+            Task { player?.playNext(await ownHearts(songs)); app?.notify(added(songs, by: guest)); push() }
         case "next":
             player?.next()
             app?.notify(String(localized: "\(guest.name) skipped"))
@@ -309,7 +309,15 @@ final class JukeboxHost {
         push()
     }
 
-    private func added(_ songs: [Song], by guest: Guest) -> String {
+    /// Marks the songs this account has a heart on, so the heart in the player, on the lock screen and in
+    /// CarPlay shows the host's own like and switches the right way.
+    private func ownHearts(_ songs: [Song]) async -> [Song] {
+        guard let mine = try? await app?.client?.starred().song else { return songs }
+        let hearts = Dictionary(mine.map { ($0.id, $0.starred ?? "1") }, uniquingKeysWith: { a, _ in a })
+        return songs.map { var s = $0; s.starred = hearts[s.id]; return s }
+    }
+
+        private func added(_ songs: [Song], by guest: Guest) -> String {
         songs.count == 1 ? String(localized: "\(guest.name) added “\(songs[0].title)”")
                          : String(localized: "\(guest.name) added \(songs.count) songs")
     }

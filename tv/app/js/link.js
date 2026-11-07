@@ -87,6 +87,19 @@ var Link = (function () {
     BookViews.start(String(c.itemId), c.episodeId ? String(c.episodeId) : null, c.position != null ? +c.position || 0 : null, null);
   }
 
+  // Songs eines Jukebox-Gasts tragen seine Herzen, nicht die dieses Kontos: die eigenen nachschlagen,
+  // sonst sieht der Gastgeber fremde Likes und sein Herz schaltet falsch herum
+  function ownHearts(c) {
+    if (!c.by) return Promise.resolve(c.songs);
+    var songs = c.songs.map(function (s) { var o = Object.assign({}, s); delete o.starred; delete o.playCount; delete o.userRating; return o; });
+    return API.starred().then(function (r) {
+      var mine = {};
+      r.songs.forEach(function (s) { mine[s.id] = s.starred || true; });
+      songs.forEach(function (s) { if (mine[s.id]) s.starred = mine[s.id]; });
+      return songs;
+    }, function () { return songs; });
+  }
+
   function run(c) {
     // Gäste der Jukebox (c.by) haben mit einem laufenden Hörbuch nichts zu tun: ihre Songs würden es still unterbrechen
     if (c.by && App.bookMode()) return;
@@ -96,8 +109,8 @@ var Link = (function () {
         break;
       case 'station': if (c.station) Player.playStation(c.station, c.list || null); break;
       case 'stopStation': Player.stopStation(); break;
-      case 'playNext': if (c.songs && c.songs.length) Player.playNext(c.songs); break;
-      case 'enqueue': if (c.songs && c.songs.length) Player.enqueue(c.songs); break;
+      case 'playNext': if (c.songs && c.songs.length) ownHearts(c).then(function (songs) { Player.playNext(songs); }); break;
+      case 'enqueue': if (c.songs && c.songs.length) ownHearts(c).then(function (songs) { Player.enqueue(songs); }); break;
       case 'toggle': Player.toggle(); break;
       case 'play-pause': if (c.playing) Player.play(); else Player.pause(); break;
       case 'next': Player.next(); break;
