@@ -137,6 +137,14 @@ final class JukeboxHost {
         pairing = nil
     }
 
+    #if DEBUG
+    /// Screenshot hook (-demoGuests): made-up guests, only in memory
+    func demoGuests(_ names: [String]) {
+        guests = names.map { Guest(keyId: UUID().uuidString, key: "", name: $0, uid: nil) }
+        present = Array(names.prefix(2))
+    }
+    #endif
+
     private func save() {
         if let key = storageKey { Keychain.save(guests, key: key) }
     }

@@ -143,6 +143,14 @@ struct RootView: View {
         .task {
             let args = ProcessInfo.processInfo.arguments
             if args.contains("-demoJukebox") { app.jukeboxHost.start() }
+            // -demoGuests "Mia,Leon" shows made-up guests, -demoToast "<text>" a notice (screenshots)
+            if let g = args.firstIndex(of: "-demoGuests"), g + 1 < args.count {
+                app.jukeboxHost.demoGuests(args[g + 1].split(separator: ",").map(String.init))
+            }
+            if let t = args.firstIndex(of: "-demoToast"), t + 1 < args.count {
+                let text = args[t + 1]
+                Task { try? await Task.sleep(for: .seconds(4)); app.notify(text) }
+            }
             // -demoBooks <url> connects to a test server (ios/tools/abs_mock.js)
             if let b = args.firstIndex(of: "-demoBooks"), b + 1 < args.count, app.books.stored?.url != args[b + 1] {
                 try? await app.books.connect(address: args[b + 1], username: "demo", password: "demo", headers: [])
