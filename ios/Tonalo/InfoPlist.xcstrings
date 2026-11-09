@@ -31,13 +31,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tonalo verbindet sich mit deinem Musikserver im lokalen Netzwerk."
+            "value" : "Tonalo verbindet sich mit deinem Musikserver im lokalen Netzwerk und mit Geräten in der Nähe für die Jukebox."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tonalo connects to your music server on the local network."
+            "value" : "Tonalo connects to your music server on the local network and to nearby devices for the Jukebox."
           }
         }
       }

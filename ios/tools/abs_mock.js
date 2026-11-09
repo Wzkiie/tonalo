@@ -155,7 +155,7 @@ http.createServer((req, res) => {
     if (!path.startsWith('/api/')) return json(404, 'Not found');
     if (!process.env.MOCK_ANY_TOKEN && !(tokens.get(bearer) > Date.now())) { console.log('401', path); return json(401, 'Unauthorized'); }
 
-    if (path === '/api/libraries') return json(200, { libraries: [{ id: 'lib-books', name: 'Hörbücher', mediaType: 'book' }, { id: 'lib-pods', name: 'Podcasts', mediaType: 'podcast' }] });
+    if (path === '/api/libraries') return json(200, { libraries: [{ id: 'lib-books', name: process.env.MOCK_EN ? 'Audiobooks' : 'Hörbücher', mediaType: 'book' }, { id: 'lib-pods', name: 'Podcasts', mediaType: 'podcast' }] });
     if (path === '/api/me') return json(200, { id: 'u1', permissions: { download: !process.env.MOCK_NO_DOWNLOAD }, mediaProgress: [...progress.values()] });
     if (path === '/api/me/items-in-progress') {
       const started = [...progress.values()].filter((p) => !p.isFinished && p.currentTime > 0);
@@ -188,14 +188,20 @@ http.createServer((req, res) => {
       return json(200, { authors: BOOKS.map((b) => ({ id: authorId(b.authorName), name: b.authorName, numBooks: 1 })) });
     }
     if ((x = m(/^\/api\/libraries\/([^/]+)\/series$/))) {
-      return json(200, { results: x[1] === 'lib-pods' ? [] : [{ id: 'ser-1', name: 'Stille', books: [book(BOOKS[0])] }], total: 1 });
+      const tide = BOOKS.filter((b) => b.seriesName); // MOCK_EN: the Tidewater books
+      return json(200, { results: x[1] === 'lib-pods' ? [] : [{ id: 'ser-1', name: process.env.MOCK_EN ? 'Tidewater' : 'Stille', books: process.env.MOCK_EN ? tide.map(book) : [book(BOOKS[0])] }], total: 1 });
     }
-    if ((x = m(/^\/api\/authors\/([^/]+)\/image$/))) { res.writeHead(404); return res.end(); }
+    if ((x = m(/^\/api\/authors\/([^/]+)\/image$/))) {
+      // MOCK_AUTHOR_IMAGES=<dir>: <author id>.png is the picture of that author
+      const f = process.env.MOCK_AUTHOR_IMAGES && require('path').join(process.env.MOCK_AUTHOR_IMAGES, x[1] + '.png');
+      if (f && require('fs').existsSync(f)) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(require('fs').readFileSync(f)); }
+      res.writeHead(404); return res.end();
+    }
     if ((x = m(/^\/api\/authors\/([^/]+)$/))) {
       const mine = BOOKS.filter((b) => authorId(b.authorName) === x[1]);
       if (!mine.length) return json(404, 'Not found');
-      return json(200, { id: x[1], name: mine[0].authorName, description: 'Eine erfundene Biografie zum Testen.', libraryItems: mine.map(book),
-        series: mine.some((b) => b.seriesName) ? [{ id: 'ser-1', name: 'Stille', items: mine.filter((b) => b.seriesName).map(book) }] : [] });
+      return json(200, { id: x[1], name: mine[0].authorName, description: process.env.MOCK_EN ? 'An invented author, made up for this demo.' : 'Eine erfundene Biografie zum Testen.', libraryItems: mine.map(book),
+        series: mine.some((b) => b.seriesName) ? [{ id: 'ser-1', name: process.env.MOCK_EN ? 'Tidewater' : 'Stille', items: mine.filter((b) => b.seriesName).map(book) }] : [] });
     }
     if ((x = m(/^\/api\/libraries\/([^/]+)\/personalized$/))) return json(200, shelves(x[1]));
     if ((x = m(/^\/api\/libraries\/([^/]+)\/items$/))) {
@@ -211,7 +217,7 @@ http.createServer((req, res) => {
       if (x[1] === 'lib-pods') return json(200, { podcast: PODCAST.title.toLowerCase().includes(q) ? [{ libraryItem: podcast() }] : [] });
       return json(200, { book: BOOKS.filter((b) => (b.title + b.authorName).toLowerCase().includes(q)).map((b) => ({ libraryItem: book(b) })),
         authors: BOOKS.filter((b) => b.authorName.toLowerCase().includes(q)).map((b) => ({ id: authorId(b.authorName), name: b.authorName })),
-        series: 'stille'.includes(q) ? [{ series: { id: 'ser-1', name: 'Stille' }, books: [] }] : [],
+        series: (process.env.MOCK_EN ? 'tidewater' : 'stille').includes(q) ? [{ series: { id: 'ser-1', name: process.env.MOCK_EN ? 'Tidewater' : 'Stille' }, books: [] }] : [],
         narrators: BOOKS.filter((b) => (b.narratorName || '').toLowerCase().includes(q)).map((b) => ({ name: b.narratorName, numBooks: 1 })) });
     }
     if ((x = m(/^\/api\/items\/([^/]+)\/cover$/))) {

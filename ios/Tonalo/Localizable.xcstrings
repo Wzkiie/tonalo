@@ -4798,12 +4798,12 @@
         }
       }
     },
-    "Tap Edit in the queue and drag songs to where you want them." : {
+    "Hold a song in the queue and drag it where you want it." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tippe in der Warteschlange auf „Bearbeiten“ und zieh die Songs dahin, wo du sie haben willst."
+            "value" : "Halte in der Warteschlange einen Song gedrückt und zieh ihn dahin, wo du ihn haben willst."
           }
         }
       }
@@ -5487,6 +5487,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ hat das Hörbuch nicht gestartet – es läuft wieder hier."
+          }
+        }
+      }
+    },
+    "Jukebox hearts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herzen in der Jukebox"
+          }
+        }
+      }
+    },
+    "Songs from a guest show your own hearts, and the heart on CarPlay now switches the right song." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songs von Gästen zeigen deine eigenen Herzen, und das Herz in CarPlay schaltet jetzt den richtigen Song um."
+          }
+        }
+      }
+    },
+    "Hold a song in the queue and drag it up or down." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halte in der Warteschlange einen Song gedrückt und zieh ihn nach oben oder unten."
           }
         }
       }

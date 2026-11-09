@@ -18,6 +18,12 @@ struct AppRelease: Identifiable {
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
+        AppRelease(version: "1.4.5", items: [
+            .init(icon: "heart.fill", color: .pink, title: "Jukebox hearts",
+                  text: "Songs from a guest show your own hearts, and the heart on CarPlay now switches the right song."),
+            .init(icon: "line.3.horizontal", color: .blue, title: "Reorder the queue",
+                  text: "Hold a song in the queue and drag it up or down."),
+        ]),
         AppRelease(version: "1.4.4", items: [
             .init(icon: "applewatch", color: .green, title: "Better on the watch",
                   text: "Play and pause on the watch no longer stop the phone by mistake, covers show up, and skipping on the phone shows on the watch too."),
@@ -82,7 +88,7 @@ enum WhatsNew {
             .init(icon: "infinity", color: .orange, title: "Autoplay",
                   text: "When an album or playlist ends, similar songs keep playing. You can turn it off in Settings."),
             .init(icon: "line.3.horizontal", color: .blue, title: "Reorder the queue",
-                  text: "Tap Edit in the queue and drag songs to where you want them."),
+                  text: "Hold a song in the queue and drag it where you want it."),
             .init(icon: "arrow.down.circle.fill", color: .teal, title: "Faster downloads",
                   text: "Five songs load at once, and a small counter above the player shows how far they are on every page."),
             .init(icon: "car.fill", color: .green, title: "CarPlay",
