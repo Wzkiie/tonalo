@@ -1,0 +1,15 @@
+# Tonalo
+
+> Tonalo is a free, open source music player for your own Navidrome or Subsonic server. It runs on LG TVs (webOS 5 and newer), Windows, Mac, iPhone (iOS 17 and newer) and Apple Watch, with CarPlay. No ads, no in-app purchases, no tracking. You need your own Navidrome or Subsonic server.
+
+## Pages
+- [Home](https://tonalo.app/): overview, in-browser demo with example songs, downloads, FAQ
+- [Deutsch](https://tonalo.app/de/): the same page in German
+- [Changelog](https://tonalo.app/changelog.html): what changed in each version
+
+## Facts
+- Price: free, MIT license, source code on GitHub: https://github.com/Wzkiie/tonalo
+- iPhone: beta on TestFlight; also Apple Watch app and CarPlay
+- Jukebox: friends join with a 6-digit code, also works in the car without Wi-Fi
+- Audiobooks and podcasts from Audiobookshelf in the same app
+- Android is not available

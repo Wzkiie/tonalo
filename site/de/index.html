@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Tonalo: Navidrome-Client für iPhone, LG-TV und PC</title>
+<meta content="Kostenloser Open-Source-Client für Navidrome und Subsonic auf iPhone, Apple Watch, CarPlay, LG-TV, Windows und Mac. Kein Konto, kein Tracking. Zur Demo." name="description"/>
+<meta content="#0c0c0e" name="theme-color"/>
+<meta content="Tonalo: Navidrome-Client für iPhone, LG-TV und PC" property="og:title"/>
+<meta content="Kostenloser Open-Source-Client für Navidrome und Subsonic auf iPhone, Apple Watch, CarPlay, LG-TV, Windows und Mac. Kein Konto, kein Tracking." property="og:description"/>
+<meta content="https://tonalo.app/img/tv/home.jpg" property="og:image"/>
+<meta content="https://tonalo.app/de/" property="og:url"/>
+<link href="https://tonalo.app/de/" rel="canonical"/>
+<link href="https://tonalo.app/" hreflang="en" rel="alternate"/>
+<link href="https://tonalo.app/de/" hreflang="de" rel="alternate"/>
+<link href="https://tonalo.app/" hreflang="x-default" rel="alternate"/>
+<meta content="website" property="og:type"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<link href="/favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="/img/apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="/style.css?v=19" rel="stylesheet"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Tonalo","url":"https://tonalo.app/de/","inLanguage":"de","description":"Kostenloser Open-Source-Client für Navidrome und Subsonic auf iPhone, Apple Watch, CarPlay, LG-TV, Windows und Mac. Kein Konto, kein Tracking. Zur Demo.","applicationCategory":"MultimediaApplication","operatingSystem":"iOS, watchOS, webOS, Windows, macOS","license":"https://github.com/Wzkiie/tonalo/blob/main/LICENSE","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"sameAs":["https://github.com/Wzkiie/tonalo"]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","inLanguage":"de","mainEntity":[{"@type":"Question","name":"Welcher Navidrome-Client läuft auf dem iPhone?","acceptedAnswer":{"@type":"Answer","text":"Tonalo. Die App läuft auf dem iPhone mit iOS 17 oder neuer, mit einer Apple-Watch-App und CarPlay. Eine iPad-Version gibt es noch nicht."}},{"@type":"Question","name":"Mit welchen Servern funktioniert es?","acceptedAnswer":{"@type":"Answer","text":"Tonalo ist mit Navidrome gebaut und getestet. Andere Server mit Subsonic-API, etwa Gonic oder Airsonic-Advanced, sollten funktionieren, wurden aber noch nicht ausprobiert. Rückmeldungen sind sehr willkommen."}},{"@type":"Question","name":"Kostet es etwas?","acceptedAnswer":{"@type":"Answer","text":"Nein. Alle Apps sind kostenlos und stehen unter der MIT-Lizenz, ohne Werbung, Abos oder In-App-Käufe."}},{"@type":"Question","name":"Wann gibt es es im App Store und im Homebrew Channel?","acceptedAnswer":{"@type":"Answer","text":"Die iPhone-App ist gerade in der öffentlichen Beta auf TestFlight; der App Store kommt als Nächstes. Die TV-App lässt sich schon aus dem Homebrew Channel installieren, wenn du Tonalos eigenes Repository hinzufügst (siehe oben); ein Eintrag im offiziellen Repository ist geplant. Die .ipk aus den GitHub-Releases funktioniert außerdem auf jedem Fernseher im Entwicklermodus."}},{"@type":"Question","name":"Kann ich die App ohne eigenen Server ausprobieren?","acceptedAnswer":{"@type":"Answer","text":"Tonalo braucht einen Navidrome- oder Subsonic-Server, um Musik zu spielen. Zum ersten Umsehen kannst du dich am öffentlichen Navidrome-Demo-Server unter demo.navidrome.org mit dem Benutzernamen demo und dem Passwort demo anmelden. Er wird vom Navidrome-Projekt betrieben, nicht von Tonalo, und kann sich jederzeit ändern oder offline gehen."}},{"@type":"Question","name":"Kann ich damit Hörbücher hören?","acceptedAnswer":{"@type":"Answer","text":"Ja. Verbinde deinen Audiobookshelf-Server unter Einstellungen, und deine Bücher und Podcasts stehen neben deiner Musik, mit Kapiteln, Tempo und Offline-Downloads."}},{"@type":"Question","name":"Können Freunde Songs zu meiner Wiedergabe hinzufügen?","acceptedAnswer":{"@type":"Answer","text":"Ja, mit der Jukebox. Freunde treten mit einem Code bei, fügen Songs hinzu und überspringen. Sie brauchen ein Konto auf demselben Server. Es klappt am Fernseher oder PC zu Hause und im Auto mit deinem iPhone als Gastgeber, ganz ohne WLAN."}},{"@type":"Question","name":"Warum sind die Künstlerseiten auf meinem Server leer?","acceptedAnswer":{"@type":"Answer","text":"Beliebte Songs, ähnliche Künstler und Biografien kommen von Navidrome, das sie von Last.fm holt. Einen kostenlosen Last.fm-API-Schlüssel in Navidrome einzutragen dauert zwei Minuten; die Server-Tipps zeigen, wie. Ohne ihn zeigt die iPhone-App stattdessen deine eigenen meistgespielten Songs."}},{"@type":"Question","name":"Gibt es eine Android- oder Samsung-TV-Version?","acceptedAnswer":{"@type":"Answer","text":"Noch nicht. Tonalo ist für LG webOS und das iPhone gemacht."}},{"@type":"Question","name":"War KI beteiligt?","acceptedAnswer":{"@type":"Answer","text":"Ein guter Teil des Codes entstand zusammen mit einem KI-Programmierassistenten. Alles wird auf einem echten LG OLED und iPhone getestet, und der Code ist öffentlich, du kannst also genau sehen, was er tut."}},{"@type":"Question","name":"Ich habe einen Fehler gefunden oder eine Idee.","acceptedAnswer":{"@type":"Answer","text":"Öffne ein Issue auf GitHub ; es gibt Formulare für beides. Auf dem iPhone kannst du auch einen Screenshot als TestFlight-Feedback senden. Sicherheitsprobleme bitte privat melden ."}}]}</script></head>
+<body>
+<a class="skip" href="#main">Zum Inhalt springen</a>
+<svg aria-hidden="true" height="0" style="position:absolute" width="0">
+<defs>
+<symbol id="i-github" viewbox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" fill="currentColor"></path></symbol>
+<symbol id="i-apple" viewbox="0 0 24 24"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.1 2.5-1.8 3.1-.5 7.6 1.3 10.1.8 1.2 1.8 2.6 3.1 2.5 1.3-.1 1.7-.8 3.2-.8s1.9.8 3.3.8c1.4 0 2.2-1.2 3-2.5 1-1.4 1.4-2.8 1.4-2.8 0 0-2.6-1-2.6-4zM14 5.2c.7-.8 1.1-1.9 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z" fill="currentColor"></path></symbol>
+<symbol id="i-tv" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><rect height="13" rx="2" width="19" x="2.5" y="4"></rect><path d="M8 21h8M12 17v4"></path></g></symbol>
+<symbol id="i-laptop" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><rect height="10.5" rx="1.5" width="15" x="4.5" y="5"></rect><path d="M2.5 19h19"></path></g></symbol>
+<symbol id="i-phone" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><rect height="19" rx="2.5" width="11" x="6.5" y="2.5"></rect><path d="M10.5 18.5h3"></path></g></symbol>
+<symbol id="i-server" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><rect height="6.5" rx="1.5" width="17" x="3.5" y="4"></rect><rect height="6.5" rx="1.5" width="17" x="3.5" y="13.5"></rect><path d="M7 7.2h.01M7 16.8h.01"></path></g></symbol>
+<symbol id="i-arrow" viewbox="0 0 24 24"><path d="M4 12h15M14 7l5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"></path></symbol>
+<symbol id="i-left" viewbox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></symbol>
+<symbol id="i-right" viewbox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></symbol>
+<symbol id="i-remote" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><rect height="19" rx="4" width="10" x="7" y="2.5"></rect><circle cx="12" cy="9" r="2.2"></circle><path d="M10 15h.01M14 15h.01M10 18h.01M14 18h.01"></path></g></symbol>
+<symbol id="i-lyrics" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"><path d="M4 6h16M4 10.5h11M4 15h16M4 19.5h8"></path></g></symbol>
+<symbol id="i-radio" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"><circle cx="12" cy="12" r="1.8"></circle><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"></path></g></symbol>
+<symbol id="i-users" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><circle cx="9" cy="8" r="3.3"></circle><path d="M3 20c.6-3.4 3-5.3 6-5.3s5.4 1.9 6 5.3"></path><path d="M16 4.9a3.3 3.3 0 010 6.3M17.6 14.9c1.9.6 3.1 2.4 3.4 5.1"></path></g></symbol>
+<symbol id="i-sliders" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></g></symbol>
+<symbol id="i-moon" viewbox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"></path></symbol>
+<symbol id="i-globe" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z"></path></g></symbol>
+<symbol id="i-watch" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><rect height="12" rx="3.5" width="12" x="6" y="6"></rect><path d="M9 6l.6-3.5h4.8L15 6M9 18l.6 3.5h4.8L15 18M18 10.5h1"></path></g></symbol>
+<symbol id="i-car" viewbox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><path d="M4 16.5V12l2-5.2A2 2 0 017.9 5.5h8.2a2 2 0 011.9 1.3L20 12v4.5"></path><path d="M3 12h18v4.5H3zM6 16.5V19M18 16.5V19"></path><path d="M7 14.2h.01M17 14.2h.01"></path></g></symbol>
+</defs>
+</svg>
+<header class="top" id="top">
+<div class="wrap">
+<a class="brand" href="#"><img alt="" src="/favicon.svg"/>Tonalo</a>
+<nav aria-label="Hauptnavigation">
+<a href="#tv">TV</a>
+<a href="#windows">Windows</a>
+<a href="#iphone">iPhone</a>
+<a href="#privacy">Datenschutz</a>
+<a href="#demo">Demo</a>
+<a href="#get">Download</a>
+<a class="keep" href="/changelog">Changelog</a>
+<a class="gh" href="https://github.com/Wzkiie/tonalo"><svg><use href="#i-github"></use></svg>GitHub</a>
+<span aria-label="Sprache" class="lang" role="group"><a href="/" hreflang="en" lang="en">EN</a><a aria-current="true" href="/de/" hreflang="de" lang="de">DE</a></span>
+</nav>
+</div>
+</header>
+<main id="main">
+<div class="hero">
+<div class="wrap">
+<div>
+<p class="eyebrow">Für Navidrome- und Subsonic-Server</p>
+<h1>Der Navidrome-Client <span>für dein iPhone, deinen Fernseher und deinen PC.</span></h1>
+<p class="lede">Tonalo spielt deine eigene Musikbibliothek auf <strong>LG-Fernsehern</strong>, <strong>Windows</strong>, dem <strong>Mac</strong> und dem <strong>iPhone</strong>, mit Apple-Watch-App und CarPlay. Kostenlos, Open Source und ohne Tracking.</p>
+<div class="actions">
+<a class="btn primary" href="https://testflight.apple.com/join/vKkNhNZJ"><svg><use href="#i-apple"></use></svg>iPhone-Beta auf TestFlight</a>
+<a class="btn" href="https://github.com/Wzkiie/tonalo/releases/latest"><svg><use href="#i-tv"></use></svg>LG-TV-App</a>
+<a class="btn" href="#get-windows"><svg><use href="#i-laptop"></use></svg>Windows- &amp; Mac-App</a>
+</div>
+<p class="small">Du brauchst deinen eigenen Navidrome- oder Subsonic-Server. <a href="#demo">Probier zuerst die Demo.</a> MIT-Lizenz. Quellcode auf <a href="https://github.com/Wzkiie/tonalo">GitHub</a>.</p>
+</div>
+<div class="devices">
+<div class="tv-frame"><img alt="Tonalo auf einem LG-Fernseher: Startseite mit Favoriten, Playlists und Radio" height="900" src="/img/tv/home.jpg" width="1600"/></div>
+<div class="phone"><img alt="Tonalo auf dem iPhone: der Player" height="1304" src="/img/ios/player.jpg" width="600"/></div>
+</div>
+</div>
+<div class="facts">
+<div class="wrap">
+<div style="--c:#5a9bff"><b>Nur dein Server</b><span>Kein Konto, keine Cloud. Die Apps verbinden sich mit deinem Navidrome und mit sonst nichts.</span></div>
+<div style="--c:#22a35a"><b>Kostenlos und Open Source</b><span>MIT-Lizenz. Keine Werbung, keine In-App-Käufe, keine Premium-Stufe.</span></div>
+<div style="--c:#ec4899"><b>Nichts wird erfasst</b><span>Keine Analyse, kein Tracking, kein Absturzbericht in den Apps.</span></div>
+<div style="--c:#f97316"><b>Weiter, wo du aufgehört hast</b><span>Am Handy pausieren, den Fernseher einschalten, weiterhören.</span></div>
+</div>
+</div>
+</div>
+<!-- Demo -->
+<section class="tint-blue" id="demo">
+<div class="wrap">
+<div class="head reveal">
+<p class="label">Hier ausprobieren</p>
+<h2>Probier Tonalo im Browser aus.</h2>
+<p>Eine kleine Demo mit Beispiel-Songs. Spiel mit dem Player, starte eine Jukebox oder koppel einen Fernseher. Sie spielt keine Musik und spricht mit keinem Server.</p>
+</div>
+<div class="demo reveal" id="demo-app">
+<p class="demo-fallback">Die Demo braucht JavaScript. Ohne siehst du unten die Screenshots.</p>
+</div>
+<p class="demo-note">Das ist eine Demo mit Beispiel-Songs. Für das echte Erlebnis brauchst du deinen eigenen Navidrome- oder Subsonic-Server. Um die echte App vorher auszuprobieren, schau in die <a href="#faq">Fragen</a>.</p>
+</div>
+</section>
+<!-- Overview -->
+<section id="overview">
+<div class="wrap">
+<div class="head reveal">
+<p class="label">Auf einen Blick</p>
+<h2>Alles in einer kostenlosen App.</h2>
+<p>Tonalo bringt iPhone, Apple Watch, CarPlay, LG-TV und PC in eine kostenlose App-Familie. Das bekommst du.</p>
+</div>
+<div class="ovw2 reveal">
+<div class="runs-card">
+<h3>Läuft auf</h3>
+<ul class="runs">
+<li>iPhone</li>
+<li>Apple Watch</li>
+<li>CarPlay</li>
+<li>LG-TV mit Fernbedienung</li>
+<li>Windows und Mac</li>
+</ul>
+</div>
+<div class="ovw">
+<table>
+<thead><tr><th scope="col">Funktion</th><th scope="col">Tonalo</th></tr></thead>
+<tbody>
+<tr><th scope="row">Preis</th><td>Kostenlos, MIT-Lizenz, keine Werbung, keine In-App-Käufe</td></tr>
+<tr><th scope="row">Quellcode</th><td>Öffentlich auf GitHub</td></tr>
+<tr><th scope="row">Jukebox mit Beitrittscode</th><td>Ja, auch im Auto ohne WLAN</td></tr>
+<tr><th scope="row">Hörbücher aus Audiobookshelf</th><td>Ja, in derselben App</td></tr>
+<tr><th scope="row">Analyse und Tracking</th><td>Keins</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<!-- TV -->
+<section class="tint-plum" id="tv">
+<div class="wrap">
+<div class="head reveal">
+<p class="label">LG webOS TV</p>
+<h2>Gemacht für die Fernbedienung, nicht für die Maus.</h2>
+<p>Der Web-Player von Navidrome öffnet sich zwar im Browser des Fernsehers, ist aber für die Maus gebaut. Tonalo ist eine echte webOS-App: Pfeile und OK zum Navigieren, Zurück zum Zurückgehen, und Play, Pause und Skip tun, was du erwartest.</p>
+</div>
+<figure class="tv-main reveal"><img alt="Vollbild-Player mit synchronen Lyrics" class="shot" height="900" loading="lazy" src="/img/tv/nowplaying.jpg" width="1600"/></figure>
+<div class="bento">
+<article class="feat wide reveal">
+<div aria-hidden="true" class="vis v-lyrics">
+<p>Wir hatten keine Zeit mehr</p>
+<p>Halt den Moment fest, lass ihn gehen</p>
+<p class="on">Jede Straße, die ich kannte</p>
+<p>Dreh heute Nacht die Lautstärke auf</p>
+</div>
+<div class="txt"><h3>Synchrone Lyrics</h3><p>Der Vollbild-Player folgt dem Song Zeile für Zeile, wenn dein Server Lyrics in der Datei oder als .lrc daneben hat.</p></div>
+</article>
+<article class="feat reveal">
+<div aria-hidden="true" class="vis v-radio">
+<div class="covers"><i style="--g:linear-gradient(135deg,#ffd36e,#ff6b6b)"></i><i style="--g:linear-gradient(135deg,#5ac8fa,#3b5bdb)"></i><i style="--g:linear-gradient(135deg,#c084fc,#6d28d9)"></i><i style="--g:linear-gradient(135deg,#34d399,#0f766e)"></i><i style="--g:linear-gradient(135deg,#f9a8d4,#be185d)"></i></div>
+<span class="chip">+ 5 ähnliche Songs</span>
+</div>
+<div class="txt"><h3>Endlos-Radio</h3><p>Ausgehend von einem Song, einem Künstler, einem Genre oder deinen Favoriten. Es füllt sich selbst nach und lernt aus Überspringen und Herzen.</p></div>
+</article>
+<article class="feat reveal">
+<div aria-hidden="true" class="vis v-users">
+<div><b style="background:#3b82f6">A</b><span>Alex</span></div>
+<div><b style="background:#22a35a">S</b><span>Sam</span></div>
+<div><b class="add">+</b><span>Neu</span></div>
+</div>
+<div class="txt"><h3>Ein Profil für jeden</h3><p>Jeder meldet sich einmal an und wählt beim Start seinen Namen. Warteschlangen, Favoriten und Einstellungen bleiben getrennt.</p></div>
+</article>
+<article class="feat reveal">
+<div aria-hidden="true" class="vis v-fade">
+<svg preserveaspectratio="none" viewbox="0 0 280 96"><defs><lineargradient id="fa" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f97316" stop-opacity=".35"></stop><stop offset="1" stop-color="#f97316" stop-opacity="0"></stop></lineargradient><lineargradient id="fb" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5a9bff" stop-opacity=".35"></stop><stop offset="1" stop-color="#5a9bff" stop-opacity="0"></stop></lineargradient></defs><path d="M0 18H130C160 18 170 86 210 86V96H0z" fill="url(#fa)"></path><path d="M0 18H130C160 18 170 86 210 86" fill="none" stroke="#f97316" stroke-width="2.5"></path><path d="M130 86C170 86 180 18 210 18H280V96H130z" fill="url(#fb)"></path><path d="M130 86C170 86 180 18 210 18H280" fill="none" stroke="#5a9bff" stroke-width="2.5"></path></svg>
+<span class="tag">6 s</span>
+</div>
+<div class="txt"><h3>Überblendung und Lautstärkeausgleich</h3><p>3 bis 12 Sekunden zwischen Songs überblenden und laute und leise Alben mit ReplayGain angleichen.</p></div>
+</article>
+<article class="feat reveal">
+<div aria-hidden="true" class="vis v-sleep">
+<div class="pills"><span>15</span><span class="on">30</span><span>45</span><span>60</span><span>90</span></div>
+<small>Die Musik blendet in 28 Min. aus</small>
+</div>
+<div class="txt"><h3>Einschlaf-Timer</h3><p>Stopp nach 15 bis 90 Minuten oder am Ende des Songs. Die Musik blendet sanft aus.</p></div>
+</article>
+<article class="feat reveal">
+<div aria-hidden="true" class="vis v-saver">
+<div class="saver"><i></i><div><b>Faded Heart</b><span>Marlow Keys</span></div><time>22:47</time></div>
+</div>
+<div class="txt"><h3>Schonend für OLEDs</h3><p>Ein langsam wandernder Bildschirmschoner mit Cover und Uhr, damit sich nichts ins Panel einbrennt.</p></div>
+</article>
+<article class="feat wide reveal">
+<div aria-hidden="true" class="vis v-lang">
+<span>EN</span><span class="on">DE</span><span>ES</span><span>FR</span><span>IT</span><span>PT</span><span>NL</span><span>PL</span><span>TR</span>
+</div>
+<div class="txt"><h3>Neun Sprachen</h3><p>Englisch, Deutsch, Spanisch, Französisch, Italienisch, Portugiesisch, Niederländisch, Polnisch und Türkisch. Die App folgt dem Fernseher.</p></div>
+</article>
+</div>
+<div class="gallery">
+<figure class="reveal"><img alt="Ein Album" class="shot" height="900" loading="lazy" src="/img/tv/album.jpg" width="1600"/><figcaption>Alben</figcaption></figure>
+<figure class="reveal"><img alt="Eine Künstlerseite" class="shot" height="900" loading="lazy" src="/img/tv/artist.jpg" width="1600"/><figcaption>Künstlerseiten mit beliebten Songs</figcaption></figure>
+<figure class="reveal"><img alt="Suche" class="shot" height="900" loading="lazy" src="/img/tv/search.jpg" width="1600"/><figcaption>Suche</figcaption></figure>
+<figure class="reveal"><img alt="Endlos-Radio und Genre-Radios" class="shot" height="900" loading="lazy" src="/img/tv/radio.jpg" width="1600"/><figcaption>Radio aus deiner Bibliothek</figcaption></figure>
+<figure class="reveal"><img alt="Ein Radiosender live" class="shot" height="900" loading="lazy" src="/img/tv/station.jpg" width="1600"/><figcaption>Die Radiosender deines Servers, live</figcaption></figure>
+<figure class="reveal"><img alt="Profilauswahl" class="shot" height="900" loading="lazy" src="/img/tv/users.jpg" width="1600"/><figcaption>Profile</figcaption></figure>
+</div>
+<div class="remote">
+<div class="reveal">
+<h3>Jede Taste hat eine Aufgabe.</h3>
+<p>Der Zeiger der Magic Remote geht auch, aber du brauchst ihn nie. Die Warteschlange übersteht einen Neustart, Songs lassen sich mit den Pfeilen nach oben und unten verschieben, und Playlists kannst du direkt vom Sofa umbenennen, aufräumen oder löschen.</p>
+</div>
+<ul class="keys reveal">
+<li><span class="cap"><kbd>▲︎</kbd><kbd>▼︎</kbd><kbd>◀︎</kbd><kbd>▶︎</kbd><kbd>OK</kbd></span><span>Navigieren und auswählen</span></li>
+<li><span class="cap"><kbd>Zurück</kbd></span><span>Zurück, dann zur Seitenleiste, dann Nachfrage vor dem Beenden</span></li>
+<li><span class="cap"><kbd>▶︎</kbd><kbd>❚❚</kbd><kbd>■︎</kbd></span><span>Abspielen, Pause, Stopp</span></li>
+<li><span class="cap"><kbd>◀◀︎</kbd><kbd>▶▶︎</kbd></span><span>10 Sekunden springen, gedrückt halten zum Songwechsel</span></li>
+<li><span class="cap"><kbd>CH +</kbd><kbd>CH −</kbd></span><span>Seitenweise scrollen</span></li>
+<li><span class="cap"><kbd aria-label="Rot" class="dot" style="--c:var(--red)"></kbd><kbd aria-label="Grün" class="dot" style="--c:var(--green)"></kbd><kbd aria-label="Gelb" class="dot" style="--c:var(--yellow)"></kbd><kbd aria-label="Blau" class="dot" style="--c:var(--blue)"></kbd></span><span>Aktueller Titel, Suche, Optionen, Play/Pause</span></li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Windows -->
+<section class="tint-teal" id="windows">
+<div class="wrap">
+<div class="head reveal">
+<p class="label">Windows 10 und 11</p>
+<h2>Dieselbe App auf deinem PC.</h2>
+<p>Tonalo für Windows ist die TV-App mit allem, was sie kann, gemacht für Maus und Tastatur. Dieselben Bildschirme, dieselben Profile, dasselbe Endlos-Radio, und dein iPhone steuert sie genau wie den Fernseher.</p>
+</div>
+<figure class="tv-main reveal"><img alt="Tonalo für Windows: ein Album, unten der Player und die Lautstärke" class="shot" height="987" loading="lazy" src="/img/windows/album-de.jpg" width="1600"/></figure>
+<div class="cols">
+<div class="reveal"><h3>Maus und Tastatur</h3><p>Klick irgendwo in die Fortschrittsleiste, Rechtsklick für Optionen, Leertaste für Play und Pause, Strg + F zum Suchen. Mit Strg + Plus und Minus wird alles größer oder kleiner.</p></div>
+<div class="reveal"><h3>Lautstärke und Medientasten</h3><p>Ein Lautstärkeregler im Player und im Vollbild, auch für Radiosender. Medientasten und die Windows-Medienanzeige zeigen, was läuft.</p></div>
+<div class="reveal"><h3>Updates in der App</h3><p>Tonalo prüft auf GitHub, ob es eine neue Version gibt, fragt nach, lädt sie herunter und startet neu. Keine Admin-Rechte nötig, die App installiert sich nur für dich.</p></div>
+</div>
+</div>
+</section>
+<!-- iPhone -->
+<section class="tint-amber" id="iphone">
+<div class="wrap">
+<div class="head reveal">
+<p class="label">iPhone</p>
+<h2>Fühlt sich an wie die großen Streaming-Apps. Spielt deine Dateien.</h2>
+<p>Eine native SwiftUI-App mit Startseite, Suche, Bibliothek und einem Player, der seine Farben vom Cover nimmt. Lossless bleibt lossless, und die ganze Bibliothek funktioniert offline, wenn du das willst.</p>
+</div>
+</div>
+<div class="strip" id="strip">
+<figure><div class="phone"><img alt="Start" class="shot" height="1304" loading="lazy" src="/img/ios/home.jpg" width="600"/></div><figcaption>Start</figcaption></figure>
+<figure><div class="phone"><img alt="Player" class="shot" height="1304" loading="lazy" src="/img/ios/player.jpg" width="600"/></div><figcaption>Player</figcaption></figure>
+<figure><div class="phone"><img alt="Hörbücher und Podcasts: Weiterhören und neue Bücher" class="shot" height="1304" loading="lazy" src="/img/ios/books.jpg" width="600"/></div><figcaption>Hörbücher und Podcasts</figcaption></figure>
+<figure><div class="phone"><img alt="Synchrone Lyrics" class="shot" height="1304" loading="lazy" src="/img/ios/lyrics.jpg" width="600"/></div><figcaption>Synchrone Lyrics</figcaption></figure>
+<figure><div class="phone"><img alt="Album" class="shot" height="1304" loading="lazy" src="/img/ios/album.jpg" width="600"/></div><figcaption>Album</figcaption></figure>
+<figure><div class="phone"><img alt="Deine Bibliothek" class="shot" height="1304" loading="lazy" src="/img/ios/library.jpg" width="600"/></div><figcaption>Deine Bibliothek</figcaption></figure>
+<figure><div class="phone"><img alt="Suche mit Genres" class="shot" height="1304" loading="lazy" src="/img/ios/search.jpg" width="600"/></div><figcaption>Suche und Genres</figcaption></figure>
+<figure><div class="phone"><img alt="Endlos-Radio" class="shot" height="1304" loading="lazy" src="/img/ios/radio.jpg" width="600"/></div><figcaption>Radio</figcaption></figure>
+<figure><div class="phone"><img alt="Ein Radiosender live" class="shot" height="1304" loading="lazy" src="/img/ios/station.jpg" width="600"/></div><figcaption>Ein Sender, live</figcaption></figure>
+</div>
+<div class="wrap">
+<div class="strip-nav">
+<button aria-label="Vorherige Screenshots" data-dir="-1" type="button"><svg><use href="#i-left"></use></svg></button>
+<button aria-label="Nächste Screenshots" data-dir="1" type="button"><svg><use href="#i-right"></use></svg></button>
+</div>
+<div class="groups">
+<div class="group reveal" style="--c:#8b5cf6">
+<h3>Hören</h3>
+<ul>
+<li><b>Endlos-Radio</b> ausgehend von einem Song, Künstler, Genre oder deinen Favoriten. Es spielt mehr von dem, was du zu Ende hörst oder magst, und weniger von dem, was du überspringst.</li>
+<li><b>Autoplay</b> spielt ähnliche Songs weiter, wenn ein Album oder eine Playlist zu Ende ist.</li>
+<li><b>Überblendung</b> bis zu 12 Sekunden, ein Einschlaf-Timer, der ausblendet, und Lautstärkeausgleich pro Song oder Album.</li>
+<li>Eine Warteschlange, die du per Ziehen sortierst, Wischgesten im Player, synchrone Lyrics.</li>
+<li><b>Künstlerseiten</b> mit beliebten Songs, der Diskografie, „Fans hören auch“ und einer Biografie.</li>
+</ul>
+</div>
+<div class="group reveal" style="--c:#14b8a6">
+<h3>Offline</h3>
+<ul>
+<li><b>Downloads</b> von Songs, Alben und Playlists, fünf gleichzeitig im Hintergrund, auf Wunsch nur im WLAN.</li>
+<li><b>Bibliotheks-Sync</b> legt jedes Album, jeden Künstler und jede Playlist auf das Handy, damit die App sofort öffnet, auch im Tunnel.</li>
+<li><b>Vorausladen</b>: Die nächsten ein bis fünf Songs werden früh geholt, damit ein Funkloch die Musik nicht stoppt.</li>
+<li>Lyrics kommen mit, und Scrobbles, die offline entstanden sind, werden später gesendet.</li>
+</ul>
+</div>
+<div class="group reveal" style="--c:#6366f1">
+<h3>Hörbücher und Podcasts</h3>
+<ul>
+<li><b>Audiobookshelf</b> in derselben App: Verbinde deinen Server unter Einstellungen, dein Fortschritt bleibt synchron.</li>
+<li>Kapitel, Wiedergabegeschwindigkeit, Sprungtasten und ein Einschlaf-Timer.</li>
+<li><b>Downloads</b> zum Offline-Hören; deine Position wird später gesendet.</li>
+<li>Seiten für Autoren und Reihen, und Herzen, die deine Bibliothek füllen.</li>
+</ul>
+</div>
+<div class="group reveal" style="--c:#f97316">
+<h3>Klang</h3>
+<ul>
+<li>Getrennt einstellbar für <b>WLAN, Mobilfunk und Downloads</b>.</li>
+<li><b>Originaldateien</b>: FLAC bleibt FLAC. Oder lass deinen Server in AAC, Opus oder MP3 umwandeln.</li>
+<li>Jede Stufe zeigt, wie viele Daten eine Stunde Musik braucht.</li>
+<li>Formate, die das iPhone nicht abspielen kann, werden automatisch umgewandelt.</li>
+</ul>
+</div>
+<div class="group reveal" style="--c:#3b82f6">
+<h3>Dein Server, dein Weg</h3>
+<ul>
+<li><b>Heimadresse</b>: In deinem WLAN spricht die App direkt mit dem Server und wechselt draußen zurück, mitten im Song und ohne Lücke.</li>
+<li><b>Eigene HTTP-Header</b> pro Konto, für Cloudflare Access, Authelia und Ähnliches. Geheimnisse bleiben im Schlüsselbund.</li>
+<li>Mehrere Konten, mit der Auswahl „Wer hört zu?“ beim Start.</li>
+<li>Ein Herz für den Sperrbildschirm und das Kontrollzentrum (der Knopf im Kontrollzentrum braucht iOS 18) und ein Siri-Kurzbefehl, um den aktuellen Song zu liken.</li>
+</ul>
+</div>
+<div class="group reveal" style="--c:#ec4899">
+<h3>Mach sie zu deiner</h3>
+<ul>
+<li>Acht Akzentfarben oder deine eigene, und neun App-Icons.</li>
+<li>Wähle den Startbildschirm und welche Reihen die Startseite zeigt.</li>
+<li>Dunkelgrau oder reines Schwarz, auf Wunsch mit dem Cover getönt.</li>
+<li>Pinne Playlists mit langem Drücken an den Anfang deiner Bibliothek.</li>
+</ul>
+</div>
+<div class="group reveal" style="--c:#eab308">
+<h3>Kleinigkeiten</h3>
+<ul>
+<li>Das Qualitätsabzeichen im Player zeigt, was gerade läuft, etwa FLAC oder AAC 256.</li>
+<li>Wisch den Mini-Player zum Überspringen, wisch nach oben, um den Player zu öffnen.</li>
+<li>Intelligente Playlists deines Servers sind markiert und bleiben schreibgeschützt.</li>
+<li>Beim Abmelden werden die Downloads und der Cache dieses Kontos vom Handy entfernt.</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<!-- Audiobooks -->
+<section class="tint-plum" id="books">
+<div class="wrap split">
+<div class="reveal">
+<p class="label">Hörbücher &amp; Podcasts</p>
+<h2>Bücher und Podcasts, in derselben App.</h2>
+<p>Verbinde deinen Audiobookshelf-Server unter Einstellungen, und deine Bücher und Folgen stehen neben deiner Musik. Mach weiter, wo du aufgehört hast, auf jedem Gerät, weil die Position zurück an den Server geht.</p>
+<ul class="ticks">
+<li><b>Kapitel, Tempo und Einschlaf-Timer.</b> Sprungtasten, die du auf 10 bis 60 Sekunden stellen kannst, und Geschwindigkeiten von 0,75x bis 2,5x.</li>
+<li><b>Offline.</b> Lade Bücher und Folgen herunter, hör sie im Flugzeug, und deine Position wird synchronisiert, sobald du wieder online bist.</li>
+<li><b>Herzen, Autoren und Reihen.</b> Lieblingsbücher und Autoren erscheinen in deiner Bibliothek, beendete Bücher bekommen einen Haken.</li>
+<li><b>Am Handgelenk und im Auto.</b> Dieselben Bedienelemente auf der Uhr und in CarPlay, und der Wechsel zwischen Musik und Buch läuft mit.</li>
+</ul>
+</div>
+<div class="trio reveal">
+<figure><div class="phone"><img alt="Eine Buchseite mit Fortschritt, Kapiteln und Play-Taste" class="shot" height="1304" loading="lazy" src="/img/ios/book.jpg" width="600"/></div></figure>
+<figure><div class="phone"><img alt="Der Hörbuch-Player mit Kapitel, Sprungtasten, Tempo und Einschlaf-Timer" class="shot" height="1304" loading="lazy" src="/img/ios/book-player.jpg" width="600"/></div></figure>
+</div>
+</div>
+</section>
+<!-- Customization -->
+<section class="tint-rose" id="look">
+<div class="wrap split">
+<div class="trio reveal">
+<figure><div class="phone"><img alt="Aussehen-Einstellungen: Akzentfarben, eigene Farbe und neun App-Icons" class="shot" height="1304" loading="lazy" src="/img/ios/appearance.jpg" width="600"/></div></figure>
+<figure><div class="phone"><img alt="Aussehen-Einstellungen: Hintergrund, Ecken und Covergröße" class="shot" height="1304" loading="lazy" src="/img/ios/look.jpg" width="600"/></div></figure>
+</div>
+<div class="reveal">
+<p class="label">Mach sie zu deiner</p>
+<h2>Deine Farben, deine Ecken.</h2>
+<p>Tonalo soll aussehen wie deine App. Alles ist unter Einstellungen, Aussehen einen Tipp entfernt, und die App folgt sofort.</p>
+<ul class="ticks">
+<li><b>Akzentfarbe.</b> Acht zur Auswahl oder jede eigene Farbe, dazu neun passende App-Icons.</li>
+<li><b>Hintergrund.</b> Dunkelgrau oder reines Schwarz. Karten, Chips und der Mini-Player ziehen mit, damit sie auf beiden lesbar bleiben.</li>
+<li><b>Ecken und Cover.</b> Scharfe, normale oder runde Ecken, und kleine, normale oder große Cover auf der Startseite.</li>
+<li><b>Deine Startseite.</b> Wähle den Startbildschirm und welche Reihen die Startseite zeigt.</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Radio -->
+<section class="tint-teal" id="radio">
+<div class="wrap split">
+<div class="reveal">
+<p class="label">Radio</p>
+<h2>Endlos-Radio und deine Sender live.</h2>
+<p>Wähl einen Song, und Tonalo spielt weiter Musik wie diese, direkt aus deiner Bibliothek, solange du zuhörst. Es wird besser, je mehr du überspringst und magst.</p>
+<p>Die Internetradio-Sender, die du in Navidrome eingerichtet hast, spielen live in beiden Apps. Auf dem iPhone siehst du den laufenden Song, und wenn er in deiner Bibliothek ist, spielt ihn ein Tipp von dort.</p>
+</div>
+<div class="pair reveal">
+<figure class="tv-main"><img alt="Ein Radiosender auf dem Fernseher" class="shot" height="900" loading="lazy" src="/img/tv/station.jpg" width="1600"/></figure>
+<div class="phone"><img alt="Ein Radiosender auf dem iPhone" class="shot" height="1304" loading="lazy" src="/img/ios/station.jpg" width="600"/></div>
+</div>
+</div>
+</section>
+<!-- Handoff -->
+<section class="tint-blue" id="continue">
+<div class="wrap split">
+<div class="reveal">
+<p class="label">Zwischen Geräten</p>
+<h2>Im Zug anfangen, auf dem Sofa weiterhören.</h2>
+<p>Deine Warteschlange und deine Position liegen auf deinem Navidrome-Server. Pausier am iPhone, öffne Tonalo auf dem Fernseher oder PC, und es bietet an, mit demselben Song an derselben Sekunde weiterzumachen. Auch umgekehrt. Dafür musst du nichts einrichten. Es nutzt die Wiedergabeliste von Navidrome.</p>
+<p>Koppel das iPhone einmal unter <b>Geräte</b> mit deinem Fernseher oder PC, dann kann es mehr: Solange er spielt, zeigt das Handy ihn live, und was du am Handy auswählst, spielt dort. Nichts geht über das Internet.</p>
+<h3 class="sub">Jukebox</h3>
+<p>Freunde treten mit einem Code bei, fügen Songs hinzu und überspringen. Am Fernseher oder PC zu Hause oder im Auto mit deinem iPhone als Gastgeber, ganz ohne WLAN. Gäste brauchen ein Konto auf demselben Server.</p>
+</div>
+<div class="reveal">
+<div aria-label="Das iPhone speichert die Warteschlange auf deinem Server, der Fernseher übernimmt sie" class="flow">
+<div class="node"><svg><use href="#i-phone"></use></svg><b>iPhone</b><span>Pause</span></div>
+<div class="arrow"><svg><use href="#i-arrow"></use></svg></div>
+<div class="node"><svg><use href="#i-server"></use></svg><b>Dein Server</b><span>hält die Warteschlange</span></div>
+<div class="arrow"><svg><use href="#i-arrow"></use></svg></div>
+<div class="node"><svg><use href="#i-tv"></use></svg><b>TV</b><span>weiter</span></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Watch + CarPlay -->
+<section class="tint-rose" id="watch">
+<div class="wrap">
+<div class="head reveal">
+<p class="label">Apple Watch &amp; CarPlay</p>
+<h2>Am Handgelenk und im Auto.</h2>
+</div>
+<div class="cards">
+<div class="card reveal warm-rose wcard">
+<div class="dev-vis watches">
+<div class="watch-case"><img alt="Tonalo auf der Apple Watch: der Player" class="shot" height="448" loading="lazy" src="/img/watch/player.jpg" width="368"/></div>
+<div class="watch-case"><img alt="Tonalo auf der Apple Watch: ein Hörbuch mit Sprungtasten" class="shot" height="448" loading="lazy" src="/img/watch/book.jpg" width="368"/></div>
+<div class="watch-case"><img alt="Tonalo auf der Apple Watch: Playlists und Favoriten" class="shot" height="448" loading="lazy" src="/img/watch/library.jpg" width="368"/></div>
+</div>
+<div class="wtxt"><h3>Apple Watch</h3>
+<p>Eine Fernbedienung für das iPhone, die mit der App mitkommt. Sie spricht nie mit deinem Server und speichert keine Anmeldung.</p>
+<ul>
+<li>Player mit Cover, Play, Skip, Zufallswiedergabe und einem Herz</li>
+<li>Die Lautstärke des iPhones auf der Digital Crown</li>
+<li>Playlists und Favoriten vom Handgelenk starten</li>
+<li>Hörbücher und Podcasts mit Sprungtasten und Kapiteln, und Weiterhören zuerst in der Bibliothek</li>
+</ul></div>
+</div>
+<div class="card reveal warm-green ccard">
+<div><h3>CarPlay</h3>
+<p>Deine Bibliothek auf dem Autobildschirm, gemacht für den schnellen Blick.</p></div>
+<ul>
+<li>Start mit Weiterhören, Bibliothek und Downloads</li>
+<li>Hörbücher und Podcasts, mit Kapiteln und Tempo im Player</li>
+<li>Zufallswiedergabe, Wiederholen und ein Herz im Player</li>
+<li>Keine Suche, weil Apple in CarPlay-Musik-Apps keine Tastatur erlaubt</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<!-- Privacy -->
+<section class="tint-green" id="privacy">
+<div class="wrap">
+<div class="head reveal">
+<p class="label">Datenschutz</p>
+<h2>Deine Musik bleibt zwischen dir und deinem Server.</h2>
+<p>Tonalo hat kein eigenes Backend. Es gibt kein Konto zum Anlegen und nichts, wovon du dich abmelden müsstest.</p>
+</div>
+<div class="privacy reveal">
+<div><h3>Kein Passwort gespeichert</h3><p>Es wird nur das gesalzene Token der Subsonic-API gespeichert, nie das Passwort selbst.</p></div>
+<div><h3>Schlüsselbund auf dem iPhone</h3><p>Das Token und eigene Header liegen im iOS-Schlüsselbund, auf diesem einen Gerät.</p></div>
+<div><h3>Keine Analyse</h3><p>Kein Tracking, keine Werbe-SDKs, überhaupt kein Code von Dritten in der iPhone-App.</p></div>
+<div><h3>Header bleiben, wo sie sind</h3><p>Eigene Header folgen nie einer Weiterleitung auf einen anderen Host.</p></div>
+<div><h3>Standardmäßig https</h3><p>Einfaches http wird nur für Adressen in deinem Heimnetz genutzt.</p></div>
+<div><h3>Offener Code</h3><p>Jede Zeile steht auf GitHub, damit du prüfen kannst, was die Apps tun.</p></div>
+</div>
+<p class="more">Die einzigen anderen Verbindungen: der Server eines Radiosenders, während du ihn hörst, und deine eigenen Geräte in der Nähe, sobald du sie koppelst. Details in der <a href="https://github.com/Wzkiie/tonalo/blob/main/PRIVACY.md">Datenschutzerklärung</a>.</p>
+</div>
+</section>
+<!-- Install -->
+<section class="tint-blue" id="get">
+<div class="wrap">
+<div class="head reveal">
+<p class="label">Download</p>
+<h2>Probier es aus.</h2>
+<p>Alle Apps sind kostenlos. Du brauchst deinen eigenen Server: Navidrome oder einen anderen, der die Subsonic-API spricht.</p>
+</div>
+<div class="install">
+<div class="card reveal warm-blue">
+<p class="req">iOS 17 oder neuer, der Knopf im Kontrollzentrum braucht iOS 18 · watchOS 10 oder neuer</p>
+<h3>iPhone, Apple Watch, CarPlay</h3>
+<ol class="steps">
+<li>Installiere Apples <b>TestFlight</b>-App aus dem App Store.</li>
+<li>Öffne den Einladungslink auf deinem iPhone und tippe auf <b>Installieren</b>. Die Watch-App kommt mit, wenn dein iPhone mit einer Uhr gekoppelt ist.</li>
+<li>Melde dich mit Serveradresse, Benutzername und Passwort an.</li>
+</ol>
+<div class="actions"><a class="btn primary" href="https://testflight.apple.com/join/vKkNhNZJ"><svg><use href="#i-apple"></use></svg>Zur Beta</a></div>
+</div>
+<div class="card reveal warm-amber">
+<p class="req">LG-TV · webOS 5 oder neuer</p>
+<h3>LG-TV</h3>
+<ol class="steps">
+<li>Fernseher mit Root: Füge in den Einstellungen des <a href="https://www.webosbrew.org/">Homebrew Channels</a> das Repository <code class="url">https://raw.githubusercontent.com/Wzkiie/tonalo/repo/apps.json</code> hinzu und installiere Tonalo aus der Liste. Updates kommen auf demselben Weg.</li>
+<li>Entwicklermodus: Lade die <b>.ipk</b> aus dem neuesten Release herunter und installiere sie mit dem <a href="https://github.com/webosbrew/dev-manager-desktop">webOS Dev Manager</a>.</li>
+<li>Gib deine Serveradresse ein, zum Beispiel <code>http://192.168.1.10:4533</code>, und melde dich an.</li>
+</ol>
+<div class="actions"><a class="btn" href="https://github.com/Wzkiie/tonalo/releases/latest"><svg><use href="#i-tv"></use></svg>Neuestes Release</a><a class="btn" href="https://github.com/Wzkiie/tonalo#installing">Installationsanleitung</a></div>
+</div>
+<div class="card reveal warm-blue" id="get-windows">
+<p class="req">Windows 10 oder 11 (64 Bit) · Mac mit Apple Silicon oder Intel</p>
+<h3>Windows und Mac</h3>
+<ol class="steps">
+<li>Lade <b>Tonalo-Setup-….exe</b> (Windows) oder die <b>.dmg</b> für deinen Mac aus dem neuesten Release herunter, <b>mac-arm64</b> für Apple Silicon und <b>mac-x64</b> für Intel.</li>
+<li>Windows: Starte die Datei. Das Installationsprogramm ist noch nicht code-signiert, deshalb warnt SmartScreen beim ersten Mal: Klick auf <b>Weitere Informationen</b>, dann auf <b>Trotzdem ausführen</b>. Mac: Zieh Tonalo in den Ordner Programme, dann Rechtsklick und beim ersten Mal <b>Öffnen</b> wählen, weil die App nicht notarisiert ist. Die Mac-App aktualisiert sich noch nicht selbst.</li>
+<li>Melde dich an deinem Server an. Wenn das System nach dem Netzwerkzugriff fragt, erlaube ihn, damit dein iPhone den Computer findet.</li>
+</ol>
+<div class="actions"><a class="btn" href="https://github.com/Wzkiie/tonalo/releases/latest"><svg><use href="#i-laptop"></use></svg>Neuestes Release</a></div>
+</div>
+</div>
+</div>
+</section>
+<!-- FAQ -->
+<section id="faq">
+<div class="wrap">
+<div class="head reveal">
+<p class="label">Fragen</p>
+<h2>Gut zu wissen</h2>
+</div>
+<div class="faq reveal">
+<details><summary>Welcher Navidrome-Client läuft auf dem iPhone?</summary><p>Tonalo. Die App läuft auf dem iPhone mit iOS 17 oder neuer, mit einer Apple-Watch-App und CarPlay. Eine iPad-Version gibt es noch nicht.</p></details>
+<details><summary>Mit welchen Servern funktioniert es?</summary><p>Tonalo ist mit Navidrome gebaut und getestet. Andere Server mit Subsonic-API, etwa Gonic oder Airsonic-Advanced, sollten funktionieren, wurden aber noch nicht ausprobiert. Rückmeldungen sind sehr willkommen.</p></details>
+<details><summary>Kostet es etwas?</summary><p>Nein. Alle Apps sind kostenlos und stehen unter der MIT-Lizenz, ohne Werbung, Abos oder In-App-Käufe.</p></details>
+<details><summary>Wann gibt es es im App Store und im Homebrew Channel?</summary><p>Die iPhone-App ist gerade in der öffentlichen Beta auf TestFlight; der App Store kommt als Nächstes. Die TV-App lässt sich schon aus dem Homebrew Channel installieren, wenn du Tonalos eigenes Repository hinzufügst (siehe oben); ein Eintrag im offiziellen Repository ist geplant. Die .ipk aus den GitHub-Releases funktioniert außerdem auf jedem Fernseher im Entwicklermodus.</p></details>
+<details><summary>Kann ich die App ohne eigenen Server ausprobieren?</summary><p>Tonalo braucht einen Navidrome- oder Subsonic-Server, um Musik zu spielen. Zum ersten Umsehen kannst du dich am öffentlichen Navidrome-Demo-Server unter demo.navidrome.org mit dem Benutzernamen demo und dem Passwort demo anmelden. Er wird vom Navidrome-Projekt betrieben, nicht von Tonalo, und kann sich jederzeit ändern oder offline gehen.</p></details>
+<details><summary>Kann ich damit Hörbücher hören?</summary><p>Ja. Verbinde deinen Audiobookshelf-Server unter Einstellungen, und deine Bücher und Podcasts stehen neben deiner Musik, mit Kapiteln, Tempo und Offline-Downloads.</p></details>
+<details><summary>Können Freunde Songs zu meiner Wiedergabe hinzufügen?</summary><p>Ja, mit der Jukebox. Freunde treten mit einem Code bei, fügen Songs hinzu und überspringen. Sie brauchen ein Konto auf demselben Server. Es klappt am Fernseher oder PC zu Hause und im Auto mit deinem iPhone als Gastgeber, ganz ohne WLAN.</p></details>
+<details><summary>Warum sind die Künstlerseiten auf meinem Server leer?</summary><p>Beliebte Songs, ähnliche Künstler und Biografien kommen von Navidrome, das sie von Last.fm holt. Einen kostenlosen Last.fm-API-Schlüssel in Navidrome einzutragen dauert zwei Minuten; die <a href="https://github.com/Wzkiie/tonalo#server-tips">Server-Tipps</a> zeigen, wie. Ohne ihn zeigt die iPhone-App stattdessen deine eigenen meistgespielten Songs.</p></details>
+<details><summary>Gibt es eine Android- oder Samsung-TV-Version?</summary><p>Noch nicht. Tonalo ist für LG webOS und das iPhone gemacht.</p></details>
+<details><summary>War KI beteiligt?</summary><p>Ein guter Teil des Codes entstand zusammen mit einem KI-Programmierassistenten. Alles wird auf einem echten LG OLED und iPhone getestet, und der Code ist öffentlich, du kannst also genau sehen, was er tut.</p></details>
+<details><summary>Ich habe einen Fehler gefunden oder eine Idee.</summary><p>Öffne ein <a href="https://github.com/Wzkiie/tonalo/issues/new/choose">Issue auf GitHub</a>; es gibt Formulare für beides. Auf dem iPhone kannst du auch einen Screenshot als TestFlight-Feedback senden. Sicherheitsprobleme bitte <a href="https://github.com/Wzkiie/tonalo/security">privat melden</a>.</p></details>
+</div>
+</div>
+</section>
+</main>
+<footer>
+<div class="wrap">
+<div>
+<a class="brand" href="#"><img alt="" src="/favicon.svg"/>Tonalo</a>
+<p>Ein kostenloser Musikplayer für deinen eigenen Server. Nicht verbunden mit Navidrome, LG oder Apple.</p>
+</div>
+<div>
+<h4>Apps</h4>
+<ul>
+<li><a href="https://testflight.apple.com/join/vKkNhNZJ">iPhone-Beta</a></li>
+<li><a href="https://github.com/Wzkiie/tonalo/releases/latest">LG-TV-Release</a></li>
+<li><a href="https://github.com/Wzkiie/tonalo#readme">Installationsanleitung</a></li>
+</ul>
+</div>
+<div>
+<h4>Projekt</h4>
+<ul>
+<li><a href="https://github.com/Wzkiie/tonalo">Quellcode</a></li>
+<li><a href="/changelog">Changelog</a></li>
+<li><a href="/" hreflang="en" lang="en">English</a></li>
+<li><a href="https://github.com/Wzkiie/tonalo/issues/new/choose">Fehler melden</a></li>
+<li><a href="https://github.com/Wzkiie/tonalo/blob/main/LICENSE">MIT-Lizenz</a></li>
+</ul>
+</div>
+<div>
+<h4>Rechtliches</h4>
+<ul>
+<li><a href="https://github.com/Wzkiie/tonalo/blob/main/PRIVACY.md">Datenschutzerklärung</a></li>
+<li><a href="https://github.com/Wzkiie/tonalo/blob/main/SECURITY.md">Sicherheit</a></li>
+</ul>
+</div>
+</div>
+</footer>
+<dialog class="lb" id="lb"><button aria-label="Schließen" type="button">×</button><img alt=""/></dialog>
+<script src="/main.js?v=10"></script>
+<script src="/demo.js?v=3"></script>
+</body>
+</html>
