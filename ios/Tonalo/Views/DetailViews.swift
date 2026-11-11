@@ -92,6 +92,9 @@ struct AlbumView: View {
                     Menu {
                         Button { app.player.enqueue(songs) } label: { Label("Add to queue", systemImage: "text.append") }
                         Button { ui.addToPlaylist(songs) } label: { Label("Add to playlist", systemImage: "text.badge.plus") }
+                        if app.player.dj.ready {
+                            Button { app.player.dj.start(from: songs, name: album.name) } label: { Label("Start DJ with this album", systemImage: "sparkles") }
+                        }
                         if let artistId = album.artistId {
                             NavigationLink(value: Route.artist(artistId)) { Label("Go to artist", systemImage: "music.mic") }
                         }
@@ -179,6 +182,9 @@ struct PlaylistView: View {
                     Menu {
                         Button { app.player.enqueue(songs) } label: { Label("Add to queue", systemImage: "text.append") }
                         Button { ui.addToPlaylist(songs) } label: { Label("Add to other playlist", systemImage: "text.badge.plus") }
+                        if app.player.dj.ready {
+                            Button { app.player.dj.start(from: songs, name: p.name) } label: { Label("Start DJ with this playlist", systemImage: "sparkles") }
+                        }
                         if p.isOwned(by: app) {
                             Divider()
                             if p.songsEditable(by: app) {

@@ -91,6 +91,7 @@ struct SmartRadioCards: View {
 
     var body: some View {
         let song = app.player.station == nil ? app.player.current : nil
+        if app.player.dj.ready { DJCard(size: size) }
         MixCard(title: "Your radio", subtitle: "Endless, based on your favorites", icon: "dot.radiowaves.left.and.right", hue: 0.52, size: size) {
             let favorites = ((try? await app.client?.starred().song) ?? []).shuffled()
             await app.player.radio.start(String(localized: "Your radio"), seedId: favorites.first?.id, seeds: Array(favorites.prefix(8)))

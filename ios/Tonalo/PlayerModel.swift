@@ -11,7 +11,7 @@ final class PlayerModel {
 
     /// Where the queue came from, shown as "Playing from …" in the player.
     struct Context: Codable, Hashable {
-        enum Kind: String, Codable { case album, playlist, artist, favorites, search, mix, downloads, radio }
+        enum Kind: String, Codable { case album, playlist, artist, favorites, search, mix, downloads, radio, dj }
         var kind: Kind
         var id: String?
         var name: String
@@ -73,6 +73,8 @@ final class PlayerModel {
     @ObservationIgnored private let prefetcher = Prefetcher()
     /// Keeps a radio (and autoplay after the end of the queue) going with fitting songs.
     @ObservationIgnored let radio = SmartRadio()
+    /// Picks sets with an AI model the listener set up – see `DJ`.
+    let dj = DJ()
     /// The station list it was started from – next and previous switch stations.
     @ObservationIgnored private var stations: [Station] = []
     @ObservationIgnored private var stationLoad: Task<Void, Never>?
@@ -117,6 +119,7 @@ final class PlayerModel {
         }
         setupRemoteCommands()
         radio.player = self
+        dj.player = self
     }
 
     /// Time and play state always come from the player of the current song.
@@ -204,6 +207,31 @@ final class PlayerModel {
         if tvGuest { app?.notify(String(localized: "Added to the Jukebox")) }
     }
 
+    /// Everything after the current song makes way for `songs` – the DJ changing its mind.
+    func replaceUpNext(_ songs: [Song]) {
+        guard tvName == nil, queue.indices.contains(index) else { return enqueue(songs) }
+        queue.removeSubrange((index + 1)...)
+        queue.append(contentsOf: songs)
+        original = nil
+        shuffle = false
+        persist()
+        if isPlaying { preload() }
+    }
+
+    /// The DJ takes over while a song plays: that song keeps playing, what came after it makes way for the DJ's set.
+    func handToDJ(_ songs: [Song]) {
+        guard tvName == nil, station == nil, current != nil else { return }
+        context = .init(kind: .dj, name: String(localized: "DJ"))
+        replaceUpNext(songs)
+    }
+
+    /// The DJ's set stays in the queue as an ordinary mix – nothing is added to it any more.
+    func releaseDJ(name: String) {
+        guard context?.kind == .dj else { return }
+        context = .init(kind: .mix, name: name)
+        persist()
+    }
+
     func jump(to i: Int) {
         guard queue.indices.contains(i) else { return }
         if tvGuest { return hostOnly() }
@@ -238,6 +266,7 @@ final class PlayerModel {
         // What the radio learns: played to the end, or skipped within the first 30 seconds
         if let cur = current {
             if auto { radio.listened(cur) } else if position < 30, context?.kind == .radio { radio.skipped(cur) }
+            if context?.kind == .dj { if auto || position >= 30 { dj.listened(cur) } else { dj.skipped(cur) } }
         }
         guard let i = nextIndex(auto: auto) else {
             if auto, app?.autoplay == true { autoplay() } else { player.pause() }
@@ -629,6 +658,7 @@ final class PlayerModel {
         persist()
         if autoplay { preload() } // not for a queue restored on start that may never be played
         if autoplay, context?.kind == .radio { radio.refillIfNeeded() }
+        if autoplay, context?.kind == .dj { dj.refillIfNeeded() }
     }
 
     /// The queue played to its end: similar songs follow, as a radio – unless nothing fitting comes back.

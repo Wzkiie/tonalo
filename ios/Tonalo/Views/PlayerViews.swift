@@ -305,6 +305,10 @@ struct NowPlayingView: View {
                     PlaybackDeviceButton()
                     Spacer()
                 }
+                if app.player.dj.ready {
+                    DJButton()
+                    Spacer()
+                }
                 Button { showQueue = true } label: { Image(systemName: "list.bullet") }
                     .accessibilityLabel("Queue")
             }
@@ -335,7 +339,8 @@ struct NowPlayingView: View {
             Spacer()
             VStack(spacing: 2) {
                 Text(contextLabel).font(.system(size: 11, weight: .medium)).tracking(1).foregroundStyle(.white.opacity(0.75))
-                Text(app.player.context?.name ?? song.album ?? "").font(.system(size: 13, weight: .bold)).lineLimit(1)
+                // While the DJ plays, its name for the set stands here
+                Text((app.player.context?.kind == .dj ? app.player.dj.line : nil) ?? app.player.context?.name ?? song.album ?? "").font(.system(size: 13, weight: .bold)).lineLimit(1)
             }
             .onTapGesture { openContext() }
             Spacer()
@@ -358,6 +363,7 @@ struct NowPlayingView: View {
         case .downloads: String(localized: "PLAYING FROM DOWNLOADS")
         case .mix: String(localized: "PLAYING MIX")
         case .radio: String(localized: "PLAYING RADIO")
+        case .dj: String(localized: "PICKED FOR YOU")
         default: String(localized: "PLAYING FROM ALBUM")
         }
     }

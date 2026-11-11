@@ -321,6 +321,11 @@ final class TVLink {
     }
 
     func unpair(_ tv: String) {
+        // The device loses the DJ with the pairing – asked while the key that proves who asks still exists
+        if let p = pairings.first(where: { $0.tv == tv }), let device = pool.first(where: { $0.id == tv }), djShared[tv] != nil {
+            Task { _ = await sendDJ(nil, to: device, p) }
+            djShared[tv] = nil
+        }
         pairings.removeAll { $0.tv == tv }
         savePairings()
         if jukebox == tv { jukebox = nil }
@@ -486,6 +491,7 @@ final class TVLink {
             if !guest, s.jukebox != true {
                 // Several own devices are followed at once: this one is shown while it plays, or while nothing else does
                 let active = (s.active && s.playing == true) || (s.book?.id != nil && s.book?.playing == true)
+                if self.activity[device.id] == nil { self.syncDJ() } // just connected: it gets the DJ, if that is shared
                 self.activity[device.id] = active
                 if let p = self.primary, p != device.id, !(active && self.activity[p] != true) { return }
                 if self.primary != device.id {
@@ -630,6 +636,59 @@ final class TVLink {
                 checking.remove(key)
             }
         }
+    }
+
+    // MARK: DJ on paired devices
+
+    /// Which device has which DJ setup from this phone (a fingerprint, never the key): nothing is sent twice,
+    /// and a setup removed on the TV itself isn't pushed back until something changes here.
+    private var djShared: [String: String] {
+        get { UserDefaults.standard.dictionary(forKey: "dj.shared") as? [String: String] ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: "dj.shared") }
+    }
+    @ObservationIgnored private var djSync: Task<Void, Never>?
+
+    /// Brings the own devices that are connected right now up to date: they get the DJ setup, or lose it.
+    /// Only devices paired with this account as its own – never a Jukebox, never another iPhone, and not
+    /// while someone else is signed in there.
+    func syncDJ() {
+        djSync?.cancel()
+        djSync = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.5)) // a model name being typed isn't sent letter by letter
+            guard !Task.isCancelled, let self else { return }
+            let setup = self.app?.player.dj.shared
+            for id in self.listeners.keys {
+                guard let device = self.pool.first(where: { $0.id == id }), !device.isPhone, let pairing = self.pairing(for: device),
+                      pairing.guest != true, !self.guestOnly.contains(id), self.activity[id] != nil else { continue }
+                let mark = setup.map { Self.fingerprint($0, pairing) }
+                if self.djShared[id] == mark { continue }
+                guard await self.sendDJ(setup, to: device, pairing), !Task.isCancelled else { continue }
+                self.djShared[id] = mark
+            }
+        }
+    }
+
+    private static func fingerprint(_ setup: [String: String], _ pairing: Pairing) -> String {
+        let text = setup.sorted { $0.key < $1.key }.map { $0.key + "=" + $0.value }.joined(separator: "\n") + "\n" + pairing.keyId
+        return Data(SHA256.hash(data: Data(text.utf8))).hex
+    }
+
+    /// One setup for one device, or nil to take it away. The link itself is only signed, so the content is sealed
+    /// (AES-GCM) with a key derived from the pairing's – a key for a provider must not be readable in the Wi-Fi.
+    private func sendDJ(_ setup: [String: String]?, to found: Device, _ pairing: Pairing) async -> Bool {
+        guard let key = Data(hex: pairing.key) else { return false }
+        let plain: Data? = if let setup { try? JSONSerialization.data(withJSONObject: setup) } else { Data(#"{"off":true}"#.utf8) }
+        let sealKey = SymmetricKey(data: Data(HMAC<SHA256>.authenticationCode(for: Data("tonalo-dj".utf8), using: SymmetricKey(data: key))))
+        guard let plain, let box = try? AES.GCM.seal(plain, using: sealKey, authenticating: Data(pairing.keyId.utf8)).combined,
+              let body = try? JSONSerialization.data(withJSONObject: ["box": box.hex]) else { return false }
+        let device = devices.first { $0.id == found.id } ?? found
+        for _ in 0..<2 {
+            let auth = LinkHTTP.authorization("POST", "/dj", body: body, keyId: pairing.keyId, key: key, offset: clockOffset[pairing.tv] ?? 0)
+            let answer = try? await LinkHTTP.request(device.endpoint, "POST", "/dj", body: body, headers: ["Authorization": auth])
+            if answer?.status == 200 { return true }
+            guard answer?.status == 401, learnClock(answer?.body, pairing.tv) else { return false }
+        }
+        return false
     }
 
     // MARK: Commands

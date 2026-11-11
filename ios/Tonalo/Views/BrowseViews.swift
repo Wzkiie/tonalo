@@ -117,8 +117,11 @@ struct HomeView: View {
     private var quickGrid: some View {
         let recent = sections.first { $0.id == "recent" }?.albums ?? sections.first?.albums ?? []
         let items: [QuickItem] = [.favorites] + playlists.prefix(3).map { .playlist($0) } + recent.map { .album($0) }
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-            ForEach(items.prefix(8)) { QuickTile(item: $0) }
+        return VStack(spacing: 8) {
+            if app.player.dj.ready { DJHomeTile() }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                ForEach(items.prefix(8)) { QuickTile(item: $0) }
+            }
         }
         .padding(.horizontal, 16)
     }
@@ -611,9 +614,10 @@ struct LibraryView: View {
 
     /// One entry of the library, whatever it is. Of the books, the ones with a heart.
     enum Item: Identifiable {
-        case favorites, downloads, playlist(Playlist), album(Album), artist(Artist), book(ABSItem, added: String), author(ABSAuthor, added: String)
+        case dj, favorites, downloads, playlist(Playlist), album(Album), artist(Artist), book(ABSItem, added: String), author(ABSAuthor, added: String)
         var id: String {
             switch self {
+            case .dj: "dj"
             case .favorites: "favorites"
             case .downloads: "downloads"
             case .playlist(let p): "p" + p.id
@@ -625,7 +629,7 @@ struct LibraryView: View {
         }
         var name: String {
             switch self {
-            case .favorites, .downloads: ""
+            case .dj, .favorites, .downloads: ""
             case .playlist(let p): p.name
             case .album(let a): a.name
             case .artist(let a): a.name
@@ -654,7 +658,7 @@ struct LibraryView: View {
             default: ""
             }
         }
-        var pinned: Bool { if case .favorites = self { true } else if case .downloads = self { true } else { false } }
+        var pinned: Bool { if case .dj = self { true } else if case .favorites = self { true } else if case .downloads = self { true } else { false } }
     }
 
     var body: some View {
@@ -862,7 +866,8 @@ struct LibraryView: View {
         var rest: [Item]
         switch filter {
         case nil:
-            pinned = hasMusic ? [.favorites] : []
+            // The DJ is part of the library for people who turned it on
+            pinned = hasMusic ? (app.player.dj.ready && app.isOnline ? [.dj] : []) + [.favorites] : []
             rest = hasMusic ? playlists.map(Item.playlist) + (starred?.album ?? []).map(Item.album) + (starred?.artist ?? []).map(Item.artist) : []
             rest += bookItems { _ in true } + authorItems
         case .playlists:
@@ -945,6 +950,7 @@ struct LibraryView: View {
 
     private func route(_ item: Item) -> Route {
         switch item {
+        case .dj: .dj
         case .favorites: .favorites
         case .downloads: .downloads
         case .playlist(let p): .playlist(p.id)
@@ -957,6 +963,7 @@ struct LibraryView: View {
 
     private func subtitle(_ item: Item) -> String {
         switch item {
+        case .dj: app.player.context?.kind == .dj && app.player.isPlaying ? app.player.dj.line ?? String(localized: "Playing now") : String(localized: "Sets picked from your library")
         case .favorites:
             filter == .downloads
                 ? String(localized: "\(downloadedFavorites) of \(starred?.song?.count ?? 0) downloaded")
@@ -985,6 +992,7 @@ struct LibraryView: View {
 
     private func title(_ item: Item) -> String {
         switch item {
+        case .dj: "DJ"
         case .favorites: String(localized: "Favorite songs")
         case .downloads: String(localized: "Downloads")
         default: item.name
@@ -993,6 +1001,7 @@ struct LibraryView: View {
 
     @ViewBuilder private func art(_ item: Item, size: Int) -> some View {
         switch item {
+        case .dj: DJArt()
         case .favorites: FavoritesArt()
         case .downloads: DownloadsArt()
         case .playlist(let p): CoverView(id: p.coverArt ?? p.id, size: size, corner: 2)
@@ -1007,12 +1016,23 @@ struct LibraryView: View {
         }
     }
 
-    private func row(_ item: Item) -> some View {
-        NavigationLink(value: route(item)) {
-            ItemRow(title: title(item), subtitle: subtitle(item), pinned: isPinned(item), download: download(item)) { art(item, size: 160) }
+    /// Everything opens its page – only the DJ starts playing.
+    @ViewBuilder private func link(_ item: Item, @ViewBuilder label: @escaping () -> some View) -> some View {
+        if case .dj = item {
+            DJStarter(label: label)
+                .contextMenu { NavigationLink(value: Route.dj) { Label("DJ settings", systemImage: "gearshape") } }
+        } else {
+            NavigationLink(value: route(item), label: label)
+                .buttonStyle(.plain)
+                .contextMenu { pinMenu(item); bookMenu(item) }
         }
-        .buttonStyle(.plain)
-        .contextMenu { pinMenu(item); bookMenu(item) }
+    }
+
+    private func row(_ item: Item) -> some View {
+        link(item) {
+            ItemRow(title: title(item), subtitle: subtitle(item), pinned: isPinned(item), download: download(item)) { art(item, size: 160) }
+                .contentShape(Rectangle())
+        }
         .transition(.opacity)
     }
 
@@ -1031,7 +1051,7 @@ struct LibraryView: View {
     }
 
     private func tile(_ item: Item) -> some View {
-        NavigationLink(value: route(item)) {
+        link(item) {
             VStack(alignment: .leading, spacing: 6) {
                 art(item, size: 300).aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity)
                 Text(title(item)).font(.system(size: 14, weight: .semibold)).lineLimit(1)
@@ -1043,8 +1063,6 @@ struct LibraryView: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .contextMenu { pinMenu(item); bookMenu(item) }
         .transition(.opacity)
     }
 

@@ -146,6 +146,69 @@ final class AppModel {
                 if ProcessInfo.processInfo.arguments.contains("-demoRadioLow") { player.jump(to: player.queue.count - 3) }
             }
         }
+        // Test hook: -demoDJ <ollama address> sets the DJ up against tools/dj_mock.js and starts it;
+        // -demoDJChange more|mood|<wish> steers it a few seconds later. Debug builds only – never a key.
+        if let address = arg("-demoDJ") {
+            let dj = player.dj
+            dj.provider = .ollama
+            dj.ollamaAddress = address
+            dj.model = "mock:latest"
+            dj.setEnabled(true)
+            Task {
+                if args.contains("-demoDJTake"), let songs = try? await client?.randomSongs(6) {
+                    // -demoDJTake: something else plays, then the DJ takes over as the symbol in the player does
+                    player.play(songs, context: .init(kind: .mix, name: "Demo"))
+                    try? await Task.sleep(for: .seconds(2))
+                    let problem = await dj.takeOver()
+                    NSLog("DJ take: %@ – current kept %d, queue %ld, context %@", problem ?? "ok", player.current?.id == songs[0].id ? 1 : 0, player.queue.count, player.context?.kind.rawValue ?? "-")
+                    return
+                }
+                if args.contains("-demoDJFrom"), let album = try? await client?.albumList("random", size: 1).first, let full = try? await client?.album(album.id) {
+                    // -demoDJFrom: start from a random album instead, as the album menu does
+                    dj.start(from: full.song ?? [], name: full.name)
+                    try? await Task.sleep(for: .seconds(6))
+                    NSLog("DJ from %@: queue %ld, first %@, line %@", full.name, player.queue.count, player.queue.first?.title ?? "-", dj.line ?? "-")
+                    return
+                }
+                if let problem = await dj.start(wish: arg("-demoDJWish")) { notify(problem); NSLog("DJ: %@", problem) }
+                // -demoDJLow: jump near the end of the set, so the DJ has to ask for the next one
+                if args.contains("-demoDJLow") {
+                    player.jump(to: player.queue.count - 3)
+                    try? await Task.sleep(for: .seconds(5))
+                    NSLog("DJ low: queue %ld, context %@", player.queue.count, player.context?.kind.rawValue ?? "-")
+                }
+                if let how = arg("-demoDJChange") {
+                    try? await Task.sleep(for: .seconds(4))
+                    let problem = await dj.change(how == "more" ? .more : how == "mood" ? .mood : .wish(how))
+                    NSLog("DJ change: %@ upNext %ld line %@", problem ?? "ok", player.upNext.count, dj.line ?? "-")
+                }
+            }
+        }
+        // Test hook: -demoPairDJ <url> pairs with the first computer found (the url answers with the code its screen shows)
+        // and shares a DJ set up against tools/dj_mock.js with it – the whole way a key would take, without one.
+        if let helper = arg("-demoPairDJ"), let url = URL(string: helper) {
+            let dj = player.dj
+            dj.provider = .ollama
+            dj.ollamaAddress = "localhost:11435"
+            dj.model = "mock:latest"
+            dj.setEnabled(true)
+            dj.shareWithDevices = true
+            Task {
+                for _ in 0..<30 {
+                    try? await Task.sleep(for: .seconds(1))
+                    guard let pc = tv.devices.first(where: { $0.isPC }) else { continue }
+                    if tv.pairing(for: pc) == nil {
+                        let started = await tv.startPairing(pc, guest: false)
+                        try? await Task.sleep(for: .seconds(1.5))
+                        let code = (try? await URLSession.shared.data(from: url)).map { String(decoding: $0.0, as: UTF8.self) } ?? ""
+                        let result = await tv.finishPairing(pc, code: code, guest: false)
+                        NSLog("DJ pair: start %ld, result %@", started, String(describing: result))
+                    } else { NSLog("DJ pair: already paired with %@", pc.name) }
+                    return
+                }
+                NSLog("DJ pair: no computer found")
+            }
+        }
         // Test hook: -demoQueue fills an empty queue with a few songs, paused – for testing the watch silently
         if ProcessInfo.processInfo.arguments.contains("-demoQueue"), player.current == nil, let client {
             Task { if let songs = try? await client.randomSongs(8) { player.cue(songs, context: .init(kind: .mix, name: "Demo")) } }

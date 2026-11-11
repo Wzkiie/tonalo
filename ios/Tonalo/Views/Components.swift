@@ -138,6 +138,9 @@ struct SongMenuItems: View {
         Button { app.player.enqueue([song]) } label: { Label("Add to queue", systemImage: "text.append") }
         Button { ui.addToPlaylist([song]) } label: { Label("Add to playlist", systemImage: "text.badge.plus") }
         Button { startRadio() } label: { Label("Start song radio", systemImage: "dot.radiowaves.left.and.right") }
+        if app.player.dj.ready {
+            Button { app.player.dj.start(from: [song], name: song.title) } label: { Label("Start DJ from here", systemImage: "sparkles") }
+        }
         if app.downloads.isDownloaded(song.id) {
             Button(role: .destructive) { app.downloads.remove([song.id]) } label: { Label("Remove download", systemImage: "trash") }
         } else if app.downloads.index.queued[song.id] != nil {

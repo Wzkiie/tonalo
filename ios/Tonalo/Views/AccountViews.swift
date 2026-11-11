@@ -627,6 +627,7 @@ struct SettingsView: View {
                     if hasMusic {
                         NavigationLink("Audio quality") { AudioQualitySettings().canvasBackground() }
                         NavigationLink("Playback") { PlaybackSettings().canvasBackground() }
+                        NavigationLink("DJ") { DJSettingsView().canvasBackground() }
                         NavigationLink("Offline") { OfflineSettings().canvasBackground() }
                         NavigationLink { DevicesView().canvasBackground() } label: {
                             LabeledContent("Devices", value: app.tv.pairings.first { $0.guest != true }?.name ?? String(localized: "Not connected"))

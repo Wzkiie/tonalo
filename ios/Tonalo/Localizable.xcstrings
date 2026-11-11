@@ -5520,6 +5520,716 @@
           }
         }
       }
+    },
+    "A wish, e.g. calm for the evening" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Wunsch, z. B. ruhig für den Abend"
+          }
+        }
+      }
+    },
+    "API key" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API-Schlüssel"
+          }
+        }
+      }
+    },
+    "Address, e.g. 192.168.1.20:11434" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse, z. B. 192.168.1.20:11434"
+          }
+        }
+      }
+    },
+    "Agree and turn on" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zustimmen und einschalten"
+          }
+        }
+      }
+    },
+    "An AI model of your choice picks sets from your own library and puts them in order. It never talks. Off until you turn it on." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein KI-Modell deiner Wahl stellt Sets aus deiner eigenen Bibliothek zusammen und bringt sie in eine Reihenfolge. Es spricht nie. Aus, bis du es einschaltest."
+          }
+        }
+      }
+    },
+    "Change" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändern"
+          }
+        }
+      }
+    },
+    "Choose" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswählen"
+          }
+        }
+      }
+    },
+    "DJ" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ"
+          }
+        }
+      }
+    },
+    "Delete key" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schlüssel löschen"
+          }
+        }
+      }
+    },
+    "For every set, Tonalo sends title, artist, album, genre, year and the favorite mark of about 150 of your songs, plus your wish, directly from this iPhone to %@. What happens to it there follows that provider's terms. Tonalo itself receives nothing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für jedes Set sendet Tonalo Titel, Künstler, Album, Genre, Jahr und Favoriten-Markierung von rund 150 deiner Songs sowie deinen Wunsch direkt von diesem iPhone an %@. Was dort damit geschieht, richtet sich nach den Bedingungen dieses Anbieters. Tonalo selbst erhält nichts."
+          }
+        }
+      }
+    },
+    "Larger models choose better and cost more per set." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Größere Modelle wählen besser aus und kosten pro Set mehr."
+          }
+        }
+      }
+    },
+    "Load models" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modelle laden"
+          }
+        }
+      }
+    },
+    "Model" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modell"
+          }
+        }
+      }
+    },
+    "Model name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modellname"
+          }
+        }
+      }
+    },
+    "More like this" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr davon"
+          }
+        }
+      }
+    },
+    "Needs a key from Google AI Studio. The song list goes to generativelanguage.googleapis.com." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Braucht einen Schlüssel aus Google AI Studio. Die Songliste geht an generativelanguage.googleapis.com."
+          }
+        }
+      }
+    },
+    "Needs a key from the Claude Console. The song list goes to api.anthropic.com. You pay the provider per request." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Braucht einen Schlüssel aus der Claude Console. Die Songliste geht an api.anthropic.com. Du zahlst pro Anfrage an den Anbieter."
+          }
+        }
+      }
+    },
+    "No models found." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Modelle gefunden."
+          }
+        }
+      }
+    },
+    "No songs found to choose from." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Songs zur Auswahl gefunden."
+          }
+        }
+      }
+    },
+    "Ollama (your own computer)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ollama (dein eigener Rechner)"
+          }
+        }
+      }
+    },
+    "Ollama's hosted models. Needs a key from ollama.com. The song list goes to ollama.com." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modelle, die Ollama betreibt. Braucht einen Schlüssel von ollama.com. Die Songliste geht an ollama.com."
+          }
+        }
+      }
+    },
+    "PICKED FOR YOU" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FÜR DICH AUSGEWÄHLT"
+          }
+        }
+      }
+    },
+    "Provider" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbieter"
+          }
+        }
+      }
+    },
+    "Runs on your own computer. Nothing leaves your network – the most private choice." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Läuft auf deinem eigenen Rechner. Nichts verlässt dein Netzwerk – die privateste Wahl."
+          }
+        }
+      }
+    },
+    "Save key" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schlüssel speichern"
+          }
+        }
+      }
+    },
+    "Send song details to %@?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songdaten an %@ senden?"
+          }
+        }
+      }
+    },
+    "Sent per set: title, artist, album, genre, year and the favorite mark of about 150 songs, the last few songs the DJ played, and your wish if you type one. Never sent: your server address, your login, covers, your listening history or anything about audiobooks. At most 20 requests an hour." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro Set gesendet: Titel, Künstler, Album, Genre, Jahr und Favoriten-Markierung von rund 150 Songs, die letzten Songs, die der DJ gespielt hat, und dein Wunsch, falls du einen eintippst. Nie gesendet: deine Serveradresse, deine Anmeldung, Cover, dein Hörverlauf oder irgendetwas zu Hörbüchern. Höchstens 20 Anfragen pro Stunde."
+          }
+        }
+      }
+    },
+    "Set up the DJ in the settings first." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richte den DJ zuerst in den Einstellungen ein."
+          }
+        }
+      }
+    },
+    "Sets picked from your library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sets aus deiner Bibliothek"
+          }
+        }
+      }
+    },
+    "Show what is sent" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeigen, was gesendet wird"
+          }
+        }
+      }
+    },
+    "Test" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Testen"
+          }
+        }
+      }
+    },
+    "The DJ can't be reached right now." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der DJ ist gerade nicht erreichbar."
+          }
+        }
+      }
+    },
+    "The DJ takes a short break – too many requests in the last hour." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der DJ macht kurz Pause – zu viele Anfragen in der letzten Stunde."
+          }
+        }
+      }
+    },
+    "The DJ's answer couldn't be used." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Antwort des DJs war nicht brauchbar."
+          }
+        }
+      }
+    },
+    "The key couldn't be saved." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Schlüssel konnte nicht gespeichert werden."
+          }
+        }
+      }
+    },
+    "The key was not accepted." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Schlüssel wurde nicht angenommen."
+          }
+        }
+      }
+    },
+    "The provider answered with error %lld." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Anbieter hat mit Fehler %lld geantwortet."
+          }
+        }
+      }
+    },
+    "The provider declined this request." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Anbieter hat diese Anfrage abgelehnt."
+          }
+        }
+      }
+    },
+    "This address can't be used. Outside your home network it has to start with https." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Adresse geht nicht. Außerhalb deines Heimnetzes muss sie mit https beginnen."
+          }
+        }
+      }
+    },
+    "What is sent" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was gesendet wird"
+          }
+        }
+      }
+    },
+    "Who picks the songs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wer die Songs auswählt"
+          }
+        }
+      }
+    },
+    "Works: %lld songs picked." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funktioniert: %lld Songs ausgewählt."
+          }
+        }
+      }
+    },
+    "Your key is stored in the keychain of this iPhone only. It is not synced, not shown again, and only ever sent to %@. Tip: create a key just for Tonalo and set a spending limit with the provider." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Schlüssel liegt nur im Schlüsselbund dieses iPhones. Er wird nicht synchronisiert, nicht wieder angezeigt und nur an %@ gesendet. Tipp: Lege einen Schlüssel nur für Tonalo an und setze beim Anbieter ein Ausgabenlimit."
+          }
+        }
+      }
+    },
+    "your Ollama server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dein Ollama-Server"
+          }
+        }
+      }
+    },
+    "The answer was empty." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Antwort war leer."
+          }
+        }
+      }
+    },
+    "%lld usable songs. The model wrote: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld brauchbare Songs. Das Modell schrieb: %@"
+          }
+        }
+      }
+    },
+    "Start DJ from here" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ ab hier starten"
+          }
+        }
+      }
+    },
+    "Start DJ with this album" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ mit diesem Album starten"
+          }
+        }
+      }
+    },
+    "Start DJ with this playlist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ mit dieser Playlist starten"
+          }
+        }
+      }
+    },
+    "The DJ can't be reached – the radio continues." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der DJ ist nicht erreichbar – das Radio spielt weiter."
+          }
+        }
+      }
+    },
+    "The DJ takes over" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der DJ übernimmt"
+          }
+        }
+      }
+    },
+    "Calmer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruhiger"
+          }
+        }
+      }
+    },
+    "More energy" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr Energie"
+          }
+        }
+      }
+    },
+    "Older" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Älter"
+          }
+        }
+      }
+    },
+    "Newer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer"
+          }
+        }
+      }
+    },
+    "Favorites only" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur Favoriten"
+          }
+        }
+      }
+    },
+    "is choosing…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "wählt aus…"
+          }
+        }
+      }
+    },
+    "Steer the DJ" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ lenken"
+          }
+        }
+      }
+    },
+    "Something else" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etwas anderes"
+          }
+        }
+      }
+    },
+    "Send wish" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wunsch senden"
+          }
+        }
+      }
+    },
+    "Stop the DJ" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ beenden"
+          }
+        }
+      }
+    },
+    "Replaces the songs after the current one. Wishes go to %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ersetzt die Songs nach dem aktuellen. Wünsche gehen an %@."
+          }
+        }
+      }
+    },
+    "Playing now" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Läuft gerade"
+          }
+        }
+      }
+    },
+    "DJ settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ-Einstellungen"
+          }
+        }
+      }
+    },
+    "Use on paired devices" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf gekoppelten Geräten nutzen"
+          }
+        }
+      }
+    },
+    "Your own TV and computers paired with this account get the DJ too. Turned off, they lose it again the next time they are connected." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein eigener Fernseher und deine Computer, die mit diesem Konto gekoppelt sind, bekommen den DJ auch. Ausgeschaltet verlieren sie ihn wieder, sobald sie das nächste Mal verbunden sind."
+          }
+        }
+      }
+    },
+    "Your key is stored in the keychain of this iPhone and on your paired devices. It is not shown again, and only ever sent to %@. Tip: create a key just for Tonalo and set a spending limit with the provider." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Schlüssel liegt im Schlüsselbund dieses iPhones und auf deinen gekoppelten Geräten. Er wird nicht wieder angezeigt und geht nur an %@. Tipp: Lege einen Schlüssel nur für Tonalo an und setze beim Anbieter ein Ausgabenlimit."
+          }
+        }
+      }
+    },
+    "Use the DJ on your paired devices?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ auf deinen gekoppelten Geräten nutzen?"
+          }
+        }
+      }
+    },
+    "Share" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilen"
+          }
+        }
+      }
+    },
+    "Provider, model and your key go to the TVs and computers paired with this account, encrypted, and only inside your home network. They then send song details to %@ themselves. On a computer the key is kept in the system's protected storage; an LG TV has none, there it lies in the app's storage." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbieter, Modell und dein Schlüssel gehen verschlüsselt und nur im Heimnetz an die Fernseher und Computer, die mit diesem Konto gekoppelt sind. Sie schicken die Songdetails dann selbst an %@. Auf einem Computer liegt der Schlüssel im geschützten Speicher des Systems; ein LG-Fernseher hat keinen, dort liegt er im Speicher der App."
+          }
+        }
+      }
+    },
+    "Provider, model and the address of your Ollama server go to the TVs and computers paired with this account. They then send song details to %@ themselves." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbieter, Modell und die Adresse deines Ollama-Servers gehen an die Fernseher und Computer, die mit diesem Konto gekoppelt sind. Sie schicken die Songdetails dann selbst an %@."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

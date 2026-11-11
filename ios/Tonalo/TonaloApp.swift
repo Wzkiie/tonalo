@@ -52,6 +52,7 @@ enum Route: Hashable {
     case settings
     case devices
     case jukebox
+    case dj
     case audiobook(String)
     case bookAuthor(id: String, name: String)
     case bookSeries(id: String, name: String, library: String?)
@@ -83,6 +84,7 @@ extension View {
             case .settings: SettingsView()
             case .devices: DevicesView()
             case .jukebox: JukeboxView()
+            case .dj: DJSettingsView()
             } }
             .canvasBackground()
         }
@@ -169,6 +171,9 @@ struct RootView: View {
                 }
             }
             if args[i + 1] == "jukebox" { debugJukebox = true }
+            if args[i + 1] == "dj" { paths[0].append(Route.dj) }
+            if args[i + 1] == "djsheet" { showNowPlaying = true }
+            if args[i + 1] == "library" { tab = 2 }
             if args[i + 1].hasPrefix("artist:") { paths[0].append(Route.artist(String(args[i + 1].dropFirst(7)))) }
             if args[i + 1] == "download", let first = try? await app.client?.playlists().first,
                let list = try? await app.client?.playlist(first.id) {

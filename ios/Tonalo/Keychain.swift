@@ -24,6 +24,15 @@ enum Keychain {
         return SecItemAdd(query.merging(values) { $1 } as CFDictionary, nil) == errSecSuccess
     }
 
+    static func delete(key: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+
     static func load<T: Decodable>(_ type: T.Type, key: String) -> T? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
