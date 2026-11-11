@@ -38,6 +38,7 @@ var Player = (function () {
   }
   function position() { return station ? (audio.currentTime || 0) : offset + (audio.currentTime || 0); }
   function radioOn() { return typeof Radio !== 'undefined'; }
+  function djPlays() { return !!context && context.kind === 'dj' && typeof DJ !== 'undefined'; }
 
   // Lautstärke angleichen (ReplayGain-Tags) und Ausblenden beim Sleep-Timer
   function applyVolume() {
@@ -68,6 +69,7 @@ var Player = (function () {
     if (ni < 0) return;
     var cur = current();
     if (cur && radioOn()) Radio.listened(cur);
+    if (cur && djPlays()) DJ.listened(cur);
     var from = audio, fromIndex = index, fromVol = from.volume, t0 = Date.now(), started = false;
     audio = players[from === players[0] ? 1 : 0];
     index = ni;
@@ -188,6 +190,7 @@ var Player = (function () {
     emit('track', s);
     persist();
     if (context && context.kind === 'radio' && radioOn()) Radio.refillIfNeeded();
+    if (autoplay !== false && djPlays()) DJ.refillIfNeeded();
   }
 
   function playList(songs, start, opts) {
@@ -231,6 +234,18 @@ var Player = (function () {
     if (!quiet) U.toast(T.n(songs.length, 'Zur Warteschlange hinzugefügt', '{n} Songs hinzugefügt'));
   }
 
+  // Der DJ überlegt es sich anders: alles nach dem laufenden Song macht Platz für songs.
+  // Mit ctx übernimmt er eine Warteschlange, die von woanders kam.
+  function replaceUpNext(songs, ctx) {
+    songs = U.asArray(songs);
+    if (!queue.length || index < 0) return playList(songs, 0, { context: ctx || context });
+    queue = queue.slice(0, index + 1).concat(songs);
+    original = null;
+    shuffleOn = false;
+    if (ctx) context = ctx;
+    emit('queue', queue); emit('mode'); persist();
+  }
+
   // Einen kommenden Song an eine andere Stelle schieben (beide Stellen nach dem laufenden Song)
   function move(from, to) {
     if (from === to || from <= index || to <= index || from >= queue.length || to >= queue.length) return;
@@ -265,6 +280,8 @@ var Player = (function () {
       if (auto) Radio.listened(cur);
       else if (context && context.kind === 'radio' && position() < 30) Radio.skipped(cur);
     }
+    // Der DJ ebenso: was lief, kommt nicht gleich wieder, und übersprungene Künstler meidet er
+    if (cur && djPlays()) { if (auto) DJ.listened(cur); else if (position() < 30) DJ.skipped(cur); }
     if (auto && sleepEnd) {
       sleepDone();
       if (index < queue.length - 1) { index++; load(0, false); emit('queue', queue); }
@@ -581,6 +598,12 @@ var Player = (function () {
 
   return {
     on: on,
+    // Am PC: die Adresse des Servers hat gewechselt (Heimnetz verlassen) – der laufende Song kommt von der alten und reißt ab
+    addressChanged: function () {
+      var s = current();
+      if (!s || station || !audio.src || audio.src.indexOf(API.base() + '/') === 0) return;
+      load(position(), !audio.paused);
+    },
     playList: playList,
     playNext: playNext,
     enqueue: enqueue,
@@ -617,6 +640,10 @@ var Player = (function () {
     volume: function () { return master; },
     setVolume: function (v) { master = Math.max(0, Math.min(1, +v || 0)); U.store.set('volume', master); applyVolume(); emit('volume'); },
     context: function () { return context; },
+    setContext: function (c) { context = c || null; emit('mode'); persist(); },
+    replaceUpNext: replaceUpNext,
+    // Etwas außerhalb des Players hat sich geändert, das die Ansichten zeigen (der Name des DJ-Sets)
+    touch: function () { emit('mode'); },
     playStation: playStation,
     stopStation: stopStation,
     station: function () { return station; },

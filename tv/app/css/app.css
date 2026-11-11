@@ -176,6 +176,9 @@ html.desktop #btn-back { display: inline-flex; }
 .tile-art.liked { background: #1f3d7a; color: var(--accent-hi); }
 .tile-art.mix { background: #2a2a2a; color: var(--accent); }
 .tile-art.queue { background: #503750; }
+.tile-art.dj { background: linear-gradient(135deg, #343a44, #1c1f24); color: var(--accent); }
+.icon-btn.dj-busy .ic { animation: dj-pulse 1.2s ease-in-out infinite; }
+@keyframes dj-pulse { 50% { opacity: .35; } }
 
 /* ---------- Kopfbereich (Album / Playlist / Künstler) ---------- */
 .hero { display: flex; align-items: flex-end; padding: 30px 0 32px; }

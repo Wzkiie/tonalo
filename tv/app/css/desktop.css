@@ -54,3 +54,9 @@ html.desktop #main.mini-on #sidebar, html.desktop #main.mini-on #content { botto
 .hdr-actions { display: flex; gap: 12px; margin-top: 16px; }
 .hdr-actions .btn { flex: 1 1 0; min-width: 0; height: 56px; padding: 0 8px; justify-content: center; font-size: 18px; }
 .hdr-hint { margin: 16px 0 0; font-size: 18px; line-height: 1.4; }
+/* … und nachträglich in den Einstellungen */
+.hdr-modal { width: 860px; }
+.hdr-body { padding: 0 18px 14px; }
+.hdr-body .hdr-row input { flex: 1 1 0; min-width: 0; height: 60px; padding: 0 12px; font-size: 19px; border-radius: 6px; background: #fff; color: #000; }
+.hdr-body .hdr-row input.hdr-name { flex-grow: 1.4; }
+.hdr-body .msg { margin-top: 12px; min-height: 26px; font-size: 19px; }

@@ -3,7 +3,11 @@ var API = (function () {
   'use strict';
   var CLIENT = U.desktop ? 'Tonalo-Windows' : 'Tonalo'; // daran erkennen die anderen Geräte, woher eine Warteschlange kommt
   var VERSION = '1.16.1';
-  var cfg = null; // {url, user, token, salt}
+  var cfg = null; // {url, user, token, salt, alt?}
+  // Am PC kann ein Konto zwei Adressen haben (cfg.alt): eine im Heimnetz, eine von außen. Die im Heimnetz wird nur benutzt,
+  // solange geprüft ist, dass dort derselbe Server antwortet (Desktop.checkRoute) – sonst geht alles an die von außen.
+  var home = false;
+  var onRouteLost = null;
 
   // Adressen, die es nur im Heimnetz gibt (private IPs, localhost, .local …)
   function isLocal(u) {
@@ -22,6 +26,34 @@ var API = (function () {
     // Ohne Angabe: im Heimnetz http, sonst https – damit Zugangsdaten nicht unverschlüsselt durchs Internet gehen
     if (!/^https?:\/\//i.test(u)) u = (isLocal(u) ? 'http://' : 'https://') + u;
     return u.replace(/\/+$/, '').replace(/\/rest$/, '');
+  }
+
+  // Welche der beiden Adressen die im Heimnetz ist. null: nur eine Adresse, oder beide von derselben Art.
+  function routes(c) {
+    c = c || cfg;
+    if (!c || !c.alt) return null;
+    var a = isLocal(c.url), b = isLocal(c.alt);
+    if (a === b) return null;
+    return a ? { home: c.url, outside: c.alt } : { home: c.alt, outside: c.url };
+  }
+  function base() {
+    var r = routes();
+    return r ? (home ? r.home : r.outside) : cfg.url;
+  }
+
+  // Wer an einer Adresse antwortet, ohne die Anmeldung zu schicken: "typ|version", oder null
+  function identity(b) {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 3000);
+    return fetch(b + '/rest/ping?v=' + VERSION + '&c=' + CLIENT + '&f=json', { signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) {
+        if (String(r.headers.get('content-type') || '').indexOf('json') < 0) return null;
+        return r.json();
+      }).then(function (j) {
+        clearTimeout(timer);
+        var res = j && j['subsonic-response'];
+        return res && res.type ? res.type + '|' + (res.serverVersion || '') : null;
+      }, function () { clearTimeout(timer); return null; });
   }
 
   function randSalt() {
@@ -48,18 +80,26 @@ var API = (function () {
     return parts.join('&');
   }
 
-  function url(method, params) { return cfg.url + '/rest/' + method + '?' + qs(params); }
+  function url(method, params) { return base() + '/rest/' + method + '?' + qs(params); }
 
   // post: Parameter im Formular statt in der Adresse – für lange Listen (ganze Warteschlange), Navidrome kann das ("formPost")
-  function call(method, params, timeoutMs, post) {
+  function call(method, params, timeoutMs, post, again) {
     if (!cfg) return Promise.reject(new Error(T('Nicht angemeldet')));
+    var mine = cfg, viaHome = home && !!routes();
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, timeoutMs || 20000);
     var req = post
-      ? fetch(cfg.url + '/rest/' + method, { method: 'POST', body: qs(params), signal: ctrl ? ctrl.signal : undefined,
+      ? fetch(base() + '/rest/' + method, { method: 'POST', body: qs(params), signal: ctrl ? ctrl.signal : undefined,
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
       : fetch(url(method, params), { signal: ctrl ? ctrl.signal : undefined });
     return req
+      .catch(function (err) {
+        // Die Heimadresse antwortet nicht mehr (Netz gewechselt): sofort nach außen, und dieselbe Anfrage noch einmal dorthin
+        if (!viaHome || again || cfg !== mine || (err && err.name === 'AbortError')) throw err;
+        clearTimeout(timer);
+        if (home) { home = false; if (onRouteLost) onRouteLost(); }
+        return call(method, params, timeoutMs, post, true).then(function (res) { var e = new Error('again'); e.again = res; throw e; });
+      })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
@@ -76,12 +116,13 @@ var API = (function () {
         return res;
       }, function (err) {
         clearTimeout(timer);
+        if (err && err.again) return err.again;
         if (err && err.name === 'AbortError') throw new Error(T('Zeitüberschreitung – Server nicht erreichbar'));
         throw err;
       });
   }
 
-  function setConfig(c) { cfg = c; }
+  function setConfig(c) { cfg = c; home = false; }
   function getConfig() { return cfg; }
 
   function cover(id, size) {
@@ -100,7 +141,10 @@ var API = (function () {
 
   return {
     client: CLIENT,
-    normalizeUrl: normalizeUrl,
+    normalizeUrl: normalizeUrl, isLocal: isLocal,
+    routes: routes, base: function () { return cfg ? base() : ''; }, identity: identity,
+    atHome: function () { return home && !!routes(); }, setHome: function (v) { home = !!v; },
+    onRouteLost: function (fn) { onRouteLost = fn; },
     makeCreds: makeCreds,
     setConfig: setConfig,
     getConfig: getConfig,

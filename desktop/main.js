@@ -141,6 +141,47 @@ ipcMain.handle('hdr-commit', (e) => { if (fromUs(e)) headers.commit(); });
 ipcMain.handle('hdr-discard', (e) => { if (fromUs(e)) headers.discard(); });
 ipcMain.handle('hdr-keep', (e, urls) => { if (fromUs(e)) headers.keepOnly(urls); });
 
+// ---------------- Netz: die eigenen IPv4-Adressen mit Maske. Ändert sich, wenn der PC in ein anderes Netz kommt;
+// same: ob die gefragte Adresse im selben Netz liegt (null bei Namen, die sich so nicht prüfen lassen).
+function netState(host) {
+  const num = (ip) => { const p = String(ip).split('.').map(Number); return p.length === 4 && p.every((x) => x >= 0 && x <= 255) ? ((p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]) >>> 0 : null; };
+  const own = [];
+  Object.values(os.networkInterfaces()).forEach((list) => (list || []).forEach((a) => {
+    if (a.internal || a.family !== 'IPv4') return;
+    const ip = num(a.address), mask = num(a.netmask);
+    if (ip != null && mask) own.push({ ip, mask });
+  }));
+  const target = num(host);
+  return {
+    print: own.map((a) => a.ip + '/' + a.mask).sort().join(','),
+    same: target == null ? null : own.some((a) => ((a.ip & a.mask) >>> 0) === ((target & a.mask) >>> 0))
+  };
+}
+ipcMain.handle('net-state', (e, host) => (fromUs(e) ? netState(String(host)) : { print: '', same: false }));
+
+// ---------------- DJ: Anbieter, Modell und Schlüssel, die das eigene iPhone übergeben hat. Je Konto, verschlüsselt auf der
+// Platte (Windows: DPAPI, macOS: Schlüsselbund). Nur der Dienst im Hauptprozess liest sie – die Oberfläche bekommt den
+// Schlüssel nie zu sehen. Ohne Verschlüsselung des Systems wird nichts gespeichert: dann gilt die Übergabe bis zum Beenden.
+function setupDJ() {
+  const file = path.join(app.getPath('userData'), 'dj.bin');
+  let all = {};
+  try {
+    const data = JSON.parse(safeStorage.decryptString(fs.readFileSync(file)));
+    if (data && typeof data === 'object') all = data;
+  } catch (e) { /* keine Datei, oder von einem anderen Benutzerkonto: dann übergibt das iPhone sie neu */ }
+  global.tonaloDJ = {
+    get: (account) => all[String(account)] || null,
+    set: (account, cfg) => {
+      if (!account) return;
+      if (cfg) all[String(account)] = cfg; else delete all[String(account)];
+      try {
+        if (!Object.keys(all).length) fs.rmSync(file, { force: true });
+        else if (safeStorage.isEncryptionAvailable()) fs.writeFileSync(file, safeStorage.encryptString(JSON.stringify(all)), { mode: 0o600 });
+      } catch (e) { /* bleibt bis zum Beenden im Speicher */ }
+    }
+  };
+}
+
 // ---------------- Updates: neue Releases auf GitHub (latest.yml), geladen und installiert erst auf Wunsch
 let status = { state: 'idle' };
 let updater = null;
@@ -203,6 +244,7 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
     setupHeaders();
     global.tonaloHeaders = (url, h) => headers.apply(url, h); // der Dienst stellt Anfragen an Audiobookshelf mit denselben Headern
+    setupDJ();
     startService();
     createWindow();
     setupUpdater();

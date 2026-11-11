@@ -12,7 +12,7 @@ var PORT = 47913;
 var service = new Service(NAME);
 
 var app = null;        // Abo der TV-App – darüber gehen Befehle und Kopplungscodes raus
-var tv = { id: '', name: 'TV', kind: 'tv', keys: [], others: [] }; // keys: [{ id, device, key }], gespeichert macht sie die App
+var tv = { id: '', name: 'TV', kind: 'tv', keys: [], others: [], account: '' }; // keys: [{ id, device, key }], gespeichert macht sie die App
                                                         // others: die iPhones der anderen Konten – hier nur Gäste
 var state = { active: false };
 var clients = [];      // offene Live-Verbindungen der iPhones: { res, entry }
@@ -32,6 +32,9 @@ service.register('attach', function (msg) {
   tv.kind = p.kind === 'pc' ? 'pc' : 'tv'; // die Windows-App: das iPhone zeigt dann einen Computer statt eines TVs
   tv.keys = Array.isArray(p.keys) ? p.keys : [];
   tv.others = Array.isArray(p.others) ? p.others : [];
+  tv.account = String(p.account || '').slice(0, 80);
+  // Am PC liegt die DJ-Einrichtung verschlüsselt im Hauptprozess, am TV hält sie die App (wie die Kopplungsschlüssel)
+  djCfg = djStore() ? djStore().get(tv.account) : djClean(p.dj);
   // Getrennte Geräte sehen ab sofort nichts mehr, auch nicht über eine schon offene Verbindung – und wer mit dem
   // Kontowechsel nur noch Gast ist (oder wieder mehr), verbindet sich neu und bekommt seine neue Rolle
   var gone = clients.filter(function (c) { var k = keyFor(c.entry.id); return !k || !!k.guest !== !!c.entry.guest; });
@@ -43,7 +46,7 @@ service.register('attach', function (msg) {
   wantNet = true;
   startServer();
   startMdns();
-  msg.respond({ returnValue: true, port: PORT });
+  msg.respond({ returnValue: true, port: PORT, djInfo: djPublic() });
   report();
 }, function (msg) {
   // App geschlossen: es läuft nichts mehr, das iPhone spielt wieder selbst
@@ -299,6 +302,17 @@ function handle(req, res, body) {
     });
     return;
   }
+  // Das eigene iPhone übergibt die DJ-Einrichtung (Anbieter, Modell, Schlüssel) oder nimmt sie wieder weg.
+  // Gäste der Jukebox dürfen das nie. Der Inhalt ist mit dem Schlüssel aus der Kopplung verschlüsselt:
+  // die Verbindung selbst ist nur signiert, und ein API-Schlüssel darf im WLAN nicht mitzulesen sein.
+  if (req.method === 'POST' && path === '/dj') {
+    if (!app) return reply(res, 503, { error: 'not running' });
+    if (who.guest) return reply(res, 403, { error: 'host only' });
+    var given = djOpen(parse(body).box, who);
+    if (!given) return reply(res, 400, { error: 'bad box' });
+    djSave(given.off ? null : djClean(given), true);
+    return reply(res, 200, { ok: true, dj: !!djCfg });
+  }
   if (req.method === 'POST' && path === '/command') {
     if (!app) return reply(res, 503, { error: 'not running' });
     var cmd = parse(body);
@@ -312,6 +326,186 @@ function handle(req, res, body) {
   }
   reply(res, 404, { error: 'not found' });
 }
+
+// ---------- DJ: ein KI-Modell stellt Sets aus der Bibliothek zusammen. Die Einrichtung kommt vom eigenen iPhone.
+// Der Schlüssel geht nur von hier aus an die feste Adresse seines Anbieters – nie an eine andere, auch nicht nach
+// einer Weiterleitung (denen folgt Node nicht), und nie in einer Adresse, immer in einem Header.
+var djCfg = null;      // { provider, model, key, address }
+var djSent = [];       // wann Anfragen rausgingen: höchstens 20 pro Stunde, damit keine Schleife Kosten auftürmt
+var DJ_HOSTS = { anthropic: 'api.anthropic.com', gemini: 'generativelanguage.googleapis.com', ollamaCloud: 'ollama.com' };
+var DJ_SCHEMA = { type: 'object', properties: { line: { type: 'string' }, songs: { type: 'array', items: { type: 'integer' } } }, required: ['line', 'songs'], additionalProperties: false };
+
+function djStore() { return global.tonaloDJ || null; }
+
+// Nur was eine Einrichtung braucht, in engen Grenzen – der Inhalt kam übers Netz
+function djClean(c) {
+  if (!c || typeof c !== 'object') return null;
+  var provider = String(c.provider || '');
+  if (provider !== 'ollama' && !DJ_HOSTS[provider]) return null;
+  var model = String(c.model || '');
+  if (!/^[A-Za-z0-9._:\-]{1,99}$/.test(model)) return null;
+  var out = { provider: provider, model: model };
+  if (provider === 'ollama') {
+    out.address = String(c.address || '').slice(0, 200);
+    if (!djOllama(out.address)) return null;
+  } else {
+    out.key = String(c.key || '');
+    if (!out.key || out.key.length > 500 || /[^\x21-\x7e]/.test(out.key)) return null;
+  }
+  return out;
+}
+
+// Was die Oberfläche wissen darf: wer auswählt und wohin es geht – nie der Schlüssel
+function djPublic() {
+  if (!djCfg) return null;
+  var o = djCfg.provider === 'ollama' ? djOllama(djCfg.address) : null;
+  return { provider: djCfg.provider, model: djCfg.model, host: o ? o.hostname : DJ_HOSTS[djCfg.provider] || '' };
+}
+
+function djSave(cfg, given) {
+  djCfg = cfg;
+  var note = { djInfo: djPublic(), djGiven: !!(given && cfg) }; // djGiven: eben vom iPhone gekommen – die App sagt kurz Bescheid
+  if (!djStore()) note.dj = cfg; // die TV-App legt sie zum Konto ab und gibt sie beim nächsten Start wieder her
+  else djStore().set(tv.account, cfg);
+  send(note);
+}
+
+// AES-256-GCM mit einem Schlüssel, der aus dem der Kopplung abgeleitet ist. Aufbau: 12 Bytes Einmalwert, Inhalt, 16 Bytes Siegel.
+function djOpen(box, who) {
+  if (typeof box !== 'string' || !/^([0-9a-f]{2}){29,4000}$/.test(box)) return null;
+  try {
+    var raw = Buffer.from(box, 'hex');
+    var key = crypto.createHmac('sha256', Buffer.from(who.key, 'hex')).update('tonalo-dj').digest();
+    var d = crypto.createDecipheriv('aes-256-gcm', key, raw.slice(0, 12));
+    d.setAAD(Buffer.from(String(who.id), 'utf8'));
+    d.setAuthTag(raw.slice(raw.length - 16));
+    var text = Buffer.concat([d.update(raw.slice(12, raw.length - 16)), d.final()]).toString('utf8');
+    var v = JSON.parse(text);
+    return v && typeof v === 'object' ? v : null;
+  } catch (e) { return null; }
+}
+
+function djLocalHost(host) {
+  host = String(host || '').toLowerCase().replace(/^\[|\]$/g, '');
+  // Nur echte Adressen durch local(): ein Name wie „fd-server.example“ sähe dort sonst wie eine private IPv6-Adresse aus
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host) || host.indexOf(':') >= 0) return local(host);
+  return host === 'localhost' || host.indexOf('.') < 0 || /\.(local|lan|home|home\.arpa|internal|fritz\.box|localhost)$/.test(host);
+}
+
+// Ohne http(s) davor: im Heimnetz http, sonst https. Unverschlüsselt geht die Songliste nur im Heimnetz raus.
+function djOllama(address) {
+  var s = String(address || '').trim().replace(/\/+$/, '');
+  if (!s) return null;
+  if (!/^[a-z]+:\/\//i.test(s)) s = (djLocalHost(s.split('/')[0].replace(/:\d+$/, '')) ? 'http://' : 'https://') + s;
+  var u;
+  try { u = new URL_(s); } catch (e) { return null; }
+  if (u.protocol === 'https:') return u;
+  return u.protocol === 'http:' && djLocalHost(u.hostname) ? u : null;
+}
+
+// Eine Anfrage an den Anbieter. cb(fehler, status, text)
+function djPost(u, path, headers, body, cb) {
+  var data = Buffer.from(JSON.stringify(body), 'utf8'), done = false, req;
+  function end(err, status, text) { if (!done) { done = true; cb(err, status, text); } }
+  headers = Object.assign({ 'Content-Type': 'application/json', 'Content-Length': data.length, 'User-Agent': 'Tonalo' }, headers);
+  try {
+    req = (u.protocol === 'https:' ? https : http).request({
+      hostname: u.hostname.replace(/^\[|\]$/g, ''), port: u.port || undefined, path: path, method: 'POST', headers: headers
+    }, function (res) {
+      var chunks = [], size = 0;
+      res.on('data', function (c) { size += c.length; if (size > 2000000) { end('size'); req.abort(); } else chunks.push(c); });
+      res.on('end', function () { end(null, res.statusCode, Buffer.concat(chunks).toString('utf8')); });
+      res.on('error', function () { end('read'); });
+    });
+  } catch (e) { return end('header'); }
+  req.setTimeout(120000, function () { end('timeout'); req.abort(); });
+  req.on('error', function (e) { end(e && e.code ? String(e.code) : 'network'); });
+  req.write(data);
+  req.end();
+}
+
+// Schickt Anweisung und Songliste los, liefert den rohen Text der Antwort. cb(fehler, text)
+function djAsk(system, user, cb) {
+  var c = djCfg, u, json;
+  function parsed(status, text) {
+    if (status === 401 || status === 403) { cb('key'); return null; }
+    if (status !== 200) { cb('status:' + status); return null; } // der Inhalt wird nie gezeigt: er könnte wiederholen, was gesendet wurde
+    try { return JSON.parse(text); } catch (e) { cb('answer'); return null; }
+  }
+  if (c.provider === 'anthropic') {
+    u = new URL_('https://' + DJ_HOSTS.anthropic);
+    var body = { model: c.model, max_tokens: 8000, system: system, messages: [{ role: 'user', content: user }],
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: DJ_SCHEMA } } };
+    var headers = { 'x-api-key': c.key, 'anthropic-version': '2026-10-21' };
+    // Lehnt eine Sicherheitsprüfung fälschlich ab, versucht es der Anbieter im selben Aufruf mit einem anderen seiner Modelle
+    if (c.model.indexOf('claude-haiku') !== 0) { body.fallbacks = 'default'; headers['anthropic-beta'] = 'server-side-fallback-2026-07-01'; }
+    return djPost(u, '/v1/messages', headers, body, function (err, status, text) {
+      if (err) return cb(err);
+      if (!(json = parsed(status, text))) return;
+      if (json.stop_reason === 'refusal') return cb('refused');
+      cb(null, (json.content || []).filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(''));
+    });
+  }
+  if (c.provider === 'gemini') {
+    u = new URL_('https://' + DJ_HOSTS.gemini);
+    return djPost(u, '/v1beta/models/' + c.model + ':generateContent', { 'x-goog-api-key': c.key }, {
+      systemInstruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: user }] }],
+      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: DJ_SCHEMA }
+    }, function (err, status, text) {
+      if (err) return cb(err);
+      if (!(json = parsed(status, text))) return;
+      var parts = json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts;
+      if (!parts) return cb('refused');
+      cb(null, parts.map(function (x) { return (x && x.text) || ''; }).join(''));
+    });
+  }
+  // Ollama, zu Hause oder in der Cloud. Denkende Modelle verbrauchen sonst die ganze Antwort fürs Nachdenken: das wird
+  // abgeschaltet. Kennt ein Server den Schalter nicht, geht es ohne; bleibt die Antwort leer, noch einmal ohne festes Format.
+  u = c.provider === 'ollama' ? djOllama(c.address) : new URL_('https://' + DJ_HOSTS.ollamaCloud);
+  if (!u) return cb('address');
+  var auth = c.provider === 'ollamaCloud' ? { Authorization: 'Bearer ' + c.key } : {};
+  var think = true, last = '';
+  function round(format) {
+    var b = { model: c.model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], stream: false, options: { num_ctx: 16384 } };
+    if (format) b.format = DJ_SCHEMA;
+    if (think) b.think = false;
+    djPost(u, '/api/chat', auth, b, function (err, status, text) {
+      if (err) return cb(err);
+      if (status === 400 && think) { think = false; return round(format); }
+      if (!(json = parsed(status, text))) return;
+      var m = json.message || {}, content = typeof m.content === 'string' ? m.content : '';
+      if (content.indexOf('{') >= 0 || content.indexOf('[') >= 0) return cb(null, content);
+      last = content || (typeof m.thinking === 'string' ? m.thinking : '');
+      if (format) round(false); else cb(null, last);
+    });
+  }
+  round(true);
+}
+
+service.register('dj', function (msg) {
+  var p = msg.payload || {};
+  function fail(text) { msg.respond({ returnValue: false, errorText: text }); }
+  if (!djCfg) return fail('notReady');
+  if (typeof p.system !== 'string' || typeof p.user !== 'string' || p.system.length > 8000 || p.user.length > 60000) return fail('notReady');
+  var now = Date.now();
+  djSent = djSent.filter(function (t) { return now - t < 3600000; });
+  if (djSent.length >= 20) return fail('limit');
+  djSent.push(now);
+  try {
+    djAsk(p.system, p.user, function (err, text) {
+      if (err) fail(err); else msg.respond({ returnValue: true, text: String(text || '').slice(0, 20000) });
+    });
+  } catch (e) { fail('network'); }
+});
+
+// Von diesem Gerät entfernen (Einstellungen, oder alle iPhones getrennt)
+service.register('djClear', function (msg) {
+  // Ein anderes Konto als das laufende wird entfernt (am PC liegt seine Einrichtung im Hauptprozess)
+  var account = String((msg.payload && msg.payload.account) || '');
+  if (account && account !== tv.account) { if (djStore()) djStore().set(account, null); }
+  else djSave(null);
+  msg.respond({ returnValue: true });
+});
 
 function parse(body) { try { var v = JSON.parse(body); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
 

@@ -256,6 +256,184 @@ var Desktop = (function () {
     });
   }
 
+  // ---------------- Eigene Header nachträglich ändern (Einstellungen), ohne sich neu anzumelden.
+  // Die neuen Header gelten erst nur zur Probe: antwortet der Server damit, werden sie gespeichert – sonst bleibt alles beim Alten.
+  // check: eine Anfrage an genau diesen Server, die nur mit richtigen Headern gelingt.
+  function editHeaders(title, url, check, done) {
+    var m = UI.modal(title, [{ label: T('Abbrechen'), icon: 'prev', action: function () { N.headers.discard(); } }]);
+    m.box.classList.add('hdr-modal');
+    var rows = h('div.hdr-rows');
+    var msg = h('div.msg');
+    function row(name, stored) {
+      var nameIn = h('input.focusable.hdr-name', { type: 'text', placeholder: T('Name'), autocomplete: 'off', spellcheck: 'false' });
+      var valueIn = h('input.focusable.hdr-value', { type: 'password', autocomplete: 'off', placeholder: stored ? T('Gespeichert') : T('Wert') });
+      nameIn.value = name || '';
+      var del = h('button.icon-btn.focusable', { title: T('Header entfernen') }, Icon.el('close'));
+      var el = h('div.hdr-row', null, nameIn, valueIn, del);
+      del.addEventListener('click', function () { rows.removeChild(el); Nav.focus(add); });
+      // Enter im Feld speichert
+      [nameIn, valueIn].forEach(function (i) { i.addEventListener('keydown', function (e) { if (e.keyCode === 13) { e.preventDefault(); e.stopPropagation(); save(); } }); });
+      rows.appendChild(el);
+      return el;
+    }
+    var add = h('button.btn.outline.focusable', { text: T('Header hinzufügen'), onclick: function () { Nav.focus(U.$('.hdr-name', row('')), { noInputFocus: true }); } });
+    var cf = h('button.btn.outline.focusable', { text: T('Cloudflare-Access-Header'), onclick: function () {
+      var have = U.$$('.hdr-name', rows).map(function (n) { return n.value.toLowerCase(); }), first = null;
+      ['CF-Access-Client-Id', 'CF-Access-Client-Secret'].forEach(function (n) {
+        if (have.indexOf(n.toLowerCase()) < 0) { var el = row(n); first = first || el; }
+      });
+      if (first) Nav.focus(U.$('.hdr-value', first), { noInputFocus: true });
+    } });
+    var busy = false;
+    function save() {
+      if (busy) return;
+      var list = U.$$('.hdr-row', rows).map(function (r) { return { name: U.$('.hdr-name', r).value, value: U.$('.hdr-value', r).value }; });
+      busy = true;
+      msg.className = 'msg';
+      msg.textContent = T('Verbinde …');
+      N.headers.attempt(url, list).then(function (r) {
+        if (r && r.error) { var e = new Error(headerError(r)); e.headers = true; throw e; }
+        return check();
+      }).then(function () {
+        return N.headers.commit();
+      }).then(function () {
+        busy = false;
+        m.close();
+        U.toast(T('Header gespeichert'));
+        if (done) done();
+      }, function (e) {
+        busy = false;
+        N.headers.discard();
+        msg.className = 'msg error';
+        msg.textContent = e && e.headers ? e.message : T('Mit diesen Headern antwortet der Server nicht. Es wurde nichts geändert.');
+      });
+    }
+    var ok = h('button.modal-item.focusable', { onclick: save }, Icon.el('edit'), h('span', { text: T('Prüfen und speichern') }));
+    var list = U.$('.modal-list', m.box);
+    var body = h('div.hdr-body.nav-container', null, rows, h('div.hdr-actions', null, add, cf),
+      h('p.hdr-hint.muted', { text: T('Wird bei jeder Anfrage an diesen Server mitgeschickt, auch für Musik und Cover. Ein leerer Wert behält den gespeicherten. Die Werte liegen verschlüsselt auf diesem PC.') }), msg);
+    list.insertBefore(ok, list.firstChild);
+    list.insertBefore(body, ok);
+    N.headers.names(url).then(function (names) {
+      names.forEach(function (n) { row(n, true); });
+      Nav.focus(names.length ? U.$('.hdr-value', rows) : add, { noInputFocus: true });
+    });
+    return m;
+  }
+
+  // Die Zeile in den Einstellungen: welche Header für den Server gespeichert sind, und der Weg, sie zu ändern
+  function headerSetting(label, url, check) {
+    var desc = h('div.setting-desc', { text: url });
+    function refresh() {
+      N.headers.names(url).then(function (names) {
+        desc.textContent = names.length ? url + ' • ' + names.join(', ') : url + ' • ' + T('Keine eigenen Header');
+      });
+    }
+    refresh();
+    return h('div.setting', null, h('div', null, h('div.setting-label', { text: label }), desc),
+      h('div.nav-container', null, UI.button(T('Ändern'), function () { editHeaders(label, url, check, refresh); }, 'outline', 'edit')));
+  }
+
+  // ---------------- Zwei Adressen für einen Server: zu Hause die im Heimnetz, unterwegs die von außen.
+  // Wie am iPhone: die Heimadresse gilt erst, wenn dort derselbe Server antwortet wie außen, und nur in dem Netz, in dem das
+  // geprüft wurde. In einem fremden Netz mit denselben Adressen bekäme sonst irgendein Gerät die Anmeldung, unverschlüsselt.
+  var routeSeq = 0, homePrint = null, lastPrint = null, lastCheck = 0, routeShown = null;
+  function hostOf(u) { return String(u || '').replace(/^https?:\/\//i, '').split(/[\/:?#]/)[0]; }
+  function setHome(v) {
+    var was = API.atHome();
+    API.setHome(v);
+    if (!v) homePrint = null;
+    if (was && !v) Player.addressChanged();
+    if (routeShown) routeShown();
+  }
+  function checkRoute() {
+    var acc = App.account(), r = API.routes(), seq = ++routeSeq;
+    lastCheck = Date.now();
+    if (!acc || !r) { setHome(false); return; }
+    var host = hostOf(r.home);
+    N.net.state(host).then(function (n) {
+      if (seq !== routeSeq) return;
+      lastPrint = n.print;
+      if (API.atHome() && n.print !== homePrint) setHome(false);
+      if (n.same === false || !navigator.onLine) { setHome(false); return; }
+      return Promise.all([API.identity(r.home), API.identity(r.outside)]).then(function (v) {
+        var key = 'ident.' + acc.id, ok = false;
+        if (v[0]) {
+          if (v[1]) U.store.set(key, v[1]);
+          // Von innen ist die Adresse von außen nicht immer erreichbar: dann zählt, was sie zuletzt geantwortet hat.
+          // Noch nie von außen gesehen: kein Vertrauen.
+          ok = U.store.get(key) === v[0];
+        }
+        return N.net.state(host).then(function (n2) {
+          if (seq !== routeSeq || App.account() !== acc) return;
+          ok = ok && n2.print === n.print; // das Netz darf beim Fragen nicht gewechselt haben
+          homePrint = ok ? n.print : null;
+          setHome(ok);
+        });
+      });
+    });
+  }
+  API.onRouteLost(function () { homePrint = null; Player.addressChanged(); if (routeShown) routeShown(); checkRoute(); });
+  window.addEventListener('online', checkRoute);
+  window.addEventListener('offline', checkRoute);
+  setInterval(function () {
+    var r = API.routes();
+    if (!r) return;
+    N.net.state(hostOf(r.home)).then(function (n) {
+      if (n.print !== lastPrint || Date.now() - lastCheck > 5 * 60 * 1000) checkRoute();
+    });
+  }, 20000);
+
+  function editAlt(done) {
+    var cfg = API.getConfig();
+    var m = UI.modal(T('Zweite Adresse'), [{ label: T('Abbrechen'), icon: 'prev' }]);
+    m.box.classList.add('hdr-modal');
+    var input = h('input.modal-input.focusable', { type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: T('z. B. 192.168.1.10:4533') });
+    input.value = cfg.alt || '';
+    var msg = h('div.msg');
+    var RULE = T('Eine der beiden Adressen muss im Heimnetz liegen, die andere von außen erreichbar sein.');
+    function save() {
+      var u = API.normalizeUrl(input.value);
+      msg.className = 'msg error';
+      if (!u) { msg.textContent = RULE; return; }
+      if (u === cfg.url) { msg.textContent = T('Mit dieser Adresse bist du schon angemeldet.'); return; }
+      if (API.isLocal(u) === API.isLocal(cfg.url)) { msg.textContent = RULE; return; }
+      m.close();
+      App.setAlt(u);
+      U.toast(T('Zweite Adresse gespeichert'));
+      done();
+    }
+    input.addEventListener('keydown', function (e) { if (e.keyCode === 13) { e.preventDefault(); e.stopPropagation(); save(); } });
+    var list = U.$('.modal-list', m.box);
+    var ok = h('button.modal-item.focusable', { onclick: save }, Icon.el('edit'), h('span', { text: T('Speichern') }));
+    var body = h('div.hdr-body.nav-container', null, input,
+      h('p.hdr-hint.muted', { text: RULE + ' ' + T('Zu Hause nimmt Tonalo die Adresse im Heimnetz, sobald dort derselbe Server antwortet, unterwegs die andere. Eigene Header gehen nur an die Adresse von außen.') }), msg);
+    list.insertBefore(ok, list.firstChild);
+    list.insertBefore(body, ok);
+    if (cfg.alt) {
+      var del = h('button.modal-item.focusable.danger', { onclick: function () { m.close(); App.setAlt(''); U.toast(T('Zweite Adresse entfernt')); done(); } },
+        Icon.el('trash'), h('span', { text: T('Zweite Adresse entfernen') }));
+      list.insertBefore(del, ok.nextSibling);
+    }
+    Nav.focus(input, { noInputFocus: true });
+  }
+
+  // Die Zeile in den Einstellungen: die zweite Adresse und welche der beiden gerade benutzt wird
+  function altSetting(changed) {
+    var desc = h('div.setting-desc');
+    function paint() {
+      var cfg = API.getConfig();
+      if (!cfg || !document.body.contains(desc)) return;
+      desc.textContent = !cfg.alt ? T('Keine zweite Adresse')
+        : cfg.alt + ' • ' + T('Gerade benutzt: {url}', { url: API.base() });
+    }
+    var row = h('div.setting', null, h('div', null, h('div.setting-label', { text: T('Zweite Adresse') }), desc),
+      h('div.nav-container', null, UI.button(T('Ändern'), function () { editAlt(changed); }, 'outline', 'edit')));
+    routeShown = function () { setTimeout(paint, 0); };
+    setTimeout(paint, 0);
+    return row;
+  }
+
   function commitHeaders() {
     U.$$('.hdr-value', hdrRows).forEach(function (v) { v.value = ''; });
     return N.headers.commit();
@@ -302,7 +480,7 @@ var Desktop = (function () {
   return { showHeaders: showHeaders, tryHeaders: tryHeaders, commitHeaders: commitHeaders,
     dropHeaders: function () { N.headers.discard(); },
     // Auch die Adressen von Audiobookshelf: ihre Header bleiben, solange das Konto da ist
-    keepHeaders: function (list) { var urls = []; list.forEach(function (a) { urls.push(a.url); if (a.abs && a.abs.url) urls.push(a.abs.url); }); N.headers.keepOnly(urls); },
-    headerProblem: headerProblem,
+    keepHeaders: function (list) { var urls = []; list.forEach(function (a) { urls.push(a.url); if (a.alt) urls.push(a.alt); if (a.abs && a.abs.url) urls.push(a.abs.url); }); N.headers.keepOnly(urls); },
+    headerProblem: headerProblem, headerSetting: headerSetting, altSetting: altSetting, checkRoute: checkRoute,
     updateSetting: updateSetting, volume: function () { return volumeControl(true); }, linked: linked };
 })();

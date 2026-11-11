@@ -22,6 +22,8 @@ var Icon = (function () {
     artist: ['s', 'M12 3.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4.5 20.5c.6-3.8 3.6-6 7.5-6s6.9 2.2 7.5 6'],
     playlist: ['s', 'M3.5 6h12M3.5 11h12M3.5 16h7M18.5 4.5v11M18.5 15.5a2.5 2.5 0 1 1-2.5-2.5h2.5'],
     genre: ['s', 'M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z'],
+    // Der DJ: eine Platte, oben rechts offen, wo die Nadel sitzt, in der Mitte die drei Balken von Tonalo
+    dj: ['s', 'M20.65 9.52A9 9 0 1 1 14.48 3.35M18.36 5.64h.01M9 10.2v3.6M12 8.5v7M15 9.6v4.8'],
     bars: ['f', 'M4 13h2.5v7H4zM9 8h2.5v12H9zM14 11h2.5v9H14zM19 5h2.5v15H19z'],
     queue: ['s', 'M3.5 5.5h14M3.5 10.5h14M3.5 15.5h8M15.5 14v6l5-3z'],
     settings: ['s', 'M4 6.5h9M17 6.5h3M15 4.5v4M4 12h3M11 12h9M9 10v4M4 17.5h10M18 17.5h2M16 15.5v4'],

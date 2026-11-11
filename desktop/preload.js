@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('TonaloNative', {
     discard: () => ipcRenderer.invoke('hdr-discard'),
     keepOnly: (urls) => ipcRenderer.invoke('hdr-keep', urls)
   },
+  // Für die Wahl zwischen Heimadresse und der von außen: woran man das Netz erkennt, und ob eine Adresse darin liegt
+  net: { state: (host) => ipcRenderer.invoke('net-state', String(host || '')) },
   updates: {
     ready: () => ipcRenderer.send('upd-ready'),
     check: () => ipcRenderer.send('upd-check'),

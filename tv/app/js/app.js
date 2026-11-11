@@ -120,6 +120,7 @@ var App = (function () {
   }
 
   function removeAccount(acc) {
+    DJ.dropAccount(acc.id);
     if (account && account.id === acc.id) {
       Link.detach();
       Player.detach();
@@ -134,6 +135,7 @@ var App = (function () {
     if (U.desktop) Desktop.keepHeaders(accounts());
     if (acc.abs) ABS.logout(acc.abs);
     U.ustore.clear(acc.id);
+    U.store.del('ident.' + acc.id);
     if (U.store.get('lastAccount') === acc.id) U.store.del('lastAccount');
     U.toast(T('Konto „{name}“ entfernt', { name: acc.user }));
     showUsers();
@@ -145,6 +147,7 @@ var App = (function () {
     account = acc;
     U.ustore.setNs(acc.id);
     API.setConfig(acc);
+    if (U.desktop) Desktop.checkRoute();
     ABS.setConfig(acc.abs || null);
     lastKind = 'music';
     showBooksNav();
@@ -276,6 +279,8 @@ var App = (function () {
       if (U.desktop) Desktop.commitHeaders();
       U.$('#in-pass').value = ''; // das Passwort selbst wird nirgends gebraucht, nur der Token
       var acc = Object.assign({ id: accId(creds.url, creds.user) }, creds);
+      var before = accounts().filter(function (a) { return a.id === acc.id; })[0];
+      if (before && before.alt) acc.alt = before.alt; // die zweite Adresse bleibt beim neu Anmelden
       saveAccounts(accounts().filter(function (a) { return a.id !== acc.id; }).concat([acc]));
       U.store.set('lastUrl', creds.url);
       if (account && account.id === acc.id) { Link.detach(); Player.detach(); account = null; } // gleiches Konto neu angemeldet -> frisch laden
@@ -744,6 +749,22 @@ var App = (function () {
     // Etwas kam vom iPhone: Bildschirmschoner weg, wie bei einem Tastendruck
     wake: function () { touch(); if (ssActive) ssHide(); },
     account: function () { return account; },
+    // Am PC: zweite Adresse des Kontos setzen oder entfernen (leer)
+    setAlt: function (url) {
+      if (!account) return;
+      if (url) account.alt = url; else delete account.alt;
+      saveAccounts(accounts().map(function (a) { return a.id === account.id ? account : a; }));
+      U.store.del('ident.' + account.id);
+      API.setConfig(account);
+      Player.addressChanged();
+      Desktop.keepHeaders(accounts());
+      Desktop.checkRoute();
+    },
+    // Der DJ kam dazu oder ist weg: Startseite, Radio und Einstellungen zeigen ihn (nicht mehr)
+    djChanged: function () {
+      var top = stack[stack.length - 1];
+      if (top && ['home', 'radio', 'settings', 'nowplaying'].indexOf(top.name) >= 0) reload();
+    },
     accountCount: function () { return accounts().length; },
     settings: function () { return settings; },
     setSetting: function (k, v) { settings[k] = v; U.ustore.set('settings', settings); touch(); }

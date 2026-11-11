@@ -191,6 +191,11 @@ var UI = (function () {
           return Radio.start(T('Dein Radio'), { seeds: seeds, seedId: seeds[0] && seeds[0].id, first: seeds[0] });
         }).then(function (ok) { if (ok) App.go('nowplaying'); }).catch(App.error);
       } })];
+    // Der DJ steht vorn, wenn er vom iPhone aus eingerichtet ist
+    if (DJ.ready()) {
+      cards.unshift(radioCard({ title: 'DJ', sub: T('Sets aus deiner Bibliothek'), icon: 'dj', artName: 'tonalo dj',
+        onClick: function () { DJ.start().then(function (ok) { if (ok) App.go('nowplaying'); }); } }));
+    }
     var cur = Player.current();
     if (cur && cur.artist) {
       cards.push(radioCard({ title: T('Mehr wie {name}', { name: cur.artist }), sub: T('Radio zum Song, der gerade läuft'), artName: cur.artist,

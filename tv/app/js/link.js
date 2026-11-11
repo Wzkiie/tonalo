@@ -34,7 +34,9 @@ var Link = (function () {
     (U.store.get('accounts', []) || []).forEach(function (a) {
       if (a.id !== App.account().id) others = others.concat(U.ustore.peek(a.id, 'phones', []) || []);
     });
-    var params = { subscribe: true, id: tvId(), name: U.store.get('tvName', 'LG TV'), kind: U.desktop ? 'pc' : 'tv', keys: U.ustore.get('phones', []), others: others };
+    var params = { subscribe: true, id: tvId(), name: U.store.get('tvName', 'LG TV'), kind: U.desktop ? 'pc' : 'tv', keys: U.ustore.get('phones', []), others: others,
+      // Die DJ-Einrichtung gehört zum Konto. Am PC hält sie der Hauptprozess verschlüsselt, hier geht nur die Kontonummer mit
+      account: App.account().id, dj: U.desktop ? null : U.ustore.get('dj', null) };
     bridge = call('attach', params, onMessage);
     push();
   }
@@ -42,12 +44,21 @@ var Link = (function () {
   function detach() {
     if (bridge) { try { bridge.cancel(); } catch (e) { /* egal */ } }
     bridge = null;
+    DJ.setInfo(null); // gehört zum Konto, das gerade geht
     if (U.desktop) Desktop.linked([]);
     if (available()) call('state', { state: { active: false } });
   }
 
   function onMessage(msg) {
     if (msg.keys) U.ustore.set('phones', msg.keys);
+    // Das eigene iPhone hat den DJ übergeben oder weggenommen. Am TV legt die App ihn zum Konto ab (es gibt dort keinen
+    // geschützten Speicher), am PC kommt hier nur an, wer auswählt – der Schlüssel bleibt im Hauptprozess.
+    if ('dj' in msg && !U.desktop) U.ustore.set('dj', msg.dj || null);
+    if ('djInfo' in msg) {
+      var had = DJ.ready();
+      DJ.setInfo(msg.djInfo);
+      if (!had && DJ.ready() && msg.djGiven) U.toast(T('Der DJ ist jetzt auch hier eingerichtet'), 4000);
+    }
     if ('pairCode' in msg) showCode(msg.pairCode, msg.pairName, msg.guest);
     if (msg.paired) U.toast(msg.guest ? T('{device} ist der Jukebox beigetreten', { device: msg.paired }) : T('{device} ist jetzt verbunden', { device: msg.paired }), 4000);
     if (msg.command) run(msg.command);
@@ -229,7 +240,8 @@ var Link = (function () {
   }
 
   function phones() { return U.ustore.get('phones', []); }
-  function forget() { U.ustore.set('phones', []); attach(); }
+  // Mit den iPhones geht auch der DJ, den eins von ihnen hier eingerichtet hat
+  function forget() { U.ustore.set('phones', []); DJ.forget(); attach(); }
 
-  return { init: init, attach: attach, detach: detach, push: push, phones: phones, forget: forget, visible: visible, setVisible: setVisible };
+  return { available: available, init: init, attach: attach, detach: detach, push: push, phones: phones, forget: forget, visible: visible, setVisible: setVisible };
 })();

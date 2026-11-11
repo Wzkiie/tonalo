@@ -71,6 +71,11 @@ var Views = (function () {
           API.randomSongs(150).then(function (s) { Player.playList(s, 0); App.go('nowplaying'); }).catch(App.error);
         } })
       ];
+      // Der DJ ganz vorn: spielt er gerade, geht es zu ihm – sonst stellt er jedes Mal ein neues Set zusammen
+      if (DJ.ready()) tiles.unshift(UI.shortcut({ art: { cls: 'dj', icon: 'dj' }, label: DJ.playing() && !Player.paused() && DJ.line() ? T('DJ · {name}', { name: DJ.line() }) : 'DJ', onClick: function () {
+        if (DJ.playing() && !Player.paused()) { App.go('nowplaying'); return; }
+        DJ.start().then(function (ok) { if (ok) App.go('nowplaying'); });
+      } }));
       var cur = Player.current();
       if (cur) tiles.push(UI.shortcut({ coverId: cur.coverArt || cur.albumId, label: T('Weiterhören: {title}', { title: cur.title }), onClick: function () { Player.play(); App.go('nowplaying'); } }));
       recent.slice(0, 8 - tiles.length - (ABS.connected() ? 1 : 0)).forEach(function (a) {
@@ -469,6 +474,8 @@ var Views = (function () {
       }
       var s = Player.current(); if (s) Menus.song(s);
     }, T('Mehr'));
+    // Der DJ, nur wenn er eingerichtet ist: läuft etwas anderes, übernimmt er ab dem laufenden Song – läuft er selbst, lässt er sich lenken
+    var btnDJ = DJ.ready() ? UI.iconBtn('dj', function () { if (DJ.playing()) djMenu(); else DJ.takeOver(); }, 'DJ') : null;
     var btnSleep = UI.iconBtn('moon', sleepMenu, T('Sleep-Timer'));
     var sleepLabel = h('span.np-sleep-left');
     btnSleep.appendChild(sleepLabel);
@@ -497,7 +504,7 @@ var Views = (function () {
         h('div.nav-container.np-progressrow', null, progress),
         h('div.np-time', null, tCur, live, tDur),
         h('div.np-controls.nav-container', null, btnShuffle, btnPrev, btnPlay, btnNext, btnRepeat,
-          h('div.np-extra', null, btnSleep, btnHeart, btnLyrics, btnQueue, btnMore),
+          h('div.np-extra', null, btnDJ, btnSleep, btnHeart, btnLyrics, btnQueue, btnMore),
           U.desktop ? Desktop.volume() : null) // am PC links die Lautstärke – zuletzt, damit die Abzählung oben (.np.live) stimmt
       )
     ));
@@ -519,6 +526,31 @@ var Views = (function () {
       UI.modal(left > 0 ? T('Sleep-Timer · noch {time}', { time: U.fmtTime(left / 1000) }) : left < 0 ? T('Sleep-Timer · Ende des Songs') : T('Sleep-Timer'), items);
     }
 
+    function djMenu() {
+      function wish(label, icon, text) { return { icon: icon, label: label, action: function () { DJ.change('wish', text); } }; }
+      UI.modal(DJ.line() ? T('DJ · {name}', { name: DJ.line() }) : 'DJ', [
+        { icon: 'plus', label: T('Mehr davon'), action: function () { DJ.change('more'); } },
+        { icon: 'shuffle', label: T('Etwas anderes'), action: function () { DJ.change('mood'); } },
+        wish(T('Ruhiger'), 'moon', 'calmer, quieter songs'),
+        wish(T('Mehr Energie'), 'bars', 'more energy, faster and louder songs'),
+        wish(T('Älter'), 'clock', 'older songs, from earlier decades'),
+        wish(T('Neuer'), 'clock', 'newer, more recent songs'),
+        wish(T('Nur Favoriten'), 'heart', 'only songs marked fav'),
+        // Ein getippter Wunsch geht wie die anderen an den Anbieter
+        { icon: 'edit', label: T('Eigener Wunsch …'), action: function () {
+          UI.prompt(T('Wunsch an den DJ'), '', T('Los'), function (text) { DJ.change('wish', text); });
+        } },
+        { icon: 'close', label: T('DJ beenden'), action: function () { DJ.stop(); U.toast(T('DJ beendet – die Warteschlange bleibt')); } }
+      ]);
+    }
+
+    function renderDJ() {
+      if (!btnDJ) return;
+      btnDJ.classList.toggle('on', DJ.playing());
+      btnDJ.classList.toggle('dj-busy', DJ.busy());
+      btnDJ.classList.toggle('hidden', !!Player.station());
+    }
+
     function renderSleep() {
       var left = Player.sleepLeft();
       btnSleep.classList.toggle('on', !!left);
@@ -527,7 +559,9 @@ var Views = (function () {
 
     function renderContext() {
       var c = Player.context(), st = Player.station();
-      context.textContent = st ? T('Live-Radio') : c && c.kind === 'radio' ? T('Radio · {name}', { name: c.name }) : '';
+      context.textContent = st ? T('Live-Radio') : c && c.kind === 'radio' ? T('Radio · {name}', { name: c.name })
+        : c && c.kind === 'dj' ? (DJ.line() ? T('DJ · {name}', { name: DJ.line() }) : 'DJ') : '';
+      renderDJ();
     }
 
     // Sender: daneben die anderen Sender zum Umschalten
@@ -800,6 +834,19 @@ var Views = (function () {
       UI.button(T('App beenden'), App.exit, 'outline', 'power')
     ));
 
+    // Cloudflare Access und ähnliche: am PC lassen sich die eigenen Header auch nach der Anmeldung ändern
+    if (U.desktop) {
+      // Die Header gehören zur Adresse von außen; geprüft wird genau dort, auch wenn gerade die im Heimnetz benutzt wird
+      var rt = API.routes(), outside = rt ? rt.outside : cfg.url;
+      el.appendChild(Desktop.altSetting(function () { App.reload(); }));
+      el.appendChild(Desktop.headerSetting(T('Eigene Header'), outside, function () {
+        return API.identity(outside).then(function (v) { if (!v) throw new Error('no answer'); });
+      }));
+      if (ABS.connected() && API.normalizeUrl(ABS.server()) !== cfg.url) {
+        el.appendChild(Desktop.headerSetting(T('Eigene Header für Audiobookshelf'), API.normalizeUrl(ABS.server()), function () { return ABS.libraries(); }));
+      }
+    }
+
     el.appendChild(h('div.settings-section', { text: 'Audiobookshelf' }));
     if (ABS.connected()) {
       el.appendChild(h('div.setting', null, h('div', null,
@@ -812,6 +859,23 @@ var Views = (function () {
         h('div.setting-label', { text: T('Hörbücher und Podcasts') }),
         h('div.setting-desc', { text: T('Spiele Hörbücher und Podcasts von deinem Audiobookshelf-Server ab – Fortschritt und Bibliothek wie in der iPhone-App.') }))));
       el.appendChild(h('div.settings-actions.nav-container', null, UI.button(T('Mit Audiobookshelf verbinden'), App.absLogin, 'primary', 'book')));
+    }
+
+    // Der DJ wird am iPhone eingerichtet und kommt von dort – hier lässt er sich nur wieder entfernen
+    el.appendChild(h('div.settings-section', { text: 'DJ' }));
+    var dj = DJ.info();
+    if (dj) {
+      el.appendChild(h('div.setting', null, h('div', null,
+        h('div.setting-label', { text: DJ.providerName() + ' · ' + dj.model }),
+        h('div.setting-desc', { text: T('Vom iPhone übernommen. Ein KI-Modell stellt Sets aus deiner Bibliothek zusammen. Dafür gehen Titel, Künstler, Album, Genre, Jahr und das Herz von etwa 150 Songs an {host} – nie deine Serveradresse oder deine Anmeldung. Der Schlüssel liegt auf diesem Gerät und geht nur dorthin.', { host: dj.host }) }))));
+      el.appendChild(h('div.settings-actions.nav-container', null,
+        UI.button(T('DJ von diesem Gerät entfernen'), function () {
+          UI.confirm(T('DJ und Schlüssel von diesem Gerät entfernen?'), T('Entfernen'), function () { DJ.forget(); App.reload(); }, 'trash');
+        }, 'outline', 'close')));
+    } else {
+      el.appendChild(h('div.setting', null, h('div', null,
+        h('div.setting-label', { text: T('Nicht eingerichtet') }),
+        h('div.setting-desc', { text: T('Der DJ stellt Sets aus deiner Bibliothek zusammen. Richte ihn in Tonalo auf dem iPhone ein und schalte dort „Auf gekoppelten Geräten nutzen“ ein – dann ist er auch hier da.') }))));
     }
 
     el.appendChild(h('div.settings-section', { text: T('iPhone') }));
