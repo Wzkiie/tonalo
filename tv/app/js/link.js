@@ -45,7 +45,7 @@ var Link = (function () {
     if (bridge) { try { bridge.cancel(); } catch (e) { /* egal */ } }
     bridge = null;
     DJ.setInfo(null); // gehört zum Konto, das gerade geht
-    if (U.desktop) Desktop.linked([]);
+    if (U.desktop) { Desktop.linked([]); Remote.reset(); } // das gesteuerte Gerät gehört zum Konto, das gerade geht
     if (available()) call('state', { state: { active: false } });
   }
 
@@ -59,20 +59,21 @@ var Link = (function () {
       DJ.setInfo(msg.djInfo);
       if (!had && DJ.ready() && msg.djGiven) U.toast(T('Der DJ ist jetzt auch hier eingerichtet'), 4000);
     }
-    if ('pairCode' in msg) showCode(msg.pairCode, msg.pairName, msg.guest);
+    if ('pairCode' in msg) showCode(msg.pairCode, msg.pairName, msg.guest, msg.pairVia);
     if (msg.paired) U.toast(msg.guest ? T('{device} ist der Jukebox beigetreten', { device: msg.paired }) : T('{device} ist jetzt verbunden', { device: msg.paired }), 4000);
     if (msg.command) run(msg.command);
     if (msg.connected && U.desktop) Desktop.linked(msg.connected);
   }
 
-  function showCode(code, name, guest) {
+  function showCode(code, name, guest, via) {
     if (pairModal) { pairModal.close(); pairModal = null; }
     if (!code) return;
     App.wake();
     pairModal = UI.modal(null, [{ icon: 'close', label: T('Abbrechen'), action: function () { pairModal = null; } }], {
       head: { title: code.slice(0, 3) + ' ' + code.slice(3),
         // Wer fragt, steht immer dabei – kommt die Anfrage unerwartet, gibt man den Code einfach nicht weiter
-        sub: !name ? T('Gib diesen Code in Tonalo auf dem iPhone ein')
+        sub: via === 'pc' ? T('{name} möchte dieses Gerät steuern – diesen Code in Tonalo am Computer eingeben', { name: name || 'PC' })
+          : !name ? T('Gib diesen Code in Tonalo auf dem iPhone ein')
           : guest ? T('{name} möchte der Jukebox beitreten – diesen Code auf dem iPhone eingeben', { name: name })
           : T('{name} möchte sich als eigenes Gerät verbinden – diesen Code auf dem iPhone eingeben', { name: name }) }
     });

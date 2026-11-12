@@ -41,6 +41,21 @@ html.desktop.linked #linkbar { display: flex; }
 html.desktop #linkbar .ic { width: 22px; height: 22px; flex: none; }
 html.desktop #linkbar .lb-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 html.desktop #miniplayer { bottom: var(--linkbar); }
+
+/* Unten, solange ein anderes Gerät gesteuert wird (Fernseher, anderer PC): was dort läuft und Pause/Weiter. Ersetzt die Leiste der iPhones. */
+html.desktop #remotebar { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: 56px; align-items: center; gap: 14px;
+  padding: 0 24px; background: var(--accent); color: #000; font-size: 20px; font-weight: 600; z-index: 7; }
+html.desktop.remote #remotebar { display: flex; }
+html.desktop.remote { --linkbar: 56px; }
+html.desktop.remote #linkbar { display: none; }
+html.desktop #remotebar .ic { width: 24px; height: 24px; flex: none; }
+html.desktop #remotebar .rb-text { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+html.desktop #remotebar .rb-controls { display: flex; gap: 6px; flex: none; }
+html.desktop #remotebar .icon-btn { width: 44px; height: 44px; margin: 0; color: #000; background: transparent; display: flex; align-items: center; justify-content: center; }
+html.desktop #remotebar .icon-btn:hover:not(:disabled) { background: rgba(0,0,0,.12); }
+html.desktop #remotebar .icon-btn:disabled { opacity: .35; }
+html.desktop #remotebar .icon-btn .ic { width: 24px; height: 24px; }
+
 html.desktop #sidebar, html.desktop #content { bottom: calc(var(--gap) + var(--linkbar)); }
 html.desktop #main.mini-on #sidebar, html.desktop #main.mini-on #content { bottom: calc(var(--mini) + var(--linkbar)); }
 

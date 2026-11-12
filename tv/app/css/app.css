@@ -289,6 +289,11 @@ html.desktop #btn-back { display: inline-flex; }
 .np-play.focused { transform: scale(1.08); box-shadow: 0 0 0 4px var(--accent); }
 .np-extra { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; }
 .np-extra .icon-btn { margin: 0 0 0 8px; }
+/* Mit dem DJ sind es sechs Knöpfe: etwas kleiner, damit die Reihe nicht in Wiederholen hineinragt. Der DJ steht abgesetzt, in der Farbe der App. */
+.np-controls .np-extra .icon-btn { width: 58px; height: 58px; margin: 0 0 0 2px; }
+.np-controls .np-extra .icon-btn .ic { width: 36px; height: 36px; }
+.np-controls .np-extra .icon-btn.dj-btn { margin-right: 14px; color: var(--accent); }
+.np-controls .np-extra .icon-btn.dj-btn.focused { color: #fff; }
 
 /* ---------- Einstellungen ---------- */
 .setting { display: flex; align-items: center; justify-content: space-between; padding: 26px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
@@ -368,7 +373,7 @@ html.desktop #btn-back { display: inline-flex; }
 .np.live .np-time { justify-content: center; margin-bottom: 22px; }
 .np.live .np-time .live-badge { display: inline-block; }
 .np.live .np-controls > .icon-btn:first-child, .np.live .np-controls > .icon-btn:nth-child(5) { visibility: hidden; }
-.np.live .np-extra .icon-btn:nth-child(2), .np.live .np-extra .icon-btn:nth-child(3) { display: none; }
+.np.live .np-extra .live-hide { display: none; } /* Radio: kein Herz, kein Songtext – mit Klassen, nicht nach Stelle: der DJ davor verschiebt die Reihe */
 #miniplayer.live #mp-heart, #miniplayer.live #mp-shuffle, #miniplayer.live #mp-repeat, #miniplayer.live #mp-lyrics, #miniplayer.live .mp-progressrow { visibility: hidden; }
 #miniplayer.live #mp-heart, #miniplayer.live #mp-lyrics { display: none; }
 

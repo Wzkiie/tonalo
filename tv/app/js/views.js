@@ -462,8 +462,8 @@ var Views = (function () {
       var s = Player.current(); if (!s) return;
       var on = !s.starred;
       API.star('song', s.id, on).then(function () { Player.setStarred(s, on); U.toast(on ? T('Zu Favoriten hinzugefügt') : T('Aus Favoriten entfernt')); }).catch(App.error);
-    }, T('Favorit'));
-    var btnLyrics = UI.iconBtn('mic', function () { lyricsOn = !lyricsOn; U.ustore.set('lyricsOn', lyricsOn); ensureLyrics(); renderPanel(); }, T('Songtext'));
+    }, T('Favorit'), 'live-hide');
+    var btnLyrics = UI.iconBtn('mic', function () { lyricsOn = !lyricsOn; U.ustore.set('lyricsOn', lyricsOn); ensureLyrics(); renderPanel(); }, T('Songtext'), 'live-hide');
     var btnQueue = UI.iconBtn('queue', function () { App.go('queue'); }, T('Warteschlange'));
     var btnMore = UI.iconBtn('more', function () {
       var st = Player.station();
@@ -475,7 +475,7 @@ var Views = (function () {
       var s = Player.current(); if (s) Menus.song(s);
     }, T('Mehr'));
     // Der DJ, nur wenn er eingerichtet ist: läuft etwas anderes, übernimmt er ab dem laufenden Song – läuft er selbst, lässt er sich lenken
-    var btnDJ = DJ.ready() ? UI.iconBtn('dj', function () { if (DJ.playing()) djMenu(); else DJ.takeOver(); }, 'DJ') : null;
+    var btnDJ = DJ.ready() ? UI.iconBtn('dj', function () { if (DJ.playing()) djMenu(); else DJ.takeOver(); }, 'DJ', 'dj-btn') : null;
     var btnSleep = UI.iconBtn('moon', sleepMenu, T('Sleep-Timer'));
     var sleepLabel = h('span.np-sleep-left');
     btnSleep.appendChild(sleepLabel);
@@ -886,6 +886,7 @@ var Views = (function () {
     if (phones.length) el.appendChild(h('div.settings-actions.nav-container', null,
       UI.button(T('Alle trennen'), function () { Link.forget(); App.reload(); }, 'outline', 'close')));
     if (U.desktop) {
+      el.appendChild(Remote.setting());
       var vis = h('div.chips.nav-container');
       [[true, T('An')], [false, T('Aus')]].forEach(function (v) {
         var c = UI.chip(v[1], function () {

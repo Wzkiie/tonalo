@@ -8,7 +8,7 @@ var dgram = require('dgram');
 var os = require('os');
 
 var NAME = require('./package.json').name;
-var PORT = 47913;
+var PORT = +(typeof process !== 'undefined' && process.env && process.env.TONALO_PORT) || 47913; // der andere Wert nur für Tests: am TV gibt es ihn nicht
 var service = new Service(NAME);
 
 var app = null;        // Abo der TV-App – darüber gehen Befehle und Kopplungscodes raus
@@ -248,7 +248,7 @@ function handle(req, res, body) {
     var ask = parse(body);
     // Ob Gast oder eigenes iPhone, steht hier fest – und damit auch auf dem Bildschirm, den der TV zeigt
     pairing = { code: String(crypto.randomBytes(4).readUInt32BE(0) % 1000000 + 1000000).slice(1), until: Date.now() + 120000, tries: 0, guest: !!ask.guest };
-    send({ pairCode: pairing.code, pairName: String(ask.device || '').slice(0, 60), guest: !!ask.guest });
+    send({ pairCode: pairing.code, pairName: String(ask.device || '').slice(0, 60), guest: !!ask.guest, pairVia: ask.via === 'pc' ? 'pc' : 'phone' });
     return reply(res, 200, { ok: true });
   }
   if (req.method === 'POST' && path === '/pair/finish') {

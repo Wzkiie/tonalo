@@ -182,6 +182,23 @@ function setupDJ() {
   };
 }
 
+// ---------------- Fernbedienung: andere Geräte im Heimnetz (TV, PC) finden, koppeln und steuern (remote.js).
+// Die Schlüssel aus den Kopplungen liegen verschlüsselt auf der Platte (wie dj.bin) und nur dieser Prozess liest sie.
+let remote = null;
+function setupRemote() {
+  const file = path.join(app.getPath('userData'), 'remote.bin');
+  const host = os.hostname().replace(/\.local$/, '');
+  remote = require('./remote.js')(Service, {
+    get: () => { try { return JSON.parse(safeStorage.decryptString(fs.readFileSync(file))); } catch (e) { return {}; } },
+    set: (all) => {
+      try {
+        if (!Object.keys(all).some((a) => Object.keys(all[a] || {}).length)) fs.rmSync(file, { force: true });
+        else if (safeStorage.isEncryptionAvailable()) fs.writeFileSync(file, safeStorage.encryptString(JSON.stringify(all)), { mode: 0o600 });
+      } catch (e) { /* bleibt bis zum Beenden im Speicher */ }
+    }
+  }, { deviceName: /^(DESKTOP|LAPTOP)-[A-Z0-9]+$/i.test(host) ? 'PC' : host });
+}
+
 // ---------------- Updates: neue Releases auf GitHub (latest.yml), geladen und installiert erst auf Wunsch
 let status = { state: 'idle' };
 let updater = null;
@@ -246,6 +263,7 @@ if (!app.requestSingleInstanceLock()) {
     global.tonaloHeaders = (url, h) => headers.apply(url, h); // der Dienst stellt Anfragen an Audiobookshelf mit denselben Headern
     setupDJ();
     startService();
+    setupRemote();
     createWindow();
     setupUpdater();
   });
