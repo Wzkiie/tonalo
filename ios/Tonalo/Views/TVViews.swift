@@ -218,6 +218,7 @@ struct PairTVView: View {
         busy = false
         if asked { try? await Task.sleep(for: .milliseconds(350)); focused = true }
         else if status == 503 { message = "Open Tonalo on \(device.name) and choose who's listening." }
+        else if status == 409 { message = "Someone else is signed in on \(device.name). Choose your profile there first, then pair again – or join its Jukebox." }
         else { message = "\(device.name) isn't answering. Is Tonalo open on it?" }
     }
 

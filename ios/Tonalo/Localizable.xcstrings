@@ -3748,6 +3748,16 @@
         }
       }
     },
+    "Someone else is signed in on %@. Choose your profile there first, then pair again – or join its Jukebox." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf %@ ist gerade jemand anderes angemeldet. Wähle dort zuerst dein Profil und koppele dann noch einmal – oder tritt der Jukebox bei."
+          }
+        }
+      }
+    },
     "Orange" : {
       "localizations" : {
         "de" : {

@@ -12,7 +12,7 @@ var PORT = +(typeof process !== 'undefined' && process.env && process.env.TONALO
 var service = new Service(NAME);
 
 var app = null;        // Abo der TV-App – darüber gehen Befehle und Kopplungscodes raus
-var tv = { id: '', name: 'TV', kind: 'tv', keys: [], others: [], account: '' }; // keys: [{ id, device, key }], gespeichert macht sie die App
+var tv = { id: '', name: 'TV', kind: 'tv', keys: [], others: [], account: '', user: '' }; // keys: [{ id, device, key }], gespeichert macht sie die App
                                                         // others: die iPhones der anderen Konten – hier nur Gäste
 var state = { active: false };
 var clients = [];      // offene Live-Verbindungen der iPhones: { res, entry }
@@ -33,6 +33,7 @@ service.register('attach', function (msg) {
   tv.keys = Array.isArray(p.keys) ? p.keys : [];
   tv.others = Array.isArray(p.others) ? p.others : [];
   tv.account = String(p.account || '').slice(0, 80);
+  tv.user = String(p.user || '').slice(0, 120); // wer hier gerade angemeldet ist: ein iPhone mit anderem Konto wird nicht als eigenes Gerät gekoppelt
   // Am PC liegt die DJ-Einrichtung verschlüsselt im Hauptprozess, am TV hält sie die App (wie die Kopplungsschlüssel)
   djCfg = djStore() ? djStore().get(tv.account) : djClean(p.dj);
   // Getrennte Geräte sehen ab sofort nichts mehr, auch nicht über eine schon offene Verbindung – und wer mit dem
@@ -246,6 +247,9 @@ function handle(req, res, body) {
     if (now < lockedUntil || now - lastStart < 3000) return reply(res, 429, { error: 'too many tries' });
     lastStart = now;
     var ask = parse(body);
+    // Ein iPhone, das ein anderes Konto meldet, gehört nicht zu diesem Profil: es kann nur der Jukebox beitreten.
+    // Sonst läge es beim falschen Profil, und beim Wechsel zu seinem eigenen wäre es dort nur Gast.
+    if (!ask.guest && ask.user && tv.user && String(ask.user).toLowerCase() !== tv.user.toLowerCase()) { lastStart = 0; return reply(res, 409, { error: 'other profile' }); }
     // Ob Gast oder eigenes iPhone, steht hier fest – und damit auch auf dem Bildschirm, den der TV zeigt
     pairing = { code: String(crypto.randomBytes(4).readUInt32BE(0) % 1000000 + 1000000).slice(1), until: Date.now() + 120000, tries: 0, guest: !!ask.guest };
     send({ pairCode: pairing.code, pairName: String(ask.device || '').slice(0, 60), guest: !!ask.guest, pairVia: ask.via === 'pc' ? 'pc' : 'phone' });

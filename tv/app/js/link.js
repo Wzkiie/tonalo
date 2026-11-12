@@ -36,7 +36,7 @@ var Link = (function () {
     });
     var params = { subscribe: true, id: tvId(), name: U.store.get('tvName', 'LG TV'), kind: U.desktop ? 'pc' : 'tv', keys: U.ustore.get('phones', []), others: others,
       // Die DJ-Einrichtung gehört zum Konto. Am PC hält sie der Hauptprozess verschlüsselt, hier geht nur die Kontonummer mit
-      account: App.account().id, dj: U.desktop ? null : U.ustore.get('dj', null) };
+      account: App.account().id, user: (API.getConfig() || {}).user || '', dj: U.desktop ? null : U.ustore.get('dj', null) };
     bridge = call('attach', params, onMessage);
     push();
   }

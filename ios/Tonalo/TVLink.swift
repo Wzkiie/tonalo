@@ -122,7 +122,7 @@ final class TVLink {
         set {
             if newValue == nil {
                 listeners.values.forEach { $0.cancel() }
-                listeners = [:]; primary = nil; activity = [:]; appliers = [:]
+                listeners = [:]; primary = nil; activity = [:]; sameUser = []; appliers = [:]
             }
         }
     }
@@ -295,7 +295,9 @@ final class TVLink {
     /// Asks the other side to show a code. The answer's status: 200 shows the code, 503 means Tonalo on the TV
     /// isn't ready yet (no one chosen there), 0 means no answer.
     func startPairing(_ device: Device, guest: Bool) async -> Int {
-        let body = (try? JSONSerialization.data(withJSONObject: ["guest": guest, "device": deviceName])) ?? Data()
+        var ask: [String: Any] = ["guest": guest, "device": deviceName]
+        if !guest, let user = app?.current?.username { ask["user"] = user } // the device checks it is the same profile
+        let body = (try? JSONSerialization.data(withJSONObject: ask)) ?? Data()
         return (try? await LinkHTTP.request(device.endpoint, "POST", "/pair/start", body: body))?.status ?? 0
     }
 
@@ -395,7 +397,7 @@ final class TVLink {
 
     /// The device stops being followed: if its state was shown, the player lets go – and another device that is connected takes over.
     private func release(_ id: String) {
-        activity[id] = nil
+        activity[id] = nil; sameUser.remove(id)
         appliers[id] = nil
         guard primary == id else { return }
         primary = nil
@@ -490,7 +492,12 @@ final class TVLink {
             if !guest, s.jukebox != true {
                 // Several own devices are followed at once: this one is shown while it plays, or while nothing else does
                 let active = (s.active && s.playing == true) || (s.book?.id != nil && s.book?.playing == true)
-                if self.activity[device.id] == nil { self.syncDJ() } // just connected: it gets the DJ, if that is shared
+                // The DJ goes only to a device that is signed in as this account: the setup lives per account there,
+                // and another person's slot must never receive this phone's key
+                let mine = s.user?.caseInsensitiveCompare(self.app?.current?.username ?? "") == .orderedSame
+                let wasMine = self.sameUser.contains(device.id)
+                if mine { self.sameUser.insert(device.id) } else { self.sameUser.remove(device.id) }
+                if mine, self.activity[device.id] == nil || !wasMine { self.syncDJ() } // just connected, or the TV is on this account again
                 self.activity[device.id] = active
                 if let p = self.primary, p != device.id, !(active && self.activity[p] != true) { return }
                 if self.primary != device.id {
@@ -616,6 +623,8 @@ final class TVLink {
         }
         return false
     }
+    /// Own devices that are signed in as this account right now (a TV can have someone else's profile open).
+    @ObservationIgnored private var sameUser: Set<String> = []
     @ObservationIgnored private var sameBooks: [String: Bool] = [:]
     @ObservationIgnored private var checkingBooks: Set<String> = []
 
@@ -658,7 +667,7 @@ final class TVLink {
             let setup = self.app?.player.dj.shared
             for id in self.listeners.keys {
                 guard let device = self.pool.first(where: { $0.id == id }), !device.isPhone, let pairing = self.pairing(for: device),
-                      pairing.guest != true, !self.guestOnly.contains(id), self.activity[id] != nil else { continue }
+                      pairing.guest != true, !self.guestOnly.contains(id), self.sameUser.contains(id), self.activity[id] != nil else { continue }
                 let mark = setup.map { Self.fingerprint($0, pairing) }
                 if self.djShared[id] == mark { continue }
                 guard await self.sendDJ(setup, to: device, pairing), !Task.isCancelled else { continue }
