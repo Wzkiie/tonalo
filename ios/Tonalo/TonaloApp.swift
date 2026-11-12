@@ -32,6 +32,7 @@ struct TonaloApp: App {
         WindowGroup {
             RootView()
                 .environment(app)
+                .overlay(alignment: .top) { PullSpinner().animation(.easeOut(duration: 0.2), value: PullState.shared.active) }
                 .preferredColorScheme(.dark)
         }
     }

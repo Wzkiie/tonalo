@@ -89,11 +89,25 @@ import UIKit
         }
     }
 
+    /// A hiccup (Wi-Fi switching, a busy home server) must not end a sync that has been running for minutes:
+    /// a failed request is asked again a few times. Real answers from the server and a stop are passed on at once.
+    private func refresh(_ client: SubsonicClient, _ method: String, _ params: [String: String] = [:]) async throws -> Payload {
+        var wait = 1.0
+        for _ in 0..<3 {
+            do { return try await client.refresh(method, params) } catch {
+                if error.isServerAnswer || error.isCancellation || Task.isCancelled { throw error }
+            }
+            try await Task.sleep(for: .seconds(wait))
+            wait *= 3
+        }
+        return try await client.refresh(method, params)
+    }
+
     private func run(_ client: SubsonicClient) async throws -> Summary {
-        async let artistsPayload = client.refresh("getArtists")
-        async let genresPayload = client.refresh("getGenres")
-        async let playlistsPayload = client.refresh("getPlaylists")
-        async let starred = client.refresh("getStarred2")
+        async let artistsPayload = refresh(client, "getArtists")
+        async let genresPayload = refresh(client, "getGenres")
+        async let playlistsPayload = refresh(client, "getPlaylists")
+        async let starred = refresh(client, "getStarred2")
         let artists = (try await artistsPayload.artists?.index ?? []).flatMap { $0.artist ?? [] }
         let genres = try await genresPayload.genres?.genre ?? []
         let playlists = try await playlistsPayload.playlists?.playlist ?? []
@@ -104,7 +118,7 @@ import UIKit
         while true {
             try Task.checkCancellation()
             phase = String(localized: "Loading albums… \(albums.count)")
-            let page = try await client.refresh("getAlbumList2", ["type": "alphabeticalByName", "size": "60", "offset": "\(albums.count)"])
+            let page = try await refresh(client, "getAlbumList2", ["type": "alphabeticalByName", "size": "60", "offset": "\(albums.count)"])
                 .albumList2?.album ?? []
             albums += page
             if page.count < 60 { break }
@@ -115,19 +129,27 @@ import UIKit
         total = jobs.count
         phase = String(localized: "Loading albums, artists and playlists…")
         var start = 0
+        var failed = 0
         while start < jobs.count {
             try Task.checkCancellation()
             let batch = jobs[start..<min(start + parallel, jobs.count)]
-            try await withThrowingTaskGroup(of: Void.self) { group in
+            let lost = try await withThrowingTaskGroup(of: Bool.self) { group in
                 for (method, id) in batch {
-                    group.addTask {
-                        do { _ = try await client.refresh(method, ["id": id]) } catch where error.isServerAnswer {
-                            // One album the server can't find (just deleted, say) doesn't stop the sync
+                    group.addTask { @MainActor in
+                        do { _ = try await self.refresh(client, method, ["id": id]); return false } catch {
+                            if error.isCancellation || Task.isCancelled { throw error }
+                            // One album the server can't find (just deleted, say) or that fails again and again
+                            // doesn't stop the sync – many of them do: then the connection is gone
+                            return !error.isServerAnswer
                         }
                     }
                 }
-                try await group.waitForAll()
+                var n = 0
+                for try await gone in group where gone { n += 1 }
+                return n
             }
+            failed += lost
+            if failed > 10 { throw URLError(.networkConnectionLost) }
             start += batch.count
             done = start
         }

@@ -304,7 +304,8 @@ final class AppModel {
               LocalNetwork.sameSubnet(host) != false else { setAtHome(false); return }
         routeCheck = Task {
             // Asked without the login on both sides: the home address only counts if the same server answers there
-            async let home = SubsonicClient(account: account, atHome: true).identity()
+            // A slow Wi-Fi moment (waking up, joining) must not leave the phone on the outside address for good
+            async let home = SubsonicClient(account: account, atHome: true).identity(attempts: 3)
             async let outside = SubsonicClient(account: account).identity()
             let key = "server." + account.id.uuidString
             var ok = false

@@ -40,7 +40,7 @@ struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
         .task(id: "\(app.currentId?.uuidString ?? "")\(app.current?.serverURL ?? "")\(Theme.shared.hiddenHomeRows.sorted())\(app.isOnline)\(app.playlistsVersion)") { await load() }
-        .refreshable { await Task { await load() }.value; await app.books.load(force: true) }
+        .refreshable { await pulled { await Task { await load() }.value; await app.books.load(force: true) } }
         .task(id: "\(app.currentId?.uuidString ?? "")\(app.books.connected)") { await app.books.load() }
         .onChange(of: app.books.connected) { _, on in if !on && filter == .books { filter = .all } }
         .onChange(of: reselected) {
@@ -384,6 +384,8 @@ struct SearchView: View {
     @State private var searching = false
     @State private var genres: [Genre] = []
     @State private var error: String?
+    /// Goes up to ask again – pulling down, or "Try again".
+    @State private var attempt = 0
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -403,7 +405,8 @@ struct SearchView: View {
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
         .onChange(of: reselected) { withAnimation(.easeOut(duration: 0.3)) { scroller.scrollTo("search.top", anchor: .top) } }
-        .task(id: query) {
+        .refreshable { await pulled { attempt += 1 } }
+        .task(id: "\(query)|\(attempt)") {
             let q = query.trimmingCharacters(in: .whitespaces)
             guard q.count >= 2 else { result = nil; books = ABSSearchResults(); searching = false; return }
             searching = true
@@ -431,8 +434,8 @@ struct SearchView: View {
         // Test hook: -demoSearch <text> fills in the search field, typing doesn't reach it in the simulator
         .onAppear { if query.isEmpty, let demo = UserDefaults.standard.string(forKey: "demoSearch") { query = demo } }
         #endif
-        .task {
-            guard genres.isEmpty, let all = try? await app.client?.genres() else { return }
+        .task(id: attempt) {
+            guard genres.isEmpty || attempt > 0, let all = try? await app.client?.genres() else { return }
             genres = Array(all.filter { ($0.albumCount ?? 0) > 0 }.sorted { ($0.albumCount ?? 0) > ($1.albumCount ?? 0) }.prefix(30))
         }
         }
@@ -470,7 +473,7 @@ struct SearchView: View {
 
     @ViewBuilder private var results: some View {
         LazyVStack(alignment: .leading, spacing: 12) {
-            if let error { LoadState(loading: false, error: error) }
+            if let error { LoadState(loading: false, error: error) { attempt += 1 } }
             let r = result ?? SearchBody()
             Group {
                 ForEach(r.artist ?? []) { a in
@@ -685,7 +688,7 @@ struct LibraryView: View {
             .toolbar(.hidden, for: .navigationBar)
             .statusBarBackground()
             .task(id: "\(app.currentId?.uuidString ?? "")\(app.current?.serverURL ?? "")\(app.playlistsVersion)-\(app.favoritesVersion)") { await load() }
-            .refreshable { await Task { await load() }.value; await app.books.load(force: true) }
+            .refreshable { await pulled { await Task { await load() }.value; await app.books.load(force: true) } }
             .task(id: "\(app.currentId?.uuidString ?? "")\(app.books.connected)") { await app.books.load() }
             .onChange(of: app.currentId) { filter = nil }
             .onChange(of: app.books.connected) { _, on in if !on && (filter == .books || filter == .podcasts) { filter = nil } }
@@ -1100,8 +1103,9 @@ struct AlbumsView: View {
                 }
             }
             .padding(16)
-            LoadState(loading: albums.isEmpty && !done && error == nil, error: error)
+            LoadState(loading: albums.isEmpty && !done && error == nil, error: error) { await reload() }
         }
+        .refreshable { await pulled { await reload() } }
         .navigationTitle(genre ?? String(localized: "Albums"))
         .toolbar {
             if genre == nil {
@@ -1110,7 +1114,13 @@ struct AlbumsView: View {
                 } label: { Image(systemName: "arrow.up.arrow.down") }
             }
         }
-        .task(id: type) { albums = []; done = false; error = nil; await more() }
+        .task(id: type) { await reload() }
+    }
+
+    private func reload() async {
+        // A page that is still on its way would add its answer to the new list: it is dropped there (see more)
+        albums = []; done = false; error = nil
+        await more()
     }
 
     private func more() async {
@@ -1150,12 +1160,15 @@ struct ArtistsView: View {
             }
             .padding(16)
         }
-        .overlay { LoadState(loading: artists.isEmpty && error == nil, error: error) }
+        .overlay { LoadState(loading: artists.isEmpty && error == nil, error: error) { await load() } }
+        .refreshable { await pulled { await load() } }
         .navigationTitle("Artists")
         .searchable(text: $filter)
-        .task {
-            do { artists = try await app.client?.artists() ?? [] } catch { self.error = error.userMessage }
-        }
+        .task { await load() }
+    }
+
+    private func load() async {
+        do { artists = try await app.client?.artists() ?? []; error = nil } catch { self.error = error.userMessage }
     }
 }
 
@@ -1174,7 +1187,8 @@ struct PlaylistsView: View {
             }
             .padding(16)
         }
-        .overlay { LoadState(loading: !loaded, error: error) }
+        .overlay { LoadState(loading: !loaded, error: playlists.isEmpty ? error : nil) { await load() } }
+        .refreshable { await pulled { await load() } }
         .navigationTitle("Playlists")
         .toolbar {
             Button { newName = ""; naming = true } label: { Image(systemName: "plus") }
@@ -1189,7 +1203,7 @@ struct PlaylistsView: View {
     }
 
     private func load() async {
-        do { playlists = try await app.client?.playlists() ?? [] } catch { self.error = error.userMessage }
+        do { playlists = try await app.client?.playlists() ?? []; error = nil } catch { if !error.isCancellation { self.error = error.userMessage } }
         loaded = true
     }
 

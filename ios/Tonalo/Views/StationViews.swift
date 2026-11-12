@@ -160,7 +160,7 @@ struct StationsView: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .navigationTitle("Radio")
         .task { await load() }
-        .refreshable { await load() }
+        .refreshable { await pulled { await load() } }
     }
 
     private func load() async {

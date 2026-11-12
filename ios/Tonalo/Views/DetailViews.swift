@@ -61,7 +61,7 @@ struct AlbumView: View {
     // Loading hangs on the page: the saved copy shows at once and would otherwise cancel asking the server
     var body: some View {
         content.task { await load() }
-            .refreshable { await Task { await load() }.value }
+            .refreshable { await pulled { await Task { await load() }.value } }
     }
 
     @ViewBuilder private var content: some View {
@@ -157,7 +157,7 @@ struct PlaylistView: View {
     var body: some View {
         // Reloads when songs were added to this playlist from somewhere else (a song's menu, "Add to other playlist")
         content.task(id: app.playlistsVersion) { await load() }
-            .refreshable { await Task { await load() }.value }
+            .refreshable { await pulled { await Task { await load() }.value } }
     }
 
     @ViewBuilder private var content: some View {
@@ -308,7 +308,7 @@ struct FavoritesView: View {
         // Also when a song gets a heart elsewhere (the player, the lock screen) while this page is open: it isn't in the list yet.
         // favoriteChanges is only set once the server has taken the heart, so the reload can't miss it.
         .task(id: app.favoriteChanges.filter(\.value).keys.sorted()) { await load() }
-        .refreshable { await Task { await load() }.value }
+        .refreshable { await pulled { await Task { await load() }.value } }
     }
 
     // Like an album: the saved copy shows at once – offline, asking the server only gives up after its timeout

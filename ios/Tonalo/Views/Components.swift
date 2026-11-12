@@ -226,3 +226,35 @@ struct CoverTint: View {
     let h = name.lowercased().unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) & 0x7fffffff }
     return palette[h % palette.count]
 }
+
+/// Pull to refresh: the system's spinner is only shown while this runs, and a cached or local answer comes back
+/// in milliseconds – then it would flash by unseen and look like nothing happened. Pages that draw under the
+/// navigation bar (album, playlist) hide the system's spinner altogether, so the app shows its own as well.
+@MainActor @Observable final class PullState {
+    static let shared = PullState()
+    var count = 0
+    var active: Bool { count > 0 }
+}
+
+@MainActor func pulled(_ work: () async -> Void) async {
+    let pull = PullState.shared
+    pull.count += 1
+    defer { pull.count -= 1 }
+    let start = ContinuousClock.now
+    await work()
+    let rest = Duration.milliseconds(700) - (ContinuousClock.now - start)
+    if rest > .zero { try? await Task.sleep(for: rest) }
+}
+
+struct PullSpinner: View {
+    var body: some View {
+        if PullState.shared.active {
+            ProgressView()
+                .padding(12)
+                .background(.regularMaterial, in: Circle())
+                .padding(.top, 70)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+                .allowsHitTesting(false)
+        }
+    }
+}

@@ -240,11 +240,12 @@ struct SubsonicClient {
         return r
     }
 
-    func call(_ method: String, _ params: [String: String] = [:]) async throws -> Payload {
+    /// `retry: false` for what changes something and isn't safe to do twice (a scrobble, deleting).
+    func call(_ method: String, _ params: [String: String] = [:], retry: Bool = true) async throws -> Payload {
         guard let u = url(method, params) else { throw SubsonicError.badURL }
         let key = LibraryCache.key(method, params)
         do {
-            let (payload, data) = try await sendRaw(request(u))
+            let (payload, data) = try await sendRaw(request(u), retry: retry)
             if let key { LibraryCache.save(data, account.id, key) }
             return payload
         } catch {
@@ -272,7 +273,9 @@ struct SubsonicClient {
 
     /// Long lists (a whole queue or playlist) go in a form body instead of the address, which servers limit in length.
     /// Navidrome accepts that ("formPost"); servers that don't get the address version.
-    func post(_ method: String, _ params: [URLQueryItem]) async throws -> Payload {
+    /// `retry`: ask again after a network change. Only for what can safely happen twice – creating a playlist
+    /// or adding a song can't: the first request may have got through.
+    func post(_ method: String, _ params: [URLQueryItem], retry: Bool = false) async throws -> Payload {
         guard let full = url(method, items: params), var comps = URLComponents(url: full, resolvingAgainstBaseURL: false) else { throw SubsonicError.badURL }
         let query = comps.percentEncodedQuery ?? ""
         comps.query = nil
@@ -282,9 +285,9 @@ struct SubsonicClient {
         r.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         r.httpBody = Data(query.utf8) // "+" is already escaped by url(), see there
         do {
-            return try await send(r)
+            return try await send(r, retry: retry)
         } catch let e as SubsonicError where e.formPostRefused {
-            return try await send(request(full))
+            return try await send(request(full), retry: retry)
         }
         // Anything else (a timeout, say) is not asked again: the change may already have been made,
         // and doing it twice would remove the wrong song or create the playlist twice
@@ -305,7 +308,14 @@ struct SubsonicClient {
     }
 
     private func sendRaw(_ r: URLRequest, retry: Bool = true) async throws -> (Payload, Data) {
-        let (data, resp) = try await ServerSession.shared.fetch(r, retry: retry ? outside : nil)
+        let data: Data, resp: URLResponse
+        do {
+            (data, resp) = try await ServerSession.shared.fetch(r, retry: retry ? outside : nil)
+        } catch let e as URLError where e.code == .cancelled && !retry && !Task.isCancelled {
+            // Changes something (create, add, remove): the server may have done it already, so it isn't sent again.
+            // Say the connection was lost, instead of looking like the user stopped it
+            throw URLError(.networkConnectionLost)
+        }
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         let type = (resp as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type") ?? ""
         guard type.contains("json") else { throw SubsonicError.notSubsonic(status: status) }
@@ -325,7 +335,16 @@ struct SubsonicClient {
     /// Which server software answers at this address ("navidrome|0.58.0"), asked without the login – for the home address.
     /// In someone else's network the same private IP may belong to anything, so the token is only sent once
     /// the answer matches the server outside. Any Subsonic answer counts, even "parameter missing".
-    func identity() async -> String? {
+    func identity(attempts: Int = 1) async -> String? {
+        for i in 0..<attempts {
+            if i > 0 { try? await Task.sleep(for: .milliseconds(800)) }
+            if Task.isCancelled { return nil }
+            if let found = await identityOnce() { return found }
+        }
+        return nil
+    }
+
+    private func identityOnce() async -> String? {
         guard var comps = URLComponents(string: base + "/rest/ping") else { return nil }
         comps.queryItems = [URLQueryItem(name: "v", value: Self.apiVersion), URLQueryItem(name: "c", value: Self.clientName),
                             URLQueryItem(name: "f", value: "json")]
@@ -414,7 +433,7 @@ struct SubsonicClient {
     func scrobble(_ id: String, submission: Bool, time: Date? = nil) async -> Bool {
         var p = ["id": id, "submission": submission ? "true" : "false"]
         if let time { p["time"] = String(Int64(time.timeIntervalSince1970 * 1000)) }
-        do { _ = try await call("scrobble", p); return true } catch { return false }
+        do { _ = try await call("scrobble", p, retry: false); return true } catch { return false }
     }
 
     // MARK: Play queue (continue on another device)
@@ -426,7 +445,7 @@ struct SubsonicClient {
     func savePlayQueue(_ ids: [String], current: String, position: Double) async {
         var items = ids.map { URLQueryItem(name: "id", value: $0) }
         items += [URLQueryItem(name: "current", value: current), URLQueryItem(name: "position", value: "\(Int(position * 1000))")]
-        _ = try? await post("savePlayQueue", items)
+        _ = try? await post("savePlayQueue", items, retry: true)
     }
 
     // MARK: Playlists
@@ -450,7 +469,7 @@ struct SubsonicClient {
     }
 
     func deletePlaylist(_ id: String) async throws {
-        _ = try await call("deletePlaylist", ["id": id])
+        _ = try await call("deletePlaylist", ["id": id], retry: false)
     }
 
     func lyrics(_ songId: String) async -> Lyrics? {
