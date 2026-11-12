@@ -412,5 +412,6 @@ I18N.add('es', {
   'Wird auf {name} gespielt': 'Se reproduce en {name}',
   'Das geht nur direkt am Gerät.': 'Eso solo funciona en el propio dispositivo.',
   'Du steuerst {name}': 'Estás controlando {name}',
-  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} tiene iniciada otra cuenta. Desde aquí no se puede enviar nada.'
+  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} tiene iniciada otra cuenta. Desde aquí no se puede enviar nada.',
+  'Verbunden': 'Conectado'
 });

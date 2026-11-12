@@ -413,5 +413,6 @@ I18N.add('tr', {
   'Wird auf {name} gespielt': '{name} cihazında çalıyor',
   'Das geht nur direkt am Gerät.': 'Bu yalnızca cihazın kendisinde çalışır.',
   'Du steuerst {name}': '{name} cihazını kontrol ediyorsun',
-  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} başka bir hesapla oturum açmış. Buradan oraya hiçbir şey gönderilemez.'
+  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} başka bir hesapla oturum açmış. Buradan oraya hiçbir şey gönderilemez.',
+  'Verbunden': 'Bağlı'
 });

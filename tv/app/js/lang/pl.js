@@ -413,5 +413,6 @@ I18N.add('pl', {
   'Wird auf {name} gespielt': 'Odtwarzanie na {name}',
   'Das geht nur direkt am Gerät.': 'To działa tylko na samym urządzeniu.',
   'Du steuerst {name}': 'Sterujesz urządzeniem {name}',
-  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} jest zalogowane na inne konto. Stąd nic nie da się wysłać.'
+  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} jest zalogowane na inne konto. Stąd nic nie da się wysłać.',
+  'Verbunden': 'Połączono'
 });

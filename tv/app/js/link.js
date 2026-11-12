@@ -45,7 +45,7 @@ var Link = (function () {
     if (bridge) { try { bridge.cancel(); } catch (e) { /* egal */ } }
     bridge = null;
     DJ.setInfo(null); // gehört zum Konto, das gerade geht
-    if (U.desktop) { Desktop.linked([]); Remote.reset(); } // das gesteuerte Gerät gehört zum Konto, das gerade geht
+    if (U.desktop) { Desktop.linked([]); Remote.reset(); } else chip([]); // das gesteuerte Gerät gehört zum Konto, das gerade geht
     if (available()) call('state', { state: { active: false } });
   }
 
@@ -62,7 +62,22 @@ var Link = (function () {
     if ('pairCode' in msg) showCode(msg.pairCode, msg.pairName, msg.guest, msg.pairVia);
     if (msg.paired) U.toast(msg.guest ? T('{device} ist der Jukebox beigetreten', { device: msg.paired }) : T('{device} ist jetzt verbunden', { device: msg.paired }), 4000);
     if (msg.command) run(msg.command);
-    if (msg.connected && U.desktop) Desktop.linked(msg.connected);
+    if (msg.connected) { if (U.desktop) Desktop.linked(msg.connected); else chip(msg.connected); }
+  }
+
+  // Am TV: klein und dauerhaft in der Seitenleiste, welche Geräte gerade verbunden sind (am PC zeigt das die Leiste unten)
+  function chip(list) {
+    var el = U.$('#linkchip');
+    if (!el) return;
+    var box = U.$('.lc-list', el);
+    box.innerHTML = '';
+    var rows = (list || []).slice(0, 4);
+    rows.forEach(function (p) {
+      var name = p.guest ? T('{name} (Gast)', { name: p.device }) : p.device;
+      var computer = /mac|pc|laptop|book|desktop|windows/i.test(p.device) && !/iphone|ipad/i.test(p.device);
+      box.appendChild(U.h('div.lc-row', null, Icon.el(computer ? 'laptop' : 'phone'), U.h('span.ellipsis', { text: name })));
+    });
+    el.classList.toggle('hidden', !rows.length);
   }
 
   function showCode(code, name, guest, via) {
@@ -245,5 +260,5 @@ var Link = (function () {
   // Mit den iPhones geht auch der DJ, den eins von ihnen hier eingerichtet hat
   function forget() { U.ustore.set('phones', []); DJ.forget(); attach(); }
 
-  return { available: available, init: init, attach: attach, detach: detach, push: push, phones: phones, forget: forget, visible: visible, setVisible: setVisible };
+  return { chip: chip, available: available, init: init, attach: attach, detach: detach, push: push, phones: phones, forget: forget, visible: visible, setVisible: setVisible };
 })();

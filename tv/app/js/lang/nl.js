@@ -412,5 +412,6 @@ I18N.add('nl', {
   'Wird auf {name} gespielt': 'Speelt op {name}',
   'Das geht nur direkt am Gerät.': 'Dat kan alleen op het apparaat zelf.',
   'Du steuerst {name}': 'Je bedient {name}',
-  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} is aangemeld met een ander account. Vanaf hier kan niets worden gestuurd.'
+  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} is aangemeld met een ander account. Vanaf hier kan niets worden gestuurd.',
+  'Verbunden': 'Verbonden'
 });

@@ -412,5 +412,6 @@ I18N.add('en', {
   'Wird auf {name} gespielt': 'Playing on {name}',
   'Das geht nur direkt am Gerät.': 'That only works on the device itself.',
   'Du steuerst {name}': 'You are controlling {name}',
-  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} is signed in with a different account. Nothing can be sent there from here.'
+  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} is signed in with a different account. Nothing can be sent there from here.',
+  'Verbunden': 'Connected'
 });

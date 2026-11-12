@@ -87,6 +87,15 @@ button, input { font: inherit; color: inherit; background: none; border: 0; outl
 html.desktop #btn-back { display: inline-flex; }
 .side-label { font-size: 20px; font-weight: 700; color: var(--sub); padding: 6px 16px 12px; text-transform: none; }
 .side-panel .spacer { flex: 1; }
+/* Die Bibliothek-Einträge geben nach, wenn das Fenster niedrig ist (am PC mit Leiste unten): Benutzer und Einstellungen bleiben sichtbar */
+.lib-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+.lib-list::-webkit-scrollbar { display: none; }
+#linkchip { padding: 10px 16px 4px; font-size: 18px; color: var(--sub); }
+#linkchip.hidden { display: none; }
+#linkchip .lc-title { font-size: 15px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; opacity: .8; margin-bottom: 4px; }
+#linkchip .lc-row { display: flex; align-items: center; gap: 10px; line-height: 1.5; }
+#linkchip .ic { width: 20px; height: 20px; flex: none; color: var(--accent); }
+html.desktop #linkchip { display: none; }
 .nav-item { display: flex; align-items: center; width: 100%; padding: 12px 16px; margin-bottom: 2px; border-radius: 8px; font-size: 25px; font-weight: 700; color: var(--sub); }
 .nav-item .ic { margin-right: 20px; width: 30px; height: 30px; }
 .nav-item.active { color: var(--fg); }

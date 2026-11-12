@@ -41,6 +41,8 @@ html.desktop.linked #linkbar { display: flex; }
 html.desktop #linkbar .ic { width: 22px; height: 22px; flex: none; }
 html.desktop #linkbar .lb-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 html.desktop #miniplayer { bottom: var(--linkbar); }
+html.desktop #sidebar, html.desktop #content { bottom: calc(var(--gap) + var(--linkbar)); }
+html.desktop #main.mini-on #sidebar, html.desktop #main.mini-on #content { bottom: calc(var(--mini) + var(--linkbar)); }
 
 /* Unten, solange ein anderes Gerät gesteuert wird (Fernseher, anderer PC): wen man steuert. Titel, Zeit und Knöpfe zeigt der Player selbst. */
 html.desktop #remotebar { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: var(--remotebar); align-items: center; gap: 14px;
