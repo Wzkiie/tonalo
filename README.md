@@ -106,7 +106,7 @@ The same app as on the TV, made for mouse and keyboard: the same screens and fea
 - **Custom HTTP headers per server**, entered under *Custom headers* at sign-in, for servers behind Cloudflare Access (service token), Authelia or a similar proxy. There's a one-click preset for the two Cloudflare Access headers. The values are stored encrypted with Windows' own data protection, go out with every request to that server including music and cover art, and never to any other address, not even after a redirect
 - Custom headers can be changed later under Settings → *Custom headers*; new values are only saved if the server answers with them
 - **A second address** per account (Settings → *Second address*): one in your home network, one reachable from outside. At home Tonalo uses the home address as soon as the same server answers there, and switches back when you leave, mid-song. Custom headers only go to the outside address
-- **Control other devices** (Settings → *Control other devices*): find a TV or another computer with Tonalo on the same network, pair once with a code, and see what is playing there with previous, play/pause and next in a bar at the bottom. Same pairing as the iPhone
+- **Control other devices** (Settings → *Control other devices*): find a TV or another computer with Tonalo on the same network, pair once with a code, and the player shows what is playing there; controls and everything you start go to that device, like the iPhone does with a TV. Same pairing as the iPhone
 - **Audiobookshelf** works like on the TV, and custom headers entered for that server are used for it too
 - **Updates install from inside the app**: Tonalo checks GitHub for a new release on start, asks, downloads it and restarts. Settings → Updates checks by hand
 

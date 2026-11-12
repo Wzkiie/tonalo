@@ -409,5 +409,9 @@ I18N.add('tr', {
   'Dort ist noch kein Konto gewählt. Öffne Tonalo dort und wähle ein Konto.': 'Orada henüz bir hesap seçilmedi. Orada Tonalo\'yu açıp bir hesap seç.',
   'Der Code ist abgelaufen. Versuche es noch einmal.': 'Kodun süresi doldu. Tekrar dene.',
   'Falscher Code.': 'Yanlış kod.',
-  'Verbinden hat nicht geklappt.': 'Bağlanılamadı.'
+  'Verbinden hat nicht geklappt.': 'Bağlanılamadı.',
+  'Wird auf {name} gespielt': '{name} cihazında çalıyor',
+  'Das geht nur direkt am Gerät.': 'Bu yalnızca cihazın kendisinde çalışır.',
+  'Du steuerst {name}': '{name} cihazını kontrol ediyorsun',
+  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} başka bir hesapla oturum açmış. Buradan oraya hiçbir şey gönderilemez.'
 });

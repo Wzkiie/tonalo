@@ -42,22 +42,33 @@ html.desktop #linkbar .ic { width: 22px; height: 22px; flex: none; }
 html.desktop #linkbar .lb-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 html.desktop #miniplayer { bottom: var(--linkbar); }
 
-/* Unten, solange ein anderes Gerät gesteuert wird (Fernseher, anderer PC): was dort läuft und Pause/Weiter. Ersetzt die Leiste der iPhones. */
-html.desktop #remotebar { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: 56px; align-items: center; gap: 14px;
+/* Unten, solange ein anderes Gerät gesteuert wird (Fernseher, anderer PC): wen man steuert. Titel, Zeit und Knöpfe zeigt der Player selbst. */
+html.desktop #remotebar { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: var(--remotebar); align-items: center; gap: 14px;
   padding: 0 24px; background: var(--accent); color: #000; font-size: 20px; font-weight: 600; z-index: 7; }
 html.desktop.remote #remotebar { display: flex; }
-html.desktop.remote { --linkbar: 56px; }
+html.desktop { --remotebar: 52px; }
+html.desktop.remote { --linkbar: var(--remotebar); }
 html.desktop.remote #linkbar { display: none; }
 html.desktop #remotebar .ic { width: 24px; height: 24px; flex: none; }
 html.desktop #remotebar .rb-text { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-html.desktop #remotebar .rb-controls { display: flex; gap: 6px; flex: none; }
-html.desktop #remotebar .icon-btn { width: 44px; height: 44px; margin: 0; color: #000; background: transparent; display: flex; align-items: center; justify-content: center; }
-html.desktop #remotebar .icon-btn:hover:not(:disabled) { background: rgba(0,0,0,.12); }
-html.desktop #remotebar .icon-btn:disabled { opacity: .35; }
-html.desktop #remotebar .icon-btn .ic { width: 24px; height: 24px; }
+html.desktop #remotebar .btn { flex: none; height: 38px; padding: 0 16px; font-size: 18px; color: #000; border-color: rgba(0,0,0,.45); background: transparent; }
+html.desktop #remotebar .btn .ic { width: 20px; height: 20px; }
+html.desktop #remotebar .btn:hover, html.desktop #remotebar .btn.focused { background: rgba(0,0,0,.14); }
+/* Die Lautstärke am Fernseher regelt der Fernseher */
+html.desktop.remote .mp-volbox, html.desktop.remote .np-volume { display: none; }
 
-html.desktop #sidebar, html.desktop #content { bottom: calc(var(--gap) + var(--linkbar)); }
-html.desktop #main.mini-on #sidebar, html.desktop #main.mini-on #content { bottom: calc(var(--mini) + var(--linkbar)); }
+/* Code eingeben: groß, mittig, ohne Beiwerk */
+.modal.code-modal { width: 560px; }
+.code-body { padding: 10px 24px 6px; }
+.code-input { display: block; width: 100%; box-sizing: border-box; text-align: center; font: 600 64px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: .12em;
+  padding: 22px 0; border-radius: 14px; border: 2px solid rgba(255,255,255,.22); background: rgba(255,255,255,.07); color: #fff; outline: none; }
+.code-input::placeholder { color: rgba(255,255,255,.22); }
+.code-input:focus, .code-input.focused { border-color: var(--accent); background: rgba(255,255,255,.1); }
+.code-msg { min-height: 30px; margin-top: 12px; text-align: center; font-size: 20px; color: #ff8a80; }
+.modal.code-modal .code-go { background: var(--accent); color: #000; justify-content: center; font-weight: 700; }
+.modal.code-modal .code-go .ic { color: #000; }
+.modal.code-modal .code-go.focused { background: #fff; }
+.modal.code-modal .modal-item { justify-content: center; }
 
 /* Eigene Header bei der Anmeldung */
 .desktop #login { overflow-y: auto; align-items: flex-start; padding: 60px 0; }

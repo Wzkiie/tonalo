@@ -408,5 +408,9 @@ I18N.add('pt', {
   'Dort ist noch kein Konto gewählt. Öffne Tonalo dort und wähle ein Konto.': 'Ainda não há conta escolhida lá. Abra o Tonalo lá e escolha uma conta.',
   'Der Code ist abgelaufen. Versuche es noch einmal.': 'O código expirou. Tente de novo.',
   'Falscher Code.': 'Código errado.',
-  'Verbinden hat nicht geklappt.': 'Não foi possível conectar.'
+  'Verbinden hat nicht geklappt.': 'Não foi possível conectar.',
+  'Wird auf {name} gespielt': 'Tocando em {name}',
+  'Das geht nur direkt am Gerät.': 'Isso só funciona no próprio dispositivo.',
+  'Du steuerst {name}': 'Você está controlando {name}',
+  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} está conectado com outra conta. Daqui não é possível enviar nada.'
 });

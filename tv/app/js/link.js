@@ -176,7 +176,8 @@ var Link = (function () {
         }
       };
     }
-    if (!acc || !cfg || (!song && !st)) return acc && cfg ? { active: false, user: cfg.user, server: cfg.url, abs: abs } : { active: false };
+    // Steuert dieser PC gerade ein anderes Gerät, zeigt der Player dessen Stand: der gehört nicht hierher gemeldet
+    if (!acc || !cfg || (!song && !st) || (U.desktop && Remote.active())) return acc && cfg ? { active: false, user: cfg.user, server: cfg.url, abs: abs } : { active: false };
     var q = Player.queue(), i = Player.index(), from = Math.max(0, i - 20);
     var ctx = Player.context();
     return {

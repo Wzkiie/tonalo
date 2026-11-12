@@ -408,5 +408,9 @@ I18N.add('nl', {
   'Dort ist noch kein Konto gewählt. Öffne Tonalo dort und wähle ein Konto.': 'Daar is nog geen account gekozen. Open Tonalo daar en kies een account.',
   'Der Code ist abgelaufen. Versuche es noch einmal.': 'De code is verlopen. Probeer het opnieuw.',
   'Falscher Code.': 'Verkeerde code.',
-  'Verbinden hat nicht geklappt.': 'Verbinden is mislukt.'
+  'Verbinden hat nicht geklappt.': 'Verbinden is mislukt.',
+  'Wird auf {name} gespielt': 'Speelt op {name}',
+  'Das geht nur direkt am Gerät.': 'Dat kan alleen op het apparaat zelf.',
+  'Du steuerst {name}': 'Je bedient {name}',
+  '{name} ist mit einem anderen Konto angemeldet. Von hier lässt sich nichts hinschicken.': '{name} is aangemeld met een ander account. Vanaf hier kan niets worden gestuurd.'
 });

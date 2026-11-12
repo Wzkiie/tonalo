@@ -1,5 +1,6 @@
 /* Am PC/Mac: andere Geräte im Heimnetz steuern (Fernseher, andere Computer) – wie mit Tonalo auf dem iPhone.
-   Einmal mit einem Code koppeln, dann zeigt eine Leiste unten, was dort läuft, und lässt Pause und Weiter zu.
+   Einmal mit einem Code koppeln, dann zeigt der Player hier, was dort läuft (Titel, Warteschlange, Zeit), alles steuert
+   dorthin, und was hier gestartet wird, spielt dort – wie am iPhone. Der Player selbst (player.js) schaltet dafür um.
    Gesucht, gekoppelt und gesendet wird im Hauptprozess (desktop/remote.js); die Schlüssel sieht diese Oberfläche nie.
    Am TV gibt es das nicht: der bleibt Empfänger. */
 var Remote = (function () {
@@ -29,17 +30,28 @@ var Remote = (function () {
     watch = null; current = null; state = null;
     clearInterval(tick); tick = null;
     root.classList.remove('remote');
+    Player.detachRemote();
+  }
+
+  // Gehört das Konto dort zu diesem hier? Nur dann passen die Song-Nummern, und nur dann lässt sich etwas hinschicken
+  function sameAccount() {
+    var cfg = API.getConfig(), r = API.routes();
+    if (!state || !state.server || !cfg) return false;
+    var theirs = API.normalizeUrl(state.server);
+    var mine = [cfg.url, cfg.alt, r && r.home, r && r.outside].filter(Boolean).map(API.normalizeUrl);
+    return mine.indexOf(theirs) >= 0 && String(state.user || '').toLowerCase() === String(cfg.user || '').toLowerCase();
   }
 
   function control(dev) {
     stop();
     current = dev;
     root.classList.add('remote');
+    Player.attachRemote({ name: dev.name, same: sameAccount, send: send });
     paint();
     tick = setInterval(paint, 1000);
     watch = call('remoteWatch', { subscribe: true, account: account(), id: dev.id }, function (m) {
       if (!current || current.id !== dev.id) return;
-      if (m.state) { state = m.state; received = m.received || Date.now(); paint(); }
+      if (m.state) { state = m.state; received = m.received || Date.now(); Player.applyRemote(state, received); paint(); }
       if (m.lost === 'gone') { U.toast(T('{name} ist nicht erreichbar.', { name: dev.name }), 4000); stop(); }
       if (m.lost === 'not paired') { U.toast(T('Die Kopplung mit {name} gilt dort nicht mehr.', { name: dev.name }), 4000); stop(); }
     });
@@ -53,33 +65,15 @@ var Remote = (function () {
     });
   }
 
-  // Was dort läuft: Titel und Interpret, oder der Sender, oder das Hörbuch
-  function nowText() {
-    var s = state;
-    if (!s || (!s.active && !s.book)) return T('Es läuft nichts');
-    if (s.book) return T('Hörbuch') + ': ' + (s.book.title || '');
-    if (s.station) return s.station.name || '';
-    var song = s.queue && s.queue[s.index];
-    return song ? (song.title || '') + (song.artist ? ' – ' + song.artist : '') : T('Es läuft nichts');
-  }
-
-  function playing() { return !!state && (state.book ? !!state.book.playing : !!state.playing); }
-
+  // Die schmale Leiste unten sagt nur, wen man gerade steuert. Titel, Zeit und Knöpfe zeigt der Player.
   function paint() {
     if (!bar || !current) return;
-    U.$('.rb-text', bar).textContent = current.name + ' · ' + nowText();
-    var btn = U.$('.rb-play', bar);
-    if (btn && btn.dataset.state !== String(playing())) { btn.dataset.state = String(playing()); UI.setIcon(btn, playing() ? 'pause' : 'play'); }
-    U.$$('.rb-next, .rb-prev, .rb-play', bar).forEach(function (b) { b.disabled = !state || (!state.active && !state.book); });
+    U.$('.rb-text', bar).textContent = T('Du steuerst {name}', { name: current.name });
   }
 
   document.addEventListener('DOMContentLoaded', function () {
     bar = h('div#remotebar', null, Icon.el('tv'), h('span.rb-text'),
-      h('div.rb-controls', null,
-        UI.iconBtn('prev', function () { send({ cmd: 'prev' }); }, T('Zurück'), 'rb-prev'),
-        UI.iconBtn('play', function () { send({ cmd: 'play-pause', playing: !playing() }); if (state) { if (state.book) state.book.playing = !playing(); else state.playing = !playing(); paint(); } }, T('Play/Pause'), 'rb-play'),
-        UI.iconBtn('next', function () { send({ cmd: 'next' }); }, T('Weiter'), 'rb-next')),
-      UI.iconBtn('close', function () { stop(); }, T('Nicht mehr steuern'), 'rb-close'));
+      UI.button(T('Nicht mehr steuern'), function () { stop(); }, 'outline', 'close'));
     U.$('#main').appendChild(bar);
   });
 
@@ -146,28 +140,40 @@ var Remote = (function () {
   function pair(d) {
     call('remotePair', { account: account(), id: d.id, step: 'start' }, function (r) {
       if (r.result !== 'ok') { U.toast(problem(r.result), 4500); return; }
-      var input = h('input.focusable.hdr-name', { type: 'text', inputmode: 'numeric', maxlength: 7, placeholder: '123 456', autocomplete: 'off', spellcheck: 'false' });
-      var msg = h('div.msg.error');
+      var input = h('input.focusable.code-input', { type: 'text', inputmode: 'numeric', maxlength: 7, placeholder: '000 000', autocomplete: 'off', spellcheck: 'false' });
+      var msg = h('div.code-msg');
       var m = UI.modal(null, [], { head: { title: T('Code eingeben'), sub: T('Auf {name} steht jetzt ein sechsstelliger Code.', { name: d.name }) } });
+      m.box.classList.add('code-modal');
       var busy = false;
       function go() {
         var code = input.value.replace(/\D/g, '');
         if (busy) return;
         if (code.length !== 6) { msg.textContent = problem('wrong code'); return; }
         busy = true;
+        msg.textContent = '';
         call('remotePair', { account: account(), id: d.id, step: 'finish', code: code }, function (r2) {
           busy = false;
           if (r2.result === 'ok') { m.close(); U.toast(T('{device} ist jetzt verbunden', { device: d.name }), 3500); control(d); return; }
           msg.textContent = problem(r2.result);
-          if (r2.result !== 'wrong code') { setTimeout(function () { m.close(); }, 1800); }
+          if (r2.result === 'wrong code') { input.value = ''; Nav.focus(input, { noInputFocus: true }); }
+          else setTimeout(function () { m.close(); }, 2200);
         });
       }
+      // Nur Ziffern, in der Mitte ein Abstand – und sobald sechs da sind, geht es von selbst los
+      input.addEventListener('input', function () {
+        var digits = input.value.replace(/\D/g, '').slice(0, 6);
+        input.value = digits.length > 3 ? digits.slice(0, 3) + ' ' + digits.slice(3) : digits;
+        msg.textContent = '';
+        if (digits.length === 6) setTimeout(go, 150);
+      });
       input.addEventListener('keydown', function (e) { if (e.keyCode === 13) { e.preventDefault(); e.stopPropagation(); go(); } });
       var list = U.$('.modal-list', m.box);
-      var ok = h('button.modal-item.focusable', { onclick: go }, Icon.el('play'), h('span', { text: T('Verbinden') }));
-      var body = h('div.hdr-body.nav-container', null, input, msg);
-      list.insertBefore(ok, list.firstChild);
-      list.insertBefore(body, ok);
+      var ok = h('button.modal-item.focusable.code-go', { onclick: function (e) { if (e) e.stopPropagation(); go(); } }, Icon.el('play'), h('span', { text: T('Verbinden') }));
+      var cancel = h('button.modal-item.focusable', { onclick: function () { m.close(); } }, Icon.el('close'), h('span', { text: T('Abbrechen') }));
+      var body = h('div.code-body.nav-container', null, input, msg);
+      list.appendChild(body);
+      list.appendChild(ok);
+      list.appendChild(cancel);
       Nav.focus(input, { noInputFocus: true });
     });
   }
@@ -183,5 +189,5 @@ var Remote = (function () {
   // Beim Kontowechsel oder Abmelden: nichts mehr steuern, was zum alten Konto gehörte
   function reset() { stop(); }
 
-  return { setting: setting, sheet: sheet, reset: reset, current: function () { return current; } };
+  return { setting: setting, sheet: sheet, reset: reset, active: function () { return !!current; }, current: function () { return current; } };
 })();
