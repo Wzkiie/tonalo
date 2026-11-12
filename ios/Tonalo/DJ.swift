@@ -231,6 +231,16 @@ struct DJClient {
 final class DJ {
     enum Change { case more, mood, wish(String) }
 
+    /// Wishes that need no typing – chips on the phone, rows in CarPlay. The title is the key of the translated text,
+    /// the wish in English is what goes to the model, like a typed wish would.
+    static let moods: [(title: String, icon: String, wish: String)] = [
+        ("Calmer", "moon", "calmer, quieter songs"),
+        ("More energy", "bolt", "more energy, faster and louder songs"),
+        ("Older", "clock.arrow.circlepath", "older songs, from earlier decades"),
+        ("Newer", "calendar", "newer, more recent songs"),
+        ("Favorites only", "heart", "only songs marked fav"),
+    ]
+
     @ObservationIgnored weak var player: PlayerModel?
 
     /// Off until the listener agreed to what is sent to the chosen provider.

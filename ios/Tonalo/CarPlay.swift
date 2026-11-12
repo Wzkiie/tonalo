@@ -52,6 +52,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             }
         }
         guard let client = app.client else { t.updateSections(sections); return }
+        if djShown { sections.insert(CPListSection(items: [djItem()]), at: 0) }
 
         // The same mixes as on the phone, in the same colors
         let mixes = [
@@ -158,6 +159,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             self.push(CPListTemplate(title: String(localized: "Artists"), sections: [CPListSection(items: list.prefix(self.limit).map(self.artistItem))]))
         }
         var rows = [favorites, playlists, albums, artists]
+        if djShown { rows.insert(djItem(), at: 0) }
         if app.books.connected {
             rows.append(item(String(localized: "Audiobooks & podcasts"), image: symbol("books.vertical")) { [weak self] in
                 guard let self else { return }
@@ -222,6 +224,84 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             Task { @MainActor in await action(); done() }
         }
         return i
+    }
+
+    // MARK: DJ
+
+    /// Only once the DJ is set up on the phone, and only with a connection – it asks the provider for every set.
+    private var djShown: Bool { app.player.dj.ready && app.isOnline }
+    private var djPlays: Bool { app.player.context?.kind == .dj && app.player.station == nil && app.player.book == nil }
+
+    /// The DJ's picture, as on the phone.
+    private func djArt() -> UIImage? {
+        let r = ImageRenderer(content: DJArt().frame(width: 120, height: 120))
+        r.scale = 2
+        return r.uiImage
+    }
+
+    /// Starts a new set – or shows the player, if the DJ plays right now. The row spins while the DJ chooses.
+    private func djItem() -> CPListItem {
+        item("DJ", detail: String(localized: "Sets picked from your library"), image: djArt()) { [weak self] in
+            guard let self else { return }
+            if self.djPlays && self.app.player.isPlaying { self.showNowPlaying(); return }
+            await self.djRun(thenPlayer: true) { await self.app.player.dj.start() }
+        }
+    }
+
+    /// Runs a request to the DJ and says why if it didn't work. Nothing to type here: Apple allows no keyboard.
+    private func djRun(thenPlayer: Bool = false, _ work: @MainActor () async -> String?) async {
+        guard !app.player.dj.busy else { return }
+        if let problem = await work() { alert(problem); return }
+        if thenPlayer { showNowPlaying() }
+    }
+
+    private func alert(_ text: String) {
+        guard let interface, interface.presentedTemplate == nil else { return }
+        let ok = CPAlertAction(title: String(localized: "OK"), style: .cancel) { [weak self] _ in
+            self?.interface?.dismissTemplate(animated: true, completion: nil)
+        }
+        // The first sentence only: the car screen cuts long texts
+        let short = text.components(separatedBy: "\n").first ?? text
+        interface.presentTemplate(CPAlertTemplate(titleVariants: [short], actions: [ok]), animated: true, completion: nil)
+    }
+
+    /// What the DJ sheet offers on the phone, as a list: more of this, something else, the moods, and the way out.
+    private func pushDJ() {
+        let dj = app.player.dj
+        func back() { interface?.popTemplate(animated: true, completion: nil) }
+        func change(_ title: String, _ icon: String, _ c: DJ.Change) -> CPListItem {
+            item(title, image: symbol(icon)) { [weak self] in
+                guard let self else { return }
+                guard !dj.busy else { return }
+                if let problem = await dj.change(c) { self.alert(problem) } else { back() }
+            }
+        }
+        var rows = [change(String(localized: "More like this"), "plus", .more),
+                    change(String(localized: "Something else"), "shuffle", .mood)]
+        rows += DJ.moods.map { change(String(localized: String.LocalizationValue($0.title)), $0.icon, .wish($0.wish)) }
+        let fresh = item(String(localized: "New set"), image: symbol("arrow.clockwise")) { [weak self] in
+            guard let self, !dj.busy else { return }
+            if let problem = await dj.start() { self.alert(problem) } else { back() }
+        }
+        let stop = item(String(localized: "Stop the DJ"), image: symbol("stop.fill")) {
+            dj.stop()
+            back()
+        }
+        let t = CPListTemplate(title: "DJ", sections: [
+            CPListSection(items: rows, header: dj.line, sectionIndexTitle: nil),
+            CPListSection(items: [fresh, stop]),
+        ])
+        push(t)
+    }
+
+    /// The DJ's mark for the button in the player.
+    private func djButton() -> CPNowPlayingImageButton {
+        let r = ImageRenderer(content: DJMark().foregroundStyle(Color(accent)).frame(width: 26, height: 26))
+        r.scale = 3
+        let image = r.uiImage?.withRenderingMode(.alwaysOriginal) ?? UIImage()
+        let b = CPNowPlayingImageButton(image: image) { [weak self] _ in MainActor.assumeIsolated { self?.pushDJ() } }
+        b.isSelected = true
+        return b
     }
 
     /// A book or episode you are in the middle of: tapping continues where you stopped.
@@ -339,6 +419,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             _ = app.player.shuffle
             _ = app.player.repeatMode
             _ = app.player.station
+            _ = app.player.context?.kind
             _ = (app.bookPlayer.session?.id, app.bookPlayer.isPlaying, app.bookPlayer.rate)
             _ = app.downloads.index.songs.count
             _ = Theme.shared.accentHex
@@ -379,7 +460,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         // A Jukebox guest can't shuffle or repeat what the host plays – the heart is for the guest's own favorites
         if p.tvGuest { CPNowPlayingTemplate.shared.updateNowPlayingButtons([heart]); return }
         let repeatButton = button(p.repeatMode == .one ? "repeat.1" : "repeat", on: p.repeatMode != .off) { p.cycleRepeat() }
-        CPNowPlayingTemplate.shared.updateNowPlayingButtons([shuffle, heart, repeatButton])
+        // While the DJ plays, its mark opens what the sheet offers on the phone
+        CPNowPlayingTemplate.shared.updateNowPlayingButtons(djPlays ? [djButton(), shuffle, heart, repeatButton] : [shuffle, heart, repeatButton])
     }
 
     private func button(_ name: String, on: Bool, action: @escaping @MainActor () -> Void) -> CPNowPlayingImageButton {

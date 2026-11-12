@@ -5611,12 +5611,12 @@
         }
       }
     },
-    "For every set, Tonalo sends title, artist, album, genre, year and the favorite mark of about 150 of your songs, plus your wish, directly from this iPhone to %@. What happens to it there follows that provider's terms. Tonalo itself receives nothing." : {
+    "For every set, Tonalo sends title, artist, album, genre, year and the favorite mark of about 150 of your songs, which songs the DJ played last, and your wish, directly from this iPhone to %@. What happens to it there follows that provider's terms. Tonalo itself receives nothing." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Für jedes Set sendet Tonalo Titel, Künstler, Album, Genre, Jahr und Favoriten-Markierung von rund 150 deiner Songs sowie deinen Wunsch direkt von diesem iPhone an %@. Was dort damit geschieht, richtet sich nach den Bedingungen dieses Anbieters. Tonalo selbst erhält nichts."
+            "value" : "Für jedes Set sendet Tonalo Titel, Künstler, Album, Genre, Jahr und Favoriten-Markierung von rund 150 deiner Songs, welche Songs der DJ zuletzt gespielt hat, und deinen Wunsch direkt von diesem iPhone an %@. Was dort damit geschieht, richtet sich nach den Bedingungen dieses Anbieters. Tonalo selbst erhält nichts."
           }
         }
       }
@@ -6227,6 +6227,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anbieter, Modell und die Adresse deines Ollama-Servers gehen an die Fernseher und Computer, die mit diesem Konto gekoppelt sind. Sie schicken die Songdetails dann selbst an %@."
+          }
+        }
+      }
+    },
+    "New set" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues Set"
+          }
+        }
+      }
+    },
+    "An AI picks sets from your library, and you steer it with moods or a wish. Off until you set it up under Settings, with your own key or your own Ollama." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine KI stellt Sets aus deiner Bibliothek zusammen, und du lenkst sie mit Stimmungen oder einem Wunsch. Aus, bis du den DJ in den Einstellungen einrichtest, mit eigenem Schlüssel oder eigenem Ollama."
+          }
+        }
+      }
+    },
+    "DJ in the car and at home" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ im Auto und zu Hause"
+          }
+        }
+      }
+    },
+    "Start and steer the DJ on CarPlay. If you like, your paired TV and computer get the same setup." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starte und lenke den DJ in CarPlay. Wenn du möchtest, bekommen dein gekoppelter Fernseher und Computer dieselbe Einrichtung."
           }
         }
       }

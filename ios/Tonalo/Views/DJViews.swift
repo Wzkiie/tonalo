@@ -110,7 +110,7 @@ struct DJSettingsView: View {
             Button("Agree and turn on") { dj.setEnabled(true) }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("For every set, Tonalo sends title, artist, album, genre, year and the favorite mark of about 150 of your songs, plus your wish, directly from this iPhone to \(dj.recipient). What happens to it there follows that provider's terms. Tonalo itself receives nothing.")
+            Text("For every set, Tonalo sends title, artist, album, genre, year and the favorite mark of about 150 of your songs, which songs the DJ played last, and your wish, directly from this iPhone to \(dj.recipient). What happens to it there follows that provider's terms. Tonalo itself receives nothing.")
         }
         .alert("Use the DJ on your paired devices?", isPresented: $askingShare) {
             Button("Share") { dj.shareWithDevices = true }
@@ -322,13 +322,7 @@ private struct DJSheet: View {
     @State private var problem: String?
 
     /// Wishes that need no typing. The text in English is what goes to the model, like a typed wish would.
-    private static let moods: [(title: LocalizedStringKey, icon: String, wish: String)] = [
-        ("Calmer", "moon", "calmer, quieter songs"),
-        ("More energy", "bolt", "more energy, faster and louder songs"),
-        ("Older", "clock.arrow.circlepath", "older songs, from earlier decades"),
-        ("Newer", "calendar", "newer, more recent songs"),
-        ("Favorites only", "heart", "only songs marked fav"),
-    ]
+    private static let moods = DJ.moods
 
     var body: some View {
         let dj = app.player.dj
@@ -376,7 +370,7 @@ private struct DJSheet: View {
                         chip("More like this", icon: "plus") { await dj.change(.more) }
                         chip("Something else", icon: "shuffle") { await dj.change(.mood) }
                         ForEach(Self.moods, id: \.wish) { mood in
-                            chip(mood.title, icon: mood.icon) { await dj.change(.wish(mood.wish)) }
+                            chip(LocalizedStringKey(mood.title), icon: mood.icon) { await dj.change(.wish(mood.wish)) }
                         }
                     }
                     HStack(spacing: 8) {

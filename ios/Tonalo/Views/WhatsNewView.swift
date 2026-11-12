@@ -18,6 +18,12 @@ struct AppRelease: Identifiable {
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
+        AppRelease(version: "1.5.0", items: [
+            .init(icon: "music.note.list", color: .purple, title: "DJ",
+                  text: "An AI picks sets from your library, and you steer it with moods or a wish. Off until you set it up under Settings, with your own key or your own Ollama."),
+            .init(icon: "car.fill", color: .blue, title: "DJ in the car and at home",
+                  text: "Start and steer the DJ on CarPlay. If you like, your paired TV and computer get the same setup."),
+        ]),
         AppRelease(version: "1.4.5", items: [
             .init(icon: "heart.fill", color: .pink, title: "Jukebox hearts",
                   text: "Songs from a guest show your own hearts, and the heart on CarPlay now switches the right song."),
