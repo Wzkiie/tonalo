@@ -243,6 +243,18 @@ function handle(req, res, u) {
         ] } }); break;
       }
       case 'getStarred2': body = ok({ starred2: starred }); break;
+      // star / unstar really change the favorites, so the app's lists can be checked after a heart
+      case 'star': case 'unstar': {
+        const on = m === 'star';
+        const kinds = [['id', songs, 'song'], ['albumId', albums, 'album'], ['artistId', artists, 'artist']];
+        for (const [param, pool, key] of kinds) for (const id of list(q[param])) {
+          const item = byId(pool, id); if (!item) continue;
+          const at = starred[key].findIndex(x => x.id === id);
+          if (on && at < 0) starred[key].push(Object.assign({}, item, { starred: '2026-11-12T10:00:00Z' }));
+          if (!on && at >= 0) starred[key].splice(at, 1);
+        }
+        body = ok({}); break;
+      }
       case 'search3': {
         const s = (q.query || '').toLowerCase(), has = x => x.toLowerCase().includes(s);
         body = ok({ searchResult3: { artist: artists.filter(a => has(a.name)), album: albums.filter(a => has(a.name) || has(a.artist)).slice(0, 40), song: songs.filter(x => has(x.title) || has(x.artist)).slice(0, 60) } });

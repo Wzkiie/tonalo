@@ -176,6 +176,7 @@ extension AppModel {
     func setFavorite(_ song: Song, _ on: Bool) async -> Bool {
         guard let client, (try? await client.setStar(songId: song.id, on: on)) != nil else { return false }
         favoriteChanges[song.id] = on
+        favoritesChanged()
         player.setStarred(song, on)
         return true
     }

@@ -391,8 +391,11 @@ final class DJ {
         guard ready, let player else { return DJError.notReady.errorDescription }
         seen = []; played = []; skips = []; around = nil
         self.wish = Self.clean(wish ?? "", limit: 200).nilIfEmpty
+        let before = whatPlays(player)
         do {
             let songs = try await pick(note: nil)
+            // Asking can take a while. If something else was started meanwhile (an album, a station, a book), it stays
+            guard whatPlays(player) == before else { return nil }
             player.play(songs, context: .init(kind: .dj, name: String(localized: "DJ")))
             return nil
         } catch {
@@ -417,10 +420,13 @@ final class DJ {
             return DJError.notReady.errorDescription
         }
         let before = (seen, played, skips, wish)
+        let playing = whatPlays(player)
         seen = [current.id]; played = []; skips = []; wish = nil; failed = nil
         around = (Self.clean(current.title), [current])
         do {
             let songs = try await pick(note: nil)
+            // Something else was started while the DJ was asking: its set was meant for the song before
+            guard whatPlays(player) == playing else { (seen, played, skips, wish) = before; around = nil; return nil }
             player.handToDJ(songs)
             return nil
         } catch {
@@ -453,6 +459,11 @@ final class DJ {
         } catch {
             return message(error)
         }
+    }
+
+    /// What the player is busy with, without the song moving on by itself: a station, a book or where the queue came from.
+    private func whatPlays(_ p: PlayerModel) -> [String?] {
+        [p.station?.id, p.book == nil ? nil : "book", p.context.map { "\($0.kind.rawValue):\($0.id ?? "")" }]
     }
 
     /// The DJ steps back: what is queued stays, but nothing is asked for any more.

@@ -684,7 +684,7 @@ struct LibraryView: View {
             .scrollDismissesKeyboard(.immediately)
             .toolbar(.hidden, for: .navigationBar)
             .statusBarBackground()
-            .task(id: "\(app.currentId?.uuidString ?? "")\(app.current?.serverURL ?? "")\(app.playlistsVersion)") { await load() }
+            .task(id: "\(app.currentId?.uuidString ?? "")\(app.current?.serverURL ?? "")\(app.playlistsVersion)-\(app.favoritesVersion)") { await load() }
             .refreshable { await Task { await load() }.value; await app.books.load(force: true) }
             .task(id: "\(app.currentId?.uuidString ?? "")\(app.books.connected)") { await app.books.load() }
             .onChange(of: app.currentId) { filter = nil }
@@ -1110,16 +1110,22 @@ struct AlbumsView: View {
                 } label: { Image(systemName: "arrow.up.arrow.down") }
             }
         }
-        .task(id: type) { albums = []; done = false; await more() }
+        .task(id: type) { albums = []; done = false; error = nil; await more() }
     }
 
     private func more() async {
         guard !done, let client = app.client else { return }
+        let asked = type
         do {
-            let page = try await client.albumList(type, size: 60, offset: albums.count, genre: genre)
+            let page = try await client.albumList(asked, size: 60, offset: albums.count, genre: genre)
+            // The sort was switched while this was on its way: this answer belongs to the old list
+            guard asked == type else { return }
             albums += page.filter { a in !albums.contains(where: { $0.id == a.id }) }
             if page.count < 60 { done = true }
-        } catch { self.error = error.userMessage; done = true }
+        } catch {
+            guard asked == type, !Task.isCancelled else { return } // a cancelled request must not end the new list
+            self.error = error.userMessage; done = true
+        }
     }
 }
 

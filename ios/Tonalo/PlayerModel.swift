@@ -117,9 +117,31 @@ final class PlayerModel {
                 self.ended()
             }
         }
+        NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
+            MainActor.assumeIsolated { self?.interruption(note) }
+        }
         setupRemoteCommands()
         radio.player = self
         dj.player = self
+    }
+
+    /// A call, Siri or an alarm takes the audio: the system pauses by itself – and when it's over and iOS says playing may go on,
+    /// the music (or the book) that was playing goes on. What the user paused before stays paused.
+    @ObservationIgnored private var resumeAfterInterruption: (music: Bool, book: Bool) = (false, false)
+
+    private func interruption(_ note: Notification) {
+        guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt, let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+        if type == .began {
+            let book = app?.bookPlayer.isPlaying == true
+            resumeAfterInterruption = (tvName == nil && !book && (isPlaying || player.timeControlStatus != .paused), book)
+            return
+        }
+        let options = (note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt).map(AVAudioSession.InterruptionOptions.init(rawValue:))
+        let resume = resumeAfterInterruption
+        resumeAfterInterruption = (false, false)
+        guard options?.contains(.shouldResume) == true else { return }
+        if resume.book { if let b = app?.bookPlayer, !b.isPlaying { activateSession(); b.toggle() } }
+        else if resume.music, tvName == nil, !isPlaying, player.currentItem != nil { activateSession(); player.play() }
     }
 
     /// Time and play state always come from the player of the current song.
@@ -251,7 +273,8 @@ final class PlayerModel {
 
     func remove(at i: Int) {
         guard tvName == nil, queue.indices.contains(i), i != index else { return }
-        queue.remove(at: i)
+        let gone = queue.remove(at: i)
+        if let k = original?.firstIndex(where: { $0.id == gone.id }) { original?.remove(at: k) } // or it would come back when shuffle goes off
         if i < index { index -= 1 }
         persist()
         if isPlaying { preload() }
@@ -356,9 +379,13 @@ final class PlayerModel {
         if tvGuest { return hostOnly() }
         if tvName != nil { tv?.command("shuffle", ["on": !shuffle]); return }
         guard let cur = current else { return }
-        if shuffle, let original {
-            queue = original
-            index = queue.firstIndex(of: cur) ?? 0
+        if shuffle {
+            // By id: the copy in the queue may have gotten a heart since, so it no longer equals the saved one.
+            // After a restart the original order is gone (not saved): then shuffle just goes off and the queue stays as it is.
+            if let original {
+                queue = original
+                index = queue.firstIndex { $0.id == cur.id } ?? 0
+            }
             self.original = nil
         } else {
             original = queue
@@ -391,6 +418,7 @@ final class PlayerModel {
         if tvName != nil && !tvGuest { tv?.command("star", ["id": song.id, "on": on]) } // the heart on the TV
         if on { radio.liked(song) }
         for i in queue.indices where queue[i].id == song.id { queue[i].starred = on ? "1" : nil }
+        if original != nil { for i in original!.indices where original![i].id == song.id { original![i].starred = on ? "1" : nil } }
         persist(sync: false) // not a change to the queue – mustn't replace what another device saved
         updateNowPlaying() // the heart on the lock screen
     }
@@ -793,11 +821,19 @@ final class PlayerModel {
         savePending(pendingScrobbles() + [PendingScrobble(id: id, time: time)])
     }
 
+    @ObservationIgnored private var flushingScrobbles = false
+
+    /// Sends what was played without a connection. One run at a time, and what was added while it ran is kept.
     func flushScrobbles() async {
-        guard let client = app?.client else { return }
+        guard !flushingScrobbles, let client = app?.client else { return }
+        let batch = pendingScrobbles()
+        guard !batch.isEmpty else { return }
+        flushingScrobbles = true
+        defer { flushingScrobbles = false }
         var left: [PendingScrobble] = []
-        for p in pendingScrobbles() where !(await client.scrobble(p.id, submission: true, time: p.time)) { left.append(p) }
-        savePending(left)
+        for p in batch where !(await client.scrobble(p.id, submission: true, time: p.time)) { left.append(p) }
+        let added = pendingScrobbles().filter { n in !batch.contains { $0.id == n.id && $0.time == n.time } }
+        savePending(left + added)
     }
 
     // MARK: Radio stations

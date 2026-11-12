@@ -25,7 +25,7 @@ final class WatchBridge: NSObject {
     private func watchPlayer() {
         withObservationTracking {
             let p = app.player
-            _ = (p.current?.id, p.current?.starred, p.isPlaying, p.shuffle, p.repeatMode, p.duration, p.context)
+            _ = (p.current?.id, p.current?.starred, p.isPlaying, p.shuffle, p.repeatMode, p.duration, p.context, p.station?.id, p.stationTitle)
             let b = app.bookPlayer
             _ = (b.item?.id, b.session?.id, b.isPlaying, b.rate, b.chapter?.title)
             _ = Theme.shared.accentHex
@@ -47,6 +47,13 @@ final class WatchBridge: NSObject {
                                    starred: false, shuffle: false, repeatMode: "off",
                                    accentHex: Theme.shared.accentHex, cover: cover?.id == id ? cover?.data : nil,
                                    isBook: true, rate: Double(b.rate), skipBack: b.skipBack, skipForward: b.skipForward)
+        }
+        // A station plays: the song that is still in the queue is not what you hear, and a heart, shuffle or repeat means nothing
+        if let station = p.station {
+            return WatchNowPlaying(songId: "station:" + station.id, title: p.stationTitle ?? station.name, artist: station.name, context: station.name,
+                                   isPlaying: p.isPlaying, position: 0, duration: 0, sentAt: .now,
+                                   starred: false, shuffle: false, repeatMode: "off",
+                                   accentHex: Theme.shared.accentHex, cover: nil)
         }
         guard let song = p.current else { return nil }
         let coverId = song.coverArt ?? song.albumId ?? song.id
@@ -109,10 +116,10 @@ final class WatchBridge: NSObject {
         case "previous": if let book { book.previousChapter() } else { p.previous() }
         case "skip":
             if let book, let s = message[Watch.index] as? Double { book.skip(s) }
-        case "shuffle": if book == nil { p.toggleShuffle() }
-        case "repeat": if book == nil { p.cycleRepeat() }
+        case "shuffle": if book == nil, p.station == nil { p.toggleShuffle() }
+        case "repeat": if book == nil, p.station == nil { p.cycleRepeat() }
         case "favorite":
-            if book == nil, let song = p.current { await app.setFavorite(song, song.starred == nil) }
+            if book == nil, p.station == nil, let song = p.current { await app.setFavorite(song, song.starred == nil) }
         case "seek":
             if let s = message[Watch.index] as? Double { if let book { book.seek(to: s) } else { p.seek(to: s) } }
         case "list":

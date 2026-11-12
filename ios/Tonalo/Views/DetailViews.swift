@@ -61,6 +61,7 @@ struct AlbumView: View {
     // Loading hangs on the page: the saved copy shows at once and would otherwise cancel asking the server
     var body: some View {
         content.task { await load() }
+            .refreshable { await Task { await load() }.value }
     }
 
     @ViewBuilder private var content: some View {
@@ -121,7 +122,10 @@ struct AlbumView: View {
         guard let client = app.client, let a = album else { return }
         let on = a.starred == nil
         album?.starred = on ? "1" : nil
-        Task { try? await client.setStar(albumId: a.id, on: on) }
+        Task {
+            if (try? await client.setStar(albumId: a.id, on: on)) != nil { app.favoritesChanged() }
+            else { album?.starred = on ? nil : a.starred; app.notify(String(localized: "Couldn’t reach your music server.")) } // back to what the server has
+        }
     }
 
     private func load() async {
@@ -151,7 +155,9 @@ struct PlaylistView: View {
 
     // Loading hangs on the page: the saved copy shows at once and would otherwise cancel asking the server
     var body: some View {
-        content.task { await load() }
+        // Reloads when songs were added to this playlist from somewhere else (a song's menu, "Add to other playlist")
+        content.task(id: app.playlistsVersion) { await load() }
+            .refreshable { await Task { await load() }.value }
     }
 
     @ViewBuilder private var content: some View {
@@ -299,7 +305,9 @@ struct FavoritesView: View {
                 }
             }
         }
-        .task { await load() }
+        // Also when a song gets a heart elsewhere (the player, the lock screen) while this page is open: it isn't in the list yet.
+        // favoriteChanges is only set once the server has taken the heart, so the reload can't miss it.
+        .task(id: app.favoriteChanges.filter(\.value).keys.sorted()) { await load() }
         .refreshable { await Task { await load() }.value }
     }
 
@@ -420,7 +428,10 @@ struct ArtistView: View {
         guard let client = app.client, let a = artist else { return }
         let on = a.starred == nil
         artist?.starred = on ? "1" : nil
-        Task { try? await client.setStar(artistId: a.id, on: on) }
+        Task {
+            if (try? await client.setStar(artistId: a.id, on: on)) != nil { app.favoritesChanged() }
+            else { artist?.starred = on ? nil : a.starred; app.notify(String(localized: "Couldn’t reach your music server.")) }
+        }
     }
 
     private func load() async {

@@ -440,7 +440,7 @@ final class AudiobookLibrary {
         request.setValue("true", forHTTPHeaderField: "x-return-tokens")
         for (k, v) in new.httpHeaders { request.setValue(v, forHTTPHeaderField: k) }
         request.httpBody = try JSONEncoder().encode(["username": username, "password": password])
-        let (data, response) = try await ServerSession.shared.fetch(request)
+        let (data, response) = try await ServerSession.shared.fetch(request, retry: nil)
         guard let http = response as? HTTPURLResponse else { throw AudiobookError.unexpected }
         if http.statusCode == 401 { throw AudiobookError.login }
         struct Login: Decodable {
@@ -558,7 +558,7 @@ final class AudiobookLibrary {
         for (k, v) in server.httpHeaders { request.setValue(v, forHTTPHeaderField: k) }
         request.setValue(refresh, forHTTPHeaderField: "x-refresh-token")
         request.setValue("true", forHTTPHeaderField: "x-return-tokens")
-        Task { _ = try? await ServerSession.shared.fetch(request) }
+        Task { _ = try? await ServerSession.shared.fetch(request, retry: nil) }
     }
 
     func accountChanged() {
@@ -586,7 +586,7 @@ final class AudiobookLibrary {
                 request.httpBody = bodyData
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             }
-            let (data, response) = try await ServerSession.shared.fetch(request)
+            let (data, response) = try await ServerSession.shared.fetch(request, retry: nil)
             return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
         }
         var (data, status) = try await attempt(first)
@@ -632,7 +632,7 @@ final class AudiobookLibrary {
             struct User: Decodable { let accessToken: String; let refreshToken: String? }
             let user: User
         }
-        guard let (data, response) = try? await ServerSession.shared.fetch(request),
+        guard let (data, response) = try? await ServerSession.shared.fetch(request, retry: nil),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let answer = try? JSONDecoder().decode(Answer.self, from: data) else { return nil }
         var new = s

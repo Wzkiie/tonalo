@@ -175,6 +175,21 @@ struct RootView: View {
             if args[i + 1] == "djsheet" { showNowPlaying = true }
             if args[i + 1] == "library" { tab = 2 }
             if args[i + 1].hasPrefix("artist:") { paths[0].append(Route.artist(String(args[i + 1].dropFirst(7)))) }
+            if args[i + 1].hasPrefix("playlist:") { paths[0].append(Route.playlist(String(args[i + 1].dropFirst(9)))) }
+            if args[i + 1] == "favorites" { paths[0].append(Route.favorites) }
+            // -demoAct addsong:<playlist id> adds a song to that playlist, -demoAct heart gives a song a heart – both
+            // fourteen seconds later, the way another page of the app would do it (to see the open page reload)
+            if let k = args.firstIndex(of: "-demoAct"), k + 1 < args.count {
+                try? await Task.sleep(for: .seconds(14))
+                let act = args[k + 1]
+                if act.hasPrefix("addsong:"), let song = try? await app.client?.randomSongs(1).first {
+                    try? await app.client?.updatePlaylist(String(act.dropFirst(8)), add: [song.id])
+                    app.playlistsChanged()
+                }
+                if act == "heart", let song = (try? await app.client?.randomSongs(60))?.first(where: { !app.isFavorite($0) }) {
+                    await app.setFavorite(song, true)
+                }
+            }
             if args[i + 1] == "download", let first = try? await app.client?.playlists().first,
                let list = try? await app.client?.playlist(first.id) {
                 app.downloads.downloadPlaylist(list)
@@ -193,7 +208,7 @@ struct RootView: View {
         }
         // Continue where another device left off – and leave the queue on the server when going away
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { app.checkRoute(); app.tv.start(); Task { await app.player.checkServerQueue() } }
+            if phase == .active { app.checkRoute(); app.tv.start(); Task { await app.player.checkServerQueue(); await app.player.flushScrobbles() } }
             if phase == .background { app.player.syncBeforeLeaving(); app.tv.stop(); app.downloads.saveNow(wait: true) }
         }
     }

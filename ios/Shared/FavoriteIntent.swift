@@ -14,8 +14,9 @@ struct FavoriteCurrentSongIntent: AudioPlaybackIntent {
         return .result(dialog: "")
         #else
         let app = AppModel.shared
-        guard let song = app.player.current else { return .result(dialog: "Nothing is playing in Tonalo.") }
-        if song.starred != nil { return .result(dialog: "“\(song.title)” is already in your favorite songs.") }
+        // A station or an audiobook plays: the song left in the queue is not what you hear
+        guard let song = app.player.current, app.player.station == nil, app.player.book == nil else { return .result(dialog: "Nothing is playing in Tonalo.") }
+        if app.isFavorite(song) { return .result(dialog: "“\(song.title)” is already in your favorite songs.") }
         guard await app.setFavorite(song, true) else { return .result(dialog: "Couldn’t reach your music server.") }
         return .result(dialog: "Added “\(song.title)” to your favorite songs.")
         #endif

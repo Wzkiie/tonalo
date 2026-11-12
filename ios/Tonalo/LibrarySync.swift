@@ -20,6 +20,13 @@ import UIKit
     private(set) var error: String?
     private(set) var summary: Summary?
     @ObservationIgnored private var task: Task<Void, Never>?
+    @ObservationIgnored private var background = UIBackgroundTaskIdentifier.invalid
+
+    private func endBackground() {
+        guard background != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(background)
+        background = .invalid
+    }
     @ObservationIgnored private var accountId: UUID?
 
     /// Requests at the same time – fast, without hammering a small home server.
@@ -62,9 +69,14 @@ import UIKit
         total = 0
         phase = String(localized: "Loading overview…")
         // Keeps going for a while when the app is left, so a short switch doesn't break the sync
-        let background = UIApplication.shared.beginBackgroundTask(withName: "Library sync")
+        // When the time runs out, the sync stops and the task ends – otherwise iOS ends the whole app
+        endBackground()
+        background = UIApplication.shared.beginBackgroundTask(withName: "Library sync") { [weak self] in
+            self?.task?.cancel()
+            self?.endBackground()
+        }
         task = Task {
-            defer { UIApplication.shared.endBackgroundTask(background) }
+            defer { endBackground() }
             do {
                 let result = try await run(client)
                 guard !Task.isCancelled else { return }
