@@ -51,6 +51,10 @@ final class AppModel {
     private(set) var playlistsVersion = 0
     func playlistsChanged() { playlistsVersion += 1 }
 
+    /// Goes up when a heart for a song, an album or an artist has been taken by the server, so the library's favorites reload.
+    private(set) var favoritesVersion = 0
+    func favoritesChanged() { favoritesVersion += 1 }
+
     func notify(_ text: String) {
         notice = text
         Task {
@@ -207,6 +211,13 @@ final class AppModel {
                     return
                 }
                 NSLog("DJ pair: no computer found")
+            }
+        }
+        // Test hook: -demoUnpairAll removes every pairing a few seconds after start (to see the DJ taken back from a computer)
+        if ProcessInfo.processInfo.arguments.contains("-demoUnpairAll") {
+            Task {
+                try? await Task.sleep(for: .seconds(4))
+                for p in tv.pairings { NSLog("DJ unpair: %@", p.name); tv.unpair(p.tv) }
             }
         }
         // Test hook: -demoQueue fills an empty queue with a few songs, paused – for testing the watch silently
@@ -430,6 +441,7 @@ final class AppModel {
 
     @discardableResult
     private func forgetMusicData(of id: UUID) {
+        tv.revokeDJ(forAccount: id) // before the pairings go: they hold the keys that prove who asks
         UserDefaults.standard.removeObject(forKey: "queue." + id.uuidString)
         UserDefaults.standard.removeObject(forKey: "scrobbles." + id.uuidString)
         UserDefaults.standard.removeObject(forKey: "queue.dismissed." + id.uuidString)

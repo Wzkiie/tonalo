@@ -285,6 +285,7 @@ final class TVLink {
         var seen = Set<String>()
         devices = list.filter { $0.id != app?.jukeboxHost.id && seen.insert($0.id).inserted }
         connect()
+        if !revocations.isEmpty { Task { await deliverRevocations() } }
     }
 
     // MARK: Pairing
@@ -322,10 +323,8 @@ final class TVLink {
 
     func unpair(_ tv: String) {
         // The device loses the DJ with the pairing – asked while the key that proves who asks still exists
-        if let p = pairings.first(where: { $0.tv == tv }), let device = pool.first(where: { $0.id == tv }), djShared[tv] != nil {
-            Task { _ = await sendDJ(nil, to: device, p) }
-            djShared[tv] = nil
-        }
+        // (see revokeDJ: if the device can't be reached now, the request is kept until it can)
+        if let p = pairings.first(where: { $0.tv == tv }), p.guest != true { revokeDJ(p) }
         pairings.removeAll { $0.tv == tv }
         savePairings()
         if jukebox == tv { jukebox = nil }
@@ -664,7 +663,41 @@ final class TVLink {
                 if self.djShared[id] == mark { continue }
                 guard await self.sendDJ(setup, to: device, pairing), !Task.isCancelled else { continue }
                 self.djShared[id] = mark
+                self.revocations.removeAll { $0.tv == id } // it has a setup again – an old request to remove one must not undo that
             }
+        }
+    }
+
+    /// A request to take the DJ setup away from a device whose pairing is gone (unpaired, account removed). It's kept –
+    /// with the key that proves who asks, which is why it lives in the Keychain – until the device can be reached,
+    /// so a TV that was off at that moment doesn't keep a provider key for good.
+    private struct Revocation: Codable, Hashable { var tv: String; var keyId: String; var key: String }
+    private var revocations: [Revocation] {
+        get { Keychain.load([Revocation].self, key: "dj.revoke") ?? [] }
+        set { if newValue.isEmpty { Keychain.delete(key: "dj.revoke") } else { Keychain.save(newValue, key: "dj.revoke") } }
+    }
+    @ObservationIgnored private var delivering = false
+
+    private func revokeDJ(_ p: Pairing) {
+        guard djShared[p.tv] != nil else { return }
+        djShared[p.tv] = nil
+        revocations = revocations.filter { $0.tv != p.tv } + [Revocation(tv: p.tv, keyId: p.keyId, key: p.key)]
+        Task { await deliverRevocations() }
+    }
+
+    /// For an account that goes away: its pairings are deleted, the devices still lose what this phone gave them.
+    func revokeDJ(forAccount id: UUID) {
+        for p in Keychain.load([Pairing].self, key: "tv." + id.uuidString) ?? [] where p.guest != true { revokeDJ(p) }
+    }
+
+    private func deliverRevocations() async {
+        guard !delivering else { return }
+        delivering = true
+        defer { delivering = false }
+        for r in revocations {
+            guard let device = pool.first(where: { $0.id == r.tv }) else { continue } // not reachable now: later
+            let pairing = Pairing(tv: r.tv, name: "", keyId: r.keyId, key: r.key)
+            if await sendDJ(nil, to: device, pairing) { revocations.removeAll { $0 == r } }
         }
     }
 
