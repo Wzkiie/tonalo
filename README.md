@@ -4,7 +4,7 @@
 
 <p align="center">A Navidrome client for LG TVs, Windows, Mac and the iPhone. Play your own music library from the couch with nothing but the remote, or take it with you.</p>
 
-<p align="center"><a href="https://tonalo.app">tonalo.app</a> · <a href="https://tonalo.app/changelog">Changelog</a> · <a href="https://testflight.apple.com/join/vKkNhNZJ">iPhone beta</a> · <a href="https://github.com/Wzkiie/tonalo/releases/latest">Windows, Mac &amp; TV download</a></p>
+<p align="center"><a href="https://tonalo.app">tonalo.app</a> · <a href="https://tonalo.app/changelog">Changelog</a> · <a href="https://apps.apple.com/app/id6827727370">iPhone app</a> · <a href="https://github.com/Wzkiie/tonalo/releases/latest">Windows, Mac &amp; TV download</a></p>
 
 <p align="center">
   <img src="assets/screenshots/tv/home.jpg" width="74%" alt="TV app home screen">
@@ -19,7 +19,7 @@ There are three apps in this repository. The TV and Windows apps share their cod
 |---|---|---|---|
 | Runs on | LG TVs with webOS 5 or newer | Windows 10 and 11 (64-bit) | iPhone with iOS 17 or newer, plus Apple Watch |
 | Code | [`tv/`](tv) – plain HTML, CSS and JavaScript | [`desktop/`](desktop) – the TV app in an Electron window | [`ios/`](ios) – Swift and SwiftUI |
-| Install | Homebrew Channel [repository](#installing) or `.ipk` from the [releases](../../releases/latest) | `Tonalo-Setup-….exe` from the [releases](../../releases/latest), updates itself | Public beta on [TestFlight](https://testflight.apple.com/join/vKkNhNZJ), or build it with Xcode |
+| Install | Homebrew Channel [repository](#installing) or `.ipk` from the [releases](../../releases/latest) | `Tonalo-Setup-….exe` from the [releases](../../releases/latest), updates itself | [App Store](https://apps.apple.com/app/id6827727370), or build it with Xcode |
 
 ## TV app
 
@@ -164,9 +164,9 @@ A native SwiftUI app that feels like the big streaming apps rather than a classi
 
 ### Installing
 
-**TestFlight (easiest):** join the public beta at [testflight.apple.com/join/vKkNhNZJ](https://testflight.apple.com/join/vKkNhNZJ). Install Apple's TestFlight app, open the link on your iPhone and tap *Install*. The Apple Watch app comes along if your iPhone is paired with a watch. Each beta build runs for 90 days; TestFlight offers the next one when it's out. An App Store version will follow.
+**App Store (easiest):** get [Tonalo: Navidrome Player](https://apps.apple.com/app/id6827727370) and tap *Get*. The Apple Watch app comes along if your iPhone is paired with a watch.
 
-Feedback is very welcome – as a [GitHub issue](../../issues/new/choose), or with a screenshot straight from TestFlight. Note that TestFlight itself passes crash reports and basic usage data to the developer; the app collects nothing (see the [privacy policy](PRIVACY.md)).
+Feedback is very welcome – as a [GitHub issue](../../issues/new/choose),. The app collects nothing (see the [privacy policy](PRIVACY.md)).
 
 **Build it yourself:** to put your own build on your phone:
 

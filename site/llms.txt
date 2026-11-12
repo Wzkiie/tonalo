@@ -9,7 +9,7 @@
 
 ## Facts
 - Price: free, MIT license, source code on GitHub: https://github.com/Wzkiie/tonalo
-- iPhone: beta on TestFlight; also Apple Watch app and CarPlay
+- iPhone: App Store (https://apps.apple.com/app/id6827727370); also Apple Watch app and CarPlay
 - Jukebox: friends join with a 6-digit code, also works in the car without Wi-Fi
 - Audiobooks and podcasts from Audiobookshelf in the same app
 - Android is not available
