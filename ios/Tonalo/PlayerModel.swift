@@ -45,6 +45,10 @@ final class PlayerModel {
     @ObservationIgnored private var fadeTimer: Timer?
     @ObservationIgnored private var original: [Song]?
     @ObservationIgnored private var scrobbled = false
+    /// Seconds really played of the current listen – a jump to the end of a song doesn't count as having heard it.
+    @ObservationIgnored private var heard: Double = 0
+    @ObservationIgnored private var lastClock: Double?
+    @ObservationIgnored private var listenId: String?
     @ObservationIgnored private var artwork: UIImage?
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
@@ -309,9 +313,7 @@ final class PlayerModel {
             if playingPreloaded {
                 prefetcher.remove(account: client.account.id, song: song, quality: (app?.streamingQuality ?? .lossless).resolved(for: song))
             }
-            let counted = scrobbled
-            load(autoplay: true, startAt: position)
-            scrobbled = counted // the same listen, not a second one
+            load(autoplay: true, startAt: position) // the same listen: see load
             return
         }
         next(auto: true)
@@ -673,11 +675,15 @@ final class PlayerModel {
         duration = Double(song.duration ?? 0)
         position = startAt
         if startAt > 1 && timeOffset == 0 { player.seek(to: CMTime(seconds: startAt, preferredTimescale: 600)) }
-        scrobbled = false
+        // The same song loaded again part-way (a converted stream jumping, a new address, a stream that broke off)
+        // is the same listen: not counted twice, not announced as "now playing" again
+        let sameListen = listenId == song.id && startAt > 1
+        if !sameListen { scrobbled = false; heard = 0; listenId = song.id }
+        lastClock = nil
         if autoplay {
             activateSession()
             player.play()
-            if app?.scrobble == true { Task { await client.scrobble(song.id, submission: false) } }
+            if app?.scrobble == true, !sameListen { Task { await client.scrobble(song.id, submission: false) } }
         }
         if fadeIn > 0 { startFade(over: fadeIn) }
         artwork = nil
@@ -787,7 +793,10 @@ final class PlayerModel {
         position = seconds
         if duration <= 0, let d = player.currentItem?.duration.seconds, d.isFinite { duration = d }
         if isPlaying { errorStreak = 0 }
-        if let song = current, !scrobbled, app?.scrobble == true, duration > 0, seconds > duration / 2 || seconds > 240 {
+        // Only time that really passed while playing counts, not a jump forward
+        if let last = lastClock, isPlaying, clock - last > 0, clock - last < 2 { heard += clock - last }
+        lastClock = clock
+        if let song = current, !scrobbled, app?.scrobble == true, duration >= 30, heard >= min(duration / 2, 240) {
             scrobbled = true
             if let client = app?.client {
                 let playedAt = Date()
