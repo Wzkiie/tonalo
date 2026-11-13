@@ -32,6 +32,11 @@ img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; }
 p { margin: 0 0 1em; }
 h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.025em; line-height: 1.05; }
+h2, h3 { text-wrap: balance; }
+p, li, figcaption { text-wrap: pretty; }
+::selection { background: rgba(90, 155, 255, .38); color: var(--text); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 code { font-family: var(--mono); font-size: 0.86em; background: rgba(255,255,255,.07); padding: .12em .4em; border-radius: 5px; }
 
 .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
@@ -108,7 +113,7 @@ code { font-family: var(--mono); font-size: 0.86em; background: rgba(255,255,255
 section { padding: 120px 0 0; }
 .head { max-width: 760px; margin-bottom: 56px; }
 .head h2 { font-size: clamp(34px, 4.6vw, 54px); font-weight: 720; }
-.head p { color: var(--muted); font-size: 19px; margin-top: 20px; }
+.head p { color: var(--muted); font-size: 19px; margin-top: 20px; text-wrap: balance; }
 .label { font: 500 13px/1 var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
 .label::before { content: ""; width: 18px; height: 1px; background: currentColor; }
 
@@ -142,31 +147,68 @@ kbd {
 kbd.dot { min-width: 30px; padding: 0; }
 kbd.dot::after { content: ""; width: 11px; height: 11px; border-radius: 50%; background: var(--c); }
 
-/* iPhone */
-.strip {
-  display: grid; grid-auto-flow: column; grid-auto-columns: 232px; gap: 28px;
-  overflow-x: auto; scroll-snap-type: x mandatory; padding: 8px 24px 28px;
-  margin: 0 calc(50% - 50vw); padding-left: max(24px, calc(50vw - var(--wrap) / 2 + 24px));
-  scrollbar-width: thin; scrollbar-color: #333 transparent;
+/* iPhone: a tour. The phone stays put while the features scroll past it, and shows the screen that belongs to each.
+   Every step holds its text and its phone. On wide screens the steps dissolve into one grid: the texts stack in
+   the left column, the phones all sit in the same sticky cell on the right and only the current one is visible. */
+.tour { --ph: min(660px, calc(100vh - 62px - 96px)); display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: 64px; }
+.tour .step { display: contents; }
+.tour .step-text { grid-column: 1; min-height: 58vh; padding: 40px 0; display: flex; flex-direction: column; justify-content: center; }
+.tour .intro .step-text { min-height: 0; margin: 0; padding: 0 0 16vh; justify-content: flex-start; }
+/* room below the last step, so the phone is still in place while that step is being read */
+.tour .step:nth-last-child(1 of .step) .step-text { margin-bottom: calc(var(--ph) / 2 + 60px - 29vh); }
+.tour h3 { font-size: clamp(30px, 3.4vw, 42px); font-weight: 720; margin-bottom: 26px; }
+.tour ul { list-style: none; margin: 0; padding: 0; max-width: 33em; }
+.tour li { position: relative; padding: 9px 0 9px 28px; color: var(--muted); font-size: 17px; }
+.tour li::before { content: ""; position: absolute; left: 0; top: 22px; width: 12px; height: 2px; border-radius: 1px; background: var(--c); }
+.tour li b { color: var(--text); font-weight: 600; }
+/* The phone. One frame that stays where it is; main.js builds it and moves a strip of all the screens inside it,
+   tied to the scroll position, so the screen glides from one feature to the next. Never swap whole phones:
+   a second frame sliding out from behind the first reads as a glitch. */
+.tour figure, .tour-stage {
+  grid-column: 2; grid-row: 1 / span var(--n); align-self: start; justify-self: center;
+  position: sticky; top: calc(62px + (100vh - 62px - var(--ph)) / 2);
+  height: var(--ph); aspect-ratio: 600 / 1304;
 }
-.strip figure { scroll-snap-align: start; }
-.strip figcaption { text-align: center; }
-.strip-nav { display: flex; gap: 8px; justify-content: flex-end; margin-top: -8px; }
-.strip-nav button {
-  width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--text);
-  display: grid; place-items: center; cursor: pointer;
+.tour figure { visibility: hidden; }
+.tour:not(.js) .intro figure { visibility: visible; } /* without JavaScript the phone keeps the home screen */
+.tour-stage { display: none; }
+.tour-frame {
+  height: 100%; border-radius: 14% / 6.45%; overflow: hidden; isolation: isolate; background: #000;
+  box-shadow: 0 0 0 7px #0b0b0c, 0 0 0 8px rgba(255,255,255,.16), 0 30px 60px -20px rgba(0,0,0,.9);
 }
-.strip-nav button:hover { background: rgba(255,255,255,.07); }
-.strip-nav svg { width: 18px; height: 18px; }
-
-.groups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 64px; margin-top: 64px; }
-.groups .group:last-child:nth-child(odd) { grid-column: 1 / -1; } /* an odd one out fills the row instead of leaving a hole */
-.group { border-top: 1px solid var(--line); padding: 28px 0 36px; }
-.group h3 { font-size: 22px; margin-bottom: 18px; }
-.group ul { list-style: none; margin: 0; padding: 0; }
-.group li { padding: 7px 0 7px 22px; position: relative; color: var(--muted); font-size: 16px; }
-.group li::before { content: ""; position: absolute; left: 2px; top: 16px; width: 8px; height: 1.5px; background: var(--blue); }
-.group li b { color: var(--text); font-weight: 600; }
+.tour-reel { height: calc(var(--n) * 100%); will-change: transform; }
+.tour-reel img { width: 100%; height: calc(100% / var(--n)); object-fit: cover; }
+/* the light of the current feature's color behind the phone */
+.tour figure::before, .tour-glow {
+  content: ""; position: absolute; z-index: -1; inset: 4% -46%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 32%, transparent), transparent);
+}
+.tour-glow { background: radial-gradient(closest-side, var(--glow, transparent), transparent); }
+@media (min-width: 901px) {
+  .tour.js figure { display: none; }
+  .tour.js .tour-stage { display: block; }
+}
+/* Narrow: no room beside the text, so every feature is its own block: title, its screen, the details */
+@media (max-width: 900px) {
+  .tour { display: block; overflow-x: clip; }
+  .tour .step { display: flex; flex-direction: column; padding-bottom: 96px; }
+  .tour .step:nth-last-child(1 of .step) { padding-bottom: 0; }
+  .tour .step-text, .tour .intro .step-text { display: contents; }
+  .tour .step-text > * { order: 1; }
+  .tour .step-text > ul { order: 3; }
+  .tour figure {
+    order: 2; position: relative; top: auto; align-self: center; height: auto; width: min(62vw, 270px); margin: 36px 0;
+    visibility: visible;
+  }
+  .tour .intro figure { margin-bottom: 0; }
+  .tour h3 { font-size: 30px; margin-bottom: 0; }
+  .tour li { font-size: 16px; }
+}
+/* narrow: each screen comes in as you reach it */
+@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .tour.js figure.reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .8s cubic-bezier(.16, 1, .3, 1); }
+  .tour.js figure.reveal.in { opacity: 1; transform: none; }
+}
 
 /* Split feature */
 .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: center; }
@@ -279,15 +321,13 @@ dialog.lb button { position: fixed; top: 18px; right: 18px; width: 44px; height:
   .top nav a:not(.gh) { display: none; }
   .lede { font-size: 18px; }
   section { padding-top: 88px; }
-  .cols, .groups, .cards, .install, .privacy { grid-template-columns: 1fr; }
+  .cols, .cards, .install, .privacy { grid-template-columns: 1fr; }
   .privacy div:nth-child(2n) { padding-left: 0; border-left: 0; }
   .gallery { grid-template-columns: 1fr 1fr; gap: 12px; }
   .facts .wrap { grid-template-columns: 1fr; }
   .facts .wrap > div, .facts .wrap > div + div { padding: 18px 0; border-left: 0; }
   .facts .wrap > div + div { border-top: 1px solid var(--line); }
   .keys li { grid-template-columns: 1fr; gap: 8px; }
-  .strip { grid-auto-columns: 62vw; gap: 18px; padding-left: 16px; }
-  .strip-nav { display: none; }
   .devices .phone { right: 0; }
   .card { padding: 26px 22px; }
   .flow { grid-template-columns: 1fr; }
@@ -326,7 +366,6 @@ section[class*="tint-"]::before {
 .ico[style] { background: linear-gradient(160deg, color-mix(in srgb, var(--c) 100%, white 12%), color-mix(in srgb, var(--c) 100%, black 22%)); color: #fff; box-shadow: 0 6px 18px -8px var(--c); }
 .label { color: #b9b4ad; }
 .label::before { background: var(--blue); }
-.group[style] li::before { background: var(--c); }
 
 .card { position: relative; overflow: hidden; isolation: isolate; }
 .card[class*="warm-"]::before {

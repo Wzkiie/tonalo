@@ -19,7 +19,8 @@
 <meta content="summary_large_image" name="twitter:card"/>
 <link href="/favicon.svg" rel="icon" type="image/svg+xml"/>
 <link href="/img/apple-touch-icon.png" rel="apple-touch-icon"/>
-<link href="/style.css?v=19" rel="stylesheet"/>
+<link href="/style.css?v=22" rel="stylesheet"/>
+<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Tonalo","url":"https://tonalo.app/de/","inLanguage":"de","description":"Kostenloser Open-Source-Client für Navidrome und Subsonic auf iPhone, Apple Watch, CarPlay, LG-TV, Windows und Mac. Kein Konto, kein Tracking. Zur Demo.","applicationCategory":"MultimediaApplication","operatingSystem":"iOS, watchOS, webOS, Windows, macOS","license":"https://github.com/Wzkiie/tonalo/blob/main/LICENSE","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"sameAs":["https://github.com/Wzkiie/tonalo"]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","inLanguage":"de","mainEntity":[{"@type":"Question","name":"Welcher Navidrome-Client läuft auf dem iPhone?","acceptedAnswer":{"@type":"Answer","text":"Tonalo. Die App läuft auf dem iPhone mit iOS 17 oder neuer, mit einer Apple-Watch-App und CarPlay. Eine iPad-Version gibt es noch nicht."}},{"@type":"Question","name":"Mit welchen Servern funktioniert es?","acceptedAnswer":{"@type":"Answer","text":"Tonalo ist mit Navidrome gebaut und getestet. Andere Server mit Subsonic-API, etwa Gonic oder Airsonic-Advanced, sollten funktionieren, wurden aber noch nicht ausprobiert. Rückmeldungen sind sehr willkommen."}},{"@type":"Question","name":"Kostet es etwas?","acceptedAnswer":{"@type":"Answer","text":"Nein. Alle Apps sind kostenlos und stehen unter der MIT-Lizenz, ohne Werbung, Abos oder In-App-Käufe."}},{"@type":"Question","name":"Gibt es sie im App Store und im Homebrew Channel?","acceptedAnswer":{"@type":"Answer","text":"Die iPhone-App gibt es im App Store. Die TV-App lässt sich schon aus dem Homebrew Channel installieren, wenn du Tonalos eigenes Repository hinzufügst (siehe oben); ein Eintrag im offiziellen Repository ist geplant. Die .ipk aus den GitHub-Releases funktioniert außerdem auf jedem Fernseher im Entwicklermodus."}},{"@type":"Question","name":"Kann ich die App ohne eigenen Server ausprobieren?","acceptedAnswer":{"@type":"Answer","text":"Tonalo braucht einen Navidrome- oder Subsonic-Server, um Musik zu spielen. Zum ersten Umsehen kannst du dich am öffentlichen Navidrome-Demo-Server unter demo.navidrome.org mit dem Benutzernamen demo und dem Passwort demo anmelden. Er wird vom Navidrome-Projekt betrieben, nicht von Tonalo, und kann sich jederzeit ändern oder offline gehen."}},{"@type":"Question","name":"Kann ich damit Hörbücher hören?","acceptedAnswer":{"@type":"Answer","text":"Ja. Verbinde deinen Audiobookshelf-Server unter Einstellungen, und deine Bücher und Podcasts stehen neben deiner Musik, mit Kapiteln, Tempo und Offline-Downloads."}},{"@type":"Question","name":"Können Freunde Songs zu meiner Wiedergabe hinzufügen?","acceptedAnswer":{"@type":"Answer","text":"Ja, mit der Jukebox. Freunde treten mit einem Code bei, fügen Songs hinzu und überspringen. Sie brauchen ein Konto auf demselben Server. Es klappt am Fernseher oder PC zu Hause und im Auto mit deinem iPhone als Gastgeber, ganz ohne WLAN."}},{"@type":"Question","name":"Warum sind die Künstlerseiten auf meinem Server leer?","acceptedAnswer":{"@type":"Answer","text":"Beliebte Songs, ähnliche Künstler und Biografien kommen von Navidrome, das sie von Last.fm holt. Einen kostenlosen Last.fm-API-Schlüssel in Navidrome einzutragen dauert zwei Minuten; die Server-Tipps zeigen, wie. Ohne ihn zeigt die iPhone-App stattdessen deine eigenen meistgespielten Songs."}},{"@type":"Question","name":"Gibt es eine Android- oder Samsung-TV-Version?","acceptedAnswer":{"@type":"Answer","text":"Noch nicht. Tonalo ist für LG webOS und das iPhone gemacht."}},{"@type":"Question","name":"War KI beteiligt?","acceptedAnswer":{"@type":"Answer","text":"Ein guter Teil des Codes entstand zusammen mit einem KI-Programmierassistenten. Alles wird auf einem echten LG OLED und iPhone getestet, und der Code ist öffentlich, du kannst also genau sehen, was er tut."}},{"@type":"Question","name":"Ich habe einen Fehler gefunden oder eine Idee.","acceptedAnswer":{"@type":"Answer","text":"Öffne ein Issue auf GitHub ; es gibt Formulare für beides. Sicherheitsprobleme bitte privat melden ."}}]}</script></head>
 <body>
 <a class="skip" href="#main">Zum Inhalt springen</a>
@@ -238,33 +239,19 @@
 </div>
 </div>
 </section>
-<!-- iPhone -->
+<!-- iPhone: a tour. The phone stays put while the features scroll past, and shows the screen that belongs to each. -->
 <section class="tint-amber" id="iphone">
-<div class="wrap">
-<div class="head reveal">
+<div class="wrap tour" id="tour" style="--n:8">
+<div class="step intro" style="--c:#c47034">
+<div class="step-text head">
 <p class="label">iPhone</p>
 <h2>Fühlt sich an wie die großen Streaming-Apps. Spielt deine Dateien.</h2>
 <p>Eine native SwiftUI-App mit Startseite, Suche, Bibliothek und einem Player, der seine Farben vom Cover nimmt. Lossless bleibt lossless, und die ganze Bibliothek funktioniert offline, wenn du das willst.</p>
 </div>
+<figure class="phone reveal"><img alt="Start" class="shot" height="1304" loading="lazy" src="/img/ios/home.jpg" width="600"/></figure>
 </div>
-<div class="strip" id="strip">
-<figure><div class="phone"><img alt="Start" class="shot" height="1304" loading="lazy" src="/img/ios/home.jpg" width="600"/></div><figcaption>Start</figcaption></figure>
-<figure><div class="phone"><img alt="Player" class="shot" height="1304" loading="lazy" src="/img/ios/player.jpg" width="600"/></div><figcaption>Player</figcaption></figure>
-<figure><div class="phone"><img alt="Hörbücher und Podcasts: Weiterhören und neue Bücher" class="shot" height="1304" loading="lazy" src="/img/ios/books.jpg" width="600"/></div><figcaption>Hörbücher und Podcasts</figcaption></figure>
-<figure><div class="phone"><img alt="Synchrone Lyrics" class="shot" height="1304" loading="lazy" src="/img/ios/lyrics.jpg" width="600"/></div><figcaption>Synchrone Lyrics</figcaption></figure>
-<figure><div class="phone"><img alt="Album" class="shot" height="1304" loading="lazy" src="/img/ios/album.jpg" width="600"/></div><figcaption>Album</figcaption></figure>
-<figure><div class="phone"><img alt="Deine Bibliothek" class="shot" height="1304" loading="lazy" src="/img/ios/library.jpg" width="600"/></div><figcaption>Deine Bibliothek</figcaption></figure>
-<figure><div class="phone"><img alt="Suche mit Genres" class="shot" height="1304" loading="lazy" src="/img/ios/search.jpg" width="600"/></div><figcaption>Suche und Genres</figcaption></figure>
-<figure><div class="phone"><img alt="Endlos-Radio" class="shot" height="1304" loading="lazy" src="/img/ios/radio.jpg" width="600"/></div><figcaption>Radio</figcaption></figure>
-<figure><div class="phone"><img alt="Ein Radiosender live" class="shot" height="1304" loading="lazy" src="/img/ios/station.jpg" width="600"/></div><figcaption>Ein Sender, live</figcaption></figure>
-</div>
-<div class="wrap">
-<div class="strip-nav">
-<button aria-label="Vorherige Screenshots" data-dir="-1" type="button"><svg><use href="#i-left"></use></svg></button>
-<button aria-label="Nächste Screenshots" data-dir="1" type="button"><svg><use href="#i-right"></use></svg></button>
-</div>
-<div class="groups">
-<div class="group reveal" style="--c:#8b5cf6">
+<div class="step" style="--c:#8b5cf6">
+<div class="step-text">
 <h3>Hören</h3>
 <ul>
 <li><b>Endlos-Radio</b> ausgehend von einem Song, Künstler, Genre oder deinen Favoriten. Es spielt mehr von dem, was du zu Ende hörst oder magst, und weniger von dem, was du überspringst.</li>
@@ -274,7 +261,10 @@
 <li><b>Künstlerseiten</b> mit beliebten Songs, der Diskografie, „Fans hören auch“ und einer Biografie.</li>
 </ul>
 </div>
-<div class="group reveal" style="--c:#14b8a6">
+<figure class="phone reveal"><img alt="Player" class="shot" height="1304" loading="lazy" src="/img/ios/player.jpg" width="600"/></figure>
+</div>
+<div class="step" style="--c:#14b8a6">
+<div class="step-text">
 <h3>Offline</h3>
 <ul>
 <li><b>Downloads</b> von Songs, Alben und Playlists, fünf gleichzeitig im Hintergrund, auf Wunsch nur im WLAN.</li>
@@ -283,7 +273,10 @@
 <li>Lyrics kommen mit, und Scrobbles, die offline entstanden sind, werden später gesendet.</li>
 </ul>
 </div>
-<div class="group reveal" style="--c:#6366f1">
+<figure class="phone reveal"><img alt="Deine Bibliothek" class="shot" height="1304" loading="lazy" src="/img/ios/library.jpg" width="600"/></figure>
+</div>
+<div class="step" style="--c:#6366f1">
+<div class="step-text">
 <h3>Hörbücher und Podcasts</h3>
 <ul>
 <li><b>Audiobookshelf</b> in derselben App: Verbinde deinen Server unter Einstellungen, dein Fortschritt bleibt synchron.</li>
@@ -292,7 +285,10 @@
 <li>Seiten für Autoren und Reihen, und Herzen, die deine Bibliothek füllen.</li>
 </ul>
 </div>
-<div class="group reveal" style="--c:#f97316">
+<figure class="phone reveal"><img alt="Hörbücher und Podcasts: Weiterhören und neue Bücher" class="shot" height="1304" loading="lazy" src="/img/ios/books.jpg" width="600"/></figure>
+</div>
+<div class="step" style="--c:#f97316">
+<div class="step-text">
 <h3>Klang</h3>
 <ul>
 <li>Getrennt einstellbar für <b>WLAN, Mobilfunk und Downloads</b>.</li>
@@ -301,7 +297,10 @@
 <li>Formate, die das iPhone nicht abspielen kann, werden automatisch umgewandelt.</li>
 </ul>
 </div>
-<div class="group reveal" style="--c:#3b82f6">
+<figure class="phone reveal"><img alt="Einstellungen zur Audioqualität: Originaldateien und AAC-Stufen mit dem Datenverbrauch pro Stunde" class="shot" height="1304" loading="lazy" src="/img/ios/quality.jpg" width="600"/></figure>
+</div>
+<div class="step" style="--c:#3b82f6">
+<div class="step-text">
 <h3>Dein Server, dein Weg</h3>
 <ul>
 <li><b>Heimadresse</b>: In deinem WLAN spricht die App direkt mit dem Server und wechselt draußen zurück, mitten im Song und ohne Lücke.</li>
@@ -310,7 +309,10 @@
 <li>Ein Herz für den Sperrbildschirm und das Kontrollzentrum (der Knopf im Kontrollzentrum braucht iOS 18) und ein Siri-Kurzbefehl, um den aktuellen Song zu liken.</li>
 </ul>
 </div>
-<div class="group reveal" style="--c:#ec4899">
+<figure class="phone reveal"><img alt="Einstellungen zum Musikserver: Serveradresse, Adresse zu Hause und eigene Header" class="shot" height="1304" loading="lazy" src="/img/ios/server.jpg" width="600"/></figure>
+</div>
+<div class="step" style="--c:#ec4899">
+<div class="step-text">
 <h3>Mach sie zu deiner</h3>
 <ul>
 <li>Acht Akzentfarben oder deine eigene, und neun App-Icons.</li>
@@ -319,7 +321,10 @@
 <li>Pinne Playlists mit langem Drücken an den Anfang deiner Bibliothek.</li>
 </ul>
 </div>
-<div class="group reveal" style="--c:#eab308">
+<figure class="phone reveal"><img alt="Aussehen-Einstellungen: Akzentfarben, eigene Farbe und neun App-Icons" class="shot" height="1304" loading="lazy" src="/img/ios/appearance.jpg" width="600"/></figure>
+</div>
+<div class="step" style="--c:#eab308">
+<div class="step-text">
 <h3>Kleinigkeiten</h3>
 <ul>
 <li>Das Qualitätsabzeichen im Player zeigt, was gerade läuft, etwa FLAC oder AAC 256.</li>
@@ -328,6 +333,7 @@
 <li>Beim Abmelden werden die Downloads und der Cache dieses Kontos vom Handy entfernt.</li>
 </ul>
 </div>
+<figure class="phone reveal"><img alt="Album" class="shot" height="1304" loading="lazy" src="/img/ios/album.jpg" width="600"/></figure>
 </div>
 </div>
 </section>
@@ -561,7 +567,7 @@
 </div>
 </footer>
 <dialog class="lb" id="lb"><button aria-label="Schließen" type="button">×</button><img alt=""/></dialog>
-<script src="/main.js?v=10"></script>
+<script src="/main.js?v=13"></script>
 <script src="/demo.js?v=3"></script>
 </body>
 </html>
