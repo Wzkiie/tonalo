@@ -255,17 +255,35 @@ enum QuickItem: Identifiable {
 
 /// Small horizontal tile in the two-column grid at the top of Home.
 struct QuickTile: View {
+    @Environment(AppModel.self) private var app
     let item: QuickItem
+
+    /// This is what plays (or is paused) right now: its tile shows it.
+    private var current: Bool {
+        guard let c = app.player.context else { return false }
+        switch item {
+        case .favorites: return c.kind == .favorites
+        case .downloads: return c.kind == .downloads
+        case .playlist(let p): return c.kind == .playlist && c.id == p.id
+        case .album(let a): return c.kind == .album && c.id == a.id
+        }
+    }
 
     var body: some View {
         NavigationLink(value: route) {
             HStack(spacing: 8) {
                 art.frame(width: 56, height: 56).clipped()
                 Text(title).font(.system(size: 13, weight: .bold)).lineLimit(2).multilineTextAlignment(.leading)
+                    .foregroundStyle(current ? Color.accent : .primary)
                 Spacer(minLength: 4)
             }
             .frame(height: 56)
-            .background(Color.elevated)
+            .background(current ? Color.accent.opacity(0.22) : Color.elevated)
+            .overlay(alignment: .leading) { if current { Rectangle().fill(Color.accent).frame(width: 3) } }
+            // The small level meter sits in the corner of the tile, out of the way of cover and title
+            .overlay(alignment: .topTrailing) {
+                if current { PlayingBars(active: app.player.isPlaying).frame(width: 13, height: 11).padding(.top, 8).padding(.trailing, 9) }
+            }
             .clipShape(RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)

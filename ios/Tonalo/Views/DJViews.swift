@@ -189,6 +189,11 @@ struct DJCard: View {
 /// The DJ's own mark: a record, open at the top right where the needle sits, with Tonalo's three bars in the middle.
 /// Drawn in the current foreground color, at any size.
 struct DJMark: View {
+    /// The three bars move like a level meter – while the DJ plays
+    var animated = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let low: [CGFloat] = [0.22, 0.40, 0.30], speed: [Double] = [5.0, 6.2, 4.4]
+
     var body: some View {
         GeometryReader { geo in
             let s = min(geo.size.width, geo.size.height), line = s * 0.1, r = (s - line) / 2
@@ -199,8 +204,15 @@ struct DJMark: View {
                     .padding(line / 2)
                 Circle().frame(width: line * 1.25, height: line * 1.25)
                     .offset(x: r * 0.7071, y: -r * 0.7071)
-                HStack(spacing: s * 0.07) {
-                    ForEach([0.22, 0.40, 0.30], id: \.self) { h in Capsule().frame(width: line, height: s * h) }
+                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !animated || reduceMotion)) { context in
+                    let t = context.date.timeIntervalSinceReferenceDate
+                    HStack(alignment: .center, spacing: s * 0.07) {
+                        ForEach(0..<3, id: \.self) { i in
+                            let rest = low[i]
+                            let h = animated && !reduceMotion ? 0.30 + 0.17 * sin(t * speed[i] + Double(i) * 1.9) : rest
+                            Capsule().frame(width: line, height: s * h)
+                        }
+                    }
                 }
             }
             .frame(width: s, height: s)
@@ -212,12 +224,20 @@ struct DJMark: View {
 
 /// The DJ's picture wherever it stands next to covers: quiet, its mark in the accent color on dark gray with a hint of it.
 struct DJArt: View {
+    /// While the DJ plays: the glow breathes and the bars move
+    var playing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 LinearGradient(colors: [Color(white: 0.24), Color(white: 0.12)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                LinearGradient(colors: [Color.accent.opacity(0.22), Color.accent.opacity(0.06)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                DJMark().foregroundStyle(Color.accent)
+                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing || reduceMotion)) { context in
+                    let t = context.date.timeIntervalSinceReferenceDate
+                    let glow = playing && !reduceMotion ? 0.30 + 0.16 * sin(t * 2.6) : 0.22
+                    LinearGradient(colors: [Color.accent.opacity(glow), Color.accent.opacity(0.06)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+                DJMark(animated: playing).foregroundStyle(Color.accent)
                     .frame(width: geo.size.width * 0.54, height: geo.size.width * 0.54)
             }
         }
@@ -252,7 +272,7 @@ struct DJHomeTile: View {
         let playing = app.player.context?.kind == .dj && app.player.isPlaying
         DJStarter {
             HStack(spacing: 12) {
-                DJArt().frame(width: 56, height: 56)
+                DJArt(playing: playing).frame(width: 56, height: 56)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: "DJ").font(.system(size: 14, weight: .bold))
                     Text(playing ? dj.line ?? String(localized: "Playing now") : String(localized: "Sets picked from your library"))
@@ -262,6 +282,7 @@ struct DJHomeTile: View {
                 Group {
                     if dj.busy { ProgressView() } else {
                         Image(systemName: playing ? "waveform" : "play.fill").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.accent)
+                            .symbolEffect(.variableColor.iterative, isActive: playing)
                     }
                 }
                 .frame(width: 44)

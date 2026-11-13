@@ -228,6 +228,7 @@ struct AudiobookView: View {
             if let item { content(item) } else { ScrollView { LoadState(loading: error == nil, error: error) { await load() }.padding(.top, 60) } }
         }
         .task(id: id) { await load() }
+        .refreshable { await pulled(ownSpinner: true) { await Task { await load() }.value } }
     }
 
     private func load() async {
@@ -481,6 +482,15 @@ struct BooksBrowseView: View {
         .navigationTitle(podcasts ? "Podcasts" : "Audiobooks")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(section)\(sort)") { await show() }
+        .refreshable {
+            await pulled {
+                await Task {
+                    if section != .titles { authors = []; series = [] }
+                    await app.books.load(force: true)
+                    await show()
+                }.value
+            }
+        }
     }
 
     private var titles: some View {
@@ -641,10 +651,13 @@ struct BookGroupView: View {
         .background(Color.canvas)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .task {
-            do { items = try await app.books.filtered(group: group, value: value, library: library, sort: sort) }
-            catch { self.error = error.userMessage }
-        }
+        .task { await load() }
+        .refreshable { await pulled { await Task { await load() }.value } }
+    }
+
+    private func load() async {
+        do { items = try await app.books.filtered(group: group, value: value, library: library, sort: sort); error = nil }
+        catch { if items == nil { self.error = error.userMessage } }
     }
 }
 
@@ -749,16 +762,20 @@ struct BookAuthorView: View {
         .background(Color.canvas)
         .navigationTitle(name)
         .navigationBarTitleDisplayMode(.inline)
-        .task {
-            defer { loading = false }
-            do {
-                let found = try await app.books.author(id)
-                bio = found.author.description
-                items = found.items
-                series = found.series
-            } catch {
-                self.error = error.userMessage
-            }
+        .task { await load() }
+        .refreshable { await pulled { await Task { await load() }.value } }
+    }
+
+    private func load() async {
+        defer { loading = false }
+        do {
+            let found = try await app.books.author(id)
+            bio = found.author.description
+            items = found.items
+            series = found.series
+            error = nil
+        } catch {
+            if items.isEmpty { self.error = error.userMessage }
         }
     }
 }

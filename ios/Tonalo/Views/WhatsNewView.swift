@@ -17,11 +17,21 @@ struct AppRelease: Identifiable {
         var id: String { icon + "\(title)" }
     }
 
-    enum Visual { case dj, devices }
+    enum Visual { case dj, devices, playing, refresh }
 }
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
+        AppRelease(version: "1.5.1", items: [
+            .init(icon: "waveform", color: .blue, title: "Now playing, at a glance",
+                  text: "The song that plays right now moves with small bars, on the Home tiles and in every playlist, album and search.", visual: .playing),
+            .init(icon: "music.note.list", color: .purple, title: "DJ for your TV",
+                  text: "Tap the DJ while your TV plays and its queue is replaced, so you hear the new set next. The DJ also has its own entry in your profile menu, and its tile on Home moves while it plays."),
+            .init(icon: "arrow.clockwise", color: .green, title: "Pull to refresh everywhere",
+                  text: "Audiobooks and podcasts refresh now too, and the doubled spinner is gone.", visual: .refresh),
+            .init(icon: "person.2.fill", color: .orange, title: "Several accounts on one TV",
+                  text: "Each profile pairs on its own, and the DJ goes to the TV with the right account."),
+        ]),
         AppRelease(version: "1.5.0", items: [
             .init(icon: "music.note.list", color: .purple, title: "DJ",
                   text: "An AI picks sets from your library, and you steer it with moods or a wish. Off until you set it up under Settings, with your own key or your own Ollama.", visual: .dj),
@@ -247,6 +257,8 @@ private struct WhatsNewPage: View {
                 switch item.visual {
                 case .dj: DJPreview(shown: shown)
                 case .devices: DevicesPreview(shown: shown, tint: item.color)
+                case .playing: PlayingPreview(shown: shown)
+                case .refresh: RefreshPreview(shown: shown, tint: item.color)
                 case nil:
                     Image(systemName: item.icon)
                         .font(.system(size: 52, weight: .semibold))
@@ -441,6 +453,89 @@ struct VersionHistoryView: View {
                     RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.accent.opacity(0.35), lineWidth: 1)
                 }
             }
+        }
+    }
+}
+
+/// A list where the song that plays moves on, with the bars jumping to it.
+private struct PlayingPreview: View {
+    let shown: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var current = 0
+    private let timer = Timer.publish(every: 2.6, on: .main, in: .common).autoconnect()
+    private let rows: [(Color, Color)] = [(.orange, .pink), (.teal, .blue), (.purple, .indigo), (.yellow, .orange)]
+
+    var body: some View {
+        VStack(spacing: 6) {
+            ForEach(0..<rows.count, id: \.self) { i in
+                let on = i == current
+                HStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(LinearGradient(colors: [rows[i].0, rows[i].1], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 44, height: 44)
+                    VStack(alignment: .leading, spacing: 7) {
+                        Capsule().fill(on ? Color.accent : Color.white.opacity(0.5)).frame(width: on ? 104 : 88, height: 7)
+                        Capsule().fill(Color.white.opacity(0.18)).frame(width: 58, height: 5)
+                    }
+                    Spacer(minLength: 0)
+                    if on { PlayingBars(active: shown).frame(width: 16, height: 14).transition(.scale.combined(with: .opacity)) }
+                }
+                .padding(8)
+                .background(on ? Color.accent.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .scaleEffect(shown ? 1 : 0.9)
+                .opacity(shown ? 1 : 0)
+                .animation(.spring(duration: 0.5, bounce: 0.3).delay(Double(i) * 0.07), value: shown)
+            }
+        }
+        .animation(.spring(duration: 0.45, bounce: 0.2), value: current)
+        .padding(12)
+        .frame(width: 300)
+        .background(Color.panel, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Color.white.opacity(0.08), lineWidth: 1))
+        .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
+        .onReceive(timer) { _ in if shown, !reduceMotion { current = (current + 1) % rows.count } }
+    }
+}
+
+/// A list that is pulled down, with the spinner turning, over and over.
+private struct RefreshPreview: View {
+    let shown: Bool
+    let tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !shown || reduceMotion)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let c = reduceMotion ? 0.7 : (sin(t * 1.6 - .pi / 2) + 1) / 2   // 0 up, 1 pulled
+            ZStack(alignment: .top) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(tint)
+                    .rotationEffect(.degrees(c * 420))
+                    .opacity(min(1, c * 1.6))
+                    .padding(.top, 6)
+                VStack(spacing: 8) {
+                    ForEach(0..<4, id: \.self) { i in
+                        HStack(spacing: 12) {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(tint.opacity(0.55 - Double(i) * 0.08)).frame(width: 44, height: 44)
+                            VStack(alignment: .leading, spacing: 7) {
+                                Capsule().fill(Color.white.opacity(0.5)).frame(width: 96, height: 7)
+                                Capsule().fill(Color.white.opacity(0.18)).frame(width: 56, height: 5)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(Color.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.white.opacity(0.08), lineWidth: 1))
+                .offset(y: 44 * c)
+            }
+            .frame(width: 300, height: 300, alignment: .top)
+            .clipped()
+            .scaleEffect(shown ? 1 : 0.85).opacity(shown ? 1 : 0)
+            .animation(.spring(duration: 0.5, bounce: 0.3), value: shown)
         }
     }
 }

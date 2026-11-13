@@ -5501,6 +5501,86 @@
         }
       }
     },
+    "Now playing, at a glance" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf einen Blick: das läuft gerade"
+          }
+        }
+      }
+    },
+    "The song that plays right now moves with small bars, on the Home tiles and in every playlist, album and search." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Song, der gerade läuft, bewegt sich mit kleinen Balken: auf den Kacheln der Startseite und in jeder Playlist, jedem Album und der Suche."
+          }
+        }
+      }
+    },
+    "DJ for your TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DJ für deinen Fernseher"
+          }
+        }
+      }
+    },
+    "Tap the DJ while your TV plays and its queue is replaced, so you hear the new set next. The DJ also has its own entry in your profile menu, and its tile on Home moves while it plays." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tippe auf den DJ, während dein Fernseher spielt, und seine Warteschlange wird ersetzt, du hörst also gleich das neue Set. Der DJ hat außerdem einen eigenen Eintrag im Profilmenü, und seine Kachel auf der Startseite bewegt sich, solange er spielt."
+          }
+        }
+      }
+    },
+    "Pull to refresh everywhere" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überall nach unten ziehen zum Aktualisieren"
+          }
+        }
+      }
+    },
+    "Audiobooks and podcasts refresh now too, and the doubled spinner is gone." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörbücher und Podcasts lassen sich jetzt auch aktualisieren, und der doppelte Kreis ist weg."
+          }
+        }
+      }
+    },
+    "Several accounts on one TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehrere Konten an einem Fernseher"
+          }
+        }
+      }
+    },
+    "Each profile pairs on its own, and the DJ goes to the TV with the right account." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jedes Profil koppelt für sich, und der DJ geht an den Fernseher mit dem richtigen Konto."
+          }
+        }
+      }
+    },
     "Jukebox hearts" : {
       "localizations" : {
         "de" : {

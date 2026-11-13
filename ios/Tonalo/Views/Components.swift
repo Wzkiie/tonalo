@@ -93,6 +93,8 @@ struct SongRow: View {
                 }
             }
             Spacer(minLength: 8)
+            // Says "this one plays right now" – in a playlist, an album and in the search alike
+            if isCurrent { PlayingBars(active: app.player.isPlaying).frame(width: 14, height: 12) }
             SongMenu(song: song) {
                 Image(systemName: "ellipsis").font(.system(size: 16)).frame(width: 32, height: 40).contentShape(Rectangle())
             }
@@ -236,10 +238,12 @@ struct CoverTint: View {
     var active: Bool { count > 0 }
 }
 
-@MainActor func pulled(_ work: () async -> Void) async {
+/// `ownSpinner`: for pages that draw under the navigation bar – the system's spinner is hidden there.
+/// Everywhere else the system's own is shown, and a second one would only double it.
+@MainActor func pulled(ownSpinner: Bool = false, _ work: () async -> Void) async {
     let pull = PullState.shared
-    pull.count += 1
-    defer { pull.count -= 1 }
+    if ownSpinner { pull.count += 1 }
+    defer { if ownSpinner { pull.count -= 1 } }
     let start = ContinuousClock.now
     await work()
     let rest = Duration.milliseconds(700) - (ContinuousClock.now - start)
@@ -256,5 +260,29 @@ struct PullSpinner: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
                 .allowsHitTesting(false)
         }
+    }
+}
+
+/// The small level meter that says "this plays right now": the bars move while it plays and rest while it is paused.
+/// Driven by the clock, not by a state change – so it keeps moving on its own, wherever it stands.
+struct PlayingBars: View {
+    var active: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let phase: [Double] = [0, 1.7, 3.1, 0.9], speed: [Double] = [5.2, 6.4, 4.6, 5.8]
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !active || reduceMotion)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            HStack(alignment: .bottom, spacing: 2.5) {
+                ForEach(0..<4, id: \.self) { i in
+                    let level = active && !reduceMotion ? 0.55 + 0.45 * sin(t * speed[i] + phase[i]) : [0.45, 0.8, 0.6, 0.35][i]
+                    Capsule().fill(Color.accent)
+                        .frame(width: 3.5)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
+                        .scaleEffect(y: max(0.18, level), anchor: .bottom)
+                }
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
