@@ -187,6 +187,12 @@ function handle(req, res, u) {
       // Byte ranges like a real server – AVPlayer on iOS refuses streams without them
       const r = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
       if (!r) {
+        // timeOffset=<s> (converted streams start at that second, like a real server): the demo tone just gets shorter
+        if (q.timeOffset && !process.env.MOCK_FILE_MB && !process.env.MOCK_TRANSCODE_MS) {
+          const part = wav(Math.max(1, 180 - Math.floor(+q.timeOffset)));
+          res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': part.length });
+          return res.end(part);
+        }
         res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': process.env.MOCK_FILE_MB ? FILE_BYTES : WAV.length, 'Accept-Ranges': 'bytes' });
         // MOCK_TRANSCODE_MS=<ms>: a whole-file request waits that long first, like a server converting the song,
         // then MOCK_FILE_MB=<n> megabytes arrive in small pieces, like a real download

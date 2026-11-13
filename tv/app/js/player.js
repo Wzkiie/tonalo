@@ -37,19 +37,207 @@ var Player = (function () {
     if (s && s.duration) return s.duration;
     return isFinite(audio.duration) ? audio.duration : 0;
   }
-  function position() { if (rm) return station ? 0 : rPos(); return station ? (audio.currentTime || 0) : offset + (audio.currentTime || 0); }
+  function position() { if (rm) return station ? 0 : rPos(); if (br && br.phase === 'handoff') return br.a.currentTime - br.t0; return station ? (audio.currentTime || 0) : offset + (audio.currentTime || 0); }
   function radioOn() { return typeof Radio !== 'undefined'; }
   function djPlays() { return !!context && context.kind === 'dj' && typeof DJ !== 'undefined'; }
 
   // Lautstärke angleichen (ReplayGain-Tags) und Ausblenden beim Sleep-Timer
-  function applyVolume() {
-    var g = 1, s = current(), mode = settings().leveling, rg = s && s.replayGain;
+  function levelFor(s) {
+    var g = 1, mode = settings().leveling, rg = s && s.replayGain;
     if (!station && rg && mode && mode !== 'off') {
       var album = mode === 'album' && rg.albumGain != null;
       var gain = album ? rg.albumGain : rg.trackGain, peak = album ? rg.albumPeak : rg.trackPeak;
       if (gain != null) { g = Math.pow(10, gain / 20); if (peak) g = Math.min(g, 1 / peak); }
     }
-    audio.volume = Math.max(0, Math.min(1, g * fade * xfIn * master));
+    return g;
+  }
+  function applyVolume() {
+    audio.volume = Math.max(0, Math.min(1, levelFor(current()) * fade * xfIn * master * dipValue()));
+  }
+
+  // ---- Überblenden am LG-TV: Der TV spielt immer nur einen Player. Startet der zweite, pausiert er den ersten
+  // (am OLED65CX9LA nach 0,2 s gemessen), der Song bricht dann mitten in der Überblendzeit ab. Darum blendet der TV
+  // den Song am Ende aus und den nächsten ein, nacheinander in einem Player: 'out' = läuft aus, 'wait' = der nächste lädt
+  // (Stille), 'in' = er kommt hoch. Am PC (zwei Player möglich) bleibt das echte Überblenden.
+  var dip = { mode: 'idle', t0: 0, dur: 1, keep: false, timer: 0 };
+  function dipValue() {
+    if (dip.mode === 'idle') return 1;
+    var t = Math.max(0, Math.min(1, (Date.now() - dip.t0) / dip.dur));
+    if (dip.mode === 'hold') return 0;                              // Element stumm, bis es zum Puffer passt
+    if (dip.mode === 'bridge') return Math.cos(Math.PI / 2 * t);    // alter Song unter dem Puffer
+    if (dip.mode === 'merge') return Math.sin(Math.PI / 2 * t);     // Element übernimmt vom Puffer
+    var v = dip.mode === 'wait' ? 0 : dip.mode === 'out' ? 1 - t : t;
+    return v * v; // quadratisch klingt gleichmäßiger als linear
+  }
+  function setDip(mode, secs) {
+    clearInterval(dip.timer); dip.timer = 0;
+    dip.mode = mode; dip.t0 = Date.now(); dip.dur = Math.max(100, (secs || 1) * 1000);
+    if (mode === 'idle') dip.keep = false;
+    else dip.timer = setInterval(function () {
+      var age = Date.now() - dip.t0;
+      if ((dip.mode === 'out' && age > dip.dur + 1500) || (dip.mode === 'wait' && age > 10000) || (dip.mode === 'in' && age >= dip.dur) ||
+          (dip.mode === 'hold' && age > 15000) || (dip.mode === 'merge' && age >= dip.dur)) setDip('idle');
+      else applyVolume();
+    }, 100);
+    applyVolume();
+  }
+  function maybeFadeOut() {
+    var cf = crossfadeSecs();
+    if (!cf || station || repeat === 'one' || sleepEnd || audio.paused) return;
+    var d = duration(), left = d - position();
+    if (br) { // unter dem Puffer ist der alte Song längst stumm: ist seine Länge erreicht, übernimmt der Player den nächsten
+      if (br.phase === 'overlap' && d && left <= 0.15) { try { audio.pause(); } catch (e) { /* egal */ } bridgeAfterEnd(); }
+      return;
+    }
+    if (!d || d < cf * 3) return;
+    var ni = nextIdx();
+    if (ni < 0) return; // letzter Song: normales Ende
+    if (dip.mode === 'idle' && left <= cf + 25 && left > 0) prepareBridge(ni);
+    if (dip.mode !== 'idle') return;
+    if (prep && prep.id === queue[ni].id && prep.state === 'ready' && left <= cf && left >= 0.5 && startBridge(left, ni)) return;
+    if (left > cf / 2 || left < 0.3) return;
+    setDip('out', left); // der nächste Song ist nicht rechtzeitig vorgeladen: ausblenden und einblenden
+  }
+
+  // ---- Echtes Überblenden am TV: den Anfang des nächsten Songs lädt die App vorab und spielt ihn über Web Audio,
+  // das neben dem Player läuft (LG empfiehlt Web Audio für Zusatzklänge). Der alte Song im Player blendet dabei aus.
+  // Erst wenn er zu Ende ist, lädt der Player den nächsten Song an einer Stelle, die der Puffer dann schon erreicht hat,
+  // und übernimmt dort mit einer kurzen Überblendung. Schon das Laden eines zweiten Players würde den ersten stoppen.
+  var ac = null, prep = null, br = null, LEAD = 2.5;
+  function acx() {
+    if (!ac) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; try { ac = new C(); } catch (e) { return null; } }
+    if (ac.state === 'suspended' && ac.resume) ac.resume();
+    return ac;
+  }
+  function nextIdx() { return index < queue.length - 1 ? index + 1 : (repeat === 'all' ? 0 : -1); }
+  // Vorlauf von play() bis zum Ton: gelernt aus dem 'playing'-Ereignis, plus ein kleiner Vorhalt, weil die TV-Hardware den Ton
+  // vermutlich etwas später ausgibt als das Ereignis kommt (Web Audio ist schneller). Nachstellbar: U.store 'xfBias' (Sekunden).
+  function rawLat() { var v = +U.store.get('xfPlayLat', 0.1); return v >= 0 && v < 1 ? v : 0.1; }
+  function biasLat() { var v = +U.store.get('xfBias', 0.08); return v >= 0 && v < 0.5 ? v : 0.08; }
+  function playLat() { return rawLat() + biasLat(); }
+
+  // Anfang des nächsten Songs holen (als MP3 vom Server, wie ihn der Player nachher auch bekommt) und dekodieren
+  function prepareBridge(ni) {
+    var nb = queue[ni], a = acx();
+    if (!nb || !a || (prep && prep.id === nb.id) || !window.fetch || !window.AbortController) return;
+    var p = prep = { id: nb.id, buf: null, state: 'loading' };
+    var want = Math.ceil((crossfadeSecs() + 30) * 45000), ctl = new AbortController(), chunks = [], got = 0;
+    function fail(e) { if (prep === p) p.state = 'fail'; console.warn('Überblenden: Vorladen fehlgeschlagen', e && e.message || e); }
+    fetch(API.streamUrl(nb.id, { maxBitRate: 320, format: 'mp3' }), { signal: ctl.signal }).then(function (res) {
+      if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
+      var rd = res.body.getReader();
+      return (function pump() {
+        return rd.read().then(function (x) {
+          if (x.done) return;
+          chunks.push(x.value); got += x.value.length;
+          if (got >= want) { ctl.abort(); return; }
+          return pump();
+        });
+      })();
+    }).then(function () {
+      if (prep !== p) return;
+      var bytes = new Uint8Array(got), o = 0, i;
+      for (i = 0; i < chunks.length; i++) { bytes.set(chunks[i], o); o += chunks[i].length; }
+      a.decodeAudioData(bytes.buffer, function (buf) { if (prep === p) { p.buf = buf; p.state = 'ready'; } }, fail);
+    }).catch(fail);
+  }
+
+  function startBridge(left, ni) {
+    var a = acx(), nb = queue[ni];
+    if (!a || !nb || !prep || prep.id !== nb.id || prep.state !== 'ready') return false;
+    var D = Math.max(1, left), base = Math.min(1, levelFor(nb) * master), t0 = a.currentTime + 0.05, i;
+    var src = a.createBufferSource(), g = a.createGain(), up = new Float32Array(64);
+    for (i = 0; i < 64; i++) up[i] = Math.sin(Math.PI / 2 * i / 63) * base;
+    src.buffer = prep.buf; src.connect(g); g.connect(a.destination);
+    g.gain.value = 0;
+    g.gain.setValueCurveAtTime(up, t0, D);
+    src.start(t0);
+    var b = br = { id: nb.id, ni: ni, a: a, g: g, src: src, buf: prep.buf, base: base, t0: t0, D: D, phase: 'overlap', H: 0, retry: 0, armed: false, playing: false };
+    prep = null;
+    // Endet der Player nicht rechtzeitig von selbst (Länge im Tag weicht ab), geht es nach der Überblendzeit trotzdem weiter
+    b.guard = setTimeout(function () { if (br === b && b.phase === 'overlap') { try { audio.pause(); } catch (e) { /* egal */ } bridgeAfterEnd(); } }, (D + 3) * 1000);
+    setDip('bridge', D);
+    console.log('Überblenden TV: Puffer ' + b.buf.duration.toFixed(1) + ' s, Überlappung ' + D.toFixed(1) + ' s');
+    return true;
+  }
+
+  // Der alte Song ist zu Ende: der nächste ist jetzt dran, der Player lädt ihn weiter hinten im Song und bleibt stumm
+  function bridgeAfterEnd() {
+    var b = br;
+    if (!b || b.phase !== 'overlap') return;
+    clearTimeout(b.guard);
+    b.phase = 'handoff';
+    var cur = current();
+    if (cur && radioOn()) Radio.listened(cur);
+    if (cur && djPlays()) DJ.listened(cur);
+    index = b.ni; scrobbled = false; pendingSeek = 0; learnFor = null; fallbackId = b.id;
+    if (settings().scrobble) API.scrobble(b.id, false);
+    emit('track', current()); emit('queue', queue); persist();
+    if (context && context.kind === 'radio' && radioOn()) Radio.refillIfNeeded();
+    if (djPlays()) DJ.refillIfNeeded();
+    aimElement();
+  }
+  function aimElement() {
+    var b = br;
+    if (!b) return;
+    clearTimeout(b.timer); clearTimeout(b.watch);
+    b.armed = false;
+    b.H = Math.ceil(b.a.currentTime - b.t0 + LEAD);
+    if (b.retry > 2 || b.H + 4 > b.buf.duration) { bridgeFail(); return; }
+    offset = b.H; pendingSeek = 0;
+    setDip('hold', 15);
+    audio.src = API.streamUrl(b.id, { maxBitRate: 320, format: 'mp3', offset: b.H });
+    b.watch = setTimeout(function () { if (br === b && !b.playing) { console.warn('Überblenden: Übergabe hängt'); bridgeFail(); } }, 12000);
+  }
+  // Das Element hat den Song geladen: gestartet wird es erst, wenn der Puffer fast an seiner Stelle ist
+  function bridgeCanPlay() {
+    var b = br;
+    if (!b || b.phase !== 'handoff' || b.armed) return;
+    b.armed = true;
+    var wait = b.H - (b.a.currentTime - b.t0) - playLat();
+    if (wait < -0.1) { b.retry++; console.warn('Überblenden: Player zu spät (' + wait.toFixed(2) + ' s), neuer Anlauf'); aimElement(); return; }
+    b.timer = setTimeout(function () {
+      if (br !== b) return;
+      var p = audio.play();
+      if (p && p.catch) p.catch(function (e) { console.warn('play()', e); });
+    }, Math.max(0, wait * 1000));
+  }
+  // Das Element läuft: Puffer runter, Element hoch, 0,3 s lang. Wie weit der Start vom Plan abwich, merkt sich die App.
+  function bridgePlaying() {
+    var b = br;
+    if (!b || b.phase !== 'handoff' || !b.armed || b.playing) return;
+    b.playing = true; clearTimeout(b.watch);
+    var tt = b.a.currentTime, eps = (tt - b.t0) - (b.H + (audio.currentTime || 0)), i, down = new Float32Array(64);
+    U.store.set('xfPlayLat', Math.max(0, Math.min(0.8, rawLat() + eps + biasLat())));
+    for (i = 0; i < 64; i++) down[i] = Math.cos(Math.PI / 2 * i / 63) * b.base;
+    b.g.gain.cancelScheduledValues(tt);
+    b.g.gain.setValueAtTime(b.base, tt);
+    b.g.gain.setValueCurveAtTime(down, tt, 0.4);
+    setDip('merge', 0.4);
+    b.phase = 'merge';
+    b.end = setTimeout(endBridge, 600);
+    console.log('Überblenden TV: Übergabe bei ' + b.H + ' s, Versatz ' + Math.round(eps * 1000) + ' ms (Vorhalt ' + Math.round(biasLat() * 1000) + ' ms)');
+  }
+  function endBridge() {
+    var b = br;
+    if (!b) return;
+    clearTimeout(b.guard); clearTimeout(b.timer); clearTimeout(b.watch); clearTimeout(b.end);
+    try { b.src.stop(); } catch (e) { /* egal */ }
+    try { b.g.disconnect(); } catch (e) { /* egal */ }
+    br = null;
+  }
+  // Pause, Spulen, Überspringen: die Brücke ist vorbei, der Player macht normal weiter
+  function cancelBridge() { endBridge(); }
+  function bridgeFail() {
+    var b = br;
+    if (!b) return;
+    endBridge();
+    setDip('idle');
+    // an der Stelle weiterspielen, an der der Puffer war (kurze Stille statt den Anfang des Songs noch einmal)
+    var at = Math.max(0, Math.ceil(b.a.currentTime - b.t0 + 1));
+    console.warn('Überblenden: Notfall, der Song läuft bei ' + at + ' s weiter');
+    fallbackId = b.id;
+    load(at, true);
   }
 
   function clear(el) {
@@ -62,6 +250,7 @@ var Player = (function () {
   function crossfadeSecs() { return +settings().crossfade || 0; }
 
   function maybeCrossfade() {
+    if (!U.desktop) { maybeFadeOut(); return; }
     var cf = crossfadeSecs();
     if (!cf || xf || xfBroken || station || repeat === 'one' || sleepEnd || audio.paused) return;
     var d = duration(), left = d - position();
@@ -105,6 +294,8 @@ var Player = (function () {
 
   // Überblenden sofort beenden: der alte Song verstummt, der neue läuft mit voller Lautstärke
   function stopFade() {
+    if (br) cancelBridge();
+    if (dip.mode !== 'idle' && !dip.keep) setDip('idle'); // Pause, Spulen, Überspringen: sofort wieder volle Lautstärke
     if (!xf) return;
     clearInterval(xf.timer);
     clear(xf.from);
@@ -169,6 +360,8 @@ var Player = (function () {
     var s = current();
     if (!s) return;
     if (!xfStarting) stopFade();
+    // Der Song lief am TV bis zum Ende aus: der nächste bleibt stumm, bis er läuft, und kommt dann hoch
+    if (dip.keep) { dip.keep = false; if (autoplay !== false && dip.mode === 'out') setDip('wait'); else setDip('idle'); }
     if (station) { station = null; stationSeq++; }
     scrobbled = false;
     offset = 0;
@@ -695,14 +888,25 @@ var Player = (function () {
     listen('loadedmetadata', function () {
       if (pendingSeek) { try { audio.currentTime = pendingSeek; } catch (e) { /* egal */ } pendingSeek = 0; }
     });
-    listen('playing', function () { errorStreak = 0; emit('state'); });
+    listen('playing', function () {
+      errorStreak = 0;
+      if (dip.mode === 'wait') setDip('in', crossfadeSecs() / 2);
+      bridgePlaying();
+      emit('state');
+    });
     listen('pause', function () {
       emit('state');
       if (station) return;
       persist(); setTimeout(function () { syncRemote(true); }, 400);
     });
     listen('waiting', function () { emit('state'); });
-    listen('ended', function () { if (station) emit('state'); else next(true); });
+    listen('canplay', function () { bridgeCanPlay(); });
+    listen('ended', function () {
+      if (station) { emit('state'); return; }
+      if (br && br.phase === 'overlap') { bridgeAfterEnd(); return; }
+      if (dip.mode === 'out') dip.keep = true;
+      next(true);
+    });
     listen('timeupdate', function () {
       emit('time');
       if (station) return;
@@ -766,7 +970,7 @@ var Player = (function () {
     index: function () { return index; },
     position: position,
     duration: duration,
-    paused: function () { return rm ? !rPlaying() : audio.paused; },
+    paused: function () { return rm ? !rPlaying() : (br && br.phase === 'handoff' ? false : audio.paused); },
     buffering: function () { return !rm && !audio.paused && audio.readyState < 3; },
     shuffle: function () { return shuffleOn; },
     repeat: function () { return repeat; },
