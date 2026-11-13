@@ -23,9 +23,18 @@ Keep your branch up to date with `git fetch origin && git merge origin/main`.
 | `android/` | Android app (new) |
 | `linux/` | Linux build (new) |
 
-Stay inside your own folder (`android/`, `linux/`). If you need a change in `tv/`, `desktop/` or `ios/`, open an issue or ask first: other apps depend on those files.
+Your main folders are `android/`, `linux/` and `ios/`. For `tv/`, `desktop/` and `site/`, ask first: several apps share those files. Changes to `ios/` are welcome and reviewed like everything else.
 
 The Android app talks to the same servers as the other apps (Navidrome/Subsonic, optionally Audiobookshelf). The Subsonic API behaviour is easiest to read in `tv/app/js/api.js` and `ios/Tonalo/`.
+
+## Working on the iPhone app (`ios/`)
+
+- Needs a Mac with Xcode. Build with the simulator, and say in the pull request what you tested and on which device or simulator.
+- Xcode writes `DEVELOPMENT_TEAM` into `ios/Tonalo.xcodeproj/project.pbxproj` when signing. Reset that line before every commit (`git checkout -p` or edit it out). The team ID belongs only in `ios/Local.xcconfig`, which is ignored.
+- Do not bump the build number or version, and do not archive or upload to App Store Connect. The maintainer does that.
+- New texts go into `Localizable.xcstrings` with a German translation straight away (also Watch, Controls, App Shortcuts). Keep Xcode's file format: edit it in Xcode, do not rewrite it with a JSON library.
+- Debug launch arguments like `-demoAccount` are listed in `AppModel.swift` and `TonaloApp.swift`.
+- Server requests use `ServerSession`, never `URLSession.shared`. Credentials only in the Keychain.
 
 ## Privacy: this repo is public
 

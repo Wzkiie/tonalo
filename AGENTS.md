@@ -1,7 +1,7 @@
 # Tonalo: instructions for AI assistants (Claude Code and others)
 
 Tonalo is a client for Navidrome/Subsonic servers and Audiobookshelf. The repo is **public**.
-Contributor: Milo, building the Android app (`android/`) and maybe a Linux build (`linux/`).
+Contributor: Milo, working on the Android app (`android/`), maybe a Linux build (`linux/`), and the iPhone app (`ios/`).
 The full rules are in `CONTRIBUTING.md`: read it first. Short version:
 
 ## Git
@@ -12,9 +12,16 @@ The full rules are in `CONTRIBUTING.md`: read it first. Short version:
 - Use a GitHub noreply address as git author.
 
 ## Scope
-- Stay in `android/` and `linux/`. Do not change `tv/`, `desktop/`, `ios/`, `site/` without asking Milo and the maintainer: other apps depend on them.
+- Work in `android/`, `linux/` and `ios/`. Do not change `tv/`, `desktop/`, `site/` without asking Milo and the maintainer: several apps share those files.
 - Subsonic API usage: see `tv/app/js/api.js` and `ios/Tonalo/`.
 - Test against the mock server, not real data: `node tv/tools/mock_server.js 4599`.
+
+## iPhone app (ios/)
+- Xcode writes `DEVELOPMENT_TEAM` into `ios/Tonalo.xcodeproj/project.pbxproj`: reset that line before every commit. The team ID belongs only in `ios/Local.xcconfig` (ignored).
+- No version or build number bumps, no archive, no App Store Connect uploads. Maintainer only.
+- New texts go into `Localizable.xcstrings` with a German translation at once; keep Xcode's file format, never rewrite it with a JSON library.
+- Server requests via `ServerSession`, never `URLSession.shared`. Credentials only in the Keychain.
+- Debug launch arguments (`-demoAccount` etc.) are in `AppModel.swift` and `TonaloApp.swift`.
 
 ## Never commit (public repo)
 Passwords, tokens, keystores (`*.jks`, `*.keystore`), `google-services.json`, `local.properties`, real server addresses, private domains or IPs, real emails, real names or device names (also not in screenshots or test data). Check `git diff --cached` before every commit.
