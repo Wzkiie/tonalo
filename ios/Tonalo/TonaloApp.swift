@@ -376,6 +376,7 @@ struct ProfileMenu: View {
                 if app.current?.hasMusic != false {
                 row(label: Text("Devices")) { Image(systemName: "tv").font(.system(size: 19)) } action: { ui.open(.devices) }
                 row(label: Text("Jukebox")) { Image(systemName: "person.2.wave.2").font(.system(size: 20)) } action: { ui.open(.jukebox) }
+                row(label: Text("DJ")) { DJMark().frame(width: 24, height: 24) } action: { ui.open(.dj) }
                 }
                 row(label: Text("Settings")) { Image(systemName: "gearshape").font(.system(size: 22)) } action: { ui.open(.settings) }
                 Spacer()

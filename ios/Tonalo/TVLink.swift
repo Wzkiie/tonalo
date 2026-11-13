@@ -765,6 +765,13 @@ final class TVLink {
         command(next ? "playNext" : "enqueue", ["songs": json(Array(songs.prefix(200)))])
     }
 
+    /// The DJ's new set: everything after the song playing there makes way for it.
+    func replaceUpNext(_ songs: [Song], dj: Bool) {
+        var cmd: [String: Any] = ["cmd": "upNext", "songs": json(Array(songs.prefix(200)))]
+        if dj { cmd["context"] = ["kind": "dj", "name": "DJ"] }
+        command(cmd)
+    }
+
     private func command(_ cmd: [String: Any]) {
         guard let (found, pairing) = listening ?? target, let key = Data(hex: pairing.key),
               let body = try? JSONSerialization.data(withJSONObject: cmd) else { return }

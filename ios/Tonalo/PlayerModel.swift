@@ -235,6 +235,8 @@ final class PlayerModel {
 
     /// Everything after the current song makes way for `songs` – the DJ changing its mind.
     func replaceUpNext(_ songs: [Song]) {
+        // On the TV, the new set takes the place of what was queued there – not just added at the end
+        if tvName != nil, !tvGuest, current != nil { return tv?.replaceUpNext(songs, dj: context?.kind == .dj) ?? () }
         guard tvName == nil, queue.indices.contains(index) else { return enqueue(songs) }
         queue.removeSubrange((index + 1)...)
         queue.append(contentsOf: songs)
@@ -246,6 +248,7 @@ final class PlayerModel {
 
     /// The DJ takes over while a song plays: that song keeps playing, what came after it makes way for the DJ's set.
     func handToDJ(_ songs: [Song]) {
+        if tvName != nil, !tvGuest, station == nil, current != nil { tv?.replaceUpNext(songs, dj: true); return }
         guard tvName == nil, station == nil, current != nil else { return }
         context = .init(kind: .dj, name: String(localized: "DJ"))
         replaceUpNext(songs)

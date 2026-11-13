@@ -12,17 +12,21 @@ struct AppRelease: Identifiable {
         let color: Color
         let title: LocalizedStringKey
         let text: LocalizedStringKey
-        var id: String { icon }
+        /// A small live picture of the feature instead of the plain symbol
+        var visual: Visual? = nil
+        var id: String { icon + "\(title)" }
     }
+
+    enum Visual { case dj, devices }
 }
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
         AppRelease(version: "1.5.0", items: [
             .init(icon: "music.note.list", color: .purple, title: "DJ",
-                  text: "An AI picks sets from your library, and you steer it with moods or a wish. Off until you set it up under Settings, with your own key or your own Ollama."),
+                  text: "An AI picks sets from your library, and you steer it with moods or a wish. Off until you set it up under Settings, with your own key or your own Ollama.", visual: .dj),
             .init(icon: "car.fill", color: .blue, title: "DJ in the car and at home",
-                  text: "Start and steer the DJ on CarPlay. If you like, your paired TV and computer get the same setup."),
+                  text: "Start and steer the DJ on CarPlay. If you like, your paired TV and computer get the same setup.", visual: .devices),
         ]),
         AppRelease(version: "1.4.5", items: [
             .init(icon: "heart.fill", color: .pink, title: "Jukebox hearts",
@@ -123,39 +127,51 @@ enum WhatsNew {
     static func markSeen() { UserDefaults.standard.set(currentVersion, forKey: key) }
 }
 
-/// The sheet after an update: one new thing per page – tap or swipe to the next.
+/// The sheet after an update: a welcome page, then one new thing per page – tap or swipe to the next.
 struct WhatsNewSheet: View {
     let release: AppRelease
     @Environment(\.dismiss) private var dismiss
     @State private var page = 0
+    @State private var showAll = false
 
-    private var last: Bool { page == release.items.count - 1 }
+    /// Page 0 is the welcome, the rest are the items
+    private var count: Int { release.items.count + 1 }
+    private var last: Bool { page == count - 1 }
+    private var color: Color { page == 0 ? Color.accent : release.items[page - 1].color }
 
     var body: some View {
-        let color = release.items[page].color
         VStack(spacing: 0) {
-            VStack(spacing: 4) {
-                Text("What's New in Tonalo").font(.system(size: 17, weight: .bold))
-                Text("Version \(release.version)").font(.subheadline).foregroundStyle(Color.subtle)
+            HStack {
+                Spacer()
+                if !last {
+                    Button { dismiss() } label: { Text("Skip").font(.system(size: 16, weight: .medium)).foregroundStyle(Color.subtle) }
+                        .transition(.opacity)
+                }
             }
-            .padding(.top, 36)
+            .frame(height: 32)
+            .padding(.horizontal, 24)
+            .padding(.top, 22)
             TabView(selection: $page) {
+                WhatsNewWelcome(release: release, shown: page == 0)
+                    .contentShape(Rectangle())
+                    .onTapGesture { next() }
+                    .tag(0)
                 ForEach(Array(release.items.enumerated()), id: \.element.id) { i, item in
-                    WhatsNewPage(item: item, shown: page == i)
+                    WhatsNewPage(item: item, shown: page == i + 1)
                         .contentShape(Rectangle())
                         .onTapGesture { next() }
-                        .tag(i)
+                        .tag(i + 1)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             HStack(spacing: 8) {
-                ForEach(release.items.indices, id: \.self) { i in
+                ForEach(0..<count, id: \.self) { i in
                     Capsule().fill(i == page ? color : Color.white.opacity(0.22))
                         .frame(width: i == page ? 22 : 7, height: 7)
                 }
             }
             .animation(.spring(duration: 0.35), value: page)
-            .padding(.bottom, 26)
+            .padding(.bottom, 22)
             Button { next() } label: {
                 Text(last ? "Continue" : "Next").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 16)
             }
@@ -163,20 +179,60 @@ struct WhatsNewSheet: View {
             .buttonBorderShape(.capsule)
             .tint(color)
             .padding(.horizontal, 28)
+            Button { showAll = true } label: {
+                Text("Show changelog").font(.system(size: 16, weight: .medium)).frame(maxWidth: .infinity).padding(.vertical, 14)
+                    .background(Color.white.opacity(0.08), in: Capsule())
+                    .foregroundStyle(.primary)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 28)
+            .padding(.top, 10)
             .padding(.bottom, 20)
         }
+        .animation(.easeInOut(duration: 0.25), value: last)
         .background {
             // A soft glow in the color of the page, changing with it
-            RadialGradient(colors: [color.opacity(0.35), .clear], center: .init(x: 0.5, y: 0.38), startRadius: 10, endRadius: 360)
+            RadialGradient(colors: [color.opacity(0.35), .clear], center: .init(x: 0.5, y: 0.34), startRadius: 10, endRadius: 380)
                 .animation(.easeInOut(duration: 0.4), value: page)
                 .background(Color.canvas)
                 .ignoresSafeArea()
         }
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showAll) {
+            NavigationStack {
+                VersionHistoryView()
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showAll = false } } }
+            }
+            .presentationDetents([.large])
+        }
     }
 
     private func next() {
         if last { dismiss() } else { withAnimation(.easeInOut(duration: 0.3)) { page += 1 } }
+    }
+}
+
+/// The first page: the app, and that it was updated.
+private struct WhatsNewWelcome: View {
+    let release: AppRelease
+    let shown: Bool
+
+    var body: some View {
+        VStack(spacing: 22) {
+            Spacer(minLength: 0)
+            TonaloLogo(size: 128)
+                .scaleEffect(shown ? 1 : 0.86)
+                .opacity(shown ? 1 : 0.4)
+                .animation(.spring(duration: 0.6, bounce: 0.3), value: shown)
+            VStack(spacing: 10) {
+                Text("Tonalo was updated").font(.system(size: 30, weight: .bold)).multilineTextAlignment(.center)
+                Text("Version \(release.version)").font(.title3.weight(.medium)).foregroundStyle(Color.accent)
+                Text("Here's what's new.").font(.body).foregroundStyle(Color.subtle)
+            }
+            Spacer(minLength: 0)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 32)
     }
 }
 
@@ -185,24 +241,140 @@ private struct WhatsNewPage: View {
     let shown: Bool
 
     var body: some View {
-        VStack(spacing: 26) {
+        VStack(spacing: 22) {
             Spacer(minLength: 0)
-            Image(systemName: item.icon)
-                .font(.system(size: 52, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 120, height: 120)
-                .background(item.color.gradient, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
-                .shadow(color: item.color.opacity(0.5), radius: 24, y: 8)
-                .symbolEffect(.bounce, value: shown)
+            Group {
+                switch item.visual {
+                case .dj: DJPreview(shown: shown)
+                case .devices: DevicesPreview(shown: shown, tint: item.color)
+                case nil:
+                    Image(systemName: item.icon)
+                        .font(.system(size: 52, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 120, height: 120)
+                        .background(item.color.gradient, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
+                        .shadow(color: item.color.opacity(0.5), radius: 24, y: 8)
+                        .symbolEffect(.bounce, value: shown)
+                }
+            }
+            .frame(height: 300)
             VStack(spacing: 12) {
                 Text(item.title).font(.system(size: 28, weight: .bold))
                 Text(item.text).font(.body).foregroundStyle(Color.subtle).fixedSize(horizontal: false, vertical: true)
             }
             .multilineTextAlignment(.center)
             Spacer(minLength: 0)
-            Spacer(minLength: 0)
         }
         .padding(.horizontal, 32)
+    }
+}
+
+/// The DJ's sheet in miniature: a set that keeps changing, and the chips that steer it.
+private struct DJPreview: View {
+    let shown: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var step = 0
+    private let timer = Timer.publish(every: 2.4, on: .main, in: .common).autoconnect()
+    private let sets: [[[Color]]] = [
+        [[.orange, .red], [.pink, .purple], [.purple, .indigo], [.pink, .red]],
+        [[.teal, .blue], [.indigo, .blue], [.mint, .teal], [.blue, .purple]],
+        [[.yellow, .orange], [.orange, .pink], [.red, .purple], [.yellow, .red]],
+    ]
+    private var chips: [LocalizedStringKey] { ["More like this", "Calmer", "More energy"] }
+
+    var body: some View {
+        let set = sets[step % sets.count]
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 6) {
+                DJMark().frame(width: 18, height: 18)
+                Text("DJ").font(.system(size: 13, weight: .bold))
+            }
+            .foregroundStyle(Color.accent)
+            Text("Up next").font(.system(size: 11, weight: .semibold)).textCase(.uppercase).foregroundStyle(Color.subtle)
+            HStack(spacing: 10) {
+                ForEach(0..<4, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(LinearGradient(colors: set[i], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay(alignment: .bottomLeading) {
+                            Capsule().fill(.white.opacity(0.55)).frame(width: 22, height: 4).padding(7)
+                        }
+                        .scaleEffect(shown ? 1 : 0.6)
+                        .opacity(shown ? 1 : 0)
+                        .animation(.spring(duration: 0.5, bounce: 0.3).delay(Double(i) * 0.07), value: shown)
+                        .id("\(step)-\(i)")
+                        .transition(.scale(scale: 0.7).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(duration: 0.5, bounce: 0.25), value: step)
+            Text("Steer the DJ").font(.system(size: 11, weight: .semibold)).textCase(.uppercase).foregroundStyle(Color.subtle)
+            HStack(spacing: 6) {
+                ForEach(0..<3, id: \.self) { i in
+                    Text(chips[i])
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .padding(.horizontal, 10).padding(.vertical, 8)
+                        .background(i == step % 3 ? Color.accent : Color.white.opacity(0.1), in: Capsule())
+                        .foregroundStyle(i == step % 3 ? Color.black : Color.primary)
+                        .scaleEffect(i == step % 3 ? 1.06 : 1)
+                        .animation(.spring(duration: 0.35), value: step)
+                }
+            }
+        }
+        .padding(18)
+        .frame(width: 300)
+        .background(Color.panel, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Color.white.opacity(0.08), lineWidth: 1))
+        .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
+        .onReceive(timer) { _ in if shown, !reduceMotion { step += 1 } }
+    }
+}
+
+/// The DJ reaching the TV and the car: rings that spread from the phone to the devices around it.
+private struct DevicesPreview: View {
+    let shown: Bool
+    let tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulse = false
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<3, id: \.self) { i in
+                Circle().stroke(tint.opacity(0.5 - Double(i) * 0.14), lineWidth: 2)
+                    .frame(width: 110 + CGFloat(i) * 70, height: 110 + CGFloat(i) * 70)
+                    .scaleEffect(pulse ? 1.06 : 0.94)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 1.8).repeatForever(autoreverses: true).delay(Double(i) * 0.25), value: pulse)
+            }
+            device("tv", x: -108, y: -70, delay: 0.1)
+            device("car.fill", x: 108, y: -70, delay: 0.2)
+            device("desktopcomputer", x: 0, y: 112, delay: 0.3)
+            Image(systemName: "iphone")
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 74, height: 74)
+                .background(Color.accent.gradient, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(alignment: .topTrailing) {
+                    DJMark().frame(width: 22, height: 22).foregroundStyle(.white)
+                        .padding(5).background(tint.gradient, in: Circle()).offset(x: 8, y: -8)
+                }
+                .scaleEffect(shown ? 1 : 0.7)
+                .animation(.spring(duration: 0.5, bounce: 0.35), value: shown)
+        }
+        .frame(width: 300, height: 300)
+        .onAppear { pulse = true }
+    }
+
+    private func device(_ symbol: String, x: CGFloat, y: CGFloat, delay: Double) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 24, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 58, height: 58)
+            .background(tint.gradient, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: tint.opacity(0.45), radius: 14, y: 6)
+            .offset(x: shown ? x : x * 0.3, y: shown ? y : y * 0.3)
+            .scaleEffect(shown ? 1 : 0.4)
+            .opacity(shown ? 1 : 0)
+            .animation(.spring(duration: 0.6, bounce: 0.3).delay(delay), value: shown)
     }
 }
 
@@ -212,86 +384,63 @@ private struct WhatsNewRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: item.icon)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 19, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 38, height: 38)
-                .background(item.color.gradient, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(item.title).font(.system(size: 16, weight: .semibold))
+                .frame(width: 42, height: 42)
+                .background(item.color.gradient, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title).font(.system(size: 17, weight: .semibold))
                 Text(item.text).font(.subheadline).foregroundStyle(Color.subtle).fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 0)
         }
     }
 }
 
-/// Every version, newest first – from Settings. A card per version; tap to open it.
+/// Every version, newest first – from Settings or from the update sheet. All of it open, one after the other.
 struct VersionHistoryView: View {
-    @State private var open: Set<String> = [WhatsNew.releases.first?.version ?? ""]
-
     var body: some View {
         ScrollView {
-            VStack(spacing: 12) {
-                ForEach(WhatsNew.releases) { release in
-                    card(release)
+            LazyVStack(alignment: .leading, spacing: 30) {
+                ForEach(Array(WhatsNew.releases.enumerated()), id: \.element.id) { index, release in
+                    section(release, newest: index == 0)
                 }
             }
-            .padding(16)
+            .padding(.horizontal, 18)
+            .padding(.top, 8)
+            .padding(.bottom, 40)
         }
         .background(Color.canvas)
         .navigationTitle("What's New")
+        .navigationBarTitleDisplayMode(.large)
     }
 
-    private func card(_ release: AppRelease) -> some View {
-        let isOpen = open.contains(release.version)
-        return VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(.spring(duration: 0.35)) {
-                    if isOpen { open.remove(release.version) } else { open.insert(release.version) }
+    private func section(_ release: AppRelease, newest: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(release.version).font(.system(size: 30, weight: .bold, design: .rounded))
+                if release.version == WhatsNew.currentVersion {
+                    Text("Current").font(.system(size: 11, weight: .bold)).textCase(.uppercase)
+                        .foregroundStyle(Color.accent)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(Color.accent.opacity(0.16), in: Capsule())
                 }
-            } label: {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 8) {
-                            Text("Version \(release.version)").font(.system(size: 19, weight: .bold))
-                            if release.version == WhatsNew.currentVersion {
-                                Text("Current").font(.system(size: 11, weight: .bold)).textCase(.uppercase)
-                                    .foregroundStyle(Color.accent)
-                                    .padding(.horizontal, 7).padding(.vertical, 4)
-                                    .background(Color.accent.opacity(0.16), in: Capsule())
-                            }
-                        }
-                        // What's in it, at a glance
-                        HStack(spacing: -6) {
-                            ForEach(release.items) { item in
-                                Image(systemName: item.icon)
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 26, height: 26)
-                                    .background(item.color.gradient, in: Circle())
-                                    .overlay(Circle().stroke(Color.panel, lineWidth: 2))
-                            }
-                        }
-                    }
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.subtle)
-                        .rotationEffect(.degrees(isOpen ? 90 : 0))
-                }
-                .padding(18)
-                .contentShape(Rectangle())
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
-            if isOpen {
-                VStack(alignment: .leading, spacing: 18) {
-                    ForEach(release.items) { WhatsNewRow(item: $0) }
+            .padding(.horizontal, 4)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(release.items.enumerated()), id: \.element.id) { i, item in
+                    if i > 0 { Divider().overlay(Color.white.opacity(0.07)).padding(.leading, 70) }
+                    WhatsNewRow(item: item).padding(.vertical, 14)
                 }
-                .padding(.horizontal, 18)
-                .padding(.bottom, 20)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            .padding(.horizontal, 16)
+            .background(Color.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay {
+                if newest {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.accent.opacity(0.35), lineWidth: 1)
+                }
             }
         }
-        .background(Color.panel, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }

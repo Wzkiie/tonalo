@@ -416,8 +416,10 @@ final class DJ {
     /// From the player: the song that plays keeps playing, the DJ builds on it. Nothing changes if it fails.
     @discardableResult
     func takeOver() async -> String? {
-        guard ready, let player, let current = player.current, player.station == nil, player.tvName == nil else {
-            return DJError.notReady.errorDescription
+        guard ready else { return DJError.notReady.errorDescription }
+        // On the own TV the DJ builds on the song playing there, too – only a Jukebox guest can't take over
+        guard let player, let current = player.current, player.station == nil, !player.tvGuest else {
+            return String(localized: "The DJ can't take over here.")
         }
         let before = (seen, played, skips, wish)
         let playing = whatPlays(player)
@@ -439,7 +441,8 @@ final class DJ {
     /// More of what plays, something else, or a typed wish: the songs after the current one are replaced.
     @discardableResult
     func change(_ change: Change) async -> String? {
-        guard ready, let player, player.context?.kind == .dj else { return DJError.notReady.errorDescription }
+        guard ready else { return DJError.notReady.errorDescription }
+        guard let player, player.context?.kind == .dj, !player.tvGuest else { return String(localized: "The DJ isn't playing right now.") }
         var note: String
         switch change {
         case .more:

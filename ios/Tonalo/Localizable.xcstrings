@@ -6031,12 +6031,72 @@
         }
       }
     },
+    "The DJ can't take over here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der DJ kann hier nicht übernehmen."
+          }
+        }
+      }
+    },
+    "The DJ isn't playing right now." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der DJ läuft gerade nicht."
+          }
+        }
+      }
+    },
     "The DJ takes over" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Der DJ übernimmt"
+          }
+        }
+      }
+    },
+    "Skip" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überspringen"
+          }
+        }
+      }
+    },
+    "Show changelog" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changelog anzeigen"
+          }
+        }
+      }
+    },
+    "Tonalo was updated" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tonalo wurde aktualisiert"
+          }
+        }
+      }
+    },
+    "Here's what's new." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das ist neu."
           }
         }
       }

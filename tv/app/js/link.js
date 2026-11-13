@@ -138,6 +138,8 @@ var Link = (function () {
       case 'stopStation': Player.stopStation(); break;
       case 'playNext': if (c.songs && c.songs.length) ownHearts(c).then(function (songs) { Player.playNext(songs); }); break;
       case 'enqueue': if (c.songs && c.songs.length) ownHearts(c).then(function (songs) { Player.enqueue(songs); }); break;
+      // Der DJ (auf dem iPhone) baut ein neues Set: alles nach dem laufenden Song wird ersetzt
+      case 'upNext': if (c.songs && c.songs.length) ownHearts(c).then(function (songs) { Player.replaceUpNext(songs, c.context && c.context.kind === 'dj' ? { kind: 'dj', name: 'DJ' } : undefined); }); break;
       case 'toggle': Player.toggle(); break;
       case 'play-pause': if (c.playing) Player.play(); else Player.pause(); break;
       case 'next': Player.next(); break;
