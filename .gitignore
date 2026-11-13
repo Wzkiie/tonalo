@@ -26,3 +26,16 @@ Butter Kit/
 
 # private Reddit material
 docs/reddit-images/
+
+# Android and Linux builds: never commit signing material or local config
+android/**/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/**/google-services.json
+*.jks
+*.keystore
+*.p12
+*.pem
+linux/dist/
+linux/node_modules/
