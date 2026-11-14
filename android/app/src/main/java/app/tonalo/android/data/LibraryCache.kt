@@ -53,6 +53,11 @@ class LibraryCache(context: Context) {
         }
     }
 
+    /** Drops one saved answer, e.g. the playlist list after a playlist was deleted (else it comes back offline or on restart). */
+    fun delete(account: String, key: String) {
+        synchronized(deleted) { runCatching { file(account, key).delete() } }
+    }
+
     fun deleteAccount(id: String) {
         synchronized(deleted) {
             deleted += id

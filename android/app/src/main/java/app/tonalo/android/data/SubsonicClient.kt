@@ -374,7 +374,16 @@ class SubsonicClient(val account: Account, private val cache: LibraryCache? = nu
         post("createPlaylist", listOf("playlistId" to id) + songIds.map { "songId" to it })
     }
 
-    suspend fun deletePlaylist(id: String) { call("deletePlaylist", "id" to id, retry = false) }
+    suspend fun deletePlaylist(id: String) {
+        call("deletePlaylist", "id" to id, retry = false)
+        // The saved answers still list it: gone from the disk too, or it reappears offline and after a restart
+        cache?.let { c ->
+            withContext(Dispatchers.IO) {
+                LibraryCache.key("getPlaylists", emptyList())?.let { c.delete(account.id, it) }
+                LibraryCache.key("getPlaylist", listOf("id" to id))?.let { c.delete(account.id, it) }
+            }
+        }
+    }
 
     suspend fun lyrics(songId: String): Lyrics? {
         val list = runCatching { call("getLyricsBySongId", "id" to songId).lyricsList?.structuredLyrics }.getOrNull()
