@@ -471,7 +471,9 @@ object DJ {
             }
         }
         val songs = pick(note)
-        if (TvLink.remote.value != null) { if (onTv && TvLink.remote.value?.guest == false) TvLink.replaceUpNext(songs, dj = true) }
+        val now = TvLink.remote.value
+        // Something else may have started on the TV while the DJ was asking: only a DJ set there is replaced
+        if (now != null) { if (onTv && !now.guest && now.device.id == tv?.device?.id && now.state.context?.kind == "dj") TvLink.replaceUpNext(songs, dj = true) }
         else if (_active.value) Playback.service?.replaceUpNext(songs, "DJ")
     }
 

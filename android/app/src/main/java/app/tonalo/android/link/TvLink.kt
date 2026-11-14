@@ -8,12 +8,15 @@ import app.tonalo.android.TonaloApplication
 import app.tonalo.android.data.Network
 import app.tonalo.android.data.Song
 import app.tonalo.android.data.Station
+import app.tonalo.android.data.SubsonicClient
 import app.tonalo.android.data.await
 import app.tonalo.android.dj.DJ
 import app.tonalo.android.playback.Playback
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -209,6 +212,7 @@ object TvLink {
     fun accountChanged() {
         stop()
         sameServer.clear()
+        checking.clear()
         _guestOnly.value = emptySet()
         _jukebox.value = null
         prefs.edit().remove("jukebox").apply()
@@ -310,6 +314,8 @@ object TvLink {
         }
         if (host.isEmpty()) return null
         val probe = LinkDevice("", "", host, port, "tv")
+        // The link is plain http and signed with the pairing key: it only ever goes to an address in the home network
+        if (!SubsonicClient.isLocal(probe.base)) return null
         return try {
             val r = http.newCall(Request.Builder().url("${probe.base}/info").build()).await()
             r.use {
@@ -370,11 +376,12 @@ object TvLink {
         return when (status) {
             200 -> {
                 val o = runCatching { Network.json.parseToJsonElement(answer).jsonObject }.getOrNull() ?: return PairResult.FAILED
-                val other = o["pub"]?.jsonPrimitive?.content?.unhex() ?: return PairResult.FAILED
+                // The answer comes from the network: a field of the wrong type must not throw
+                val other = (o["pub"] as? JsonPrimitive)?.content?.unhex() ?: return PairResult.FAILED
                 val key = LinkCrypto.pairingKey(mine, other, code) ?: return PairResult.FAILED
-                val tv = o["tv"]?.jsonPrimitive?.content ?: device.id
+                val tv = (o["tv"] as? JsonPrimitive)?.content ?: device.id
                 val keyId = (o["id"] as? JsonPrimitive)?.content?.takeIf { it.isNotEmpty() } ?: return PairResult.FAILED
-                val p = Pairing(tv, o["name"]?.jsonPrimitive?.content ?: device.name, keyId, key.hex, guest)
+                val p = Pairing(tv, (o["name"] as? JsonPrimitive)?.content ?: device.name, keyId, key.hex, guest)
                 _pairings.value = _pairings.value.filterNot { it.tv == tv } + p
                 savePairings()
                 remember(device)
@@ -461,7 +468,8 @@ object TvLink {
         val key = pairing.key.unhex() ?: return false
         val auth = LinkCrypto.authorization("GET", "/events", ByteArray(0), pairing.keyId, key, clockOffset[pairing.tv] ?: 0)
         val req = Request.Builder().url("${device.base}/events").header("Authorization", auth).build()
-        val response = http.newCall(req).await()
+        val call = http.newCall(req)
+        val response = call.await()
         var received = false
         firstReport += device.id
         wasPlaying[device.id] = false
@@ -470,19 +478,29 @@ object TvLink {
                 val body = withContext(Dispatchers.IO) { r.body?.string() ?: "" }
                 // Only the paired device itself may take the pairing away: after an address change another device
                 // can answer on the saved address
-                if (!learnClock(body, pairing.tv) && infoId(device) == pairing.tv) unpair(pairing.tv)
+                // and a loop still holding an older key must not remove a pairing made again since
+                if (!learnClock(body, pairing.tv) && this@TvLink.pairing(pairing.tv)?.keyId == pairing.keyId && infoId(device) == pairing.tv) unpair(pairing.tv)
                 return false
             }
             if (r.code != 200) return false
             remember(device)
             syncDJ()
             val source = r.body?.source() ?: return false
-            while (true) {
-                val line = withContext(Dispatchers.IO) { source.readUtf8Line() } ?: break
-                if (!line.startsWith("data: ")) continue
-                val s = runCatching { Network.json.decodeFromString(LinkState.serializer(), line.removePrefix("data: ")) }.getOrNull() ?: continue
-                received = true
-                apply(device, pairing, s)
+            coroutineScope {
+                // A blocking read doesn't notice cancellation (leave, stop, unpair): closing the call ends it at once,
+                // instead of keeping the connection (and a guest slot over there) until the next line comes
+                val closer = launch { try { awaitCancellation() } finally { call.cancel() } }
+                while (true) {
+                    // Bounded: a device answering on that address could otherwise send one endless line
+                    val line = withContext(Dispatchers.IO) {
+                        try { source.readUtf8LineStrict(4_000_000) } catch (e: java.io.EOFException) { null }
+                    } ?: break
+                    if (!line.startsWith("data: ")) continue
+                    val s = runCatching { Network.json.decodeFromString(LinkState.serializer(), line.removePrefix("data: ")) }.getOrNull() ?: continue
+                    received = true
+                    this@TvLink.apply(device, pairing, s)
+                }
+                closer.cancel()
             }
         }
         return received

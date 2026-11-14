@@ -133,6 +133,9 @@ object JukeboxHost {
         sc.launch {
             while (isActive) {
                 val socket = runCatching { s.accept() }.getOrNull() ?: break
+                // Only from the home network, like the TV (local() in service.js): the socket listens on every
+                // interface, mobile data included
+                if (!fromHome(socket)) { runCatching { socket.close() }; continue }
                 // Over the limit: turned away at once, so a flood of connections can't starve the others
                 if (open.incrementAndGet() > MAX_CONNECTIONS) { open.decrementAndGet(); runCatching { socket.close() }; continue }
                 sockets += socket
@@ -207,6 +210,14 @@ object JukeboxHost {
     // endregion
 
     // region Requests
+
+    /** Private IPv4 and IPv6 addresses (also IPv4 mapped into IPv6), loopback and link-local – the same as service.js. */
+    private fun fromHome(socket: Socket): Boolean {
+        val a = socket.inetAddress?.address?.let { runCatching { java.net.InetAddress.getByAddress(it) }.getOrNull() } ?: return false
+        if (a.isLoopbackAddress || a.isLinkLocalAddress || a.isSiteLocalAddress) return true
+        // Unique local IPv6 (fc00::/7): Java's isSiteLocalAddress only knows the old fec0::/10
+        return a is java.net.Inet6Address && (a.address[0].toInt() and 0xfe) == 0xfc
+    }
 
     private class Req(val method: String, val path: String, val headers: Map<String, String>, val body: ByteArray)
 
