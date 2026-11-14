@@ -184,10 +184,12 @@ fun PlayerScreen(onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     val state by player.state.collectAsState()
     val sleep by Playback.sleep.collectAsState()
-    var sleepDialog by remember { mutableStateOf(false) }
-    var pickPlaylist by remember { mutableStateOf(false) }
+    var sleepDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var pickPlaylist by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(state.hasMedia) { if (!state.hasMedia) onClose() }
+    // Only once the connection has been asked: after a rotation the new connection starts empty, and the player must stay
+    val connected by player.connected.collectAsState()
+    LaunchedEffect(state.hasMedia, connected) { if (connected && !state.hasMedia) onClose() }
     if (!state.hasMedia) return
     val djEnabled by DJ.enabled.collectAsState()
     val djReady = djEnabled && DJ.configured

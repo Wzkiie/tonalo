@@ -125,6 +125,7 @@ class PlaybackService : MediaLibraryService() {
     private var stashShuffle = false
     private var stashRepeat = Player.REPEAT_MODE_OFF
     private lateinit var bookSources: DefaultMediaSourceFactory
+    private val coverExecutor = Executors.newSingleThreadExecutor()
 
     internal val app get() = tonalo
     private val radio by lazy { SmartRadio({ app.client() }, { songs() }) }
@@ -166,7 +167,7 @@ class PlaybackService : MediaLibraryService() {
         )
         // Covers come from our own content provider (playback/Covers.kt)
         val covers = DataSourceBitmapLoader(
-            MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()),
+            MoreExecutors.listeningDecorator(coverExecutor),
             DefaultDataSource.Factory(this, OkHttpDataSource.Factory(app.mediaHttp)),
         )
         session = MediaLibrarySession.Builder(this, player, callback)
@@ -226,6 +227,7 @@ class PlaybackService : MediaLibraryService() {
         equalizer = null
         session?.release()
         player.release()
+        coverExecutor.shutdown()
         session = null
         super.onDestroy()
     }
@@ -488,7 +490,8 @@ class PlaybackService : MediaLibraryService() {
         Favorites.set(song.id, on)
         val updated = song.copy(starred = if (on) java.time.Instant.now().toString() else null)
         player.replaceMediaItem(index, item.buildUpon().setMediaMetadata(
-            updated.toMediaItem(app.client(), context = item.mediaMetadata.extras?.getString(CONTEXT_KEY)).mediaMetadata
+            updated.toMediaItem(app.client(), context = item.mediaMetadata.extras?.getString(CONTEXT_KEY),
+                contextId = item.mediaMetadata.extras?.getString(CONTEXT_ID_KEY)).mediaMetadata
         ).build())
         if (on) liked(updated)
         updateLayout()
@@ -808,6 +811,13 @@ class PlaybackService : MediaLibraryService() {
                 val stopHere = Playback.sleep.value.endOfSong
                 if (stopHere) cancelSleepTimer() else autoplay()
             }
+        }
+
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            // "Stop after this song" fired: the player pauses at the end of the song and only moves on when resumed,
+            // so the timer is done now (otherwise it stays armed and pauses again after the next song picked)
+            if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM &&
+                !bookMode && Playback.sleep.value.endOfSong) cancelSleepTimer()
         }
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) = updateLayout()

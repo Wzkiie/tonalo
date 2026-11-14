@@ -444,7 +444,8 @@ object BookPlayer {
         val h = host ?: return
         if (!owns || session == null) return
         val duration = _state.value.durationSec
-        val t = seconds.coerceIn(0.0, maxOf(0.0, duration - 1))
+        // Length not known yet (0): only the start is a limit, otherwise every seek would jump to the beginning
+        val t = if (duration > 0) seconds.coerceIn(0.0, maxOf(0.0, duration - 1)) else seconds.coerceAtLeast(0.0)
         h.player.seekTo((t * 1000).toLong())
         lastPos = t
         _state.update { it.copy(positionSec = t, chapterIndex = chapterIndexAt(t, it.chapters)) }
@@ -645,7 +646,8 @@ object BookPlayer {
         val st = _state.value
         if (st.sleepAtChapterEnd && p.isPlaying) {
             val chapter = st.chapters.lastOrNull { it.start <= lastPos }
-            if (chapter != null && lastPos >= chapter.end - 0.6) sleepFired()
+            // One tick moves 0.25 s × speed through the book: the window grows with the speed, or the end is missed
+            if (chapter != null && lastPos >= chapter.end - 0.6 * maxOf(1.0, st.rate.toDouble())) sleepFired()
         }
         if (p.isPlaying) {
             val item = st.item

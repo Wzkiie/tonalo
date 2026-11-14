@@ -45,12 +45,18 @@ class Covers : ContentProvider() {
                     throw FileNotFoundException(uri.toString())
                 }
                 val tmp = File.createTempFile(file.name, ".part", dir)
-                if (r.header("Content-Type")?.contains("svg") == true) {
-                    // The car, the lock screen and the notification can't draw SVG: drawn once into a PNG here
-                    val png = runCatching { svgToPng(body.byteStream(), size) }.getOrNull() ?: throw FileNotFoundException(uri.toString())
-                    tmp.writeBytes(png)
-                } else {
-                    tmp.outputStream().use { out -> body.byteStream().copyTo(out) }
+                try {
+                    if (r.header("Content-Type")?.contains("svg") == true) {
+                        // The car, the lock screen and the notification can't draw SVG: drawn once into a PNG here
+                        val png = runCatching { svgToPng(body.byteStream(), size) }.getOrNull() ?: throw FileNotFoundException(uri.toString())
+                        tmp.writeBytes(png)
+                    } else {
+                        tmp.outputStream().use { out -> body.byteStream().copyTo(out) }
+                    }
+                } catch (e: Exception) {
+                    // A broken SVG or a dropped connection: no half file stays behind (trim only removes finished ones)
+                    tmp.delete()
+                    throw e
                 }
                 if (!tmp.renameTo(file)) tmp.delete()
             }

@@ -50,11 +50,16 @@ data class PlayerState(
 }
 
 /** The screens' side of the player: a MediaController connected to [PlaybackService]. */
-class PlayerConnection(private val context: Context) {
+class PlayerConnection(context: Context) {
+    // Not the activity: this object outlives it (its flows keep collecting)
+    private val context: Context = context.applicationContext
     private var future: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
 
     private val _state = MutableStateFlow(PlayerState())
+    /** True once the controller is connected and [_state] was read from it: before that, "no media" only means "not asked yet". */
+    private val _connected = MutableStateFlow(false)
+    val connected: StateFlow<Boolean> = _connected
     private val scope = MainScope()
     /** What this phone plays – or, while the own TV plays or a Jukebox is joined, what plays there. */
     val state: StateFlow<PlayerState> = combine(_state, TvLink.remote) { local, remote -> remote?.toPlayerState() ?: local }
@@ -110,6 +115,7 @@ class PlayerConnection(private val context: Context) {
             c.addListener(listener)
             restoreIfEmpty(c)
             refresh()
+            _connected.value = true
         }, ContextCompat.getMainExecutor(context))
     }
 
@@ -119,6 +125,7 @@ class PlayerConnection(private val context: Context) {
         future = null
         controller = null
         queueCache = null
+        _connected.value = false
     }
 
     /** The queue from last time, ready to continue – without starting to play. */
@@ -266,7 +273,8 @@ class PlayerConnection(private val context: Context) {
         for (i in 0 until c.mediaItemCount) {
             val item = c.getMediaItemAt(i)
             if (item.mediaId == song.id) {
-                c.replaceMediaItem(i, item.buildUpon().setMediaMetadata(song.toMediaItem(context = item.mediaMetadata.extras?.getString(CONTEXT_KEY)).mediaMetadata).build())
+                c.replaceMediaItem(i, item.buildUpon().setMediaMetadata(song.toMediaItem(context = item.mediaMetadata.extras?.getString(CONTEXT_KEY),
+                    contextId = item.mediaMetadata.extras?.getString(CONTEXT_ID_KEY)).mediaMetadata).build())
             }
         }
     }
