@@ -23,6 +23,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -124,10 +127,12 @@ fun SettingsScreen() {
         item {
             Group(stringResource(R.string.other_accounts), footer = stringResource(R.string.other_accounts_info)) {
                 accounts.filter { it.id != current?.id }.forEach { acc ->
+                    val removeText = stringResource(R.string.remove)
                     GroupRow({ app.select(acc.id) }, icon = { NameAvatar(acc.username, 34.dp) }, trailing = {
                         Text(stringResource(R.string.switch_account), color = Palette.accent, style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { app.select(acc.id) }.padding(6.dp))
-                        Text("✕", color = Palette.subtle, modifier = Modifier.clip(CircleShape).clickable { removeOther = acc }.padding(8.dp))
+                            modifier = Modifier.minimumInteractiveComponentSize().clip(RoundedCornerShape(8.dp)).clickable { app.select(acc.id) }.padding(6.dp))
+                        Text("✕", color = Palette.subtle, modifier = Modifier.minimumInteractiveComponentSize().clip(CircleShape).clickable { removeOther = acc }.padding(8.dp)
+                            .semantics { contentDescription = removeText })
                     }) {
                         Text(acc.username, style = MaterialTheme.typography.bodyLarge)
                         Text(acc.host, color = Palette.secondaryText, style = MaterialTheme.typography.bodySmall)
@@ -142,7 +147,7 @@ fun SettingsScreen() {
                 ValueRow(stringResource(R.string.version_label), version)
                 NavRow(stringResource(R.string.whats_new)) { nav.navigate("settings/news") }
                 LinkRow(stringResource(R.string.github)) {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Wzkiie/tonalo")))
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Wzkiie/tonalo"))) }
                 }
             }
         }

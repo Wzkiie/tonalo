@@ -250,7 +250,7 @@ fun FieldRow(
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
                 cursorBrush = SolidColor(Palette.accent),
                 visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
-                keyboardOptions = keyboard,
+                keyboardOptions = if (password && keyboard.keyboardType != androidx.compose.ui.text.input.KeyboardType.Password) keyboard.copy(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password) else keyboard,
             )
         }
     }

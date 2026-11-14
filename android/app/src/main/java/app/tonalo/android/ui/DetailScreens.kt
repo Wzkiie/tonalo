@@ -85,7 +85,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 fun durationText(seconds: Int): String {
-    val m = seconds / 60
+    val m = seconds.coerceAtLeast(0) / 60
     return if (m < 60) "$m min" else "${m / 60} h ${m % 60} min"
 }
 

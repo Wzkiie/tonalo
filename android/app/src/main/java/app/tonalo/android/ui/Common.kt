@@ -229,7 +229,8 @@ fun EmptyView(text: String = stringResource(R.string.nothing_here)) {
 @Composable
 fun Cover(coverArt: String?, size: Dp, modifier: Modifier = Modifier, corner: Dp = 4.dp, pixels: Int = 300, placeholder: ImageVector = Icons.Default.Album) {
     val context = LocalContext.current
-    val url = remember(coverArt, pixels) { context.tonalo.client()?.coverURL(coverArt, pixels) }
+    val account by context.tonalo.current.collectAsState()
+    val url = remember(coverArt, pixels, account?.id, account?.serverURL) { context.tonalo.client()?.coverURL(coverArt, pixels) }
     val shape = RoundedCornerShape(corner)
     val fallback = @Composable {
         Box(Modifier.fillMaxSize().background(Palette.elevated), contentAlignment = Alignment.Center) {

@@ -203,6 +203,13 @@ fun DJScreen() {
                 placeholder = { Text(stringResource(R.string.wish_hint)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = {
+                    if (wish.isNotBlank() && !busy) {
+                        val w = wish
+                        wish = ""
+                        run { if (active) DJ.change(DJ.Change.Wish(w), state.current) else DJ.start(w) }
+                    }
+                }),
                 trailingIcon = {
                     IconButton(enabled = wish.isNotBlank() && !busy, onClick = {
                         val w = wish

@@ -220,7 +220,7 @@ fun MainScreen(player: PlayerConnection) {
                 composable("artist/{id}") { ArtistScreen(it.arguments?.getString("id") ?: "") }
                 composable("playlist/{id}") { PlaylistScreen(it.arguments?.getString("id") ?: "") }
                 composable("genre/{name}", arguments = listOf(navArgument("name") { type = NavType.StringType })) {
-                    GenreScreen(it.arguments?.getString("name") ?: "")
+                    GenreScreen(it.arguments?.getString("name")?.takeUnless { n -> n == "_" } ?: "")
                 }
                 composable("player", enterTransition = { slideInVertically { it } }, exitTransition = { fadeOut() },
                     popExitTransition = { slideOutVertically { it } }) { PlayerScreen(onClose = { nav.popBackStack() }) }
@@ -250,7 +250,7 @@ fun MainScreen(player: PlayerConnection) {
                     ),
                 ) { AudiobookScreen(it.arguments?.getString("id") ?: "", it.arguments?.getString("episode")) }
                 composable("bookgroup/{kind}/{name}", arguments = listOf(navArgument("kind") { type = NavType.StringType }, navArgument("name") { type = NavType.StringType })) {
-                    BookGroupScreen(it.arguments?.getString("kind") ?: "", it.arguments?.getString("name") ?: "")
+                    BookGroupScreen(it.arguments?.getString("kind") ?: "", it.arguments?.getString("name")?.takeUnless { n -> n == "_" } ?: "")
                 }
                 composable("bookauthor/{id}") { BookAuthorScreen(it.arguments?.getString("id") ?: "") }
                 composable("bookplayer", enterTransition = { slideInVertically { it } }, exitTransition = { fadeOut() },

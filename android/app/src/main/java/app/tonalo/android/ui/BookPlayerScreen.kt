@@ -74,6 +74,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -298,6 +300,8 @@ fun BookPlayerScreen(onClose: () -> Unit) {
             }
 
             // Transport
+            val backDesc = stringResource(R.string.bpl_back_seconds, state.skipBack)
+            val forwardDesc = stringResource(R.string.bpl_forward_seconds, state.skipForward)
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically,
@@ -305,7 +309,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
                 IconButton(onClick = { BookPlayer.previousChapter() }, enabled = state.chapters.isNotEmpty()) {
                     Icon(Icons.Default.SkipPrevious, stringResource(R.string.bpl_prev_chapter), Modifier.size(32.dp))
                 }
-                IconButton(onClick = { BookPlayer.skip(-state.skipBack) }, Modifier.size(56.dp)) {
+                IconButton(onClick = { BookPlayer.skip(-state.skipBack) }, Modifier.size(56.dp).semantics { contentDescription = backDesc }) {
                     Box(Modifier.size(44.dp)) { BplSkipIcon(false, state.skipBack, 44.dp) }
                 }
                 Box(
@@ -319,7 +323,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
                         Modifier.size(36.dp), tint = Color.Black,
                     )
                 }
-                IconButton(onClick = { BookPlayer.skip(state.skipForward) }, Modifier.size(56.dp)) {
+                IconButton(onClick = { BookPlayer.skip(state.skipForward) }, Modifier.size(56.dp).semantics { contentDescription = forwardDesc }) {
                     Box(Modifier.size(44.dp)) { BplSkipIcon(true, state.skipForward, 44.dp) }
                 }
                 IconButton(onClick = { BookPlayer.nextChapter() }, enabled = state.chapters.isNotEmpty()) {

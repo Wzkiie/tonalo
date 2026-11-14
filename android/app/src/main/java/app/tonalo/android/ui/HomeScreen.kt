@@ -508,7 +508,7 @@ fun LiveBadge(playing: Boolean, modifier: Modifier = Modifier) {
     Row(modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.55f)).padding(horizontal = 6.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(6.dp).clip(CircleShape).background(Color.Red.copy(alpha = alpha)))
         Spacer(Modifier.width(4.dp))
-        Text("LIVE", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.White, letterSpacing = 0.5.sp)
+        Text(stringResource(R.string.live).uppercase(), fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.White, letterSpacing = 0.5.sp)
     }
 }
 

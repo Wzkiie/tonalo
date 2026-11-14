@@ -192,7 +192,8 @@ fun LoginScreen(editing: Account? = null, onClose: (() -> Unit)? = null) {
     val namedBook = form.bookHeaders.filter { it.name.isNotBlank() }
     val canSave = !busy && if (editing != null) {
         // An audiobooks-only account can get a music server here, which needs a password the first time
-        f.server.isNotBlank() && f.username.isNotBlank() && (editing.hasMusic || f.password.isNotEmpty())
+        f.server.isNotBlank() && f.username.isNotBlank() &&
+            (f.password.isNotEmpty() || (editing.hasMusic && editing.serverURL.equals(SubsonicClient.normalize(f.server), ignoreCase = true) && editing.username == f.username.trim()))
     } else {
         (!wantsMusic || (f.server.isNotBlank() && f.username.isNotBlank() && f.password.isNotEmpty())) &&
             (!wantsBooks || (f.bookServer.isNotBlank() && f.bookUsername.isNotBlank() && f.bookPassword.isNotEmpty()))
@@ -262,7 +263,9 @@ fun LoginScreen(editing: Account? = null, onClose: (() -> Unit)? = null) {
                     f.service == Service.MUSIC && current != null && !current.hasMusic -> current
                     else -> null
                 }
-                val kept = if (f.password.isEmpty()) base?.takeIf { it.hasMusic }?.let { it.salt to it.token } else null
+                val kept = if (f.password.isEmpty()) {
+                    base?.takeIf { it.hasMusic && it.serverURL.equals(SubsonicClient.normalize(f.server), ignoreCase = true) && it.username == f.username.trim() }?.let { it.salt to it.token }
+                } else null
                 val token = kept ?: SubsonicClient.makeToken(f.password)
                 var account = (base ?: Account(serverURL = "", username = "", salt = "", token = "")).copy(
                     serverURL = SubsonicClient.normalize(f.server),

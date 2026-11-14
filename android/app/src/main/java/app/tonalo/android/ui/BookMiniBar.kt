@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -61,7 +63,8 @@ fun BookMiniBar(onOpen: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
                 }
                 if (state.tvName != null) Icon(Icons.Default.Tv, null, Modifier.padding(horizontal = 4.dp).size(18.dp), tint = Palette.accent)
-                IconButton(onClick = { BookPlayer.skip(-state.skipBack) }) {
+                val backDesc = stringResource(R.string.bpl_back_seconds, state.skipBack)
+                IconButton(onClick = { BookPlayer.skip(-state.skipBack) }, Modifier.semantics { contentDescription = backDesc }) {
                     BplSkipIcon(false, state.skipBack, 26.dp)
                 }
                 if (state.loading) Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {

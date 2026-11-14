@@ -350,7 +350,7 @@ fun DownloadButton(songs: List<Song>) {
         when {
             done == songs.size -> Icon(Icons.Default.CheckCircle, stringResource(R.string.remove_download), tint = Palette.accent)
             loading -> {
-                val progress = (done + infos.filter { !it.done }.sumOf { it.progress.toDouble() }.toFloat()) / songs.size
+                val progress = ((done + infos.filter { !it.done }.sumOf { it.progress.toDouble() }.toFloat()) / songs.size.coerceAtLeast(1)).coerceIn(0f, 1f)
                 CircularProgressIndicator(progress = { progress }, Modifier.size(22.dp), color = Palette.accent, strokeWidth = 2.5.dp, trackColor = Palette.elevated)
             }
             else -> Icon(Icons.Default.Download, stringResource(R.string.download), tint = Palette.secondaryText)
