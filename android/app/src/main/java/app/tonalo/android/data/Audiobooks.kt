@@ -195,7 +195,7 @@ class AudiobookLibrary {
     private val sendMutex = Mutex()
     private val saveSeq = AtomicLong()
     private val writeLock = Any()
-    private var written = 0L
+    private val written = HashMap<String, Long>()
     @Volatile private var lastNoteSave = 0L
 
     /** Connects the library to the app. Call once at launch, after the current account is known. */
@@ -271,7 +271,8 @@ class AudiobookLibrary {
             val bytes = Network.json.encodeToString(SavedBookState.serializer(), state).toByteArray()
             // An older snapshot never overwrites a newer one
             synchronized(writeLock) {
-                if (ticket > written && AudiobookFiles.write(id, "state.json", bytes)) written = ticket
+                // Per account: a newer save of another account must not drop this one
+                if (ticket > (written[id] ?: 0L) && AudiobookFiles.write(id, "state.json", bytes)) written[id] = ticket
             }
         }
     }
@@ -357,8 +358,9 @@ class AudiobookLibrary {
     /** Sends the positions the server hasn't heard about. Stops at the first failure (no connection); a gone item is dropped. */
     suspend fun flushUnsent() {
         if (stored == null || unsent.isEmpty() || !sendMutex.tryLock()) return
+        val account = currentId
+        var sent = false
         try {
-            val account = currentId
             for (entry in unsent.toList()) {
                 if (currentId != account) return
                 val path = "/api/me/progress/${entry.libraryItemId}" + (entry.episodeId?.let { "/$it" } ?: "")
@@ -378,11 +380,13 @@ class AudiobookLibrary {
                     return
                 }
                 synchronized(this) { unsent = unsent.filterNot { it.key == entry.key && it.lastUpdate == entry.lastUpdate } }
+                sent = true
             }
         } finally {
             sendMutex.unlock()
+            // Also after stopping early, or the entries already sent are sent again after a restart
+            if (sent && currentId == account) saveState()
         }
-        saveState()
     }
 
     // endregion
@@ -747,6 +751,10 @@ class AudiobookLibrary {
     suspend fun setFinished(item: ABSItem, episode: ABSEpisode?, finished: Boolean) {
         val path = "/api/me/progress/${item.id}" + (episode?.let { "/${it.id}" } ?: "")
         send(path, "PATCH", buildJsonObject { put("isFinished", finished) })
+        // A position queued offline would undo this in the flush at the start of load()
+        val key = ABSProgress.key(item.id, episode?.id)
+        synchronized(this) { unsent = unsent.filterNot { it.key == key } }
+        saveState()
         load(force = true)
     }
 

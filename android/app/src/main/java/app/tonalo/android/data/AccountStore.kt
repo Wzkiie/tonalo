@@ -27,6 +27,8 @@ class AccountStore(context: Context) {
         private const val SELECTED = "selected"
     }
 
+    /** Synchronized: two threads generating the key at once would leave data sealed with a key that was replaced. */
+    @Synchronized
     private fun key(): SecretKey {
         val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (ks.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry)?.let { return it.secretKey }

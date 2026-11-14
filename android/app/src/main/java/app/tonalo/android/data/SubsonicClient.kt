@@ -86,7 +86,8 @@ object Network {
 suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
     enqueue(object : Callback {
         override fun onResponse(call: Call, response: Response) {
-            if (cont.isActive) cont.resumeWith(Result.success(response)) else response.close()
+            // The handler closes the response if the coroutine is cancelled before it gets to run again
+            if (cont.isActive) cont.resume(response) { _ -> response.close() } else response.close()
         }
         override fun onFailure(call: Call, e: IOException) { if (!cont.isCancelled) cont.resumeWithException(e) }
     })
@@ -184,12 +185,12 @@ class SubsonicClient(val account: Account, private val cache: LibraryCache? = nu
         val key = LibraryCache.key(method, params.toList())
         return try {
             val (payload, raw) = send(request(u).build(), retry)
-            if (key != null) cache?.save(account.id, key, raw)
+            if (key != null && cache != null) withContext(Dispatchers.IO) { cache.save(account.id, key, raw) }
             payload
         } catch (e: Exception) {
             // No (usable) connection: the last known answer is better than an error.
-            if (key != null && e !is kotlinx.coroutines.CancellationException && !e.isServerAnswer) {
-                cache?.load(account.id, key)?.let { return it }
+            if (key != null && cache != null && e !is kotlinx.coroutines.CancellationException && !e.isServerAnswer) {
+                withContext(Dispatchers.IO) { cache.load(account.id, key) }?.let { return it }
             }
             throw e
         }
@@ -221,8 +222,9 @@ class SubsonicClient(val account: Account, private val cache: LibraryCache? = nu
 
     private suspend fun send(r: Request, retry: Boolean = true): Pair<Payload, String> {
         val response = (if (retry) Network.http else Network.httpNoRetry).newCall(r).await()
-        return withContext(Dispatchers.IO) {
-            response.use { resp ->
+        // use outside withContext: a cancellation on entering it must still close the response
+        return response.use { resp ->
+            withContext(Dispatchers.IO) {
                 val status = resp.code
                 val type = resp.header("Content-Type") ?: ""
                 if ("json" !in type) throw SubsonicException.NotSubsonic(status)
@@ -272,7 +274,7 @@ class SubsonicClient(val account: Account, private val cache: LibraryCache? = nu
             val env = Network.json.decodeFromString(Envelope.serializer(), withContext(Dispatchers.IO) { resp.body?.string() ?: "" })
             "${env.response.type ?: ""}|${env.response.serverVersion ?: ""}"
         }
-    }.getOrNull()
+    }.getOrElse { if (it is kotlinx.coroutines.CancellationException) throw it else null }
 
     suspend fun stations(): List<Station> =
         call("getInternetRadioStations").internetRadioStations?.internetRadioStation.orEmpty()
