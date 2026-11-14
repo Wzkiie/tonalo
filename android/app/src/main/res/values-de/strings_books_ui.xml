@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bk_audiobook">Hörbuch</string>
+    <string name="bk_podcast">Podcast</string>
+    <string name="bk_audiobooks">Hörbücher</string>
+    <string name="bk_podcasts">Podcasts</string>
+    <string name="bk_finished">Beendet</string>
+    <string name="bk_titles">Titel</string>
+    <string name="bk_authors">Autoren</string>
+    <string name="bk_series">Serien</string>
+    <string name="bk_series_one">Serie</string>
+    <string name="bk_narrator">Sprecher</string>
+    <string name="bk_author">Autor</string>
+    <string name="bk_sort_by">Sortieren nach</string>
+    <string name="bk_alphabetical">Alphabetisch</string>
+    <string name="bk_newest">Neueste zuerst</string>
+    <string name="bk_oldest">Älteste zuerst</string>
+    <plurals name="bk_books">
+        <item quantity="one">%d Buch</item>
+        <item quantity="other">%d Bücher</item>
+    </plurals>
+    <plurals name="bk_episodes_n">
+        <item quantity="one">%d Folge</item>
+        <item quantity="other">%d Folgen</item>
+    </plurals>
+    <string name="bk_read_by">Gelesen von %1$s</string>
+    <string name="bk_left">Noch %1$s</string>
+    <string name="bk_chapters">Kapitel</string>
+    <string name="bk_episodes">Folgen</string>
+    <string name="bk_more">Mehr</string>
+    <string name="bk_less">Weniger</string>
+    <string name="bk_more_by">Mehr von %1$s</string>
+    <string name="bk_mark_finished">Als beendet markieren</string>
+    <string name="bk_mark_unfinished">Als nicht beendet markieren</string>
+    <string name="bk_nothing_yet">Noch nichts da. Füge Bücher zu deinem Audiobookshelf-Server hinzu.</string>
+    <string name="bk_show_grid">Als Raster anzeigen</string>
+    <string name="bk_show_list">Als Liste anzeigen</string>
+    <string name="bk_remove_download_q">Download entfernen?</string>
+    <string name="bk_cancel_download_q">Download abbrechen?</string>
+    <string name="bk_keep_downloading">Weiter herunterladen</string>
+    <string name="bk_search_hint">Hörbücher und Podcasts suchen</string>
+    <string name="bk_delete_all">Alle Hörbuch-Downloads löschen</string>
+    <string name="bk_delete_all_q">Alle Hörbuch-Downloads löschen?</string>
+</resources>
