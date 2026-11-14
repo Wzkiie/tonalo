@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="books_error_login">Wrong user name or password.</string>
+    <string name="books_error_not_connected">Audiobookshelf isn’t connected.</string>
+    <string name="books_error_refused">The server didn’t accept your login. Is this really the same Audiobookshelf server?</string>
+    <string name="books_error_unexpected">That doesn’t look like an Audiobookshelf server. If it’s behind a proxy such as Cloudflare Access, check the custom headers.</string>
+    <string name="books_error_http">The server answered with error %1$d.</string>
+    <string name="books_error_save">The login could not be saved.</string>
+    <string name="books_shelf_continue_listening">Continue listening</string>
+    <string name="books_shelf_continue_series">Continue the series</string>
+    <string name="books_shelf_recently_added">New audiobooks &amp; podcasts</string>
+    <string name="books_shelf_new_episodes">New episodes</string>
+    <string name="books_shelf_recommended">Recommended for you</string>
+    <string name="books_shelf_listen_again">Listen again</string>
+    <string name="books_shelf_discover">Discover audiobooks</string>
+</resources>

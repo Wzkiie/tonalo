@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bp_jukebox">Beende die Jukebox, um ein Hörbuch zu hören.</string>
+    <string name="bp_error_play">Das lässt sich gerade nicht abspielen.</string>
+    <string name="bp_error_download">Das lässt sich gerade nicht herunterladen.</string>
+    <string name="bp_error_forbidden">Dein Audiobookshelf-Benutzer darf nichts herunterladen.</string>
+    <string name="bp_skip_back">%1$d Sekunden zurück</string>
+    <string name="bp_skip_forward">%1$d Sekunden vor</string>
+    <string name="bp_download_channel">Hörbuch-Downloads</string>
+    <string name="bp_downloading">Hörbücher werden heruntergeladen</string>
+    <string name="bp_downloading_n">Lädt %1$d von %2$d</string>
+    <string name="bp_cancel">Abbrechen</string>
+</resources>

@@ -1,8 +1,8 @@
 # Privacy Policy
 
-*Last updated: November 11, 2026*
+*Last updated: November 12, 2026*
 
-This policy covers the Tonalo apps for LG webOS TVs, Windows, Mac, iPhone and Apple Watch.
+This policy covers the Tonalo apps for LG webOS TVs, Windows, Mac, iPhone, Apple Watch and Android (including Android Auto).
 
 ## The short version
 
@@ -18,6 +18,8 @@ Tonalo doesn't collect anything. There are no accounts with us, no analytics, no
 - **Apple Watch:** the watch app gets what it shows – the song that's playing, its cover and your playlists – from your iPhone over Apple's watch connection. It never talks to the server itself and stores no login details.
 
 - **DJ (optional):** the provider and model you chose and your key for it. On the iPhone the key is in the iOS Keychain. If you share the DJ with your paired devices, they store the same setup: Windows and Mac encrypted with the system's data protection, the TV in the app's storage (webOS has no secure storage).
+
+- **Android:** login details, pairings, Jukebox guests and the DJ key are stored encrypted with a key held in the Android Keystore; the password itself is never stored. Downloads, cover art and the library cache live in the app's own storage. Android Auto and the system's media controls get cover art through the app itself, so the server's login never leaves the app. Uninstalling the app or removing the account deletes all of it.
 
 None of this is sent to us – we have no server that could receive it.
 
@@ -61,4 +63,4 @@ If this policy changes, the new version will be published here with a new date. 
 
 ## Datenschutz (Kurzfassung auf Deutsch)
 
-Tonalo erhebt keine Daten: keine Konten bei uns, keine Analyse, keine Werbung, kein Tracking, keine Fremd-SDKs. Die Apps verbinden sich nur mit dem Musikserver, den du selbst einträgst – und beim Abspielen eines Radiosenders mit diesem Sender, der dabei wie bei jedem Webradio deine IP-Adresse sieht (ohne Zugangsdaten). Zugangsdaten (Serveradresse, Benutzername, aus dem Passwort berechneter Token und eigene Header) bleiben auf deinem Gerät – auf dem iPhone im Schlüsselbund; das Passwort selbst wird nie gespeichert. Damit du auf einem anderen Gerät weiterhören kannst, legen die Apps die Warteschlange auf deinem eigenen Server ab. Koppelst du das iPhone mit dem TV oder nutzt die Jukebox, sprechen die Geräte direkt im Heimnetz bzw. von Handy zu Handy miteinander, nicht über das Internet; geteilt wird nur, was läuft, nie Zugangsdaten zum Server. Der DJ ist freiwillig und aus, bis du ihn einrichtest: dann gehen pro Set bis zu 150 Songs aus deiner Bibliothek (Titel, Interpret, Album, Genre, Jahr, Favorit), die zuletzt gespielten Songs und dein Wunsch an den KI-Anbieter, den du gewählt hast, mit deinem eigenen Schlüssel – nie Serveradresse, Anmeldung, Cover oder Hörbücher. Nur wenn du es einschaltest, übergibt das iPhone den DJ-Schlüssel verschlüsselt an deine eigenen gekoppelten Geräte. Konto in der App entfernen oder App löschen entfernt die Daten vom Gerät. Bei der Beta über TestFlight gibt Apple Absturzberichte, einfache Nutzungsdaten und Feedback an den Entwickler weiter; die App selbst erhebt weiterhin nichts. Fragen über die [GitHub-Issues](https://github.com/Wzkiie/tonalo/issues).
+Gilt für die Apps auf TV, Windows, Mac, iPhone, Apple Watch und Android (mit Android Auto). Tonalo erhebt keine Daten: keine Konten bei uns, keine Analyse, keine Werbung, kein Tracking, keine Fremd-SDKs. Die Apps verbinden sich nur mit dem Musikserver, den du selbst einträgst – und beim Abspielen eines Radiosenders mit diesem Sender, der dabei wie bei jedem Webradio deine IP-Adresse sieht (ohne Zugangsdaten). Zugangsdaten (Serveradresse, Benutzername, aus dem Passwort berechneter Token und eigene Header) bleiben auf deinem Gerät – auf dem iPhone im Schlüsselbund; das Passwort selbst wird nie gespeichert. Damit du auf einem anderen Gerät weiterhören kannst, legen die Apps die Warteschlange auf deinem eigenen Server ab. Koppelst du das iPhone mit dem TV oder nutzt die Jukebox, sprechen die Geräte direkt im Heimnetz bzw. von Handy zu Handy miteinander, nicht über das Internet; geteilt wird nur, was läuft, nie Zugangsdaten zum Server. Der DJ ist freiwillig und aus, bis du ihn einrichtest: dann gehen pro Set bis zu 150 Songs aus deiner Bibliothek (Titel, Interpret, Album, Genre, Jahr, Favorit), die zuletzt gespielten Songs und dein Wunsch an den KI-Anbieter, den du gewählt hast, mit deinem eigenen Schlüssel – nie Serveradresse, Anmeldung, Cover oder Hörbücher. Nur wenn du es einschaltest, übergibt das iPhone den DJ-Schlüssel verschlüsselt an deine eigenen gekoppelten Geräte. Konto in der App entfernen oder App löschen entfernt die Daten vom Gerät. Bei der Beta über TestFlight gibt Apple Absturzberichte, einfache Nutzungsdaten und Feedback an den Entwickler weiter; die App selbst erhebt weiterhin nichts. Fragen über die [GitHub-Issues](https://github.com/Wzkiie/tonalo/issues).

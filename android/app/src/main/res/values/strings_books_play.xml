@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bp_jukebox">Stop the Jukebox to listen to an audiobook.</string>
+    <string name="bp_error_play">This can’t be played right now.</string>
+    <string name="bp_error_download">This can’t be downloaded right now.</string>
+    <string name="bp_error_forbidden">Your Audiobookshelf user isn’t allowed to download.</string>
+    <string name="bp_skip_back">%1$d seconds back</string>
+    <string name="bp_skip_forward">%1$d seconds forward</string>
+    <string name="bp_download_channel">Audiobook downloads</string>
+    <string name="bp_downloading">Downloading audiobooks</string>
+    <string name="bp_downloading_n">Downloading %1$d of %2$d</string>
+    <string name="bp_cancel">Cancel</string>
+</resources>

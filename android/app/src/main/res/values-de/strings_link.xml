@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dj_err_take_over">Der DJ kann hier nicht übernehmen.</string>
+    <string name="dj_err_not_playing">Der DJ läuft gerade nicht.</string>
+    <string name="pair_other_profile">Auf %1$s ist gerade jemand anderes angemeldet. Wähle dort zuerst dein Profil und koppele dann noch einmal – oder tritt der Jukebox bei.</string>
+</resources>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bk_audiobook">Audiobook</string>
+    <string name="bk_podcast">Podcast</string>
+    <string name="bk_audiobooks">Audiobooks</string>
+    <string name="bk_podcasts">Podcasts</string>
+    <string name="bk_finished">Finished</string>
+    <string name="bk_titles">Titles</string>
+    <string name="bk_authors">Authors</string>
+    <string name="bk_series">Series</string>
+    <string name="bk_series_one">Series</string>
+    <string name="bk_narrator">Narrator</string>
+    <string name="bk_author">Author</string>
+    <string name="bk_sort_by">Sort by</string>
+    <string name="bk_alphabetical">Alphabetical</string>
+    <string name="bk_newest">Newest first</string>
+    <string name="bk_oldest">Oldest first</string>
+    <plurals name="bk_books">
+        <item quantity="one">%d book</item>
+        <item quantity="other">%d books</item>
+    </plurals>
+    <plurals name="bk_episodes_n">
+        <item quantity="one">%d episode</item>
+        <item quantity="other">%d episodes</item>
+    </plurals>
+    <string name="bk_read_by">Read by %1$s</string>
+    <string name="bk_left">%1$s left</string>
+    <string name="bk_chapters">Chapters</string>
+    <string name="bk_episodes">Episodes</string>
+    <string name="bk_more">More</string>
+    <string name="bk_less">Less</string>
+    <string name="bk_more_by">More by %1$s</string>
+    <string name="bk_mark_finished">Mark as finished</string>
+    <string name="bk_mark_unfinished">Mark as not finished</string>
+    <string name="bk_nothing_yet">Nothing here yet. Add books to your Audiobookshelf server.</string>
+    <string name="bk_show_grid">Show as grid</string>
+    <string name="bk_show_list">Show as list</string>
+    <string name="bk_remove_download_q">Remove download?</string>
+    <string name="bk_cancel_download_q">Cancel download?</string>
+    <string name="bk_keep_downloading">Keep downloading</string>
+    <string name="bk_search_hint">Search audiobooks and podcasts</string>
+    <string name="bk_delete_all">Delete all audiobook downloads</string>
+    <string name="bk_delete_all_q">Delete all audiobook downloads?</string>
+</resources>
