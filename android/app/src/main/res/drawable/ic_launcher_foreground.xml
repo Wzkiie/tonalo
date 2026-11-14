@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Tonalo waveform: five rounded bars, same proportions as tv/tools/make_icons.py,
+     scaled into the 66dp safe zone of the 108dp adaptive icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="21" android:translateY="21" android:scaleX="0.6111" android:scaleY="0.6111">
+        <path android:fillColor="#121212"
+            android:pathData="M25.38,46.44 a3.78,3.78 0 0,1 7.56,0 v15.12 a3.78,3.78 0 0,1 -7.56,0 z" />
+        <path android:fillColor="#121212"
+            android:pathData="M37.80,37.53 a3.78,3.78 0 0,1 7.56,0 v32.94 a3.78,3.78 0 0,1 -7.56,0 z" />
+        <path android:fillColor="#121212"
+            android:pathData="M50.22,28.62 a3.78,3.78 0 0,1 7.56,0 v50.76 a3.78,3.78 0 0,1 -7.56,0 z" />
+        <path android:fillColor="#121212"
+            android:pathData="M62.64,39.69 a3.78,3.78 0 0,1 7.56,0 v28.62 a3.78,3.78 0 0,1 -7.56,0 z" />
+        <path android:fillColor="#121212"
+            android:pathData="M75.06,47.52 a3.78,3.78 0 0,1 7.56,0 v12.96 a3.78,3.78 0 0,1 -7.56,0 z" />
+    </group>
+</vector>

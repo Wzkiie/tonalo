@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plain http is allowed because Navidrome often runs on http in the home network (192.168.x.x, *.local).
+     The app itself only falls back to http for home-network addresses, or when the user types http:// on purpose. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <!-- Self-signed certificates the user installed for their own server -->
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
