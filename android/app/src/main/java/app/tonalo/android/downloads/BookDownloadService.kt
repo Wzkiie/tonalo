@@ -27,10 +27,12 @@ import kotlinx.coroutines.launch
 class BookDownloadService : Service() {
     private val scope = MainScope()
     private var job: Job? = null
+    private var lastStartId = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        lastStartId = startId
         if (intent?.action == ACTION_CANCEL) {
             BookDownloads.cancelUnfinished()
             end()
@@ -62,7 +64,8 @@ class BookDownloadService : Service() {
         job?.cancel()
         job = null
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        // Only if no newer start is on its way: stopping before that one's startForeground crashes the app (Android 8+)
+        stopSelf(lastStartId)
     }
 
     private fun notifications() = getSystemService(NotificationManager::class.java)

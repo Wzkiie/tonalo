@@ -134,6 +134,9 @@ object BookDownloads {
     private var running: Job? = null
     private var runningKey: String? = null
     private var starting = 0
+    /** Numbers the index snapshots (main thread); the last one written per account is kept under the lock in [saveIndex]. */
+    private var indexSeq = 0L
+    private val indexWritten = HashMap<String, Long>()
 
     fun state(itemId: String, episodeId: String? = null): BookDownloadState = _states.value[ABSProgress.key(itemId, episodeId)] ?: BookDownloadState.None
 
@@ -159,7 +162,10 @@ object BookDownloads {
         this.app = app
         load(app, app.current.value?.id)
         app.scope.launch {
-            app.current.distinctUntilChangedBy { it?.id }.collect { if (it?.id != account) load(app, it?.id) }
+            // Also when Audiobookshelf is taken out of the same account: its files are gone, nothing of them may stay
+            app.current.distinctUntilChangedBy { it?.id to (it?.audiobooks != null) }.collect {
+                if (it?.id != account || it?.audiobooks == null) load(app, it?.id)
+            }
         }
     }
 
@@ -187,7 +193,8 @@ object BookDownloads {
         app.scope.launch {
             try {
                 val rec = recs[key] ?: makeRec(app, item, episode)
-                if (this@BookDownloads.account != account) return@launch
+                // The account changed, or the download was cancelled while the server was asked
+                if (this@BookDownloads.account != account || status[key] != BookDownloadState.Queued) return@launch
                 recs[key] = rec
                 saveIndex()
                 queue.add(key)
@@ -195,8 +202,11 @@ object BookDownloads {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                batch.remove(key)
-                setStatus(key, BookDownloadState.Failed(messageFor(app, e)))
+                // Not when it was cancelled meanwhile or belongs to another account
+                if (this@BookDownloads.account == account && status[key] == BookDownloadState.Queued) {
+                    batch.remove(key)
+                    setStatus(key, BookDownloadState.Failed(messageFor(app, e)))
+                }
             } finally {
                 starting--
                 publish()
@@ -328,8 +338,13 @@ object BookDownloads {
     private fun saveIndex() {
         val account = account ?: return
         val data = Network.json.encodeToString(BookIndex.serializer(), BookIndex(recs.values.toList())).encodeToByteArray()
-        // Written in order, off the main thread
-        app?.scope?.launch(Dispatchers.IO) { synchronized(this@BookDownloads) { AudiobookFiles.write(account, "downloads.json", data) } }
+        val ticket = ++indexSeq
+        // Off the main thread; the launches may run in any order, so an older snapshot never overwrites a newer one
+        app?.scope?.launch(Dispatchers.IO) {
+            synchronized(this@BookDownloads) {
+                if (ticket > (indexWritten[account] ?: 0L) && AudiobookFiles.write(account, "downloads.json", data)) indexWritten[account] = ticket
+            }
+        }
     }
 
     /** Asks the server for the full item (which also renews a login that ran out) and plans the files. */
@@ -342,7 +357,8 @@ object BookDownloads {
         val files = ArrayList<BookFileRec>()
         for ((i, f) in sources.withIndex()) {
             val ino = f.ino ?: continue
-            val ext = (f.metadata?.ext ?: ".mp3").trim().trim('.').ifEmpty { "mp3" }
+            // Only letters and digits: the name comes from the server and must not leave the book's folder
+            val ext = (f.metadata?.ext ?: "mp3").replace(Regex("[^A-Za-z0-9]"), "").ifEmpty { "mp3" }
             val start = f.startOffset ?: offset
             files += BookFileRec(i, start, f.duration ?: 0.0, ino, "$i.$ext", (f.metadata?.size ?: 0.0).toLong())
             offset = start + (f.duration ?: 0.0)
