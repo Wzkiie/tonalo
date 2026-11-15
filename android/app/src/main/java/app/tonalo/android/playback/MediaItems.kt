@@ -58,7 +58,9 @@ fun Song.toMediaItem(
         .setMediaMetadata(meta)
         .apply {
             if (client != null && quality != null) client.streamURL(this@toMediaItem, quality)?.let { setUri(it) }
-            cacheKey?.let { setCustomCacheKey(it) }
+            // Own key for streamed songs too: the address holds the login token and must not end up in a cache
+            val key = cacheKey ?: if (client != null && quality != null) "stream|${client.account.id}|$id|${quality.name}" else null
+            key?.let { setCustomCacheKey(it) }
         }
         .build()
 }

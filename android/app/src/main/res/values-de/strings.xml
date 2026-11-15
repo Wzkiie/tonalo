@@ -169,6 +169,7 @@
     <string name="off">Aus</string>
     <string name="seconds">%1$d s</string>
     <string name="autoplay">Autoplay</string>
+    <string name="preload">Nächste Songs vorladen</string>
     <string name="download_cellular">Über Mobilfunk herunterladen</string>
     <string name="download_cellular_info">Downloads laufen im Hintergrund weiter. Ohne Mobilfunk warten sie auf WLAN.</string>
     <string name="autoplay_info">Wenn ein Album oder eine Playlist endet, laufen ähnliche Songs weiter.</string>
@@ -315,7 +316,7 @@
     <string name="wifi">WLAN</string>
     <string name="mobile_data">Mobile Daten</string>
     <string name="quality_footer">Original schickt deine Dateien unverändert. Die anderen wandelt dein Server um, sie brauchen weniger Daten.</string>
-    <string name="playback_footer">Lautstärkeausgleich nutzt die ReplayGain-Angaben deiner Dateien. Autoplay spielt ähnliche Songs, wenn die Warteschlange endet. Scrobbeln sagt deinem Server, was du gehört hast.</string>
+    <string name="playback_footer">Vorladen hält die Musik am Laufen, wenn die Verbindung kurz abreißt. Lautstärkeausgleich nutzt die ReplayGain-Angaben deiner Dateien. Autoplay spielt ähnliche Songs, wenn die Warteschlange endet. Scrobbeln sagt deinem Server, was du gehört hast.</string>
     <string name="downloaded_music">Heruntergeladene Musik</string>
     <string name="offline_footer">Downloads laufen im Hintergrund weiter. Heruntergeladene Songs spielen auch ohne Verbindung.</string>
     <string name="corners">Ecken</string>

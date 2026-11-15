@@ -192,6 +192,7 @@ fun PlaybackSettingsScreen() {
     val crossfade by s.crossfade.collectAsState()
     val leveling by s.leveling.collectAsState()
     val autoplay by s.autoplay.collectAsState()
+    val preload by s.preload.collectAsState()
     val scrobble by s.scrobble.collectAsState()
     val syncQueue by s.syncQueue.collectAsState()
     val eqOn by s.eqEnabled.collectAsState()
@@ -223,6 +224,7 @@ fun PlaybackSettingsScreen() {
                         VolumeLeveling.ALBUM -> R.string.leveling_album
                     })
                 }) { s.setLeveling(it) }
+                PickerRow(stringResource(R.string.preload), preload, listOf(0, 1, 2, 3, 5), label = { if (it == 0) stringResource(R.string.off) else it.toString() }) { s.setPreload(it) }
                 ToggleRow(stringResource(R.string.autoplay), autoplay) { s.setAutoplay(it) }
                 ToggleRow(stringResource(R.string.scrobble), scrobble) { s.setScrobble(it) }
             }

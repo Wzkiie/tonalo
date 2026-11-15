@@ -19,7 +19,7 @@ A native Android app for Navidrome and other Subsonic servers. It is written in 
 - **Background playback:** notification, lock screen, headphone and Bluetooth buttons, *resume* after the app was closed, with heart and shuffle buttons in the system's media controls.
 - **Android Auto:** four tabs (Home with mixes and albums, Playlists, Library with artists, albums, favorites and downloads, Radio with endless radios and stations), search, voice requests ("Hey Google, play Silver Weather on Tonalo"), heart, shuffle and radio buttons, and covers. Covers reach the car through the app's own content provider (`playback/Covers.kt`), so the server login never leaves the app.
 - **Quality** for Wi-Fi, mobile data and downloads.
-- **More playback settings:** fading between songs, volume leveling with ReplayGain, autoplay when an album ends, and an equalizer (five bands, presets; it uses the phone's own audio effect, so it also works in Android Auto and over Bluetooth).
+- **More playback settings:** fading between songs, loading the next 1 to 5 songs ahead (so a dead spot doesn't stop the music), volume leveling with ReplayGain, autoplay when an album ends, and an equalizer (five bands, presets; it uses the phone's own audio effect, so it also works in Android Auto and over Bluetooth).
 - **Scrobbling:** plays without a connection are sent later, with the time they were played.
 - **Continue on another device:** the queue is kept on the server.
 - **TV & Jukebox** (same protocol as the iPhone app, `tv/service/service.js`):

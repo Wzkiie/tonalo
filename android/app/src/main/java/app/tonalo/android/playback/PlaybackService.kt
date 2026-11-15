@@ -126,6 +126,7 @@ class PlaybackService : MediaLibraryService() {
     private var stashRepeat = Player.REPEAT_MODE_OFF
     private lateinit var bookSources: DefaultMediaSourceFactory
     private val coverExecutor = Executors.newSingleThreadExecutor()
+    private lateinit var prefetcher: Prefetcher
 
     internal val app get() = tonalo
     private val radio by lazy { SmartRadio({ app.client() }, { songs() }) }
@@ -133,10 +134,13 @@ class PlaybackService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
 
-        // Downloaded songs come from the download cache, everything else from the server (with the custom headers)
+        // Downloaded songs come from the download cache; then the songs loaded ahead (and played lately); everything
+        // else from the server (with the custom headers)
+        val streamSource = Prefetch.dataSourceFactory(this, OkHttpDataSource.Factory(app.mediaHttp))
+        prefetcher = Prefetcher(streamSource)
         val dataSource = CacheDataSource.Factory()
             .setCache(Downloads.cache(this))
-            .setUpstreamDataSourceFactory(OkHttpDataSource.Factory(app.mediaHttp))
+            .setUpstreamDataSourceFactory(streamSource)
             .setCacheWriteDataSinkFactory(null)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
         // Converted streams (Opus, AAC, MP3) have no seek index; with the estimated length they can be seeked anyway
@@ -196,6 +200,7 @@ class PlaybackService : MediaLibraryService() {
             }
         }
         scope.launch { app.settings.leveling.collect { applyVolume() } }
+        scope.launch { app.settings.preload.collect { prefetchSoon() } }
         // The equalizer follows its settings at once – also while the page with the sliders is open
         scope.launch {
             kotlinx.coroutines.flow.combine(app.settings.eqEnabled, app.settings.eqPreset, app.settings.eqCustomGains) { on, preset, custom ->
@@ -228,6 +233,7 @@ class PlaybackService : MediaLibraryService() {
         session?.release()
         player.release()
         coverExecutor.shutdown()
+        if (::prefetcher.isInitialized) prefetcher.release()
         session = null
         super.onDestroy()
     }
@@ -742,6 +748,7 @@ class PlaybackService : MediaLibraryService() {
 
     private val listener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            prefetchSoon()
             // Music started (screens, car, radio…) while a book had the player: the book is closed
             if (bookMode) BookPlayer.onMediaItem()
             if (bookMode) {
@@ -837,8 +844,38 @@ class PlaybackService : MediaLibraryService() {
         }
 
         override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
-            if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) saveQueueSoon()
+            if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) { saveQueueSoon(); prefetchSoon() }
         }
+    }
+
+    private var prefetchJob: Job? = null
+
+    /** The next songs of the queue are loaded ahead (the setting says how many). Bursts of changes count once. */
+    private fun prefetchSoon() {
+        if (prefetchJob?.isActive == true) return
+        prefetchJob = scope.launch {
+            delay(1_000)
+            prefetchNow()
+        }
+    }
+
+    private fun prefetchNow() {
+        val count = app.settings.preload.value
+        val timeline = player.currentTimeline
+        if (bookMode || switching || count <= 0 || timeline.isEmpty || player.currentMediaItemIndex < 0) { prefetcher.cancel(); return }
+        val current = player.currentMediaItemIndex
+        val upcoming = ArrayList<MediaItem>()
+        var index = current
+        while (upcoming.size < count) {
+            index = timeline.getNextWindowIndex(index, player.repeatMode, player.shuffleModeEnabled)
+            // End of the queue, or around once with repeat on
+            if (index == C.INDEX_UNSET || index == current || upcoming.any { it === player.getMediaItemAt(index) }) break
+            val item = player.getMediaItemAt(index)
+            val song = item.song ?: continue
+            // Downloaded songs and stations need no loading ahead
+            if (item.station == null && !Downloads.isDownloaded(this, song.id)) upcoming += item
+        }
+        prefetcher.update(upcoming)
     }
 
     /** A radio tops itself up before it runs out. */

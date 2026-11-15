@@ -41,6 +41,7 @@ class Settings(context: Context) {
     private val sync = boolPref("syncQueue", true)
     private val fade = intPref("crossfade", 0)
     private val autoplayPref = boolPref("autoplay", true)
+    private val preloadPref = intPref("preload", 2)
     private val downloadCellularPref = boolPref("downloadCellular", false)
     private val accentPref = stringPref("accent", DEFAULT_ACCENT)
     private val backdropPref = enumPref("backdrop", Backdrop.GRAY, Backdrop.entries.toTypedArray())
@@ -68,6 +69,8 @@ class Settings(context: Context) {
     val crossfade: StateFlow<Int> = fade.flow.asStateFlow()
     /** When an album or playlist ends, keep going with similar songs. */
     val autoplay: StateFlow<Boolean> = autoplayPref.flow.asStateFlow()
+    /** How many of the next songs are loaded ahead (0 = off). */
+    val preload: StateFlow<Int> = preloadPref.flow.asStateFlow()
     /** Downloads also run on mobile data (or any metered network). Off: they wait for Wi-Fi. */
     val downloadCellular: StateFlow<Boolean> = downloadCellularPref.flow.asStateFlow()
     val accent: StateFlow<String> = accentPref.flow.asStateFlow()
@@ -97,6 +100,7 @@ class Settings(context: Context) {
     fun setSyncQueue(on: Boolean) = sync.set(on)
     fun setCrossfade(seconds: Int) = fade.set(seconds)
     fun setAutoplay(on: Boolean) = autoplayPref.set(on)
+    fun setPreload(count: Int) = preloadPref.set(count)
     fun setDownloadCellular(on: Boolean) = downloadCellularPref.set(on)
     fun setAccent(hex: String) = accentPref.set(hex)
     fun setBackdrop(b: Backdrop) = backdropPref.set(b)
