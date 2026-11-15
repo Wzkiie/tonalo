@@ -13,12 +13,12 @@ val keystore = rootProject.file("keystore.properties").takeIf { it.exists() }?.l
 
 android {
     namespace = "app.tonalo.android"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "app.tonalo.android"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
