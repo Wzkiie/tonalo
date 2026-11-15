@@ -169,6 +169,8 @@
     <string name="off">Aus</string>
     <string name="seconds">%1$d s</string>
     <string name="autoplay">Autoplay</string>
+    <string name="download_cellular">Über Mobilfunk herunterladen</string>
+    <string name="download_cellular_info">Downloads laufen im Hintergrund weiter. Ohne Mobilfunk warten sie auf WLAN.</string>
     <string name="autoplay_info">Wenn ein Album oder eine Playlist endet, laufen ähnliche Songs weiter.</string>
     <string name="appearance">Darstellung</string>
     <string name="accent_color">Akzentfarbe</string>

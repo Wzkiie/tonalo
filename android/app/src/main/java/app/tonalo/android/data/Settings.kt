@@ -41,6 +41,7 @@ class Settings(context: Context) {
     private val sync = boolPref("syncQueue", true)
     private val fade = intPref("crossfade", 0)
     private val autoplayPref = boolPref("autoplay", true)
+    private val downloadCellularPref = boolPref("downloadCellular", false)
     private val accentPref = stringPref("accent", DEFAULT_ACCENT)
     private val backdropPref = enumPref("backdrop", Backdrop.GRAY, Backdrop.entries.toTypedArray())
     private val tint = boolPref("coverTint", true)
@@ -67,6 +68,8 @@ class Settings(context: Context) {
     val crossfade: StateFlow<Int> = fade.flow.asStateFlow()
     /** When an album or playlist ends, keep going with similar songs. */
     val autoplay: StateFlow<Boolean> = autoplayPref.flow.asStateFlow()
+    /** Downloads also run on mobile data (or any metered network). Off: they wait for Wi-Fi. */
+    val downloadCellular: StateFlow<Boolean> = downloadCellularPref.flow.asStateFlow()
     val accent: StateFlow<String> = accentPref.flow.asStateFlow()
     val backdrop: StateFlow<Backdrop> = backdropPref.flow.asStateFlow()
     /** Player, album pages and mini player take their color from the cover. */
@@ -94,6 +97,7 @@ class Settings(context: Context) {
     fun setSyncQueue(on: Boolean) = sync.set(on)
     fun setCrossfade(seconds: Int) = fade.set(seconds)
     fun setAutoplay(on: Boolean) = autoplayPref.set(on)
+    fun setDownloadCellular(on: Boolean) = downloadCellularPref.set(on)
     fun setAccent(hex: String) = accentPref.set(hex)
     fun setBackdrop(b: Backdrop) = backdropPref.set(b)
     fun setCoverTint(on: Boolean) = tint.set(on)

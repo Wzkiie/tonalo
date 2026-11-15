@@ -178,6 +178,8 @@
     <string name="off">Off</string>
     <string name="seconds">%1$d s</string>
     <string name="autoplay">Autoplay</string>
+    <string name="download_cellular">Download over mobile data</string>
+    <string name="download_cellular_info">Downloads keep going in the background. Without mobile data, they wait for Wi-Fi.</string>
     <string name="autoplay_info">When an album or playlist ends, similar songs keep playing.</string>
     <string name="appearance">Appearance</string>
     <string name="accent_color">Accent color</string>

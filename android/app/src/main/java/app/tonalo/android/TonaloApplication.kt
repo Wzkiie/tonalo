@@ -298,11 +298,11 @@ class TonaloApplication : Application(), SingletonImageLoader.Factory, Audiobook
         return cm.getNetworkCapabilities(cm.activeNetwork)
     }
 
+    /** Mobile data or any other metered network. */
+    fun isMetered(): Boolean = capabilities()?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) != true
+
     /** Mobile data (or any metered network) gets the data-saving quality. */
-    fun streamQuality(): AudioQuality {
-        val metered = capabilities()?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) != true
-        return if (metered) settings.mobileQuality.value else settings.wifiQuality.value
-    }
+    fun streamQuality(): AudioQuality = if (isMetered()) settings.mobileQuality.value else settings.wifiQuality.value
 
     private fun watchNetwork() {
         val cm = getSystemService(ConnectivityManager::class.java) ?: return

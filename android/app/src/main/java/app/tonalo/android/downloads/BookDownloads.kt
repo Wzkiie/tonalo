@@ -402,6 +402,7 @@ object BookDownloads {
             withContext(Dispatchers.IO) { saveCover(app, account, item) }
             for (file in recs[key]?.files.orEmpty().sortedBy { it.index }) {
                 if (recs[key]?.files?.firstOrNull { it.index == file.index }?.done != false) continue
+                awaitNetworkAllowed(app)
                 val size = downloadFile(app, account, key, item, file)
                 val rec = recs[key] ?: return
                 recs[key] = rec.copy(files = rec.files.map { if (it.index == file.index) it.copy(done = true, size = size) else it })
@@ -441,6 +442,14 @@ object BookDownloads {
                 if (++attempt >= 3) throw e
                 delay(2_000L * attempt)
             }
+        }
+    }
+
+    /** On mobile data the next file waits for Wi-Fi, unless downloads over mobile data are allowed (a running file is finished). */
+    private suspend fun awaitNetworkAllowed(app: TonaloApplication) {
+        while (app.isMetered() && !app.settings.downloadCellular.value) {
+            currentCoroutineContext().ensureActive()
+            delay(3_000)
         }
     }
 

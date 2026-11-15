@@ -9,10 +9,12 @@ import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.offline.Download
+import kotlinx.coroutines.launch
 import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadNotificationHelper
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
+import androidx.media3.exoplayer.scheduler.Requirements
 import androidx.media3.exoplayer.scheduler.Scheduler
 import android.net.Uri
 import app.tonalo.android.R
@@ -58,6 +60,10 @@ object Downloads {
             OkHttpDataSource.Factory(app.mediaHttp), Executors.newFixedThreadPool(2),
         )
         m.maxParallelDownloads = 2
+        // Without the switch the downloads wait for an unmetered network (Wi-Fi); the notification then says so by itself
+        fun requirements(cellular: Boolean) = Requirements(if (cellular) Requirements.NETWORK else Requirements.NETWORK_UNMETERED)
+        m.requirements = requirements(app.settings.downloadCellular.value)
+        app.scope.launch { app.settings.downloadCellular.collect { m.requirements = requirements(it) } }
         m.addListener(object : DownloadManager.Listener {
             override fun onDownloadChanged(manager: DownloadManager, download: Download, finalException: Exception?) = update(download)
             override fun onDownloadRemoved(manager: DownloadManager, download: Download) {

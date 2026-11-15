@@ -14,7 +14,7 @@ A native Android app for Navidrome and other Subsonic servers. It is written in 
 - **Pages:** album, artist (top songs, biography, artist radio) and playlist (reorder songs, remove songs, delete the playlist).
 - **Endless radio:** Your radio, *More like …*, genre radios, *Radio from this song*. It tops itself up and learns from skips and hearts, like on the iPhone.
 - **Radio stations** from the server play live and show the current title.
-- **Offline downloads** of songs, albums and playlists, in a quality of their own. Downloaded songs play without a connection.
+- **Offline downloads** of songs, albums and playlists, in a quality of their own. Downloaded songs play without a connection. On mobile data they wait for Wi-Fi, unless you allow *Download over mobile data* under Audio quality (it applies to audiobooks too).
 - **Player:** seek bar, shuffle, repeat, lyrics page (synced, tap a line to jump), queue page (reorder, remove, clear) and a sleep timer (minutes or end of song).
 - **Background playback:** notification, lock screen, headphone and Bluetooth buttons, *resume* after the app was closed, with heart and shuffle buttons in the system's media controls.
 - **Android Auto:** four tabs (Home with mixes and albums, Playlists, Library with artists, albums, favorites and downloads, Radio with endless radios and stations), search, voice requests ("Hey Google, play Silver Weather on Tonalo"), heart, shuffle and radio buttons, and covers. Covers reach the car through the app's own content provider (`playback/Covers.kt`), so the server login never leaves the app.

@@ -169,12 +169,18 @@ fun QualitySettingsScreen() {
     val wifi by s.wifiQuality.collectAsState()
     val mobile by s.mobileQuality.collectAsState()
     val download by s.downloadQuality.collectAsState()
+    val downloadCellular by s.downloadCellular.collectAsState()
     GroupedPage(stringResource(R.string.audio_quality)) {
         item {
             Group(footer = stringResource(R.string.quality_footer)) {
                 PickerRow(stringResource(R.string.wifi), wifi, AudioQuality.entries, label = { qualityLabel(it) }) { s.setWifiQuality(it) }
                 PickerRow(stringResource(R.string.mobile_data), mobile, AudioQuality.entries, label = { qualityLabel(it) }) { s.setMobileQuality(it) }
                 PickerRow(stringResource(R.string.downloads), download, AudioQuality.entries, label = { qualityLabel(it) }) { s.setDownloadQuality(it) }
+            }
+        }
+        item {
+            Group(footer = stringResource(R.string.download_cellular_info)) {
+                ToggleRow(stringResource(R.string.download_cellular), downloadCellular) { s.setDownloadCellular(it) }
             }
         }
     }
