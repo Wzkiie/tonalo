@@ -466,12 +466,51 @@ fun PlaylistPicker(songs: List<Song>, onDone: () -> Unit) {
     var name by remember { mutableStateOf("") }
     val loader = rememberLoad("pick-playlists") { c -> c.playlists().filter { it.readonly != true && (it.owner == null || it.owner == account?.username) } }
 
+    /** Some of the songs are already in the chosen playlist: [fresh] are the ones that are not. */
+    class Duplicates(val playlist: Playlist, val fresh: List<Song>)
+    var duplicates by remember { mutableStateOf<Duplicates?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
     fun finish(message: String) { onDone(); context.tonalo.scope.launch { snackbar.showSnackbar(message) } }
-    fun add(p: Playlist) = scope.launch {
+    fun commit(p: Playlist, which: List<Song>) = scope.launch {
         try {
-            context.tonalo.client()?.updatePlaylist(p.id, add = songs.map { it.id }); Playlists.changed()
+            context.tonalo.client()?.updatePlaylist(p.id, add = which.map { it.id }); Playlists.changed()
             finish(context.getString(R.string.added_to_playlist, p.name))
         } catch (e: CancellationException) { throw e } catch (e: Exception) { finish(errorText(context, e)) }
+    }
+    /** Looks for songs that are already in the playlist first, like the iPhone app and the big streaming apps. */
+    fun add(p: Playlist) = scope.launch {
+        if (busy) return@launch
+        busy = true
+        try {
+            val existing = try { context.tonalo.client()?.playlist(p.id)?.entry.orEmpty().map { it.id }.toSet() } catch (e: CancellationException) { throw e } catch (e: Exception) { emptySet() }
+            val fresh = songs.filter { it.id !in existing }
+            if (fresh.size == songs.size) commit(p, songs) else duplicates = Duplicates(p, fresh)
+        } finally { busy = false }
+    }
+
+    duplicates?.let { d ->
+        AlertDialog(
+            onDismissRequest = { duplicates = null },
+            title = { Text(stringResource(R.string.already_in_playlist, d.playlist.name)) },
+            text = {
+                val already = songs.size - d.fresh.size
+                Text(when {
+                    songs.size == 1 -> stringResource(R.string.duplicate_one)
+                    already == 1 -> stringResource(R.string.duplicate_one_of)
+                    else -> stringResource(R.string.duplicate_some, already)
+                })
+            },
+            confirmButton = {
+                Row {
+                    if (d.fresh.isNotEmpty() && d.fresh.size < songs.size) {
+                        TextButton(onClick = { duplicates = null; commit(d.playlist, d.fresh) }) { Text(stringResource(R.string.add_new_only)) }
+                    }
+                    TextButton(onClick = { duplicates = null; commit(d.playlist, songs) }) { Text(stringResource(R.string.add_anyway)) }
+                }
+            },
+            dismissButton = { TextButton(onClick = { duplicates = null }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 
     AlertDialog(

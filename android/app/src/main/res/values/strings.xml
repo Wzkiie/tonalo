@@ -81,6 +81,12 @@
     <string name="create">Create</string>
     <string name="cancel">Cancel</string>
     <string name="added_to_playlist">Added to “%1$s”</string>
+    <string name="already_in_playlist">Already in “%1$s”</string>
+    <string name="duplicate_one">This song is already in the playlist.</string>
+    <string name="duplicate_one_of">One of these songs is already in the playlist.</string>
+    <string name="duplicate_some">%1$d of these songs are already in the playlist.</string>
+    <string name="add_anyway">Add anyway</string>
+    <string name="add_new_only">Add new ones only</string>
     <string name="added_to_queue">Added to the queue</string>
     <string name="instant_mix">Radio from this song</string>
     <string name="delete_playlist">Delete playlist</string>

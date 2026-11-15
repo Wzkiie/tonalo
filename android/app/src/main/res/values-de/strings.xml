@@ -74,6 +74,12 @@
     <string name="create">Erstellen</string>
     <string name="cancel">Abbrechen</string>
     <string name="added_to_playlist">Zu „%1$s“ hinzugefügt</string>
+    <string name="already_in_playlist">Schon in „%1$s“</string>
+    <string name="duplicate_one">Dieser Song ist schon in der Playlist.</string>
+    <string name="duplicate_one_of">Einer dieser Songs ist schon in der Playlist.</string>
+    <string name="duplicate_some">%1$d dieser Songs sind schon in der Playlist.</string>
+    <string name="add_anyway">Trotzdem hinzufügen</string>
+    <string name="add_new_only">Nur neue hinzufügen</string>
     <string name="added_to_queue">Zur Warteschlange hinzugefügt</string>
     <string name="instant_mix">Radio zu diesem Song</string>
     <string name="delete_playlist">Playlist löschen</string>
