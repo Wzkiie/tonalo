@@ -200,6 +200,7 @@ class TonaloApplication : Application(), SingletonImageLoader.Factory, Audiobook
     private fun purgeData(id: String) {
         routePrefs.edit().remove(id).apply()
         cache.deleteAccount(id)
+        app.tonalo.android.data.LibrarySync.forget(this, id)
         queues.delete(id)
         scrobbles.delete(id)
         history.delete(id)

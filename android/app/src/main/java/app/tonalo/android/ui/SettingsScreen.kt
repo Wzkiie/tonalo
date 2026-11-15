@@ -31,6 +31,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +52,7 @@ import app.tonalo.android.data.AudioQuality
 import app.tonalo.android.data.Backdrop
 import app.tonalo.android.data.CardShape
 import app.tonalo.android.data.CoverSize
+import app.tonalo.android.data.LibrarySync
 import app.tonalo.android.data.Settings
 import app.tonalo.android.data.VolumeLeveling
 import app.tonalo.android.downloads.BookDownloads
@@ -246,10 +248,18 @@ fun OfflineSettingsScreen() {
     val downloads by Downloads.all.collectAsState()
     val downloaded = Downloads.forAccount(downloads, current?.id).filter { it.done }
     var removeAll by remember { mutableStateOf(false) }
+    LaunchedEffect(current?.id) { LibrarySync.show(context, current?.id) }
+    val syncRunning by LibrarySync.running.collectAsState()
+    val syncSummary by LibrarySync.summary.collectAsState()
     GroupedPage(stringResource(R.string.offline)) {
         item {
             Group(footer = stringResource(R.string.offline_footer)) {
                 NavRow(stringResource(R.string.downloaded_music), pluralString(R.plurals.song_count, downloaded.size)) { nav.navigate("downloads") }
+                NavRow(stringResource(R.string.sync_title), when {
+                    syncRunning -> stringResource(R.string.sync_running)
+                    syncSummary != null -> android.text.format.DateUtils.getRelativeTimeSpanString(syncSummary!!.date, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS).toString()
+                    else -> stringResource(R.string.off)
+                }) { nav.navigate("settings/sync") }
             }
         }
         if (downloaded.isNotEmpty()) item {
@@ -267,6 +277,70 @@ fun OfflineSettingsScreen() {
         },
         dismissButton = { androidx.compose.material3.TextButton(onClick = { removeAll = false }) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+@Composable
+fun LibrarySyncScreen() {
+    val context = LocalContext.current
+    val app = context.tonalo
+    val current by app.current.collectAsState()
+    val online by app.online.collectAsState()
+    LaunchedEffect(current?.id) { LibrarySync.show(context, current?.id) }
+    val running by LibrarySync.running.collectAsState()
+    val done by LibrarySync.done.collectAsState()
+    val total by LibrarySync.total.collectAsState()
+    val phase by LibrarySync.phase.collectAsState()
+    val error by LibrarySync.error.collectAsState()
+    val summary by LibrarySync.summary.collectAsState()
+    val stale = LibrarySync.isStale(summary)
+    GroupedPage(stringResource(R.string.sync_title)) {
+        item {
+            Group(footer = stringResource(if (stale) R.string.sync_footer_stale else R.string.sync_footer)) {
+                ValueRow(stringResource(R.string.sync_status), stringResource(when {
+                    running -> R.string.sync_running
+                    summary == null -> R.string.sync_never
+                    stale -> R.string.sync_stale
+                    else -> R.string.sync_up_to_date
+                }))
+                summary?.let { s ->
+                    ValueRow(stringResource(R.string.sync_last), java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(s.date)))
+                }
+                if (running) {
+                    GroupBox {
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = { if (total > 0) (done.toFloat() / total).coerceIn(0f, 1f) else 0f },
+                            modifier = Modifier.fillMaxWidth(), color = Palette.accent, trackColor = Palette.elevated,
+                        )
+                        Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(when (val p = phase) {
+                                LibrarySync.Phase.Overview -> stringResource(R.string.sync_phase_overview)
+                                is LibrarySync.Phase.Albums -> stringResource(R.string.sync_phase_albums, p.count)
+                                LibrarySync.Phase.Details -> stringResource(R.string.sync_phase_details)
+                            }, style = MaterialTheme.typography.bodySmall, color = Palette.secondaryText)
+                            if (total > 0) Text(stringResource(R.string.sync_progress, done, total), style = MaterialTheme.typography.bodySmall, color = Palette.secondaryText)
+                        }
+                    }
+                    ActionRow(stringResource(R.string.sync_stop), destructive = true) { LibrarySync.cancel() }
+                } else {
+                    ActionRow(stringResource(if (summary == null) R.string.sync_now else R.string.sync_again), enabled = online && current != null) {
+                        LibrarySync.start(app)
+                    }
+                }
+                error?.let { Text(errorText(context, it), color = Color(0xFFFFA726), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(16.dp)) }
+            }
+        }
+        summary?.let { s ->
+            item {
+                Group(stringResource(R.string.sync_on_phone)) {
+                    ValueRow(stringResource(R.string.sync_n_albums), "${s.albums}")
+                    ValueRow(stringResource(R.string.sync_n_artists), "${s.artists}")
+                    ValueRow(stringResource(R.string.sync_n_songs), "${s.songs}")
+                    ValueRow(stringResource(R.string.sync_n_playlists), "${s.playlists}")
+                    ValueRow(stringResource(R.string.sync_n_genres), "${s.genres}")
+                }
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

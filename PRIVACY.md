@@ -19,7 +19,7 @@ Tonalo doesn't collect anything. There are no accounts with us, no analytics, no
 
 - **DJ (optional):** the provider and model you chose and your key for it. On the iPhone the key is in the iOS Keychain. If you share the DJ with your paired devices, they store the same setup: Windows and Mac encrypted with the system's data protection, the TV in the app's storage (webOS has no secure storage).
 
-- **Android:** login details, pairings, Jukebox guests and the DJ key are stored encrypted with a key held in the Android Keystore; the password itself is never stored. Downloads, cover art and the library cache live in the app's own storage. Android Auto and the system's media controls get cover art through the app itself, so the server's login never leaves the app. Uninstalling the app or removing the account deletes all of it.
+- **Android:** login details, pairings, Jukebox guests and the DJ key are stored encrypted with a key held in the Android Keystore; the password itself is never stored. Downloads, cover art and the library cache (your whole library, if you start a library sync) live in the app's own storage. Android Auto and the system's media controls get cover art through the app itself, so the server's login never leaves the app. Uninstalling the app or removing the account deletes all of it.
 
 None of this is sent to us – we have no server that could receive it.
 

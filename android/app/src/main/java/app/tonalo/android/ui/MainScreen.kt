@@ -236,6 +236,7 @@ fun MainScreen(player: PlayerConnection) {
                 composable("settings/playback") { PlaybackSettingsScreen() }
                 composable("settings/eq") { EqScreen() }
                 composable("settings/offline") { OfflineSettingsScreen() }
+                composable("settings/sync") { LibrarySyncScreen() }
                 composable("settings/appearance") { AppearanceScreen() }
                 composable("settings/news") { WhatsNewScreen() }
                 composable("settings/bookplayback") { BookPlaybackSettingsScreen() }

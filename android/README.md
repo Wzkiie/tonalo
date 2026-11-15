@@ -40,7 +40,7 @@ A native Android app for Navidrome and other Subsonic servers. It is written in 
   - The player has chapters, speed, skip intervals, a sleep timer (also at the end of a chapter) and syncs your progress to the server, also after being offline.
   - Downloads for offline listening. A book plays in the same player service as the music; the music queue is put aside and comes back afterwards.
   - Controlling a TV with books is not part of the Android app yet.
-- Saved library answers, so pages show at once and work offline.
+- Saved library answers, so pages show at once and work offline. *Settings → Offline → Library offline* loads the whole library (every album, artist and playlist) onto the phone in one go; repeat it about once a month. Keep the app open while it runs.
 - English and German.
 
 ## Security notes

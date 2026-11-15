@@ -180,7 +180,7 @@ class SubsonicClient(val account: Account, private val cache: LibraryCache? = nu
         Request.Builder().url(url).apply { headers.forEach { (k, v) -> header(k, v) } }
 
     /** `retry = false` for what changes something and isn't safe to do twice (a scrobble, deleting). */
-    suspend fun call(method: String, vararg params: Pair<String, String>, retry: Boolean = true): Payload {
+    suspend fun call(method: String, vararg params: Pair<String, String>, retry: Boolean = true, fallback: Boolean = true): Payload {
         val u = url(method, params.toList()) ?: throw SubsonicException.BadUrl()
         val key = LibraryCache.key(method, params.toList())
         return try {
@@ -189,12 +189,15 @@ class SubsonicClient(val account: Account, private val cache: LibraryCache? = nu
             payload
         } catch (e: Exception) {
             // No (usable) connection: the last known answer is better than an error.
-            if (key != null && cache != null && e !is kotlinx.coroutines.CancellationException && !e.isServerAnswer) {
+            if (fallback && key != null && cache != null && e !is kotlinx.coroutines.CancellationException && !e.isServerAnswer) {
                 withContext(Dispatchers.IO) { cache.load(account.id, key) }?.let { return it }
             }
             throw e
         }
     }
+
+    /** Asks the server and saves the answer; unlike [call] it never falls back to an older saved one (the library sync needs the truth). */
+    suspend fun refresh(method: String, vararg params: Pair<String, String>): Payload = call(method, *params, fallback = false)
 
     /** The saved answer of a library request, without asking the server – for showing a page at once. */
     fun cached(method: String, vararg params: Pair<String, String>): Payload? =
