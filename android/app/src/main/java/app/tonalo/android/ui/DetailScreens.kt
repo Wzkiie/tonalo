@@ -67,6 +67,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -108,6 +109,9 @@ fun DetailPage(
     actions: @Composable () -> Unit,
     refreshing: Boolean = false,
     onRefresh: (() -> Unit)? = null,
+    /** Play button shown in the bar that stays at the top once the page has scrolled (like the big streaming apps). */
+    stickyPlay: (() -> Unit)? = null,
+    stickyPlaying: Boolean = false,
     content: LazyListScope.() -> Unit,
 ) {
     val tint = rememberCoverColor(coverArt)
@@ -134,10 +138,17 @@ fun DetailPage(
         }
         }
         if (onRefresh != null) Refreshable(refreshing, onRefresh) { list() } else list()
-        if (scrolled) Box(
-            Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars)
-                .background(Brush.verticalGradient(listOf(Palette.canvas.copy(alpha = 0.98f), Palette.canvas.copy(alpha = 0.9f)))),
-        )
+        // Once the big cover has scrolled away: a bar with the title and a small play button, on the cover's colour
+        androidx.compose.animation.AnimatedVisibility(scrolled, enter = androidx.compose.animation.fadeIn(), exit = androidx.compose.animation.fadeOut()) {
+            Box(
+                Modifier.fillMaxWidth().background((tint ?: Color(0xFF333333)).copy(alpha = 0.55f).compositeOver(Palette.canvas))
+                    .statusBarsPadding().height(58.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(title, Modifier.padding(horizontal = 72.dp), fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (stickyPlay != null) Box(Modifier.align(Alignment.CenterEnd).padding(end = 16.dp)) { PlayCircle(stickyPlaying, size = 40.dp, onClick = stickyPlay) }
+            }
+        }
         RoundBackButton()
     }
 }
@@ -241,6 +252,7 @@ fun AlbumScreen(id: String) {
                     )
                 },
                 refreshing = loader.refreshing, onRefresh = loader.reload,
+                stickyPlay = { if (state.contextId == cid) player.toggle() else player.play(songs, context = a.name, contextId = cid) }, stickyPlaying = playing,
             ) {
                 songs(songs, showCover = false, onPlay = { i -> player.play(songs, i, context = a.name, contextId = cid) })
                 item {
@@ -330,6 +342,7 @@ fun PlaylistScreen(id: String) {
             )
         },
         refreshing = loader.refreshing, onRefresh = loader.reload,
+        stickyPlay = { if (state.contextId == cid) player.toggle() else player.play(songs, context = p.name, contextId = cid) }, stickyPlaying = playing,
     ) {
         if (editing) {
             items(order.size, key = { "e" + order[it].id + "-" + it }) { i ->
@@ -439,6 +452,7 @@ fun FavoritesScreen() {
             )
         },
         refreshing = loader.refreshing, onRefresh = loader.reload,
+        stickyPlay = { if (state.contextId == "favorites") player.toggle() else player.play(list, context = name, contextId = "favorites") }, stickyPlaying = playing,
     ) {
         when (val s = loader.state) {
             is Load.Loading -> item { Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) { androidx.compose.material3.CircularProgressIndicator() } }

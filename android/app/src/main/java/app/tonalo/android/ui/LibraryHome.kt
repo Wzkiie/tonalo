@@ -315,7 +315,7 @@ fun LibraryScreen() {
                         PinMenuBox(item.alwaysPinned, item.id in pins, { togglePin(item) }, Modifier.weight(1f), onClick = { open(item) }, extra = { close -> BookMenu(item, close) }) {
                             Column {
                                 art(item, null)
-                                Text(title(item), Modifier.padding(top = 6.dp), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(title(item), Modifier.padding(top = 6.dp), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (state.hasMedia && state.contextId == item.id) Palette.accent else Color.Unspecified)
                                 SubtitleLine(isPinned(item), subtitle(item), downloadedCollection(item, downloaded.map { it.song.id }.toSet(), starred))
                             }
                         }
@@ -331,7 +331,8 @@ fun LibraryScreen() {
                         art(item, 64.dp)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(title(item), fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            // What is playing from here is in the accent colour
+                            Text(title(item), fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (state.hasMedia && state.contextId == item.id) Palette.accent else Color.Unspecified)
                             SubtitleLine(isPinned(item), subtitle(item), downloadedCollection(item, downloaded.map { it.song.id }.toSet(), starred))
                         }
                     }
