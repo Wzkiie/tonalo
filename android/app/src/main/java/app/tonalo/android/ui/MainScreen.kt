@@ -4,7 +4,14 @@ import android.net.Uri
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.navigation.NavGraphBuilder
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -130,13 +137,46 @@ fun playlistRoute(id: String) = "playlist/" + Uri.encode(id)
 fun NavController.open(route: String) = navigate(route) { launchSingleTop = true }
 
 /** Pages that cover the whole screen, without tabs and mini player. */
-private const val PUSH_MS = 350
+private const val PUSH_MS = 400
+/** The curve of the iPhone's page push: fast start, long soft landing. */
+private val PushEasing = CubicBezierEasing(0.2f, 0.9f, 0.1f, 1f)
+private const val UNDER_DIM = 0.12f
 private val tabRoutes = setOf("home", "search", "library")
 private fun NavBackStackEntry.isTabPage() = destination.route in tabRoutes
 /** The pages that rise from the bottom (the big players); the page under them stays put. */
 private fun NavBackStackEntry.isRising() = destination.route in setOf("player", "lyrics", "queue", "bookplayer")
 
 private val fullScreenRoutes = setOf("player", "lyrics", "queue", "account/{id}", "account/new", "bookplayer")
+
+/**
+ * A destination with an opaque page behind it, so no page ever shows through another during a slide. The page that gets
+ * covered by a push is dimmed a little while it moves away, like the iPhone's.
+ */
+private fun NavGraphBuilder.page(
+    nav: NavController,
+    route: String,
+    arguments: List<androidx.navigation.NamedNavArgument> = emptyList(),
+    enterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition?)? = null,
+    exitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition?)? = null,
+    popEnterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition?)? = null,
+    popExitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition?)? = null,
+    content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit,
+) = composable(route, arguments, emptyList(), enterTransition, exitTransition, popEnterTransition, popExitTransition) { me ->
+    val scope = this
+    val top by nav.currentBackStackEntryAsState()
+    val stack by nav.currentBackStack.collectAsState()
+    // Dim only a page that stays in the stack under a normal page (not a tab switch, not under a rising player, not a page that is leaving)
+    val covered = top.let { t ->
+        t != null && t.id != me.id && !t.isRising() && !(me.isTabPage() && t.isTabPage()) && stack.any { it.id == me.id }
+    }
+    val dim by scope.transition.animateFloat(
+        transitionSpec = { tween(PUSH_MS, easing = PushEasing) }, label = "underDim",
+    ) { state -> if (state == EnterExitState.PostExit && covered) UNDER_DIM else 0f }
+    Box(Modifier.fillMaxSize().background(Palette.canvas)) {
+        content(scope, me)
+        if (dim > 0f) Box(Modifier.fillMaxSize().graphicsLayer { alpha = dim }.background(Color.Black))
+    }
+}
 
 /** The iPhone's tab bar: three icons with small labels, white when chosen, no highlight behind them. */
 @Composable
@@ -148,8 +188,8 @@ private fun TabBar(chosen: String?, onTap: (Int) -> Unit) {
                 Modifier.weight(1f).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) { onTap(i) },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(if (on) tab.selectedIcon else tab.icon, null, Modifier.size(24.dp), tint = if (on) Color.White else Color.White.copy(alpha = 0.70f))
-                Spacer(Modifier.height(4.dp))
+                Icon(if (on) tab.selectedIcon else tab.icon, null, Modifier.size(35.dp), tint = if (on) Color.White else Color.White.copy(alpha = 0.70f))
+                Spacer(Modifier.height(2.dp))
                 Text(stringResource(tab.label), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = if (on) Color.White else Color.White.copy(alpha = 0.70f))
             }
         }
@@ -215,8 +255,9 @@ fun MainScreen(player: PlayerConnection) {
         ModalNavigationDrawer(
             drawerContent = {
                 ProfileMenu(close = { scope.launch { drawer.close() } }) { route ->
-                    scope.launch { drawer.close() }
+                    // Like the iPhone: the page slides in while the menu slides away, so the page below never shows on its own
                     nav.navigate(route) { launchSingleTop = true }
+                    scope.launch { drawer.close() }
                 }
             },
             drawerState = drawer,
@@ -231,77 +272,79 @@ fun MainScreen(player: PlayerConnection) {
                 // a third of the way left, the big players rise from the bottom and leave the page below where it is
                 enterTransition = {
                     if (initialState.isTabPage() && targetState.isTabPage()) EnterTransition.None
-                    else slideInHorizontally(tween(PUSH_MS)) { it }
+                    else slideInHorizontally(tween(PUSH_MS, easing = PushEasing)) { it }
                 },
                 exitTransition = {
                     if (initialState.isTabPage() && targetState.isTabPage() || targetState.isRising()) ExitTransition.None
-                    else slideOutHorizontally(tween(PUSH_MS)) { -it / 3 }
+                    else slideOutHorizontally(tween(PUSH_MS, easing = PushEasing)) { -it / 3 }
                 },
                 popEnterTransition = {
                     if (initialState.isTabPage() && targetState.isTabPage() || initialState.isRising()) EnterTransition.None
-                    else slideInHorizontally(tween(PUSH_MS)) { -it / 3 }
+                    else slideInHorizontally(tween(PUSH_MS, easing = PushEasing)) { -it / 3 }
                 },
                 popExitTransition = {
                     if (initialState.isTabPage() && targetState.isTabPage()) ExitTransition.None
-                    else slideOutHorizontally(tween(PUSH_MS)) { it }
+                    else slideOutHorizontally(tween(PUSH_MS, easing = PushEasing)) { it }
                 },
             ) {
-                composable("home") { CompositionLocalProvider(LocalReselect provides reselect[0]) { HomeScreen() } }
-                composable("search") { CompositionLocalProvider(LocalReselect provides reselect[1]) { SearchScreen() } }
-                composable("library") { CompositionLocalProvider(LocalReselect provides reselect[2]) { LibraryScreen() } }
-                composable("settings") { SettingsScreen() }
-                composable("albums") { AlbumsScreen() }
-                composable("albums/{type}") { AlbumsScreen(it.arguments?.getString("type") ?: "alphabeticalByName") }
-                composable("artists") { ArtistsScreen() }
-                composable("playlists") { PlaylistsScreen() }
-                composable("genres") { GenresScreen() }
-                composable("favorites") { FavoritesScreen() }
-                composable("downloads") { DownloadsScreen() }
-                composable("radio") { RadioScreen() }
-                composable("devices") { DevicesScreen() }
-                composable("dj") { DJScreen() }
-                composable("dj/settings") { DJSettingsScreen() }
-                composable("album/{id}") { AlbumScreen(it.arguments?.getString("id") ?: "") }
-                composable("artist/{id}") { ArtistScreen(it.arguments?.getString("id") ?: "") }
-                composable("playlist/{id}") { PlaylistScreen(it.arguments?.getString("id") ?: "") }
-                composable("genre/{name}", arguments = listOf(navArgument("name") { type = NavType.StringType })) {
+                page(nav, "home") { CompositionLocalProvider(LocalReselect provides reselect[0]) { HomeScreen() } }
+                page(nav, "search") { CompositionLocalProvider(LocalReselect provides reselect[1]) { SearchScreen() } }
+                page(nav, "library") { CompositionLocalProvider(LocalReselect provides reselect[2]) { LibraryScreen() } }
+                page(nav, "settings") { SettingsScreen() }
+                page(nav, "albums") { AlbumsScreen() }
+                page(nav, "albums/{type}") { AlbumsScreen(it.arguments?.getString("type") ?: "alphabeticalByName") }
+                page(nav, "artists") { ArtistsScreen() }
+                page(nav, "playlists") { PlaylistsScreen() }
+                page(nav, "genres") { GenresScreen() }
+                page(nav, "favorites") { FavoritesScreen() }
+                page(nav, "downloads") { DownloadsScreen() }
+                page(nav, "radio") { RadioScreen() }
+                page(nav, "devices") { DevicesScreen() }
+                page(nav, "dj") { DJScreen() }
+                page(nav, "dj/settings") { DJSettingsScreen() }
+                page(nav, "album/{id}") { AlbumScreen(it.arguments?.getString("id") ?: "") }
+                page(nav, "artist/{id}") { ArtistScreen(it.arguments?.getString("id") ?: "") }
+                page(nav, "playlist/{id}") { PlaylistScreen(it.arguments?.getString("id") ?: "") }
+                page(nav, "genre/{name}", arguments = listOf(navArgument("name") { type = NavType.StringType })) {
                     GenreScreen(it.arguments?.getString("name")?.takeUnless { n -> n == "_" } ?: "")
                 }
-                composable("player", enterTransition = { slideInVertically(spring(1f, 310f)) { it } }, exitTransition = { ExitTransition.None },
-                    popEnterTransition = { EnterTransition.None }, popExitTransition = { slideOutVertically(tween(350)) { it } }) { PlayerScreen(onClose = { nav.popBackStack() }) }
-                composable("lyrics", enterTransition = { slideInVertically { it } }, popExitTransition = { slideOutVertically { it } }) {
+                page(nav, "player", enterTransition = { slideInVertically(spring(1f, 300f)) { it } }, exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None }, popExitTransition = { slideOutVertically(tween(PUSH_MS, easing = PushEasing)) { it } }) { PlayerScreen(onClose = { nav.popBackStack() }) }
+                page(nav, "lyrics", enterTransition = { slideInVertically(spring(1f, 300f)) { it } }, exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None }, popExitTransition = { slideOutVertically(tween(PUSH_MS, easing = PushEasing)) { it } }) {
                     LyricsScreen(onClose = { nav.popBackStack() })
                 }
-                composable("queue", enterTransition = { slideInVertically { it } }, popExitTransition = { slideOutVertically { it } }) {
+                page(nav, "queue", enterTransition = { slideInVertically(spring(1f, 300f)) { it } }, exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None }, popExitTransition = { slideOutVertically(tween(PUSH_MS, easing = PushEasing)) { it } }) {
                     QueueScreen(onClose = { nav.popBackStack() })
                 }
-                composable("account/new") { LoginScreen(onClose = { nav.popBackStack() }) }
-                composable("account/{id}") { AccountEditScreen(it.arguments?.getString("id") ?: "") }
-                composable("settings/quality") { QualitySettingsScreen() }
-                composable("settings/playback") { PlaybackSettingsScreen() }
-                composable("settings/eq") { EqScreen() }
-                composable("settings/offline") { OfflineSettingsScreen() }
-                composable("settings/sync") { LibrarySyncScreen() }
-                composable("settings/appearance") { AppearanceScreen() }
-                composable("settings/news") { WhatsNewScreen() }
-                composable("settings/bookplayback") { BookPlaybackSettingsScreen() }
-                composable("settings/audiobookshelf") { AudiobookshelfSettingsScreen() }
+                page(nav, "account/new") { LoginScreen(onClose = { nav.popBackStack() }) }
+                page(nav, "account/{id}") { AccountEditScreen(it.arguments?.getString("id") ?: "") }
+                page(nav, "settings/quality") { QualitySettingsScreen() }
+                page(nav, "settings/playback") { PlaybackSettingsScreen() }
+                page(nav, "settings/eq") { EqScreen() }
+                page(nav, "settings/offline") { OfflineSettingsScreen() }
+                page(nav, "settings/sync") { LibrarySyncScreen() }
+                page(nav, "settings/appearance") { AppearanceScreen() }
+                page(nav, "settings/news") { WhatsNewScreen() }
+                page(nav, "settings/bookplayback") { BookPlaybackSettingsScreen() }
+                page(nav, "settings/audiobookshelf") { AudiobookshelfSettingsScreen() }
                 // Audiobooks and podcasts
-                composable("books") { BooksBrowseScreen() }
-                composable(
+                page(nav, "books") { BooksBrowseScreen() }
+                page(nav, 
                     "book/{id}?episode={episode}",
                     arguments = listOf(
                         navArgument("id") { type = NavType.StringType },
                         navArgument("episode") { type = NavType.StringType; nullable = true; defaultValue = null },
                     ),
                 ) { AudiobookScreen(it.arguments?.getString("id") ?: "", it.arguments?.getString("episode")) }
-                composable("bookgroup/{kind}/{name}", arguments = listOf(navArgument("kind") { type = NavType.StringType }, navArgument("name") { type = NavType.StringType })) {
+                page(nav, "bookgroup/{kind}/{name}", arguments = listOf(navArgument("kind") { type = NavType.StringType }, navArgument("name") { type = NavType.StringType })) {
                     BookGroupScreen(it.arguments?.getString("kind") ?: "", it.arguments?.getString("name")?.takeUnless { n -> n == "_" } ?: "")
                 }
-                composable("bookauthor/{id}") { BookAuthorScreen(it.arguments?.getString("id") ?: "") }
-                composable("bookplayer", enterTransition = { slideInVertically(spring(1f, 310f)) { it } }, exitTransition = { ExitTransition.None },
-                    popEnterTransition = { EnterTransition.None }, popExitTransition = { slideOutVertically(tween(350)) { it } }) { BookPlayerScreen(onClose = { nav.popBackStack() }) }
-                composable("jukebox") { DevicesScreen(jukebox = true) }
+                page(nav, "bookauthor/{id}") { BookAuthorScreen(it.arguments?.getString("id") ?: "") }
+                page(nav, "bookplayer", enterTransition = { slideInVertically(spring(1f, 300f)) { it } }, exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None }, popExitTransition = { slideOutVertically(tween(PUSH_MS, easing = PushEasing)) { it } }) { BookPlayerScreen(onClose = { nav.popBackStack() }) }
+                page(nav, "jukebox") { DevicesScreen(jukebox = true) }
             }
             }
             // Solid behind the status bar on the tab pages, so content scrolling up doesn't run into the clock (like the iPhone)
@@ -382,7 +425,7 @@ fun MiniPlayer(open: () -> Unit) {
     var swipe by remember { mutableFloatStateOf(0f) }
     val openNow by rememberUpdatedState(open)
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val shape = RoundedCornerShape(Palette.corner(8.dp))
+    val shape = RoundedCornerShape(Palette.corner(12.dp))
     val noRipple = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         Modifier.padding(horizontal = 10.dp, vertical = 4.dp).clip(shape)
@@ -412,39 +455,39 @@ fun MiniPlayer(open: () -> Unit) {
                 )
             },
     ) {
-        Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 6.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (station != null) Box(Modifier.width(40.dp).height(40.dp).clip(RoundedCornerShape(Palette.corner(4.dp))).background(Palette.hue(station.name)), contentAlignment = Alignment.Center) {
+        Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (station != null) Box(Modifier.width(44.dp).height(44.dp).clip(RoundedCornerShape(Palette.corner(6.dp))).background(Palette.hue(station.name)), contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.Radio, null)
-            } else Cover(song?.coverArt, 40.dp, corner = Palette.corner(4.dp), pixels = 120)
-            Spacer(Modifier.width(10.dp))
+            } else Cover(song?.coverArt, 44.dp, corner = Palette.corner(6.dp), pixels = 132)
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f).offset { IntOffset(swipe.roundToInt(), 0) }) {
                 Text(song?.title ?: station?.name ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.sp, color = Color.White)
+                    fontSize = 15.sp, color = Color.White)
                 Text(state.tvName?.let { stringResource(if (state.tvGuest) R.string.guest_of else R.string.playing_on, it) }
-                    ?: song?.artist ?: state.liveTitle ?: stringResource(R.string.live), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    fontSize = 13.sp, fontWeight = FontWeight.Normal, color = Color.White.copy(alpha = 0.7f))
+                    ?: song?.artist?.replace(" / ", " • ") ?: state.liveTitle ?: stringResource(R.string.live), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    fontSize = 15.sp, fontWeight = FontWeight.Normal, color = Color.White.copy(alpha = 0.7f))
             }
             Spacer(Modifier.width(8.dp))
             if (song != null) {
                 val starred = rememberStarred(song.id, song.starred)
                 Box(
-                    Modifier.size(36.dp).clickable(interactionSource = noRipple, indication = null, role = Role.Button) {
+                    Modifier.size(40.dp).clickable(interactionSource = noRipple, indication = null, role = Role.Button) {
                         toggleFavorite(context, song, player, scope, snackbar)
                     },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart, stringResource(R.string.cd_favorite), Modifier.size(20.dp),
+                    Icon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart, stringResource(R.string.cd_favorite), Modifier.size(24.dp),
                         tint = if (starred) Palette.accent else Color.White)
                 }
             }
             Box(
-                Modifier.size(36.dp).clickable(interactionSource = noRipple, indication = null, role = Role.Button) { player.toggle() },
+                Modifier.size(40.dp).clickable(interactionSource = noRipple, indication = null, role = Role.Button) { player.toggle() },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     if (state.isPlaying) TonaloIcons.Pause else TonaloIcons.Play,
                     stringResource(if (state.isPlaying) R.string.cd_pause else R.string.cd_play),
-                    Modifier.size(22.dp), tint = Color.White,
+                    Modifier.size(26.dp), tint = Color.White,
                 )
             }
         }

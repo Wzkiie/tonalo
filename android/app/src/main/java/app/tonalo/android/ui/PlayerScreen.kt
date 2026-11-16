@@ -56,7 +56,6 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -98,7 +97,14 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
@@ -281,16 +287,18 @@ private val MoonZzzFilled: ImageVector by lazy { moonZzz(true) }
 
 /** The sleep timer button: the moon, and while it runs the countdown (or "End of song") in the accent color. */
 @Composable
-private fun SleepButton(sleep: SleepTimer, onClick: () -> Unit) {
+private fun SleepButton(sleep: SleepTimer) {
+    var open by remember { mutableStateOf(false) }
     val endsAt = sleep.endsAt
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(endsAt) {
         while (endsAt != null) { now = System.currentTimeMillis(); delay(1000) }
     }
     val tint = if (sleep.active) Palette.accent else Color.White.copy(alpha = 0.8f)
-    PlainButton(onClick, Modifier.height(48.dp).padding(horizontal = 8.dp)) {
+    Box {
+    PlainButton({ open = true }, Modifier.height(48.dp).padding(horizontal = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(if (sleep.active) MoonZzzFilled else MoonZzz, stringResource(R.string.sleep_timer), Modifier.size(20.dp), tint = tint)
+            Icon(if (sleep.active) MoonZzzFilled else MoonZzz, stringResource(R.string.sleep_timer), Modifier.size(28.dp), tint = tint)
             if (endsAt != null) {
                 val total = ((endsAt - now + 999) / 1000).coerceAtLeast(0)
                 val mm = ((total % 3600) / 60).toString()
@@ -304,6 +312,14 @@ private fun SleepButton(sleep: SleepTimer, onClick: () -> Unit) {
                 Text(stringResource(R.string.sleep_end_of_song), Modifier.padding(start = 5.dp), color = tint, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             }
         }
+    }
+    IosMenu(open, { open = false }) {
+        listOf(5, 15, 30, 45, 60, 90).forEach { m ->
+            IosMenuItem(stringResource(R.string.sleep_minutes_long, m)) { open = false; Playback.service?.setSleepTimer(m) }
+        }
+        IosMenuItem(stringResource(R.string.sleep_end_of_song)) { open = false; Playback.service?.sleepAtEndOfSong() }
+        if (sleep.active) IosMenuItem(stringResource(R.string.sleep_off), textColor = Palette.accent) { open = false; Playback.service?.cancelSleepTimer() }
+    }
     }
 }
 
@@ -320,6 +336,31 @@ private fun contextLabelRes(contextId: String?, context: String?, radio: Boolean
     else -> R.string.pl_from_album
 }
 
+/** A popup menu in the iPhone's style: rounded, dark and slightly see-through, flat (no Material elevation look). */
+@Composable
+private fun IosMenu(expanded: Boolean, onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    DropdownMenu(
+        expanded = expanded, onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        containerColor = Color(0xFF2C2C2E).copy(alpha = 0.96f),
+        tonalElevation = 0.dp, shadowElevation = 0.dp,
+        modifier = Modifier.widthIn(min = 230.dp),
+    ) { content() }
+}
+
+/** One row of such a menu: 17 sp text, an optional symbol at the end. */
+@Composable
+private fun IosMenuItem(text: String, icon: ImageVector? = null, iconTint: Color = Color.White, textColor: Color = Color.White, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(text, fontSize = 17.sp, color = textColor, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        trailingIcon = if (icon == null) null else { { Icon(icon, null, Modifier.size(20.dp), tint = iconTint) } },
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun IosMenuItem(text: Int, icon: ImageVector, onClick: () -> Unit) = IosMenuItem(stringResource(text), icon, onClick = onClick)
+
 /** The "..." menu of the player: 20 dp symbol in a 40 dp box, no press highlight. */
 @Composable
 private fun PlayerMoreMenu(items: @Composable (close: () -> Unit) -> Unit) {
@@ -328,7 +369,7 @@ private fun PlayerMoreMenu(items: @Composable (close: () -> Unit) -> Unit) {
         PlainButton(onClick = { open = true }, Modifier.size(40.dp)) {
             Icon(TonaloGlyphs.MoreHorizontal, stringResource(R.string.cd_more), Modifier.size(20.dp), tint = Color.White)
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) { items { open = false } }
+        IosMenu(open, { open = false }) { items { open = false } }
     }
 }
 
@@ -413,7 +454,7 @@ private fun PlayButton(size: androidx.compose.ui.unit.Dp = 66.dp) {
             if (state.isPlaying) TonaloIcons.Pause else TonaloIcons.Play,
             stringResource(if (state.isPlaying) R.string.cd_pause else R.string.cd_play),
             // The triangle looks centered when nudged to the right, like on the iPhone
-            Modifier.size(size * 0.4f).offset(x = if (state.isPlaying) 0.dp else size * 0.03f), tint = Color.Black,
+            Modifier.size(size * 0.56f).offset(x = if (state.isPlaying) 0.dp else size * 0.03f), tint = Color.Black,
         )
     }
 }
@@ -427,7 +468,7 @@ fun PlayerScreen(onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     val state by player.state.collectAsState()
     val sleep by Playback.sleep.collectAsState()
-    var sleepDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var showQueue by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var pickPlaylist by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     // Only once the connection has been asked: after a rotation the new connection starts empty, and the player must stay
@@ -469,10 +510,9 @@ fun PlayerScreen(onClose: () -> Unit) {
                     )
                 }
                 PlayerMoreMenu { close ->
-                    MenuItem(R.string.devices, Icons.Default.Tv) { close(); onClose(); nav.open("devices") }
-                    if (state.tvName == null) MenuItem(R.string.sleep_timer, Icons.Default.Bedtime) { close(); sleepDialog = true }
-                    if (state.tvName == null) MenuItem(R.string.equalizer, Icons.Default.GraphicEq) { close(); nav.open("settings/eq") }
-                    if (djReady && song != null && (state.tvName == null || !state.tvGuest) && station == null) MenuItem(R.string.dj_from_here, Icons.Default.AutoAwesome) {
+                    IosMenuItem(R.string.devices, Icons.Default.Tv) { close(); onClose(); nav.open("devices") }
+                    if (state.tvName == null) IosMenuItem(R.string.equalizer, Icons.Default.GraphicEq) { close(); nav.open("settings/eq") }
+                    if (djReady && song != null && (state.tvName == null || !state.tvGuest) && station == null) IosMenuItem(R.string.dj_from_here, Icons.Default.AutoAwesome) {
                         close()
                         scope.launch {
                             try { DJ.takeOver(song); nav.open("dj") }
@@ -480,14 +520,14 @@ fun PlayerScreen(onClose: () -> Unit) {
                         }
                     }
                     if (song != null) {
-                        MenuItem(R.string.add_to_playlist, Icons.AutoMirrored.Filled.PlaylistAdd) { close(); pickPlaylist = true }
+                        IosMenuItem(R.string.add_to_playlist, Icons.AutoMirrored.Filled.PlaylistAdd) { close(); pickPlaylist = true }
                         val downloaded = Downloads.isDownloaded(context, song.id)
-                        MenuItem(if (downloaded) R.string.remove_download else R.string.download, Icons.Default.Download) {
+                        IosMenuItem(if (downloaded) R.string.remove_download else R.string.download, Icons.Default.Download) {
                             close()
                             if (downloaded) Downloads.remove(context, listOf(song.id)) else Downloads.download(context, listOf(song))
                         }
-                        song.albumId?.let { id -> MenuItem(R.string.go_to_album, Icons.Default.Album) { close(); onClose(); nav.open(albumRoute(id)) } }
-                        song.artistId?.let { id -> MenuItem(R.string.go_to_artist, Icons.Default.Person) { close(); onClose(); nav.open(artistRoute(id)) } }
+                        song.albumId?.let { id -> IosMenuItem(R.string.go_to_album, Icons.Default.Album) { close(); onClose(); nav.open(albumRoute(id)) } }
+                        song.artistId?.let { id -> IosMenuItem(R.string.go_to_artist, Icons.Default.Person) { close(); onClose(); nav.open(artistRoute(id)) } }
                     }
                 }
             }
@@ -574,57 +614,157 @@ fun PlayerScreen(onClose: () -> Unit) {
             // Lyrics, sleep timer, device, DJ, queue: five symbols spread over the width, like the iPhone
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 PlainButton(onClick = { nav.open("lyrics") }, Modifier.size(48.dp).offset(x = (-14).dp), enabled = song != null) {
-                    Icon(TonaloGlyphs.Lyrics, stringResource(R.string.lyrics), Modifier.size(24.dp), tint = Color.White.copy(alpha = 0.8f))
+                    Icon(TonaloGlyphs.Lyrics, stringResource(R.string.lyrics), Modifier.size(28.dp), tint = Color.White.copy(alpha = 0.8f))
                 }
                 Spacer(Modifier.weight(1f))
-                SleepButton(sleep) { sleepDialog = true }
+                SleepButton(sleep)
                 Spacer(Modifier.weight(1f))
-                val ownTv by TvLink.ownTv.collectAsState()
                 val onDevice = state.tvName != null
-                PlainButton(
-                    onClick = { when { onDevice -> player.continueHere(); ownTv != null -> player.playOnTv(); else -> nav.open("devices") } },
-                    Modifier.size(48.dp),
-                ) {
-                    Icon(TonaloGlyphs.Tv, stringResource(R.string.devices), Modifier.size(24.dp), tint = if (onDevice) Palette.accent else Color.White.copy(alpha = 0.8f))
-                }
+                DeviceButton(onDevice) { nav.open("devices") }
                 Spacer(Modifier.weight(1f))
                 if (djReady && !onDevice) {
                     PlainButton(onClick = { nav.open("dj") }, Modifier.size(48.dp)) {
-                        DJMark(Modifier.size(24.dp), if (djActive) Palette.accent else Color.White.copy(alpha = 0.8f))
+                        DJMark(Modifier.size(27.dp), if (djActive) Palette.accent else Color.White.copy(alpha = 0.8f))
                     }
                     Spacer(Modifier.weight(1f))
                 }
-                PlainButton(onClick = { nav.open("queue") }, Modifier.size(48.dp).offset(x = 14.dp), enabled = song != null) {
-                    Icon(TonaloGlyphs.Queue, stringResource(R.string.queue), Modifier.size(24.dp), tint = Color.White.copy(alpha = 0.8f))
+                PlainButton(onClick = { showQueue = true }, Modifier.size(48.dp).offset(x = 14.dp), enabled = song != null) {
+                    Icon(TonaloGlyphs.Queue, stringResource(R.string.queue), Modifier.size(28.dp), tint = Color.White.copy(alpha = 0.8f))
                 }
             }
             Spacer(Modifier.height(12.dp))
         }
     }
 
-    if (sleepDialog) SleepTimerDialog { sleepDialog = false }
+    if (showQueue && song != null) QueueSheet(onDismiss = { showQueue = false }, onClose = onClose)
     if (pickPlaylist && song != null) PlaylistPicker(listOf(song)) { pickPlaylist = false }
 }
 
+/**
+ * The device button of the player: a menu with this phone and the TVs, computers and Jukeboxes the app knows, like the
+ * iPhone's. The last entry opens the page with all devices.
+ */
 @Composable
-private fun SleepTimerDialog(onDone: () -> Unit) {
-    val sleep by Playback.sleep.collectAsState()
-    AlertDialog(
-        onDismissRequest = onDone,
-        title = { Text(stringResource(R.string.sleep_timer)) },
-        text = {
-            Column {
-                listOf(5, 15, 30, 45, 60, 90).forEach { m ->
-                    Text(stringResource(R.string.sleep_minutes, m), Modifier.fillMaxWidth().clickable { Playback.service?.setSleepTimer(m); onDone() }.padding(vertical = 12.dp))
+private fun DeviceButton(onDevice: Boolean, openDevices: () -> Unit) {
+    val player = LocalPlayer.current
+    val devices by TvLink.devices.collectAsState()
+    val pairings by TvLink.pairings.collectAsState()
+    val remote by TvLink.remote.collectAsState()
+    val ownTv by TvLink.ownTv.collectAsState()
+    val guestOnly by TvLink.guestOnly.collectAsState()
+    val joined by TvLink.jukebox.collectAsState()
+    var open by remember { mutableStateOf(false) }
+    // The own TV that is ready, then the Jukeboxes (same rule as the devices page)
+    val jukeboxes = devices.filter { d -> d.id != ownTv?.id && (d.isPhone || d.id in guestOnly || pairings.any { it.tv == d.id && it.guest == true }) }
+    val known = listOfNotNull(ownTv) + jukeboxes
+    Box {
+        PlainButton(onClick = { open = true }, Modifier.size(48.dp)) {
+            Icon(TonaloGlyphs.Tv, stringResource(R.string.devices), Modifier.size(28.dp), tint = if (onDevice) Palette.accent else Color.White.copy(alpha = 0.8f))
+        }
+        IosMenu(open, { open = false }) {
+            IosMenuItem(
+                stringResource(R.string.this_phone), if (!onDevice) TonaloGlyphs.Checkmark else null, Palette.accent,
+            ) { open = false; if (onDevice) player.continueHere() }
+            known.forEach { d ->
+                val here = remote?.device?.id == d.id
+                IosMenuItem(d.name, if (here) TonaloGlyphs.Checkmark else TonaloGlyphs.Tv, Palette.accent) {
+                    open = false
+                    when {
+                        here -> Unit
+                        d.id == ownTv?.id -> if (!onDevice) player.playOnTv()
+                        pairings.any { it.tv == d.id } -> if (joined != d.id) TvLink.join(d)
+                        else -> openDevices()
+                    }
                 }
-                Text(stringResource(R.string.sleep_end_of_song), Modifier.fillMaxWidth().clickable { Playback.service?.sleepAtEndOfSong(); onDone() }.padding(vertical = 12.dp))
             }
-        },
-        confirmButton = {
-            if (sleep.active) TextButton(onClick = { Playback.service?.cancelSleepTimer(); onDone() }) { Text(stringResource(R.string.sleep_off)) }
-        },
-        dismissButton = { TextButton(onClick = onDone) { Text(stringResource(R.string.cancel)) } },
-    )
+            IosMenuItem(stringResource(if (known.isEmpty()) R.string.devices_dots else R.string.more_devices)) { open = false; openDevices() }
+        }
+    }
+}
+
+/**
+ * What plays now and next, as a sheet over the player (half height, can be pulled to full): the current song, then the
+ * upcoming ones. Each row's "..." menu moves (without shuffle), removes or jumps; "Clear" empties the queue after the song.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QueueSheet(onDismiss: () -> Unit, onClose: () -> Unit) {
+    val player = LocalPlayer.current
+    val nav = LocalNav.current
+    val state by player.state.collectAsState()
+    val current = state.current ?: return
+    val upNext = state.upNext
+    val radio by Playback.radio.collectAsState()
+    val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val divider = Color.White.copy(alpha = 0.12f)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheet,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = Palette.canvas,
+        contentColor = Color.White,
+        dragHandle = { androidx.compose.material3.BottomSheetDefaults.DragHandle() },
+    ) {
+        Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
+            Text(stringResource(R.string.queue), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+            if (upNext.isNotEmpty() && state.tvName == null) {
+                TextButton(onClick = { player.clearUpNext() }, Modifier.align(Alignment.CenterEnd)) {
+                    Text(stringResource(R.string.clear_up_next), color = Palette.accent)
+                }
+            }
+        }
+        LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(bottom = 24.dp)) {
+            item { SectionHeader(stringResource(R.string.now_playing)) }
+            item {
+                QueueRow(current.title, current.artist, current.coverArt, playing = true, playingNow = state.isPlaying) { close ->
+                    current.albumId?.let { id -> IosMenuItem(R.string.go_to_album, Icons.Default.Album) { close(); onDismiss(); onClose(); nav.open(albumRoute(id)) } }
+                    current.artistId?.let { id -> IosMenuItem(R.string.go_to_artist, Icons.Default.Person) { close(); onDismiss(); onClose(); nav.open(artistRoute(id)) } }
+                }
+            }
+            item {
+                val from = state.context
+                SectionHeader(if (from != null && !radio) stringResource(R.string.next_from, from) else stringResource(R.string.up_next))
+            }
+            if (upNext.isEmpty()) item { Text(stringResource(R.string.queue_empty), Modifier.padding(horizontal = 16.dp), color = Palette.secondaryText) }
+            itemsIndexed(upNext, key = { _, index -> "q-$index-" + state.queue[index].id }) { pos, index ->
+                val s = state.queue[index]
+                Column {
+                    if (pos > 0) Box(Modifier.padding(start = 76.dp).fillMaxWidth().height(0.5.dp).background(divider))
+                    QueueRow(s.title, s.artist, s.coverArt, playing = false, playingNow = false, onClick = { player.jump(index) }) { close ->
+                        if (!state.shuffle && state.tvName == null) {
+                            if (pos > 0) IosMenuItem(R.string.cd_move_up, Icons.Default.KeyboardArrowUp) { close(); player.move(index, index - 1) }
+                            if (pos < upNext.lastIndex) IosMenuItem(R.string.cd_move_down, Icons.Default.KeyboardArrowDown) { close(); player.move(index, index + 1) }
+                        }
+                        if (state.tvName == null) IosMenuItem(R.string.remove_from_queue, Icons.Default.Close) { close(); player.remove(index) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A row of the queue sheet: cover 48 dp, title (accent while it plays), artist, bars and the "..." menu. */
+@Composable
+private fun QueueRow(
+    title: String, artist: String?, coverArt: String?, playing: Boolean, playingNow: Boolean,
+    onClick: () -> Unit = {}, menu: @Composable (close: () -> Unit) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Row(Modifier.fillMaxWidth().plainClickable(onClick = onClick).padding(start = 16.dp, end = 4.dp, top = 7.dp, bottom = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+        Cover(coverArt, 48.dp, corner = Palette.corner(4.dp), pixels = 150)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 16.sp, color = if (playing) Palette.accent else Color.White)
+            if (!artist.isNullOrEmpty()) Text(artist, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 14.sp, color = Palette.secondaryText)
+        }
+        if (playing) { Spacer(Modifier.width(8.dp)); PlayingBars(playingNow) }
+        Box {
+            PlainButton(onClick = { open = true }, Modifier.size(44.dp)) {
+                Icon(TonaloGlyphs.MoreHorizontal, stringResource(R.string.cd_more), Modifier.size(20.dp), tint = Palette.secondaryText)
+            }
+            IosMenu(open, { open = false }) { menu { open = false } }
+        }
+    }
 }
 
 /** Lyrics on their own page: synced ones follow the song (tap a line to jump there). */

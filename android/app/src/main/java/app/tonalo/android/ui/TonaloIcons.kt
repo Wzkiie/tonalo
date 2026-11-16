@@ -62,38 +62,89 @@ object TonaloGlyphs {
     private fun nodes(build: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit) =
         androidx.compose.ui.graphics.vector.PathBuilder().apply(build).nodes
 
-    /** Two crossing arrows. */
-    val Shuffle: ImageVector by lazy {
-        line("TonaloShuffle", 2.8f) {
-            moveTo(3.2f, 7f); horizontalLineTo(6.4f); curveTo(11f, 7f, 11.6f, 17f, 16.2f, 17f); horizontalLineTo(20.3f)
-            moveTo(17.6f, 14.4f); lineTo(20.3f, 17f); lineTo(17.6f, 19.6f)
-            moveTo(3.2f, 17f); horizontalLineTo(6.4f); curveTo(8f, 17f, 9f, 16.2f, 9.9f, 15f)
-            moveTo(13.4f, 9f); curveTo(14.3f, 7.8f, 15.2f, 7f, 16.8f, 7f); horizontalLineTo(20.3f)
-            moveTo(17.6f, 4.4f); lineTo(20.3f, 7f); lineTo(17.6f, 9.6f)
-        }
+    /** A filled triangular arrowhead. [len] is positive when it points right, negative when it points left. */
+    private fun androidx.compose.ui.graphics.vector.PathBuilder.arrow(tipX: Float, y: Float, len: Float, half: Float) {
+        val baseX = tipX - len
+        moveTo(baseX, y - half); lineTo(tipX, y); lineTo(baseX, y + half); close()
     }
 
-    /** Two arrows chasing each other round a loop. */
-    private val repeatPath: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit = {
-        moveTo(3.6f, 11.6f); verticalLineTo(10.6f); arcTo(3.6f, 3.6f, 0f, false, true, 7.2f, 7f); horizontalLineTo(20.4f)
-        moveTo(17.8f, 4.4f); lineTo(20.4f, 7f); lineTo(17.8f, 9.6f)
-        moveTo(20.4f, 12.4f); verticalLineTo(13.4f); arcTo(3.6f, 3.6f, 0f, false, true, 16.8f, 17f); horizontalLineTo(3.6f)
-        moveTo(6.2f, 14.4f); lineTo(3.6f, 17f); lineTo(6.2f, 19.6f)
-    }
-    val Repeat: ImageVector by lazy { line("TonaloRepeat", 2.8f, repeatPath) }
-
-    /** The loop with a "1" in the middle. */
-    val RepeatOne: ImageVector by lazy {
-        ImageVector.Builder("TonaloRepeatOne", 24.dp, 24.dp, 24f, 24f).apply {
+    /** Stroked lines plus filled arrowheads (the heads get a thin outline in the same colour, which rounds their corners). */
+    private fun withHeads(
+        name: String,
+        lineWidth: Float,
+        strokes: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit,
+        heads: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit,
+        extra: (androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit)? = null,
+    ): ImageVector =
+        ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f).apply {
             addPath(
-                nodes(repeatPath),
-                stroke = SolidColor(Color.Black), strokeLineWidth = 2.8f, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
+                nodes(strokes),
+                stroke = SolidColor(Color.Black), strokeLineWidth = lineWidth, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
             )
+            if (extra != null) {
+                addPath(
+                    nodes(extra),
+                    stroke = SolidColor(Color.Black), strokeLineWidth = 1.8f, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
+                )
+            }
             addPath(
-                nodes { moveTo(10.6f, 10.4f); lineTo(12.4f, 9.4f); verticalLineTo(14.8f) },
-                stroke = SolidColor(Color.Black), strokeLineWidth = 1.9f, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
+                nodes(heads),
+                fill = SolidColor(Color.Black), stroke = SolidColor(Color.Black), strokeLineWidth = 1f,
+                strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
             )
         }.build()
+
+    /**
+     * Two crossing arrows like SF "shuffle". The path from the lower left to the upper right is whole;
+     * the other one is cut open around the crossing so it seems to pass behind.
+     */
+    val Shuffle: ImageVector by lazy {
+        withHeads(
+            "TonaloShuffle", 2.2f,
+            strokes = {
+                // lower left -> upper right, in front
+                moveTo(3f, 17f); horizontalLineTo(6f); curveTo(10.5f, 17f, 11f, 7f, 15.5f, 7f); horizontalLineTo(18f)
+                // upper left -> lower right, in two pieces with a gap at the crossing
+                moveTo(3f, 7f); horizontalLineTo(6f); curveTo(7.125f, 7f, 8f, 7.625f, 8.75f, 8.56f)
+                moveTo(12.75f, 15.44f); curveTo(13.5f, 16.375f, 14.375f, 17f, 15.5f, 17f); horizontalLineTo(18f)
+            },
+            heads = {
+                arrow(21.3f, 7f, 3.9f, 3.1f)
+                arrow(21.3f, 17f, 3.9f, 3.1f)
+            },
+        )
+    }
+
+    /** The two half loops of SF "repeat": the top one runs right, the bottom one runs left. */
+    private fun androidx.compose.ui.graphics.vector.PathBuilder.repeatLoop(yTop: Float, yBottom: Float) {
+        val r = 3.1f
+        moveTo(3.5f, yTop + 5f); verticalLineTo(yTop + r); arcTo(r, r, 0f, false, true, 3.5f + r, yTop); horizontalLineTo(17.9f)
+        moveTo(20.5f, yBottom - 5f); verticalLineTo(yBottom - r); arcTo(r, r, 0f, false, true, 20.5f - r, yBottom); horizontalLineTo(6.1f)
+    }
+
+    val Repeat: ImageVector by lazy {
+        withHeads(
+            "TonaloRepeat", 2.2f,
+            strokes = { repeatLoop(6.5f, 17.5f) },
+            heads = {
+                arrow(21.4f, 6.5f, 3.9f, 3.1f)
+                arrow(2.6f, 17.5f, -3.9f, 3.1f)
+            },
+        )
+    }
+
+    /** The loop (a little flatter) with a small "1" at the top right, like SF "repeat.1". */
+    val RepeatOne: ImageVector by lazy {
+        withHeads(
+            "TonaloRepeatOne", 2.2f,
+            strokes = { repeatLoop(9.5f, 19f) },
+            heads = {
+                arrow(21.4f, 9.5f, 3.9f, 2.6f)
+                arrow(2.6f, 19f, -3.9f, 2.6f)
+            },
+            // the "1": a flag and a stem, a little lighter than the loop
+            extra = { moveTo(18.1f, 4.1f); lineTo(19.7f, 2.7f); verticalLineTo(6.6f) },
+        )
     }
 
     private val heartPath: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit = {
@@ -150,34 +201,95 @@ object TonaloGlyphs {
     }
 
     // Tab bar: an outline when not chosen, filled when chosen (as the iPhone does)
-    private val housePath: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit = {
-        moveTo(12f, 3.4f); lineTo(3f, 11f); horizontalLineTo(5.2f); verticalLineTo(19.6f); horizontalLineTo(9.8f); verticalLineTo(14.2f)
-        horizontalLineTo(14.2f); verticalLineTo(19.6f); horizontalLineTo(18.8f); verticalLineTo(11f); horizontalLineTo(21f); close()
+    /** A closed polygon whose corners are rounded with quadratic curves (radius [r], capped at half an edge). */
+    private fun androidx.compose.ui.graphics.vector.PathBuilder.poly(pts: List<Pair<Float, Float>>, r: Float) {
+        val n = pts.size
+        for (i in 0 until n) {
+            val (px, py) = pts[i]
+            val (qx, qy) = pts[(i + n - 1) % n]
+            val (sx, sy) = pts[(i + 1) % n]
+            val lenIn = kotlin.math.sqrt((qx - px) * (qx - px) + (qy - py) * (qy - py))
+            val lenOut = kotlin.math.sqrt((sx - px) * (sx - px) + (sy - py) * (sy - py))
+            val rIn = minOf(r, lenIn / 2f) / lenIn
+            val rOut = minOf(r, lenOut / 2f) / lenOut
+            val ax = px + (qx - px) * rIn
+            val ay = py + (qy - py) * rIn
+            if (i == 0) moveTo(ax, ay) else lineTo(ax, ay)
+            quadTo(px, py, px + (sx - px) * rOut, py + (sy - py) * rOut)
+        }
+        close()
     }
-    val HomeOutline: ImageVector by lazy { line("TonaloHomeOutline", 1.9f, housePath) }
-    val HomeFilled: ImageVector by lazy { solid("TonaloHomeFilled", 1.6f, housePath) }
 
-    val Search: ImageVector by lazy {
-        line("TonaloSearch", 2.3f) {
-            moveTo(10.6f, 4.4f); arcTo(6.2f, 6.2f, 0f, true, true, 10.59f, 4.4f); close()
-            moveTo(15.3f, 15.3f); lineTo(20.4f, 20.4f)
+    private fun filled(name: String, evenOdd: Boolean, build: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit): ImageVector =
+        ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f).apply {
+            addPath(
+                nodes(build),
+                pathFillType = if (evenOdd) androidx.compose.ui.graphics.PathFillType.EvenOdd else androidx.compose.ui.graphics.PathFillType.NonZero,
+                fill = SolidColor(Color.Black),
+            )
+        }.build()
+
+    /** SF "house": a roof with a little overhang, walls with rounded feet and a door. */
+    val HomeOutline: ImageVector by lazy {
+        line("TonaloHomeOutline", 1.9f) {
+            // roof
+            moveTo(2.8f, 11.4f); lineTo(12f, 3.5f); lineTo(21.2f, 11.4f)
+            // walls and door
+            moveTo(5.6f, 9.4f); verticalLineTo(17.6f); arcTo(2f, 2f, 0f, false, false, 7.6f, 19.6f); horizontalLineTo(9.8f)
+            verticalLineTo(14.6f); horizontalLineTo(14.2f); verticalLineTo(19.6f); horizontalLineTo(16.4f)
+            arcTo(2f, 2f, 0f, false, false, 18.4f, 17.6f); verticalLineTo(9.4f)
         }
     }
-    val SearchBold: ImageVector by lazy {
-        line("TonaloSearchBold", 3.1f) {
-            moveTo(10.6f, 4.4f); arcTo(6.2f, 6.2f, 0f, true, true, 10.59f, 4.4f); close()
-            moveTo(15.3f, 15.3f); lineTo(20.4f, 20.4f)
+
+    /** SF "house.fill": solid, with the door cut out at the bottom. */
+    val HomeFilled: ImageVector by lazy {
+        filled("TonaloHomeFilled", evenOdd = true) {
+            poly(
+                listOf(
+                    12f to 3f, 21.2f to 11.4f, 18.4f to 11f, 18.4f to 19.8f, 14.6f to 19.8f, 14.6f to 14.8f,
+                    9.4f to 14.8f, 9.4f to 19.8f, 5.6f to 19.8f, 5.6f to 11f, 2.8f to 11.4f,
+                ),
+                1.2f,
+            )
         }
     }
 
-    // Three books standing on a shelf
-    private val booksPath: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit = {
-        moveTo(4f, 5f); horizontalLineTo(8f); verticalLineTo(19.6f); horizontalLineTo(4f); close()
-        moveTo(9.6f, 5f); horizontalLineTo(13.6f); verticalLineTo(19.6f); horizontalLineTo(9.6f); close()
-        moveTo(15.4f, 5.6f); lineTo(19f, 4.6f); lineTo(22.2f, 18.6f); lineTo(18.6f, 19.6f); close()
+    private fun search(name: String, width: Float): ImageVector =
+        line(name, width) {
+            // lens: a circle of radius 6.2 around (10.5, 10.5)
+            moveTo(10.5f, 4.3f); arcTo(6.2f, 6.2f, 0f, true, true, 10.49f, 4.3f); close()
+            // handle
+            moveTo(15.4f, 15.4f); lineTo(20.5f, 20.5f)
+        }
+    val Search: ImageVector by lazy { search("TonaloSearch", 2.2f) }
+    val SearchBold: ImageVector by lazy { search("TonaloSearchBold", 3f) }
+
+    // Two upright books and a tilted one (SF "books.vertical"). The tilted book leans about 10 degrees:
+    // its sides run along d = (0.174, 0.985), its top and bottom along n = (0.985, -0.174).
+    val LibraryOutline: ImageVector by lazy {
+        line("TonaloLibraryOutline", 1.7f) {
+            moveTo(3.4f, 5f); horizontalLineTo(7f); verticalLineTo(19.4f); horizontalLineTo(3.4f); close()
+            moveTo(9.6f, 5f); horizontalLineTo(13.2f); verticalLineTo(19.4f); horizontalLineTo(9.6f); close()
+            moveTo(15.6f, 5.6f); lineTo(19.15f, 4.97f); lineTo(21.66f, 19.15f); lineTo(18.11f, 19.78f); close()
+            // spine lines
+            moveTo(3.4f, 9f); horizontalLineTo(7f)
+            moveTo(9.6f, 9f); horizontalLineTo(13.2f)
+            moveTo(16.21f, 9.05f); lineTo(19.76f, 8.42f)
+        }
     }
-    val LibraryOutline: ImageVector by lazy { line("TonaloLibraryOutline", 1.9f, booksPath) }
-    val LibraryFilled: ImageVector by lazy { solid("TonaloLibraryFilled", 1.4f, booksPath) }
+
+    val LibraryFilled: ImageVector by lazy {
+        filled("TonaloLibraryFilled", evenOdd = true) {
+            // upright books with a thin cut-out line each
+            poly(listOf(2.4f to 4.2f, 7.5f to 4.2f, 7.5f to 20f, 2.4f to 20f), 1f)
+            moveTo(3.7f, 8.2f); horizontalLineTo(6.2f); verticalLineTo(9.1f); horizontalLineTo(3.7f); close()
+            poly(listOf(8.8f to 4.2f, 13.9f to 4.2f, 13.9f to 20f, 8.8f to 20f), 1f)
+            moveTo(10.1f, 8.2f); horizontalLineTo(12.6f); verticalLineTo(9.1f); horizontalLineTo(10.1f); close()
+            // tilted book
+            poly(listOf(15.2f to 4.9f, 20.22f to 4.01f, 22.86f to 18.98f, 17.84f to 19.87f), 1f)
+            moveTo(17.14f, 8.41f); lineTo(19.6f, 7.98f); lineTo(19.76f, 8.87f); lineTo(17.3f, 9.3f); close()
+        }
+    }
 
     /** A circle with an arrow pointing down: download. */
     val Download: ImageVector by lazy {

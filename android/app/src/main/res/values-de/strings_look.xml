@@ -10,4 +10,9 @@
     <string name="pl_from_mix">MIX-WIEDERGABE</string>
     <string name="pl_from_radio">RADIO-WIEDERGABE</string>
     <string name="pl_from_dj">FÜR DICH AUSGEWÄHLT</string>
+    <string name="next_from">Als Nächstes aus: %1$s</string>
+    <string name="this_phone">Dieses Handy</string>
+    <string name="more_devices">Weitere Geräte…</string>
+    <string name="devices_dots">Geräte…</string>
+    <string name="sleep_minutes_long">%1$d Minuten</string>
 </resources>
