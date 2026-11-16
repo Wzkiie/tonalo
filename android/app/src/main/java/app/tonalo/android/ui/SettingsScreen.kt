@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -370,6 +371,8 @@ fun AppearanceScreen() {
                             ) { if (selected) Icon(TonaloGlyphs.Checkmark, null, tint = Color.Black, modifier = Modifier.size(20.dp)) }
                         }
                     }
+                    Spacer(Modifier.height(16.dp))
+                    CustomAccentPicker(accent, Settings.accentPresets.any { it.equals(accent, ignoreCase = true) }) { s.setAccent(it) }
                 }
             }
         }
