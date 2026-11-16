@@ -281,13 +281,24 @@ fun MixCard(title: String, subtitle: String?, hue: Float, icon: ImageVector, siz
                 modifier = if (small) Modifier.align(Alignment.TopEnd).padding(10.dp).size(24.dp) else Modifier.align(Alignment.Center).size(48.dp),
             )
             if (busy) CircularProgressIndicator(Modifier.align(Alignment.BottomStart).padding(10.dp).size(20.dp), color = Color.White, strokeWidth = 2.dp)
-            else Text(
-                title, Modifier.align(Alignment.BottomStart).padding(10.dp),
-                fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = Color.White,
-            )
+            else {
+                // Large system text: a long word shrinks a little instead of breaking in the middle ("Lieblingsmi/x")
+                var titleSize by androidx.compose.runtime.remember(title) { androidx.compose.runtime.mutableStateOf(15f) }
+                Text(
+                    title, Modifier.align(Alignment.BottomStart).padding(10.dp),
+                    fontWeight = FontWeight.ExtraBold, fontSize = titleSize.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = Color.White,
+                    onTextLayout = { r ->
+                        val cut = (0 until r.lineCount - 1).any { l ->
+                            val end = r.getLineEnd(l)
+                            end in 1 until title.length && !title[end - 1].isWhitespace() && !title[end].isWhitespace()
+                        }
+                        if ((cut || r.hasVisualOverflow) && titleSize > 10f) titleSize -= 1f
+                    },
+                )
+            }
         }
         if (!subtitle.isNullOrEmpty()) {
-            Text(subtitle, Modifier.padding(top = 6.dp), color = Palette.secondaryText, fontSize = 13.sp, lineHeight = 16.sp, maxLines = 2)
+            Text(subtitle, Modifier.padding(top = 6.dp), color = Palette.secondaryText, fontSize = 13.sp, lineHeight = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }

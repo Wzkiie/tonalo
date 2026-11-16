@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.ArrowCircleDown
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Check
@@ -142,6 +143,7 @@ fun LibraryScreen() {
     var query by rememberSaveable { mutableStateOf("") }
     var searching by rememberSaveable { mutableStateOf(false) }
     val pins = remember(account?.id) { mutableStateListOf<String>().apply { addAll(loadPins(context, account?.id)) } }
+    var naming by remember { mutableStateOf(false) }
     val list = rememberLazyListState()
     OnReselect { filter = null; query = ""; searching = false; list.animateScrollToItem(0) }
 
@@ -299,6 +301,10 @@ fun LibraryScreen() {
             LibraryToolbar(searching, query, { query = it }, { searching = it; if (!it) query = "" }, sort, { app.settings.setLibrarySort(it) },
                 grid, { app.settings.setLibraryGrid(!grid) })
             Spacer(Modifier.height(14.dp))
+            if (filter == LibFilter.PLAYLISTS && hasMusic && query.isEmpty()) {
+                BrowseRow(Icons.Default.Add, stringResource(R.string.new_playlist)) { naming = true }
+                Spacer(Modifier.height(14.dp))
+            }
         }
         if (grid) {
             items(items.chunked(2).size) { r ->
@@ -360,6 +366,7 @@ fun LibraryScreen() {
         }
     }
     }
+    if (naming) NewPlaylistDialog(scope, { naming = false })
 }
 
 /** A row that opens everything on the server: icon, title, chevron. */

@@ -106,6 +106,10 @@
     <string name="cd_previous">Zurück</string>
     <string name="cd_shuffle">Zufällig</string>
     <string name="cd_repeat">Wiederholen</string>
+    <string name="state_on">An</string>
+    <string name="state_off">Aus</string>
+    <string name="state_repeat_all">Alle wiederholen</string>
+    <string name="state_repeat_one">Einen wiederholen</string>
     <string name="cd_favorite">Favorit</string>
     <string name="cd_more">Weitere Optionen</string>
     <string name="cd_back">Zurück</string>

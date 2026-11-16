@@ -114,6 +114,10 @@
     <string name="cd_previous">Previous</string>
     <string name="cd_shuffle">Shuffle</string>
     <string name="cd_repeat">Repeat</string>
+    <string name="state_on">On</string>
+    <string name="state_off">Off</string>
+    <string name="state_repeat_all">Repeat all</string>
+    <string name="state_repeat_one">Repeat one</string>
     <string name="cd_favorite">Favorite</string>
     <string name="cd_more">More options</string>
     <string name="cd_back">Back</string>

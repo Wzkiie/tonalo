@@ -26,6 +26,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -97,7 +100,6 @@ fun EqScreen() {
                                     val next = gains.toMutableList().also { it[i] = db }
                                     s.setEqCustom(Eq.format(next))
                                     s.setEqPreset("custom")
-                                    if (!on) s.setEqEnabled(true)
                                 },
                             )
                         }
@@ -116,26 +118,30 @@ private fun BandSlider(db: Float, hz: Int, active: Boolean, onChange: (Float) ->
     // The gesture blocks below live on – they must call the newest onChange (it knows the newest gains)
     val change by rememberUpdatedState(onChange)
     val color = if (active) Palette.accent else Palette.subtle
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(56.dp)) {
+    // While the equalizer is off the slider ignores touches completely (no pointer handlers, so a swipe over it
+    // just scrolls the page) and is dimmed; the switch or a preset chip turns the equalizer on.
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(56.dp).alpha(if (active) 1f else 0.35f)) {
         Text((if (db > 0) "+" else "") + db.roundToInt() + " dB", fontSize = 12.sp, color = Palette.secondaryText)
         Box(
             Modifier.padding(vertical = 10.dp).width(44.dp).height(200.dp)
-                .pointerInput(Unit) {
-                    fun value(y: Float) = ((0.5f - y / size.height) * 2 * Eq.MAX_DB).coerceIn(-Eq.MAX_DB, Eq.MAX_DB).roundToInt().toFloat()
-                    detectTapGestures { change(value(it.y)) }
-                }
-                .pointerInput(Unit) {
-                    var y = 0f
-                    detectDragGestures(
-                        onDragStart = { y = it.y },
-                        onDrag = { change, drag ->
-                            change.consume()
-                            y = (y + drag.y).coerceIn(0f, size.height.toFloat())
-                            val v = ((0.5f - y / size.height) * 2 * Eq.MAX_DB).roundToInt().toFloat()
-                            if (v != current) change(v)
-                        },
-                    )
-                },
+                .semantics { if (!active) disabled() }
+                .then(if (!active) Modifier else Modifier
+                    .pointerInput(Unit) {
+                        fun value(y: Float) = ((0.5f - y / size.height) * 2 * Eq.MAX_DB).coerceIn(-Eq.MAX_DB, Eq.MAX_DB).roundToInt().toFloat()
+                        detectTapGestures { change(value(it.y)) }
+                    }
+                    .pointerInput(Unit) {
+                        var y = 0f
+                        detectDragGestures(
+                            onDragStart = { y = it.y },
+                            onDrag = { change, drag ->
+                                change.consume()
+                                y = (y + drag.y).coerceIn(0f, size.height.toFloat())
+                                val v = ((0.5f - y / size.height) * 2 * Eq.MAX_DB).roundToInt().toFloat()
+                                if (v != current) change(v)
+                            },
+                        )
+                    }),
         ) {
             Canvas(Modifier.matchParentSize()) {
                 val track = 4.dp.toPx()

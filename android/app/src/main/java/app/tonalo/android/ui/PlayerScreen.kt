@@ -79,6 +79,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import app.tonalo.android.R
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import app.tonalo.android.data.Lyrics
 import app.tonalo.android.data.formatTime
 import app.tonalo.android.downloads.Downloads
@@ -274,7 +276,14 @@ fun PlayerScreen(onClose: () -> Unit) {
                 Modifier.fillMaxWidth().padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { player.toggleShuffle() }, enabled = station == null) {
+                val stateOn = stringResource(R.string.state_on)
+                val stateOff = stringResource(R.string.state_off)
+                val repeatState = stringResource(when (state.repeatMode) {
+                    Player.REPEAT_MODE_ONE -> R.string.state_repeat_one
+                    Player.REPEAT_MODE_ALL -> R.string.state_repeat_all
+                    else -> R.string.state_off
+                })
+                IconButton(onClick = { player.toggleShuffle() }, Modifier.semantics { stateDescription = if (state.shuffle) stateOn else stateOff }, enabled = station == null) {
                     Icon(Icons.Default.Shuffle, stringResource(R.string.cd_shuffle), tint = if (state.shuffle) Palette.accent else Color.White)
                 }
                 IconButton(onClick = { player.previous() }, Modifier.size(56.dp), enabled = station == null) {
@@ -284,7 +293,7 @@ fun PlayerScreen(onClose: () -> Unit) {
                 IconButton(onClick = { player.next() }, Modifier.size(56.dp), enabled = station == null) {
                     Icon(Icons.Default.SkipNext, stringResource(R.string.cd_next), Modifier.size(40.dp))
                 }
-                IconButton(onClick = { player.cycleRepeat() }, enabled = station == null) {
+                IconButton(onClick = { player.cycleRepeat() }, Modifier.semantics { stateDescription = repeatState }, enabled = station == null) {
                     Icon(
                         if (state.repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
                         stringResource(R.string.cd_repeat),

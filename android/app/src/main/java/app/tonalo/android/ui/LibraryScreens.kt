@@ -247,10 +247,9 @@ fun PlaylistsScreen() {
     val plVersion by Playlists.version.collectAsState()
     val loader = rememberLoad("playlists", version, cached = { c -> c.cached("getPlaylists")?.playlists?.playlist }, refresh = plVersion) { it.playlists() }
     var naming by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize()) {
         TopBar(stringResource(R.string.playlists)) {
-            IconButton(onClick = { name = ""; naming = true }) { Icon(Icons.Default.Add, stringResource(R.string.new_playlist)) }
+            IconButton(onClick = { naming = true }) { Icon(Icons.Default.Add, stringResource(R.string.new_playlist)) }
         }
         Refreshable(loader.refreshing, loader.reload, Modifier.weight(1f).fillMaxWidth()) {
         LoadView(loader) { all ->
@@ -261,22 +260,31 @@ fun PlaylistsScreen() {
         }
         }
     }
-    if (naming) AlertDialog(
-        onDismissRequest = { naming = false },
+    if (naming) NewPlaylistDialog(scope, { naming = false }) { version++ }
+}
+
+/** Asks for a name and creates an empty playlist; [scope] must outlive the dialog (it is closed as soon as Create is tapped); [onCreated] runs after the server accepted it. Also used by the Library's playlists view. */
+@Composable
+fun NewPlaylistDialog(scope: kotlinx.coroutines.CoroutineScope, onDismiss: () -> Unit, onCreated: () -> Unit = {}) {
+    val context = LocalContext.current
+    val snackbar = LocalSnackbar.current
+    var name by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
         containerColor = Palette.elevated,
         title = { Text(stringResource(R.string.new_playlist)) },
         text = { androidx.compose.material3.OutlinedTextField(name, { name = it }, singleLine = true, placeholder = { Text(stringResource(R.string.playlist_name)) }) },
         confirmButton = {
             TextButton(onClick = {
-                naming = false
+                onDismiss()
                 val n = name.trim()
                 if (n.isNotEmpty()) scope.launch {
-                    try { context.tonalo.client()?.createPlaylist(n, emptyList()); version++; Playlists.changed() }
+                    try { context.tonalo.client()?.createPlaylist(n, emptyList()); onCreated(); Playlists.changed() }
                     catch (e: CancellationException) { throw e } catch (e: Exception) { snackbar.showSnackbar(errorText(context, e)) }
                 }
             }) { Text(stringResource(R.string.create)) }
         },
-        dismissButton = { TextButton(onClick = { naming = false }) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 

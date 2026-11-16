@@ -202,15 +202,20 @@ fun LoginScreen(editing: Account? = null, onClose: (() -> Unit)? = null) {
     val headersUnencrypted = (wantsMusic && plainOverInternet(f.server) && named.isNotEmpty()) ||
         (wantsBooks && plainOverInternet(f.bookServer) && sentToBooks.isNotEmpty())
 
+    // Enter on the keyboard and the button both end up here; busy only changes after the next recomposition,
+    // so a second Enter in between needs this flag to not start a second sign-in
+    val inFlight = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
     fun submit() {
-        if (!canSave) return
+        if (!canSave || !inFlight.compareAndSet(false, true)) return
         if ((wantsMusic && invalidHeaders(form.headers)) || (wantsBooks && !(f.service == Service.BOTH && f.same) && invalidHeaders(form.bookHeaders))) {
             error = context.getString(R.string.header_invalid)
+            inFlight.set(false)
             return
         }
         // A public name here would get the login over plain http from anywhere
         if ((wantsMusic && f.home.isNotBlank() && !SubsonicClient.isLocal(f.home)) || (wantsBooks && f.bookHome.isNotBlank() && !SubsonicClient.isLocal(f.bookHome))) {
             error = context.getString(R.string.home_only)
+            inFlight.set(false)
             return
         }
         scope.launch {
@@ -260,7 +265,8 @@ fun LoginScreen(editing: Account? = null, onClose: (() -> Unit)? = null) {
                 // Music for an audiobooks-only account joins that account
                 val base = when {
                     editing != null -> editing
-                    f.service == Service.MUSIC && current != null && !current.hasMusic -> current
+                    // Not from "Add another account" (onClose set): that always makes a new account, whatever the current one has
+                    f.service == Service.MUSIC && onClose == null && current != null && !current.hasMusic -> current
                     else -> null
                 }
                 val kept = if (f.password.isEmpty()) {
@@ -298,6 +304,7 @@ fun LoginScreen(editing: Account? = null, onClose: (() -> Unit)? = null) {
                 abort(errorText(context, e))
             } finally {
                 busy = false
+                inFlight.set(false)
             }
         }
     }

@@ -308,6 +308,11 @@ fun MiniPlayer(open: () -> Unit) {
     val snackbar = LocalSnackbar.current
     val scope = rememberCoroutineScope()
     val state by player.state.collectAsState()
+    // A song that can't be played (offline and not downloaded, gone from the server): say so here, once per error
+    // (the key changes only with the error or the song). The full player shows the same text inline instead.
+    val failed = state.error != null
+    val errorText = stringResource(R.string.error_playback)
+    LaunchedEffect(failed, state.current?.id) { if (failed) snackbar.showSnackbar(errorText) }
     if (!state.hasMedia) return
     val song = state.current
     val station = state.station
