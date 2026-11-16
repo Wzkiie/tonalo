@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bka_both">Beides</string>
+    <string name="bka_music_navidrome">Musik (Navidrome)</string>
+    <string name="bka_books_abs">Hörbücher (Audiobookshelf)</string>
+    <string name="bka_abs_address">Audiobookshelf-Adresse</string>
+    <string name="bka_abs_hint">audiobooks.example.com oder 192.168.1.10:13378</string>
+    <string name="bka_abs_home_hint">192.168.1.10:13378</string>
+    <string name="bka_http_password_warning">Diese Adresse nutzt http, dein Audiobookshelf-Passwort geht also unverschlüsselt durchs Netz. Nutze das nur innerhalb eines VPN.</string>
+    <string name="bka_headers_music">Header für Musik</string>
+    <string name="bka_headers_books">Header für Hörbücher</string>
+    <string name="bka_books_home">Hörbücher im Heimnetz</string>
+    <string name="bka_same_headers">Gleiche Header für beide</string>
+    <string name="bka_vpn_footer">Nur zu Hause oder per VPN? Dann reicht die Heimadresse, zum Beispiel 192.168.1.10:13378.</string>
+    <string name="bka_books_login_footer">Das Passwort dient nur der Anmeldung und wird nicht gespeichert. Tonalo behält einen Anmelde-Token, verschlüsselt, nur auf diesem Telefon.</string>
+    <string name="bka_abs_error">Audiobookshelf: %1$s</string>
+    <string name="bka_no_music">Mit diesem Konto ist kein Musikserver verbunden.</string>
+    <string name="bka_add_music">Musikserver hinzufügen</string>
+    <string name="bka_disconnect">Trennen</string>
+    <string name="bka_disconnect_music_q">Musikserver trennen?</string>
+    <string name="bka_disconnect_music_text">Die Downloads dieses Servers und alles, was Tonalo dafür speichert, werden von diesem Telefon gelöscht. Auf deinem Server ändert sich nichts.</string>
+
+    <string name="bka_abs">Audiobookshelf</string>
+    <string name="bka_connect">Verbinden</string>
+    <string name="bka_user">Benutzer</string>
+    <string name="bka_connected_through">Verbunden über</string>
+    <string name="bka_not_allowed_download">Dein Audiobookshelf-Benutzer darf nichts herunterladen.</string>
+    <string name="bka_http_login_warning">Diese Adresse nutzt http, deine Anmeldung und eigenen Header gehen also unverschlüsselt durchs Netz. Nutze https.</string>
+    <string name="bka_server_footer">Die Adresse von außen, zum Beispiel audiobooks.example.com. Ist der Server nur zu Hause oder per VPN erreichbar, kommt hier seine Heimadresse rein.</string>
+    <string name="bka_route_footer">Zu Hause nutzt Tonalo die Adresse im Heimnetz, sonst überall die Serveradresse. Für Cloudflare Zero Trust trägst du unter „Eigene Header“ ein Service-Token ein.</string>
+    <string name="bka_connected_footer">Hörbücher und Podcasts erscheinen jetzt unter Start und Bibliothek. Dein Fortschritt bleibt mit dem Server abgeglichen.</string>
+    <string name="bka_use_music_headers">Header des Musikservers übernehmen</string>
+    <string name="bka_remove_account">Konto entfernen</string>
+    <string name="bka_disconnect_abs_q">Audiobookshelf trennen?</string>
+    <string name="bka_disconnect_abs_text">Die Downloads und alles, was Tonalo dafür speichert, werden von diesem Telefon gelöscht. Auf deinem Server ändert sich nichts.</string>
+
+    <string name="bka_browse_audiobooks">Alle Hörbücher auf dem Server</string>
+    <string name="bka_browse_podcasts">Alle Podcasts auf dem Server</string>
+    <string name="bka_no_fav_books">Noch keine Lieblingshörbücher. Tippe bei einem Buch oder Autor aufs Herz, dann erscheint es hier.</string>
+    <string name="bka_no_fav_podcasts">Noch keine Lieblingspodcasts. Tippe bei einem Podcast aufs Herz, dann erscheint er hier.</string>
+
+    <string name="bka_downloading_of">Lädt %1$d von %2$d</string>
+</resources>

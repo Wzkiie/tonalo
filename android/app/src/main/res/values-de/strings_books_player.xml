@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bpl_chapters">Kapitel</string>
+    <string name="bpl_stop">Stoppen</string>
+    <string name="bpl_prev_chapter">Vorheriges Kapitel</string>
+    <string name="bpl_next_chapter">Nächstes Kapitel</string>
+    <string name="bpl_back_seconds">%1$d Sekunden zurück</string>
+    <string name="bpl_forward_seconds">%1$d Sekunden vor</string>
+    <string name="bpl_speed">Wiedergabetempo</string>
+    <string name="bpl_sleep_chapter">Am Ende des Kapitels</string>
+    <string name="bpl_sleep_active_chapter">Stoppt am Ende des Kapitels</string>
+    <string name="bpl_left">Noch %1$s</string>
+    <string name="bpl_hours_minutes">%1$d Std. %2$d Min.</string>
+    <string name="bpl_minutes">%1$d Min.</string>
+    <string name="bpl_settings_title">Hörbuch-Wiedergabe</string>
+    <string name="bpl_speed_footer">Gilt für alle Hörbücher und Podcasts.</string>
+    <string name="bpl_skip_buttons">Sprungtasten</string>
+    <string name="bpl_skip_back">Zurück</string>
+    <string name="bpl_skip_forward">Vor</string>
+    <string name="bpl_seconds">%1$d Sekunden</string>
+</resources>
