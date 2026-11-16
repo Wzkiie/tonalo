@@ -449,12 +449,12 @@ private fun PlayButton(size: androidx.compose.ui.unit.Dp = 66.dp) {
         ) { player.toggle() },
         contentAlignment = Alignment.Center,
     ) {
-        if (state.buffering && !state.isPlaying) CircularProgressIndicator(Modifier.size(size * 0.42f), color = Color.Black, strokeWidth = 3.dp)
-        else Icon(
+        // No loading circle in the button (it made the button jump on every tap); the iPhone shows only play / pause
+        Icon(
             if (state.isPlaying) TonaloIcons.Pause else TonaloIcons.Play,
             stringResource(if (state.isPlaying) R.string.cd_pause else R.string.cd_play),
             // The triangle looks centered when nudged to the right, like on the iPhone
-            Modifier.size(size * 0.56f).offset(x = if (state.isPlaying) 0.dp else size * 0.03f), tint = Color.Black,
+            Modifier.size(size * 0.56f).offset(x = if (state.isPlaying) 0.dp else size * 0.02f), tint = Color.Black,
         )
     }
 }

@@ -133,17 +133,16 @@ object TonaloGlyphs {
         )
     }
 
-    /** The loop (a little flatter) with a small "1" at the top right, like SF "repeat.1". */
+    /** The same loop as [Repeat], so switching modes does not change its shape, with a clear "1" in the middle. */
     val RepeatOne: ImageVector by lazy {
         withHeads(
             "TonaloRepeatOne", 2.2f,
-            strokes = { repeatLoop(9.5f, 19f) },
+            strokes = { repeatLoop(6.5f, 17.5f) },
             heads = {
-                arrow(21.4f, 9.5f, 3.9f, 2.6f)
-                arrow(2.6f, 19f, -3.9f, 2.6f)
+                arrow(21.4f, 6.5f, 3.9f, 3.1f)
+                arrow(2.6f, 17.5f, -3.9f, 3.1f)
             },
-            // the "1": a flag and a stem, a little lighter than the loop
-            extra = { moveTo(18.1f, 4.1f); lineTo(19.7f, 2.7f); verticalLineTo(6.6f) },
+            extra = { moveTo(10.6f, 10.6f); lineTo(12.4f, 9.4f); verticalLineTo(14.8f) },
         )
     }
 
