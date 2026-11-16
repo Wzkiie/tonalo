@@ -59,7 +59,10 @@ object Network {
         .build()
 
     /** For requests that change something: OkHttp must not silently send them again after a broken connection (network switch). */
-    val httpNoRetry: OkHttpClient by lazy { http.newBuilder().retryOnConnectionFailure(false).build() }
+    val httpNoRetry: OkHttpClient by lazy {
+        // No kept-alive connections either: one the server closed meanwhile would fail the request without any retry ("No connection" when deleting a playlist)
+        http.newBuilder().retryOnConnectionFailure(false).connectionPool(okhttp3.ConnectionPool(0, 1, TimeUnit.SECONDS)).build()
+    }
 
     private object SafeRedirects : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {

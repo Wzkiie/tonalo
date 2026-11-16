@@ -44,6 +44,8 @@ data class PlayerState(
     val tvName: String? = null,
     /** Only a guest there: may add songs and skip, nothing more. */
     val tvGuest: Boolean = false,
+    /** The controller is connected and this state was read from it: before that, "no media" only means "not asked yet". Travels with the state so both are seen together. */
+    val connected: Boolean = false,
 ) {
     val current: Song? get() = queue.getOrNull(index)
     val hasMedia: Boolean get() = current != null || station != null
@@ -62,7 +64,7 @@ class PlayerConnection(context: Context) {
     val connected: StateFlow<Boolean> = _connected
     private val scope = MainScope()
     /** What this phone plays – or, while the own TV plays or a Jukebox is joined, what plays there. */
-    val state: StateFlow<PlayerState> = combine(_state, TvLink.remote) { local, remote -> remote?.toPlayerState() ?: local }
+    val state: StateFlow<PlayerState> = combine(_state, TvLink.remote, _connected) { local, remote, connected -> (remote?.toPlayerState() ?: local).copy(connected = connected) }
         .stateIn(scope, SharingStarted.Eagerly, PlayerState())
 
     private val remote get() = TvLink.remote.value

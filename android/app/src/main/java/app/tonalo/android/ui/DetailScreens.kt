@@ -162,11 +162,11 @@ fun ActionIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, label: Str
 
 /** Heart · download · … on the left, shuffle and play on the right. */
 @Composable
-fun ActionRow(left: @Composable () -> Unit, playing: Boolean, play: () -> Unit, shuffle: () -> Unit) {
+fun ActionRow(left: @Composable () -> Unit, playing: Boolean, play: () -> Unit, shuffle: () -> Unit, canPlay: Boolean = true) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         left()
         Spacer(Modifier.weight(1f))
-        PlayButtons(playing, play, shuffle)
+        if (canPlay) PlayButtons(playing, play, shuffle)
     }
 }
 
@@ -268,7 +268,7 @@ fun PlaylistScreen(id: String) {
     var confirmDelete by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
-    var newName by remember { mutableStateOf("") }
+    var newName by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue("")) }
     var pick by remember { mutableStateOf(false) }
     var removing by remember { mutableStateOf(false) }
     val order = remember { mutableStateListOf<Song>() }
@@ -307,14 +307,16 @@ fun PlaylistScreen(id: String) {
                         }
                     }) { Text(stringResource(R.string.done), color = Palette.accent) }
                     else MoreMenu { close ->
-                        MenuItem(R.string.add_to_queue, Icons.AutoMirrored.Filled.QueueMusic) { close(); player.enqueue(songs) }
-                        MenuItem(R.string.add_to_other_playlist, Icons.AutoMirrored.Filled.PlaylistAdd) { close(); pick = true }
+                        if (songs.isNotEmpty()) {
+                            MenuItem(R.string.add_to_queue, Icons.AutoMirrored.Filled.QueueMusic) { close(); player.enqueue(songs) }
+                            MenuItem(R.string.add_to_other_playlist, Icons.AutoMirrored.Filled.PlaylistAdd) { close(); pick = true }
+                        }
                         if (djOn && DJ.configured) MenuItem(R.string.dj_with_playlist, Icons.Default.AutoAwesome) {
                             close(); songs.firstOrNull()?.let { s -> scope.launch { runCatching { DJ.takeOver(s) } } }
                         }
                         if (owned) {
                             if (editable) MenuItem(R.string.edit_songs, Icons.AutoMirrored.Filled.List) { close(); order.clear(); order.addAll(songs); editing = true }
-                            MenuItem(R.string.rename, Icons.Default.Edit) { close(); newName = p.name; renaming = true }
+                            MenuItem(R.string.rename, Icons.Default.Edit) { close(); newName = androidx.compose.ui.text.input.TextFieldValue(p.name, androidx.compose.ui.text.TextRange(p.name.length)); renaming = true }
                             MenuItem(R.string.delete_playlist, Icons.Default.Delete) { close(); confirmDelete = true }
                         }
                     }
@@ -322,6 +324,7 @@ fun PlaylistScreen(id: String) {
                 playing = playing,
                 play = { if (state.contextId == cid) player.toggle() else player.play(songs, context = p.name, contextId = cid) },
                 shuffle = { player.play(songs, shuffled = true, context = p.name, contextId = cid) },
+                canPlay = songs.isNotEmpty(),
             )
         },
         refreshing = loader.refreshing, onRefresh = loader.reload,
@@ -369,7 +372,7 @@ fun PlaylistScreen(id: String) {
         confirmButton = {
             TextButton(onClick = {
                 renaming = false
-                val n = newName.trim()
+                val n = newName.text.trim()
                 if (n.isNotEmpty()) scope.launch {
                     try { context.tonalo.client()?.updatePlaylist(p.id, name = n); Playlists.changed(); loader.reload() }
                     catch (e: CancellationException) { throw e } catch (e: Exception) { snackbar.showSnackbar(errorText(context, e)) }

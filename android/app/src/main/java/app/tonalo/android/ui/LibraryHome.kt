@@ -242,7 +242,7 @@ fun LibraryScreen() {
         LibItem.Favorites -> if (filter == LibFilter.DOWNLOADS) stringResource(R.string.n_of_m_downloaded, downloadedFavorites, starred?.song?.size ?: 0)
             else stringResource(R.string.playlist) + " • " + pluralString(R.plurals.song_count, starred?.song?.size ?: 0)
         LibItem.DownloadsItem -> pluralString(R.plurals.song_count, downloaded.size)
-        is LibItem.P -> listOfNotNull(stringResource(R.string.playlist), item.p.owner).joinToString(" • ")
+        is LibItem.P -> listOfNotNull(stringResource(R.string.playlist), item.p.owner, item.p.songCount?.let { pluralString(R.plurals.song_count, it) }).joinToString(" • ")
         is LibItem.A -> listOfNotNull(stringResource(R.string.album), item.a.artist).joinToString(" • ")
         is LibItem.R -> stringResource(R.string.artist)
         is LibItem.B -> listOfNotNull(

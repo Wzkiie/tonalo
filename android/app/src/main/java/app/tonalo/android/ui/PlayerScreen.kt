@@ -188,8 +188,7 @@ fun PlayerScreen(onClose: () -> Unit) {
     var pickPlaylist by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     // Only once the connection has been asked: after a rotation the new connection starts empty, and the player must stay
-    val connected by player.connected.collectAsState()
-    LaunchedEffect(state.hasMedia, connected) { if (connected && !state.hasMedia) onClose() }
+    LaunchedEffect(state.hasMedia, state.connected) { if (state.connected && !state.hasMedia) onClose() }
     if (!state.hasMedia) return
     val djEnabled by DJ.enabled.collectAsState()
     val djReady = djEnabled && DJ.configured
