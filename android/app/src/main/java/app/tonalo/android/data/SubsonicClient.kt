@@ -328,6 +328,8 @@ class SubsonicClient(val account: Account, private val cache: LibraryCache? = nu
             artistId?.let { add("artistId" to it) }
         }
         call(if (on) "star" else "unstar", *p.toTypedArray())
+        // The favorites the search ranks by changed
+        SearchPool.forget(account.id)
     }
 
     /**

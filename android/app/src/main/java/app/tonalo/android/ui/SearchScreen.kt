@@ -53,7 +53,10 @@ import androidx.compose.ui.draw.shadow
 import app.tonalo.android.R
 import app.tonalo.android.data.SubsonicClient
 import app.tonalo.android.data.Song
-import app.tonalo.android.data.RecentSearches
+import app.tonalo.android.data.SearchPlays
+import app.tonalo.android.data.SearchSignals
+import app.tonalo.android.data.SmartResult
+import app.tonalo.android.data.smartSearch
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.material.icons.filled.History
@@ -89,14 +92,15 @@ fun SearchScreen() {
     val hasMusic = account?.hasMusic != false
     val booksConnected by app.books.connected.collectAsState()
     var focused by androidx.compose.runtime.remember { mutableStateOf(false) }
-    var recent by androidx.compose.runtime.remember(account?.id) { mutableStateOf(RecentSearches.load(app, account?.id)) }
+    // Songs that were found by searching and then played: shown while the field is empty, and ranked higher
+    var searchPlays by androidx.compose.runtime.remember(account?.id) { mutableStateOf(SearchPlays.load(app, account?.id)) }
     val suggestedTitle = stringResource(R.string.suggested_for_you)
     // Songs that fit what was listened to lately, shown while the field is empty. Nothing if the server knows no similar ones.
     val suggested by produceState<List<Song>>(emptyList(), account?.id, attempt) {
         if (!hasMusic) return@produceState
         value = try { app.client()?.let { suggestedSongs(it) }.orEmpty() } catch (e: CancellationException) { throw e } catch (e: Exception) { emptyList() }
     }
-    val loader = if (hasMusic && text.length >= 2) rememberLoad("search", text, refresh = attempt) { c -> delay(200); c.search(text) } else null
+    val loader = if (hasMusic && text.length >= 2) rememberLoad("search", text, refresh = attempt) { c -> delay(200); c.smartSearch(text, SearchSignals(app.history.dates(account?.id), searchPlays)) } else null
     // The same wait for typing to pause as the music search
     val found by produceState<ABSSearchResults?>(null, text, attempt, booksConnected) {
         value = null
@@ -108,16 +112,6 @@ fun SearchScreen() {
             throw e
         } catch (e: Exception) {
             ABSSearchResults()
-        }
-    }
-
-    // Searches that found something and stayed for a moment are worth keeping, not every half-typed word
-    val foundMusic = (loader?.state as? Load.Ready<SearchBody>)?.value?.let { it.artist.orEmpty().isNotEmpty() || it.album.orEmpty().isNotEmpty() || it.song.orEmpty().isNotEmpty() } == true
-    val foundBooks = found?.let { it.items.isNotEmpty() || it.authors.isNotEmpty() || it.series.isNotEmpty() || it.narrators.isNotEmpty() } == true
-    LaunchedEffect(text, foundMusic, foundBooks) {
-        if (text.length >= 2 && (foundMusic || foundBooks)) {
-            delay(1_500)
-            recent = RecentSearches.remember(app, account?.id, text)
         }
     }
 
@@ -147,7 +141,6 @@ fun SearchScreen() {
                         cursorBrush = SolidColor(Color.Black),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = {
-                            recent = RecentSearches.remember(app, account?.id, query)
                             keyboard?.hide(); focus.clearFocus()
                         }),
                     )
@@ -156,30 +149,22 @@ fun SearchScreen() {
             }
         }
         if (text.length < 2) {
-            // Tapping into the field swaps the tiles for earlier searches and suggestions – as long as there are any
-            val earlier = if (text.isEmpty()) recent else recent.filter { it.contains(text, ignoreCase = true) && !it.equals(text, ignoreCase = true) }
+            // Tapping into the field swaps the tiles for the songs that were searched and played, and suggestions
             val showSuggested = text.isEmpty() && suggested.isNotEmpty()
-            if (focused && (earlier.isNotEmpty() || showSuggested)) {
-                if (earlier.isNotEmpty()) {
-                    item(key = "recent-head") {
+            val showPlayed = text.isEmpty() && searchPlays.isNotEmpty()
+            if (focused && (showPlayed || showSuggested)) {
+                if (showPlayed) {
+                    item(key = "played-head") {
                         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.recent_searches), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Text(stringResource(R.string.recent_songs), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             Text(stringResource(R.string.clear_all), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Palette.secondaryText,
-                                modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { recent = RecentSearches.forget(app, account?.id, null) }.padding(8.dp))
+                                modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { searchPlays = SearchPlays.clear(app, account?.id) }.padding(8.dp))
                         }
                     }
-                    items(earlier, key = { "recent-" + it }) { s ->
-                        Row(
-                            Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                                .clickable { query = s; recent = RecentSearches.remember(app, account?.id, s); focus.clearFocus() }.padding(start = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Default.History, null, tint = Palette.secondaryText, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(14.dp))
-                            Text(s, fontSize = 16.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                            IconButton(onClick = { recent = RecentSearches.forget(app, account?.id, s) }) {
-                                Icon(Icons.Default.Close, stringResource(R.string.remove), tint = Palette.secondaryText, modifier = Modifier.size(18.dp))
-                            }
+                    items(searchPlays.size, key = { "played-" + searchPlays[it].id }) { i ->
+                        SongRow(searchPlays[i], showCover = true) {
+                            searchPlays = SearchPlays.remember(app, account?.id, searchPlays[i])
+                            player.play(searchPlays, 0, context = suggestedTitle, contextId = "search")
                         }
                     }
                 }
@@ -197,10 +182,17 @@ fun SearchScreen() {
             }
             return@LazyColumn
         }
-        val music = (loader?.state as? Load.Ready<SearchBody>)?.value
+        val smart = (loader?.state as? Load.Ready<SmartResult>)?.value
+        val music = smart?.body
         val artists = music?.artist.orEmpty()
         val songs = music?.song.orEmpty()
         val albums = music?.album.orEmpty()
+        // Nothing was spelled like this: these are the closest ones
+        if (smart?.similarOnly == true && (artists.isNotEmpty() || songs.isNotEmpty() || albums.isNotEmpty())) {
+            item(key = "similar-head") {
+                Text(stringResource(R.string.similar_results), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp))
+            }
+        }
         items(artists, key = { "r" + it.id }) { a ->
             Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                 ItemRow(a.name, stringResource(R.string.artist), onClick = { nav.open(artistRoute(a.id)) }) {
@@ -208,7 +200,10 @@ fun SearchScreen() {
                 }
             }
         }
-        items(songs.size, key = { "s" + songs[it].id + it }) { i -> SongRow(songs[i], showCover = true) { player.play(songs, i, context = text, contextId = "search") } }
+        items(songs.size, key = { "s" + songs[it].id + it }) { i -> SongRow(songs[i], showCover = true) {
+            searchPlays = SearchPlays.remember(app, account?.id, songs[i])
+            player.play(songs, i, context = text, contextId = "search")
+        } }
         items(albums, key = { "a" + it.id }) { a ->
             Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                 ItemRow(a.name, listOfNotNull(stringResource(R.string.album), a.artist).joinToString(" • "), onClick = { nav.open(albumRoute(a.id)) }) {

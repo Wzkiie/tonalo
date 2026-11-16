@@ -71,7 +71,8 @@
     <string name="shuffle">Shuffle</string>
     <string name="play_next">Play next</string>
     <string name="plays_next">Plays next</string>
-    <string name="recent_searches">Recent searches</string>
+    <string name="recent_songs">Recently searched</string>
+    <string name="similar_results">Closest matches</string>
     <string name="clear_all">Clear all</string>
     <string name="suggested_for_you">Suggested for you</string>
     <string name="add_to_queue">Add to queue</string>
