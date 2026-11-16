@@ -82,13 +82,13 @@ fun ProfileMenu(close: () -> Unit, open: (String) -> Unit) {
             accounts.filter { it.id != current?.id }.forEach { acc ->
                 MenuRow(acc.username, acc.host, icon = { NameAvatar(acc.username, 28.dp) }) { close(); app.select(acc.id) }
             }
-            MenuRow(stringResource(R.string.downloads), icon = Icons.Outlined.ArrowCircleDown) { open("downloads") }
+            MenuRow(stringResource(R.string.downloads), icon = TonaloGlyphs.Download, iconSize = 22.dp) { open("downloads") }
             if (current?.hasMusic != false) {
-                MenuRow(stringResource(R.string.devices_title), icon = Icons.Outlined.Tv) { open("devices") }
-                MenuRow(stringResource(R.string.jukebox), icon = Icons.Outlined.Groups) { open("jukebox") }
+                MenuRow(stringResource(R.string.devices_title), icon = TonaloGlyphs.Tv, iconSize = 19.dp) { open("devices") }
+                MenuRow(stringResource(R.string.jukebox), icon = TonaloGlyphs.Jukebox, iconSize = 20.dp) { open("jukebox") }
                 MenuRow(stringResource(R.string.dj), icon = { DJMark(Modifier.size(24.dp), Color.White) }) { open("dj") }
             }
-            MenuRow(stringResource(R.string.tab_settings), icon = Icons.Outlined.Settings) { open("settings") }
+            MenuRow(stringResource(R.string.tab_settings), icon = TonaloGlyphs.Gear, iconSize = 22.dp) { open("settings") }
             Spacer(Modifier.weight(1f))
             if (current != null) MenuRow(stringResource(R.string.sign_out), icon = Icons.AutoMirrored.Outlined.Logout, color = Palette.subtle) { logout = true }
             Spacer(Modifier.height(8.dp))
@@ -108,12 +108,12 @@ private fun ServerLine(icon: ImageVector, user: String, host: String) {
 }
 
 @Composable
-private fun MenuRow(title: String, sub: String? = null, icon: ImageVector, color: Color = Color.White, onClick: () -> Unit) =
-    MenuRow(title, sub, icon = { Icon(icon, null, tint = color, modifier = Modifier.size(26.dp)) }, color = color, onClick = onClick)
+private fun MenuRow(title: String, sub: String? = null, icon: ImageVector, iconSize: androidx.compose.ui.unit.Dp = 26.dp, color: Color = Color.White, onClick: () -> Unit) =
+    MenuRow(title, sub, icon = { Icon(icon, null, tint = color, modifier = Modifier.size(iconSize)) }, color = color, onClick = onClick)
 
 @Composable
 private fun MenuRow(title: String, sub: String? = null, icon: @Composable () -> Unit, color: Color = Color.White, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().plainClickable(onClick = onClick).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.width(30.dp), contentAlignment = Alignment.Center) { icon() }
         Spacer(Modifier.width(16.dp))
         Column {

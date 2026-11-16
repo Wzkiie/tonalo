@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.ArrowCircleDown
@@ -78,11 +79,11 @@ fun NameAvatar(name: String, size: Dp = 36.dp, modifier: Modifier = Modifier) {
 
 /** The account's avatar, top left – opens the side menu with accounts and settings (like the iPhone app). */
 @Composable
-fun Avatar(size: Dp = 36.dp) {
+fun Avatar(size: Dp = 32.dp) {
     val context = LocalContext.current
     val openMenu = LocalMenu.current
     val account by context.tonalo.current.collectAsState()
-    NameAvatar(account?.username ?: "?", size, Modifier.clip(CircleShape).clickable(onClick = openMenu))
+    NameAvatar(account?.username ?: "?", size, Modifier.clip(CircleShape).plainClickable(onClick = openMenu))
 }
 
 /** Page title with the avatar in front, for the three main tabs. */
@@ -104,7 +105,7 @@ fun Chip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier.height(32.dp).clip(CircleShape)
             .background(if (selected) Palette.accent else Palette.elevated)
-            .clickable(onClick = onClick)
+            .plainClickable(onClick = onClick)
             .padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -129,7 +130,7 @@ fun QuickTile(
     // What plays (or is paused) right now: the tile shows it, with a small level meter in the corner
     Box(
         modifier.height(56.dp).clip(RoundedCornerShape(Palette.corner(4.dp)))
-            .background(if (current) Palette.accent.copy(alpha = 0.22f) else Palette.elevated).clickable(onClick = onClick),
+            .background(if (current) Palette.accent.copy(alpha = 0.22f) else Palette.elevated).plainClickable(onClick = onClick),
     ) {
         Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(56.dp)) { art() }
@@ -245,7 +246,7 @@ fun FavoritesArt(modifier: Modifier = Modifier.fillMaxSize(), corner: Dp = 0.dp)
         modifier.clip(RoundedCornerShape(corner)).background(Palette.canvas)
             .background(Brush.linearGradient(listOf(Palette.accent, Palette.accent.copy(alpha = 0.35f)))),
         contentAlignment = Alignment.Center,
-    ) { Icon(Icons.Rounded.Favorite, null, tint = Color.White, modifier = Modifier.fillMaxSize(0.38f)) }
+    ) { Icon(TonaloGlyphs.HeartFilled, null, tint = Color.White, modifier = Modifier.fillMaxSize(0.38f)) }
 }
 
 /** "Downloads": the accent arrow on a gray gradient. */
@@ -254,7 +255,7 @@ fun DownloadsArt(modifier: Modifier = Modifier.fillMaxSize(), corner: Dp = 0.dp)
     Box(
         modifier.clip(RoundedCornerShape(corner)).background(Brush.linearGradient(listOf(Color(0xFF4D4D4D), Color(0xFF1F1F1F)))),
         contentAlignment = Alignment.Center,
-    ) { Icon(Icons.Default.ArrowCircleDown, null, tint = Palette.accent, modifier = Modifier.fillMaxSize(0.42f)) }
+    ) { Icon(TonaloGlyphs.Downloaded, null, tint = Palette.accent, modifier = Modifier.fillMaxSize(0.42f)) }
 }
 
 /** A color for a name that stays the same on every start – the same pick as the iPhone (FNV hash). */
@@ -278,7 +279,7 @@ fun MixCard(title: String, subtitle: String?, hue: Float, icon: ImageVector, siz
     Column(Modifier.width(size)) {
         Box(
             Modifier.size(size).clip(RoundedCornerShape(Palette.corner(4.dp))).background(hueGradient(hue))
-                .clickable { if (!busy) { busy = true; scope.launch { try { onClick() } finally { busy = false } } } },
+                .plainClickable { if (!busy) { busy = true; scope.launch { try { onClick() } finally { busy = false } } } },
         ) {
             Icon(
                 icon, null, tint = Color.White.copy(alpha = 0.9f),
@@ -341,7 +342,7 @@ fun GlassBackButton(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null
 /** The big round play button in the accent color. */
 @Composable
 fun BigPlayButton(size: Dp = 56.dp, onClick: () -> Unit) {
-    Box(Modifier.size(size).clip(CircleShape).background(Palette.accent).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(size).clip(CircleShape).background(Palette.accent).plainClickable(onClick = onClick), contentAlignment = Alignment.Center) {
         Icon(TonaloIcons.Play, stringResource(R.string.play), tint = Color.Black, modifier = Modifier.size(size * 0.55f))
     }
 }
@@ -369,6 +370,8 @@ fun DownloadButton(songs: List<Song>) {
                 val progress = ((done + infos.filter { !it.done }.sumOf { it.progress.toDouble() }.toFloat()) / songs.size.coerceAtLeast(1)).coerceIn(0f, 1f)
                 CircularProgressIndicator(progress = { progress }, Modifier.size(22.dp), color = Palette.accent, strokeWidth = 2.5.dp, trackColor = Palette.elevated)
             }
+            // Some songs are on the device, the rest is not: the dotted circle (the iPhone's partly downloaded state)
+            done > 0 -> Icon(TonaloGlyphs.DownloadPartial, stringResource(R.string.download), tint = Palette.accent)
             else -> Icon(TonaloGlyphs.Download, stringResource(R.string.download), tint = Palette.secondaryText)
         }
     }
@@ -379,7 +382,7 @@ fun SectionHeader(title: String, more: (() -> Unit)? = null) {
     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 12.dp), verticalAlignment = Alignment.Bottom) {
         Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         if (more != null) Text(
-            stringResource(R.string.show_all), Modifier.clickable(onClick = more).padding(start = 8.dp, bottom = 2.dp),
+            stringResource(R.string.show_all), Modifier.plainClickable(onClick = more).padding(start = 8.dp, bottom = 2.dp),
             color = Palette.secondaryText, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
         )
     }
@@ -406,7 +409,7 @@ fun PlaylistCard(playlist: app.tonalo.android.data.Playlist, width: Dp? = 150.dp
 fun ArtistCard(artist: app.tonalo.android.data.Artist) {
     val nav = LocalNav.current
     val scale = coverScale()
-    Column(Modifier.width(140.dp * scale).clickable { nav.open(artistRoute(artist.id)) }) {
+    Column(Modifier.width(140.dp * scale).plainClickable { nav.open(artistRoute(artist.id)) }) {
         Cover(artist.coverArt ?: "ar-${artist.id}", 140.dp * scale, corner = 70.dp * scale, pixels = 300, placeholder = Icons.Default.Person)
         Text(artist.name, Modifier.padding(top = 6.dp), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(stringResource(R.string.artist), fontSize = 13.sp, color = Palette.secondaryText)
@@ -420,11 +423,11 @@ fun coverScale(): Float {
 }
 
 @Composable
-private fun CoverCard(title: String, subtitle: String, coverArt: String?, width: Dp?, placeholder: ImageVector = Icons.Default.Album, onClick: () -> Unit) {
+private fun CoverCard(title: String, subtitle: String, coverArt: String?, width: Dp?, placeholder: ImageVector = Icons.Default.MusicNote, onClick: () -> Unit) {
     val scale = coverScale()
     androidx.compose.foundation.layout.BoxWithConstraints(if (width != null) Modifier.width(width * scale) else Modifier.fillMaxWidth()) {
         val side = maxWidth
-        Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Column(Modifier.fillMaxWidth().plainClickable(onClick = onClick)) {
             Cover(coverArt, side, corner = Palette.corner(4.dp), pixels = 300, placeholder = placeholder)
             Text(title, Modifier.padding(top = 6.dp), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (subtitle.isNotEmpty()) Text(subtitle, fontSize = 13.sp, color = Palette.secondaryText, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -435,7 +438,7 @@ private fun CoverCard(title: String, subtitle: String, coverArt: String?, width:
 /** The big round play/pause button in the accent color (black symbol). */
 @Composable
 fun PlayCircle(playing: Boolean, size: Dp = 52.dp, color: Color = Palette.accent, onClick: () -> Unit) {
-    Box(Modifier.size(size).clip(CircleShape).background(color).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(size).clip(CircleShape).background(color).plainClickable(onClick = onClick), contentAlignment = Alignment.Center) {
         Icon(
             if (playing) TonaloIcons.Pause else TonaloIcons.Play,
             stringResource(if (playing) R.string.cd_pause else R.string.cd_play), tint = Color.Black,

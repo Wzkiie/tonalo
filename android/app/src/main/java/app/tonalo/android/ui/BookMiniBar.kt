@@ -52,7 +52,7 @@ fun BookMiniBar(onOpen: () -> Unit) {
     val progress = if (state.durationSec > 0) (state.positionSec / state.durationSec).toFloat().coerceIn(0f, 1f) else 0f
     Box(
         Modifier.padding(horizontal = 10.dp, vertical = 4.dp).clip(RoundedCornerShape(16.dp))
-            .background(tint?.darken(0.75f) ?: Palette.elevated).clickable(onClick = onOpen),
+            .background(tint?.darken(0.75f) ?: Palette.elevated).plainClickable(onClick = onOpen),
     ) {
         Column {
             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {

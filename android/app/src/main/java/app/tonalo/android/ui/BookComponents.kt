@@ -324,7 +324,7 @@ fun BookCard(item: ABSItem, width: Dp? = 140.dp) {
     var menu by remember { mutableStateOf(false) }
     Box(if (width != null) Modifier.width(width * scale) else Modifier.fillMaxWidth()) {
         Column(
-            Modifier.fillMaxWidth().combinedClickable(onClick = { nav.open(bookRoute(item.id)) }, onLongClick = { menu = true }),
+            Modifier.fillMaxWidth().combinedClickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = { nav.open(bookRoute(item.id)) }, onLongClick = { menu = true }),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             BookCover(item.id, Modifier.fillMaxWidth())
@@ -373,7 +373,7 @@ fun BookRowFrame(
     var open by remember { mutableStateOf(false) }
     Box {
         Row(
-            Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = if (menu != null) ({ open = true }) else null)
+            Modifier.fillMaxWidth().combinedClickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onClick, onLongClick = if (menu != null) ({ open = true }) else null)
                 .padding(horizontal = 16.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -474,7 +474,7 @@ fun BookDownloadButton(item: ABSItem, episode: ABSEpisode? = null, size: Dp = 22
     val untouched = state is BookDownloadState.None
     if (untouched && !canDownload) return
     Box(
-        Modifier.size(size + 14.dp).clip(CircleShape).clickable {
+        Modifier.size(size + 14.dp).clip(CircleShape).plainClickable {
             when (state) {
                 is BookDownloadState.None, is BookDownloadState.Failed -> BookDownloads.download(context, item, episode)
                 is BookDownloadState.Done -> confirmRemove = true

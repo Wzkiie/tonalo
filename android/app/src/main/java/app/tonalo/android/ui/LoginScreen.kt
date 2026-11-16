@@ -422,7 +422,7 @@ private fun SignIn(
                 Spacer(Modifier.height(28.dp))
                 val turn by animateFloatAsState(if (options) 180f else 0f, tween(200), label = "chevron")
                 Row(
-                    Modifier.clip(CircleShape).clickable { options = !options }.padding(horizontal = 12.dp, vertical = 6.dp),
+                    Modifier.clip(CircleShape).plainClickable { options = !options }.padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(stringResource(R.string.more_options), color = Palette.subtle, style = MaterialTheme.typography.bodyMedium)
@@ -448,7 +448,7 @@ private fun SignIn(
                         if (both) {
                             OptionDivider()
                             Row(
-                                Modifier.fillMaxWidth().height(52.dp).clickable { f.same = !f.same }.padding(horizontal = 16.dp),
+                                Modifier.fillMaxWidth().height(52.dp).plainClickable { f.same = !f.same }.padding(horizontal = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Icon(Icons.Default.Link, null, tint = Palette.accent, modifier = Modifier.size(22.dp))
@@ -711,7 +711,7 @@ private fun LoginField(
 @Composable
 private fun OptionRow(icon: ImageVector, title: String, value: String, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().height(52.dp).clickable(onClick = onClick).padding(horizontal = 16.dp),
+        Modifier.fillMaxWidth().height(52.dp).plainClickable(onClick = onClick).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, null, tint = Palette.accent, modifier = Modifier.size(22.dp))

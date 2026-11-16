@@ -3,6 +3,7 @@ package app.tonalo.android.ui
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.composed
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
@@ -235,15 +236,24 @@ fun EmptyView(text: String = stringResource(R.string.nothing_here)) {
 
 // region Covers and rows
 
+/** A click without the press ripple: the iPhone's rows, chips, tiles and cards show none. Keeps the button semantics. */
+fun Modifier.plainClickable(enabled: Boolean = true, onClick: () -> Unit): Modifier = composed {
+    clickable(
+        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+        indication = null, enabled = enabled, onClick = onClick,
+    )
+}
+
 @Composable
-fun Cover(coverArt: String?, size: Dp, modifier: Modifier = Modifier, corner: Dp = 4.dp, pixels: Int = 300, placeholder: ImageVector = Icons.Default.Album) {
+fun Cover(coverArt: String?, size: Dp, modifier: Modifier = Modifier, corner: Dp = 4.dp, pixels: Int = 300, placeholder: ImageVector = Icons.Default.MusicNote) {
     val context = LocalContext.current
     val account by context.tonalo.current.collectAsState()
     val url = remember(coverArt, pixels, account?.id, account?.serverURL) { context.tonalo.client()?.coverURL(coverArt, pixels) }
     val shape = RoundedCornerShape(corner)
     val fallback = @Composable {
         Box(Modifier.fillMaxSize().background(Palette.elevated), contentAlignment = Alignment.Center) {
-            Icon(placeholder, null, tint = Palette.secondaryText, modifier = Modifier.size(size / 2.5f))
+            // The iPhone's placeholder: a symbol in white at 45 % on the elevated colour
+            Icon(placeholder, null, tint = Color.White.copy(alpha = 0.45f), modifier = Modifier.size(minOf(28.dp, size / 2)))
         }
     }
     Box(modifier.size(size).clip(shape)) {
@@ -268,7 +278,7 @@ fun SectionTitle(text: String, modifier: Modifier = Modifier, action: (@Composab
 
 @Composable
 fun AlbumCard(title: String, subtitle: String?, coverArt: String?, size: Dp = 150.dp, onClick: () -> Unit) {
-    Column(Modifier.width(size).clickable(onClick = onClick)) {
+    Column(Modifier.width(size).plainClickable(onClick = onClick)) {
         Cover(coverArt, size, corner = Palette.corner(6.dp))
         Spacer(Modifier.height(6.dp))
         Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -285,7 +295,7 @@ fun ListRow(
     coverArt: String? = null,
     showCover: Boolean = true,
     leading: (@Composable () -> Unit)? = null,
-    placeholder: ImageVector = Icons.Default.Album,
+    placeholder: ImageVector = Icons.Default.MusicNote,
     round: Boolean = false,
     highlighted: Boolean = false,
     coverSize: Dp = 52.dp,
@@ -294,7 +304,7 @@ fun ListRow(
     onClick: () -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 7.dp),
+        Modifier.fillMaxWidth().plainClickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         when {
@@ -358,8 +368,10 @@ fun SongRow(
     Box(Modifier.fillMaxWidth()) {
     SongSwipeBackdrop(swipeState)
     Row(
-        Modifier.fillMaxWidth().songSwipe(swipeState).combinedClickable(onClick = onClick, onLongClick = { menu = true })
-            .padding(horizontal = if (padded) 16.dp else 0.dp, vertical = 5.dp),
+        Modifier.fillMaxWidth().songSwipe(swipeState).combinedClickable(
+            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null,
+            onClick = onClick, onLongClick = { menu = true },
+        ).padding(horizontal = if (padded) 16.dp else 0.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (number != null) {
@@ -373,7 +385,7 @@ fun SongRow(
         Column(Modifier.weight(1f)) {
             Text(song.title, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (isCurrent) Palette.accent else Color.White)
             Row(Modifier.padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (starred) { Icon(Icons.Rounded.Favorite, stringResource(R.string.favorites), tint = Palette.accent, modifier = Modifier.size(11.dp)); Spacer(Modifier.width(5.dp)) }
+                if (starred) { Icon(TonaloGlyphs.HeartFilled, stringResource(R.string.favorites), tint = Palette.accent, modifier = Modifier.size(11.dp)); Spacer(Modifier.width(5.dp)) }
                 when {
                     download?.done == true -> { Icon(TonaloGlyphs.Downloaded, null, tint = Palette.accent, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
                     download != null && !download.failed -> {
@@ -430,7 +442,11 @@ fun Modifier.songSwipe(s: SongSwipe): Modifier {
                 scope.launch {
                     s.offset.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 400f))
                 }
-                if (go) { if (right) s.onRight() else s.onLeft() }
+                if (go) {
+                    // A stronger tap when the action fires (the light tick came when the threshold was crossed)
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    if (right) s.onRight() else s.onLeft()
+                }
             }
             detectHorizontalDragGestures(
                 onDragEnd = { release(kotlin.math.abs(s.offset.value) >= trigger) },
@@ -453,12 +469,13 @@ fun Modifier.songSwipe(s: SongSwipe): Modifier {
 fun BoxScope.SongSwipeBackdrop(s: SongSwipe) {
     val pulled = s.offset.value
     if (!s.enabled || pulled == 0f) return
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
     Box(Modifier.matchParentSize().padding(horizontal = 24.dp), contentAlignment = if (pulled > 0) Alignment.CenterStart else Alignment.CenterEnd) {
         Icon(
-            if (pulled > 0) Icons.Rounded.SkipNext else Icons.AutoMirrored.Filled.PlaylistAdd, null, tint = Palette.accent,
-            modifier = Modifier.size(24.dp).graphicsLayer {
-                val k = if (s.armed) 1.2f else 0.8f
-                scaleX = k; scaleY = k; alpha = (kotlin.math.abs(pulled) / 90f).coerceAtMost(1f)
+            if (pulled > 0) TonaloGlyphs.TextInsert else TonaloGlyphs.TextBadgePlus, null, tint = Palette.accent,
+            modifier = Modifier.size(18.dp).graphicsLayer {
+                // The iPhone: opacity follows the pull, full after 40 points
+                alpha = (kotlin.math.abs(pulled) / density / 40f).coerceAtMost(1f)
             },
         )
     }
@@ -488,19 +505,19 @@ fun SongMenu(
     val download = account?.let { downloads[app.tonalo.android.downloads.Downloads.key(it.id, song.id)] }
     Box {
         IconButton(onClick = { setOpen(true) }, modifier = Modifier.size(width = 32.dp, height = 40.dp)) {
-            Icon(Icons.Default.MoreHoriz, stringResource(R.string.cd_more), tint = Palette.secondaryText)
+            Icon(TonaloGlyphs.MoreHorizontal, stringResource(R.string.cd_more), tint = Palette.secondaryText, modifier = Modifier.size(16.dp))
         }
         DropdownMenu(expanded = isOpen, onDismissRequest = { setOpen(false) }) {
             val close = { setOpen(false) }
-            song.albumId?.let { id -> MenuItem(R.string.go_to_album, Icons.Default.Album) { close(); nav.open(albumRoute(id)) } }
-            song.artistId?.let { id -> MenuItem(R.string.go_to_artist, Icons.Default.Person) { close(); nav.open(artistRoute(id)) } }
-            MenuItem(R.string.play_next, Icons.Rounded.SkipNext) { close(); player.playNext(listOf(song)) }
-            MenuItem(R.string.add_to_queue, Icons.AutoMirrored.Filled.QueueMusic) {
+            song.albumId?.let { id -> MenuItem(R.string.go_to_album, TonaloGlyphs.SquareStack) { close(); nav.open(albumRoute(id)) } }
+            song.artistId?.let { id -> MenuItem(R.string.go_to_artist, TonaloGlyphs.Mic) { close(); nav.open(artistRoute(id)) } }
+            MenuItem(R.string.play_next, TonaloGlyphs.TextInsert) { close(); player.playNext(listOf(song)) }
+            MenuItem(R.string.add_to_queue, TonaloGlyphs.TextAppend) {
                 close(); player.enqueue(listOf(song))
                 scope.launch { snackbar.showSnackbar(context.getString(R.string.added_to_queue)) }
             }
-            MenuItem(R.string.add_to_playlist, Icons.AutoMirrored.Filled.PlaylistAdd) { close(); pickPlaylist = true }
-            MenuItem(R.string.start_song_radio, Icons.Default.Radio) {
+            MenuItem(R.string.add_to_playlist, TonaloGlyphs.TextBadgePlus) { close(); pickPlaylist = true }
+            MenuItem(R.string.start_song_radio, TonaloGlyphs.Radio) {
                 close()
                 scope.launch {
                     val ok = app.tonalo.android.playback.Playback.service
@@ -508,7 +525,7 @@ fun SongMenu(
                     if (!ok) snackbar.showSnackbar(context.getString(R.string.radio_failed))
                 }
             }
-            if (djOn && app.tonalo.android.dj.DJ.configured) MenuItem(R.string.dj_from_here, Icons.Default.AutoAwesome) {
+            if (djOn && app.tonalo.android.dj.DJ.configured) MenuItem(R.string.dj_from_here, TonaloGlyphs.Sparkles) {
                 close()
                 scope.launch {
                     try { app.tonalo.android.dj.DJ.takeOver(song) }
@@ -516,8 +533,8 @@ fun SongMenu(
                 }
             }
             when {
-                download?.done == true -> MenuItem(R.string.remove_download, Icons.Default.Delete) { close(); app.tonalo.android.downloads.Downloads.remove(context, listOf(song.id)) }
-                download != null && !download.failed -> MenuItem(R.string.cancel_download, Icons.Default.Close) { close(); app.tonalo.android.downloads.Downloads.remove(context, listOf(song.id)) }
+                download?.done == true -> MenuItem(R.string.remove_download, TonaloGlyphs.Trash) { close(); app.tonalo.android.downloads.Downloads.remove(context, listOf(song.id)) }
+                download != null && !download.failed -> MenuItem(R.string.cancel_download, TonaloGlyphs.Xmark) { close(); app.tonalo.android.downloads.Downloads.remove(context, listOf(song.id)) }
                 else -> MenuItem(R.string.download, TonaloGlyphs.Download) { close(); app.tonalo.android.downloads.Downloads.download(context, listOf(song)) }
             }
             MenuItem(if (starred) R.string.remove_favorite else R.string.add_favorite, if (starred) Icons.Default.HeartBroken else TonaloGlyphs.Heart) {
@@ -623,7 +640,7 @@ fun PlaylistPicker(songs: List<Song>, onDone: () -> Unit) {
                         LazyColumn {
                             item { ListRow(stringResource(R.string.new_playlist), leading = {
                                 Box(Modifier.size(52.dp).clip(RoundedCornerShape(Palette.corner(4.dp))).background(Palette.elevated), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Add, null)
+                                    Icon(TonaloGlyphs.Plus, null)
                                 }
                             }) { creating = true } }
                             items(lists, key = { it.id }) { p ->

@@ -148,11 +148,11 @@ fun AlbumsScreen(startType: String = "alphabeticalByName", genre: String? = null
             if (genre == null) {
                 var open by remember { mutableStateOf(false) }
                 Box {
-                    IconButton(onClick = { open = true }) { Icon(Icons.Default.SwapVert, stringResource(R.string.sort)) }
+                    IconButton(onClick = { open = true }) { Icon(TonaloGlyphs.Sort, stringResource(R.string.sort), modifier = Modifier.size(22.dp)) }
                     DropdownMenu(open, { open = false }) {
                         sorts.forEach { (t, label) ->
                             DropdownMenuItem(text = { Text(stringResource(label)) },
-                                leadingIcon = { if (t == type) Icon(Icons.Default.Check, null, tint = Palette.accent) else Spacer(Modifier.size(24.dp)) },
+                                leadingIcon = { if (t == type) Icon(TonaloGlyphs.Checkmark, null, tint = Palette.accent, modifier = Modifier.size(20.dp)) else Spacer(Modifier.size(24.dp)) },
                                 onClick = { open = false; type = t })
                         }
                     }
@@ -214,7 +214,7 @@ fun SearchField(value: String, onChange: (String) -> Unit, hint: String, modifie
         modifier.fillMaxWidth().height(36.dp).clip(RoundedCornerShape(10.dp)).background(Palette.elevated).padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Default.Search, null, tint = Palette.secondaryText, modifier = Modifier.size(18.dp))
+        Icon(TonaloGlyphs.Search, null, tint = Palette.secondaryText, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
         Box(Modifier.weight(1f)) {
             if (value.isEmpty()) Text(hint, color = Palette.subtle, fontSize = 15.sp)
@@ -227,7 +227,7 @@ fun SearchField(value: String, onChange: (String) -> Unit, hint: String, modifie
 /** Library-style row: a 64 dp picture, title, gray subtitle. */
 @Composable
 fun ItemRow(title: String, subtitle: String, onClick: () -> Unit, art: @Composable () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().plainClickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(64.dp)) { art() }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
@@ -249,7 +249,7 @@ fun PlaylistsScreen() {
     var naming by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         TopBar(stringResource(R.string.playlists)) {
-            IconButton(onClick = { naming = true }) { Icon(Icons.Default.Add, stringResource(R.string.new_playlist)) }
+            IconButton(onClick = { naming = true }) { Icon(TonaloGlyphs.Plus, stringResource(R.string.new_playlist), modifier = Modifier.size(22.dp)) }
         }
         Refreshable(loader.refreshing, loader.reload, Modifier.weight(1f).fillMaxWidth()) {
         LoadView(loader) { all ->
@@ -301,7 +301,7 @@ fun GenresScreen() {
             LazyColumn {
                 items(genres, key = { it.value }) { g ->
                     ListRow(g.value, g.albumCount?.let { pluralString(R.plurals.album_count, it) }, showCover = false,
-                        trailing = { Icon(Icons.Default.ChevronRight, null, tint = Palette.secondaryText) }) {
+                        trailing = { Icon(TonaloGlyphs.ChevronRight, null, tint = Palette.secondaryText, modifier = Modifier.size(12.dp)) }) {
                         nav.open(genreRoute(g.value))
                     }
                 }
@@ -369,7 +369,7 @@ fun DownloadsScreen() {
             Group(stringResource(R.string.downloading_n, active.size)) {
                 active.forEach { d ->
                     GroupRow(icon = { Cover(d.song.coverArt, 44.dp, corner = 4.dp, pixels = 120) }, trailing = {
-                        IconButton(onClick = { Downloads.remove(context, listOf(d.song.id)) }) { Icon(Icons.Default.Close, stringResource(R.string.cancel), tint = Palette.subtle) }
+                        IconButton(onClick = { Downloads.remove(context, listOf(d.song.id)) }) { Icon(TonaloGlyphs.Xmark, stringResource(R.string.cancel), tint = Palette.subtle) }
                     }) {
                         Text(d.song.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         LinearProgressIndicator(progress = { d.progress }, Modifier.fillMaxWidth().padding(top = 6.dp), color = Palette.accent, trackColor = Palette.elevated)
@@ -457,7 +457,7 @@ private fun StationTile(station: Station, size: androidx.compose.ui.unit.Dp) {
     val player = LocalPlayer.current
     val state by player.state.collectAsState()
     val live = state.station?.id == station.id
-    Box(Modifier.size(size).clip(RoundedCornerShape(Palette.corner(4.dp))).clickable {
+    Box(Modifier.size(size).clip(RoundedCornerShape(Palette.corner(4.dp))).plainClickable {
         if (live) player.toggle() else scope.launch { app.tonalo.android.playback.Playback.service?.playStation(station) }
     }) {
         StationArt(station)

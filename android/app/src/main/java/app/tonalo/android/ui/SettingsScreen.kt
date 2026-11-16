@@ -132,15 +132,15 @@ fun SettingsScreen() {
                     val removeText = stringResource(R.string.remove)
                     GroupRow({ app.select(acc.id) }, icon = { NameAvatar(acc.username, 34.dp) }, trailing = {
                         Text(stringResource(R.string.switch_account), color = Palette.accent, style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.minimumInteractiveComponentSize().clip(RoundedCornerShape(8.dp)).clickable { app.select(acc.id) }.padding(6.dp))
-                        Text("✕", color = Palette.subtle, modifier = Modifier.minimumInteractiveComponentSize().clip(CircleShape).clickable { removeOther = acc }.padding(8.dp)
+                            modifier = Modifier.minimumInteractiveComponentSize().clip(RoundedCornerShape(8.dp)).plainClickable { app.select(acc.id) }.padding(6.dp))
+                        Text("✕", color = Palette.subtle, modifier = Modifier.minimumInteractiveComponentSize().clip(CircleShape).plainClickable { removeOther = acc }.padding(8.dp)
                             .semantics { contentDescription = removeText })
                     }) {
                         Text(acc.username, style = MaterialTheme.typography.bodyLarge)
                         Text(acc.host, color = Palette.secondaryText, style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                ActionRow(stringResource(R.string.add_other_account), Icons.Default.Add) { nav.navigate("account/new") }
+                ActionRow(stringResource(R.string.add_other_account), TonaloGlyphs.Plus) { nav.navigate("account/new") }
             }
         }
         item {
@@ -365,9 +365,9 @@ fun AppearanceScreen() {
                             val selected = hex.equals(accent, ignoreCase = true)
                             Box(
                                 Modifier.size(52.dp).then(if (selected) Modifier.border(2.dp, Color.White, CircleShape) else Modifier)
-                                    .padding(4.dp).clip(CircleShape).background(color).clickable { s.setAccent(hex) },
+                                    .padding(4.dp).clip(CircleShape).background(color).plainClickable { s.setAccent(hex) },
                                 contentAlignment = Alignment.Center,
-                            ) { if (selected) Icon(Icons.Default.Check, null, tint = Color.Black, modifier = Modifier.size(20.dp)) }
+                            ) { if (selected) Icon(TonaloGlyphs.Checkmark, null, tint = Color.Black, modifier = Modifier.size(20.dp)) }
                         }
                     }
                 }

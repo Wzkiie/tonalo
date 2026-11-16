@@ -251,7 +251,7 @@ private fun BookSearchField(query: String, onChange: (String) -> Unit) {
             .clip(RoundedCornerShape(Palette.corner(12.dp))).background(Palette.elevated).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Default.Search, null, tint = Palette.secondaryText, modifier = Modifier.size(20.dp))
+        Icon(TonaloGlyphs.Search, null, tint = Palette.secondaryText, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
         Box(Modifier.weight(1f)) {
             if (query.isEmpty()) Text(stringResource(R.string.bk_search_hint), color = Palette.subtle, fontSize = 16.sp)
@@ -262,7 +262,7 @@ private fun BookSearchField(query: String, onChange: (String) -> Unit) {
         }
         if (query.isNotEmpty()) Icon(
             Icons.Default.Close, stringResource(R.string.cd_close), tint = Palette.secondaryText,
-            modifier = Modifier.size(20.dp).clickable { onChange("") },
+            modifier = Modifier.size(20.dp).plainClickable { onChange("") },
         )
     }
 }

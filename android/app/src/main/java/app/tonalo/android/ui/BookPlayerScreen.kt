@@ -256,12 +256,12 @@ fun BookPlayerScreen(onClose: () -> Unit) {
                 Text(
                     if (chapter != null) title else item.creator, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodyLarge,
-                    modifier = if (chapter == null && authorId != null) Modifier.clickable { onClose(); nav.open("bookauthor/" + Uri.encode(authorId)) } else Modifier,
+                    modifier = if (chapter == null && authorId != null) Modifier.plainClickable { onClose(); nav.open("bookauthor/" + Uri.encode(authorId)) } else Modifier,
                 )
                 if (chapter != null && item.creator.isNotEmpty()) Text(
                     item.creator, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall,
-                    modifier = if (authorId != null) Modifier.clickable { onClose(); nav.open("bookauthor/" + Uri.encode(authorId)) } else Modifier,
+                    modifier = if (authorId != null) Modifier.plainClickable { onClose(); nav.open("bookauthor/" + Uri.encode(authorId)) } else Modifier,
                 )
                 state.tvName?.let {
                     Row(Modifier.padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -317,7 +317,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
                     Box(Modifier.size(44.dp)) { BplSkipIcon(false, state.skipBack, 44.dp) }
                 }
                 Box(
-                    Modifier.size(72.dp).clip(CircleShape).background(Color.White).clickable { BookPlayer.toggle() },
+                    Modifier.size(72.dp).clip(CircleShape).background(Color.White).plainClickable { BookPlayer.toggle() },
                     contentAlignment = Alignment.Center,
                 ) {
                     if (state.loading) CircularProgressIndicator(Modifier.size(30.dp), color = Color.Black, strokeWidth = 3.dp)
@@ -363,7 +363,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
                 if (sleeping) Text(
                     if (state.sleepAtChapterEnd) stringResource(R.string.bpl_sleep_active_chapter)
                     else stringResource(R.string.sleep_active, DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(state.sleepEndsAt ?: 0L))),
-                    Modifier.clickable { sleepDialog = true }, style = MaterialTheme.typography.labelMedium, color = Palette.accent,
+                    Modifier.plainClickable { sleepDialog = true }, style = MaterialTheme.typography.labelMedium, color = Palette.accent,
                 )
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = { chapterSheet = true }, enabled = state.chapters.isNotEmpty()) {
@@ -388,7 +388,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
 
 @Composable
 private fun BplChapterRow(title: String, length: Double, current: Boolean, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().plainClickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title, Modifier.weight(1f), color = if (current) Palette.accent else Color.White, fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyLarge)
         Text(bplClock(length), Modifier.padding(start = 8.dp), color = Palette.subtle, style = MaterialTheme.typography.bodyMedium)
@@ -402,9 +402,9 @@ private fun BookSleepDialog(active: Boolean, hasChapters: Boolean, onDone: () ->
         title = { Text(stringResource(R.string.sleep_timer)) },
         text = {
             Column {
-                if (hasChapters) Text(stringResource(R.string.bpl_sleep_chapter), Modifier.fillMaxWidth().clickable { BookPlayer.setSleepAtChapterEnd(true); onDone() }.padding(vertical = 12.dp))
+                if (hasChapters) Text(stringResource(R.string.bpl_sleep_chapter), Modifier.fillMaxWidth().plainClickable { BookPlayer.setSleepAtChapterEnd(true); onDone() }.padding(vertical = 12.dp))
                 listOf(15, 30, 45, 60).forEach { m ->
-                    Text(stringResource(R.string.sleep_minutes, m), Modifier.fillMaxWidth().clickable { BookPlayer.setSleepMinutes(m); onDone() }.padding(vertical = 12.dp))
+                    Text(stringResource(R.string.sleep_minutes, m), Modifier.fillMaxWidth().plainClickable { BookPlayer.setSleepMinutes(m); onDone() }.padding(vertical = 12.dp))
                 }
             }
         },

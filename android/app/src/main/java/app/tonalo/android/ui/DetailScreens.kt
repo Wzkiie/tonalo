@@ -149,7 +149,7 @@ fun InfoText(text: String) = Text(text, fontSize = 13.sp, color = Palette.second
 /** Round picture and a bold name – the artist of an album, the owner of a playlist. */
 @Composable
 fun OwnerLine(name: String, picture: @Composable () -> Unit, onClick: (() -> Unit)? = null) {
-    Row(Modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.then(if (onClick != null) Modifier.plainClickable(onClick = onClick) else Modifier), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(24.dp)) { picture() }
         Spacer(Modifier.width(8.dp))
         Text(name, fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -177,7 +177,7 @@ fun ActionRow(left: @Composable () -> Unit, playing: Boolean, play: () -> Unit, 
 fun MoreMenu(items: @Composable (close: () -> Unit) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { open = true }) { Icon(Icons.Default.MoreHoriz, stringResource(R.string.cd_more), tint = Palette.secondaryText, modifier = Modifier.size(26.dp)) }
+        IconButton(onClick = { open = true }) { Icon(TonaloGlyphs.MoreHorizontal, stringResource(R.string.cd_more), tint = Palette.secondaryText, modifier = Modifier.size(26.dp)) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) { items { open = false } }
     }
 }
@@ -219,7 +219,7 @@ fun AlbumScreen(id: String) {
                 actions = {
                     ActionRow(
                         left = {
-                            ActionIcon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart,
+                            ActionIcon(if (starred) TonaloGlyphs.HeartFilled else TonaloGlyphs.Heart,
                                 stringResource(if (starred) R.string.remove_favorite else R.string.add_favorite), active = starred) {
                                 val on = !starred
                                 Favorites.set(a.id, on)
@@ -227,12 +227,12 @@ fun AlbumScreen(id: String) {
                             }
                             DownloadButton(songs)
                             MoreMenu { close ->
-                                MenuItem(R.string.add_to_queue, Icons.AutoMirrored.Filled.QueueMusic) { close(); player.enqueue(songs) }
-                                MenuItem(R.string.add_to_playlist, Icons.AutoMirrored.Filled.PlaylistAdd) { close(); pick = true }
-                                if (djOn && DJ.configured) MenuItem(R.string.dj_with_album, Icons.Default.AutoAwesome) {
+                                MenuItem(R.string.add_to_queue, TonaloGlyphs.TextAppend) { close(); player.enqueue(songs) }
+                                MenuItem(R.string.add_to_playlist, TonaloGlyphs.TextBadgePlus) { close(); pick = true }
+                                if (djOn && DJ.configured) MenuItem(R.string.dj_with_album, TonaloGlyphs.Sparkles) {
                                     close(); songs.firstOrNull()?.let { s -> scope.launch { runCatching { DJ.takeOver(s) } } }
                                 }
-                                a.artistId?.let { aid -> MenuItem(R.string.go_to_artist, Icons.Default.Person) { close(); nav.open(artistRoute(aid)) } }
+                                a.artistId?.let { aid -> MenuItem(R.string.go_to_artist, TonaloGlyphs.Mic) { close(); nav.open(artistRoute(aid)) } }
                             }
                         },
                         playing = playing,
@@ -310,16 +310,16 @@ fun PlaylistScreen(id: String) {
                     }) { Text(stringResource(R.string.done), color = Palette.accent) }
                     else MoreMenu { close ->
                         if (songs.isNotEmpty()) {
-                            MenuItem(R.string.add_to_queue, Icons.AutoMirrored.Filled.QueueMusic) { close(); player.enqueue(songs) }
-                            MenuItem(R.string.add_to_other_playlist, Icons.AutoMirrored.Filled.PlaylistAdd) { close(); pick = true }
+                            MenuItem(R.string.add_to_queue, TonaloGlyphs.TextAppend) { close(); player.enqueue(songs) }
+                            MenuItem(R.string.add_to_other_playlist, TonaloGlyphs.TextBadgePlus) { close(); pick = true }
                         }
-                        if (djOn && DJ.configured) MenuItem(R.string.dj_with_playlist, Icons.Default.AutoAwesome) {
+                        if (djOn && DJ.configured) MenuItem(R.string.dj_with_playlist, TonaloGlyphs.Sparkles) {
                             close(); songs.firstOrNull()?.let { s -> scope.launch { runCatching { DJ.takeOver(s) } } }
                         }
                         if (owned) {
-                            if (editable) MenuItem(R.string.edit_songs, Icons.AutoMirrored.Filled.List) { close(); order.clear(); order.addAll(songs); editing = true }
+                            if (editable) MenuItem(R.string.edit_songs, TonaloGlyphs.Queue) { close(); order.clear(); order.addAll(songs); editing = true }
                             MenuItem(R.string.rename, Icons.Default.Edit) { close(); newName = androidx.compose.ui.text.input.TextFieldValue(p.name, androidx.compose.ui.text.TextRange(p.name.length)); renaming = true }
-                            MenuItem(R.string.delete_playlist, Icons.Default.Delete) { close(); confirmDelete = true }
+                            MenuItem(R.string.delete_playlist, TonaloGlyphs.Trash) { close(); confirmDelete = true }
                         }
                     }
                 },
@@ -335,7 +335,7 @@ fun PlaylistScreen(id: String) {
             items(order.size, key = { "e" + order[it].id + "-" + it }) { i ->
                 val s = order[i]
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { order.removeAt(i) }) { Icon(Icons.Default.Close, stringResource(R.string.remove_from_playlist), tint = Color(0xFFFF5A5F)) }
+                    IconButton(onClick = { order.removeAt(i) }) { Icon(TonaloGlyphs.Xmark, stringResource(R.string.remove_from_playlist), tint = Color(0xFFFF5A5F)) }
                     Cover(s.coverArt, 44.dp, corner = 2.dp, pixels = 120)
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
@@ -349,7 +349,7 @@ fun PlaylistScreen(id: String) {
         } else {
             songs(songs, showCover = true, onPlay = { i -> player.play(songs, i, context = p.name, contextId = cid) }, extraMenu = { i ->
                 if (!editable) null else { close ->
-                    MenuItem(R.string.remove_from_playlist, Icons.Default.Delete) {
+                    MenuItem(R.string.remove_from_playlist, TonaloGlyphs.Trash) {
                         close()
                         // One removal at a time, and not before the list has reloaded: the index would point at another song
                         if (removing || loader.refreshing) return@MenuItem
@@ -505,14 +505,14 @@ fun ArtistScreen(id: String) {
                     Spacer(Modifier.height(8.dp))
                     ActionRow(
                         left = {
-                            ActionIcon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart,
+                            ActionIcon(if (starred) TonaloGlyphs.HeartFilled else TonaloGlyphs.Heart,
                                 stringResource(if (starred) R.string.remove_favorite else R.string.add_favorite), active = starred) {
                                 val on = !starred
                                 Favorites.set(artist.id, on)
                                 scope.launch { try { context.tonalo.client()?.setStar(artistId = artist.id, on = on) } catch (e: CancellationException) { throw e } catch (e: Exception) { Favorites.set(artist.id, !on) } }
                             }
                             MoreMenu { close ->
-                                MenuItem(R.string.artist_radio, Icons.Default.Radio) {
+                                MenuItem(R.string.artist_radio, TonaloGlyphs.Radio) {
                                     close()
                                     scope.launch {
                                         val ok = Playback.service?.startRadio(context.getString(R.string.song_radio, artist.name), seedId = id, seeds = top.take(5)) ?: false
@@ -532,7 +532,7 @@ fun ArtistScreen(id: String) {
             val shown = top.take(if (showAll) 10 else 5)
             items(shown.size, key = { "top-" + shown[it].id }) { i -> SongRow(shown[i], number = i + 1) { player.play(top, i, context = artist.name, contextId = cid) } }
             if (top.size > 5) item {
-                Text(stringResource(if (showAll) R.string.show_less else R.string.see_more), Modifier.clickable { showAll = !showAll }.padding(16.dp),
+                Text(stringResource(if (showAll) R.string.show_less else R.string.see_more), Modifier.plainClickable { showAll = !showAll }.padding(16.dp),
                     fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Palette.secondaryText)
             }
             if (albums.isNotEmpty()) item {

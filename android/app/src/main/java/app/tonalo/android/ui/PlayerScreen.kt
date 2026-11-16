@@ -87,6 +87,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseOut
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.semantics.Role
+import app.tonalo.android.playback.SleepTimer
+import kotlinx.coroutines.CoroutineScope
 import androidx.media3.common.Player
 import app.tonalo.android.R
 import androidx.compose.ui.semantics.semantics
@@ -103,13 +133,202 @@ import kotlinx.coroutines.delay
 import java.text.DateFormat
 import java.util.Date
 
-/** The player's background: the cover's color fading to almost black. */
+/**
+ * The player's background, like the iPhone: black, the cover's tint over it, then a gradient from clear to
+ * black (65 %) towards the bottom. A change of tint fades in half a second; the old color stays until the new one is known.
+ */
 @Composable
-private fun PlayerBackground(coverArt: String?, content: @Composable () -> Unit) {
-    val tint = rememberCoverColor(coverArt) ?: Palette.elevated
+private fun PlayerBackground(coverArt: String?, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val target = rememberCoverColor(coverArt) ?: Color(0.22f, 0.22f, 0.22f)
+    val tint by animateColorAsState(target, tween(500, easing = EaseOut), label = "playerTint")
     Box(
-        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(tint, tint.darken(0.45f), Palette.canvas)))
+        modifier.fillMaxSize()
+            .background(Color.Black)
+            .background(tint)
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f))))
     ) { content() }
+}
+
+/** A button without press highlight (the iPhone has none); still a button for screen readers and dimmed when disabled. */
+@Composable
+private fun PlainButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable () -> Unit) {
+    Box(
+        modifier.alpha(if (enabled) 1f else 0.38f).clickable(
+            interactionSource = remember { MutableInteractionSource() }, indication = null,
+            enabled = enabled, role = Role.Button, onClick = onClick,
+        ),
+        contentAlignment = Alignment.Center,
+    ) { content() }
+}
+
+/** Shuffle / repeat: the icon with a small dot below it while on, in the accent color. */
+@Composable
+private fun ToggleIcon(icon: ImageVector, description: String, on: Boolean) {
+    val tint = if (on) Palette.accent else Color.White
+    Column(Modifier.offset(y = 3.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, description, Modifier.size(22.dp), tint = tint)
+        Spacer(Modifier.height(3.dp))
+        Box(Modifier.size(4.dp).alpha(if (on) 1f else 0f).background(tint, CircleShape))
+    }
+}
+
+/** Soft shadow under the cover: black 40 %, blur 20, 10 down (like the iPhone). */
+private fun Modifier.coverShadow(): Modifier =
+    if (android.os.Build.VERSION.SDK_INT >= 28) drawBehind {
+        val r = 8.dp.toPx()
+        drawIntoCanvas { canvas ->
+            val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+            paint.color = android.graphics.Color.BLACK
+            paint.setShadowLayer(20.dp.toPx(), 0f, 10.dp.toPx(), Color.Black.copy(alpha = 0.4f).toArgb())
+            canvas.nativeCanvas.drawRoundRect(0f, 0f, size.width, size.height, r, r, paint)
+        }
+    } else shadow(14.dp, RoundedCornerShape(8.dp), clip = false, ambientColor = Color.Black.copy(alpha = 0.4f), spotColor = Color.Black.copy(alpha = 0.4f))
+
+/** The player following the finger while it is pulled down; closes past a quarter of the height or when flicked. */
+private class DismissDrag(private val scope: CoroutineScope) {
+    var offset by mutableFloatStateOf(0f)
+    var height = 1f
+    var closing = false
+    var onClose: () -> Unit = {}
+
+    fun end(translationY: Float, speed: Float) {
+        if (closing) return
+        if (offset > 0f && (translationY > height * 0.25f || speed > 700f)) {
+            // Keep moving at the finger's speed until it is off screen, then close
+            closing = true
+            val seconds = minOf(0.35f, maxOf(0.15f, (height - offset) / maxOf(speed, 1800f)))
+            scope.launch {
+                Animatable(offset).animateTo(height, tween((seconds * 1000).toInt(), easing = EaseOut)) { offset = value }
+                onClose()
+            }
+        } else springBack(speed)
+    }
+
+    fun springBack(speed: Float = 0f) {
+        if (closing) return
+        scope.launch {
+            Animatable(offset).animateTo(0f, spring(dampingRatio = 0.87f, stiffness = 300f), initialVelocity = speed.coerceIn(-3000f, 3000f)) {
+                offset = value.coerceAtLeast(0f)
+            }
+        }
+    }
+}
+
+/**
+ * Pull down to close; on the cover (`skips`) a sideways swipe of more than 60 dp skips songs instead.
+ * Starts after 10 dp; the direction is decided by the first move, like on the iPhone.
+ */
+private fun Modifier.dismissDrag(drag: DismissDrag, skips: Boolean, onNext: () -> Unit = {}, onPrevious: () -> Unit = {}): Modifier {
+    return pointerInput(skips) {
+        val minDistance = 10.dp.toPx()
+        val skipDistance = 60.dp.toPx()
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            if (drag.closing) return@awaitEachGesture
+            val tracker = VelocityTracker()
+            tracker.addPosition(down.uptimeMillis, down.position)
+            var dx = 0f
+            var dy = 0f
+            var axis = 0 // 0 undecided, 1 vertical, 2 horizontal
+            var released = false
+            while (true) {
+                val event = awaitPointerEvent()
+                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                if (axis == 0 && change.isConsumed) break
+                tracker.addPosition(change.uptimeMillis, change.position)
+                val delta = change.position - change.previousPosition
+                dx += delta.x
+                dy += delta.y
+                if (axis == 0 && kotlin.math.hypot(dx, dy) >= minDistance) {
+                    axis = if (skips && kotlin.math.abs(dx) > kotlin.math.abs(dy)) 2 else 1
+                }
+                if (axis == 1) drag.offset = maxOf(0f, dy)
+                if (axis != 0) change.consume()
+                if (!change.pressed) { released = true; break }
+            }
+            when (axis) {
+                1 -> if (released) drag.end(dy, tracker.calculateVelocity().y) else drag.springBack()
+                2 -> if (released) { if (dx < -skipDistance) onNext() else if (dx > skipDistance) onPrevious() }
+            }
+        }
+    }
+}
+
+/** The moon with "zz" of the iPhone's sleep timer button, drawn here. */
+private fun moonZzz(filled: Boolean): ImageVector =
+    ImageVector.Builder(if (filled) "PlayerMoonZzzFilled" else "PlayerMoonZzz", 24.dp, 24.dp, 24f, 24f)
+        .path(
+            fill = if (filled) SolidColor(Color.Black) else null, stroke = SolidColor(Color.Black), strokeLineWidth = 1.8f,
+            strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
+        ) {
+            moveTo(18.3f, 17.2f)
+            arcTo(7.2f, 7.2f, 0f, true, true, 10.5f, 9.4f)
+            arcTo(5.6f, 5.6f, 0f, false, false, 18.3f, 17.2f)
+            close()
+        }
+        .path(
+            fill = null, stroke = SolidColor(Color.Black), strokeLineWidth = 1.8f,
+            strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
+        ) {
+            moveTo(14f, 3.2f); lineTo(18f, 3.2f); lineTo(14f, 8f); lineTo(18f, 8f)
+            moveTo(19.4f, 1.8f); lineTo(22f, 1.8f); lineTo(19.4f, 5.2f); lineTo(22f, 5.2f)
+        }
+        .build()
+
+private val MoonZzz: ImageVector by lazy { moonZzz(false) }
+private val MoonZzzFilled: ImageVector by lazy { moonZzz(true) }
+
+/** The sleep timer button: the moon, and while it runs the countdown (or "End of song") in the accent color. */
+@Composable
+private fun SleepButton(sleep: SleepTimer, onClick: () -> Unit) {
+    val endsAt = sleep.endsAt
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(endsAt) {
+        while (endsAt != null) { now = System.currentTimeMillis(); delay(1000) }
+    }
+    val tint = if (sleep.active) Palette.accent else Color.White.copy(alpha = 0.8f)
+    PlainButton(onClick, Modifier.height(48.dp).padding(horizontal = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(if (sleep.active) MoonZzzFilled else MoonZzz, stringResource(R.string.sleep_timer), Modifier.size(20.dp), tint = tint)
+            if (endsAt != null) {
+                val total = ((endsAt - now + 999) / 1000).coerceAtLeast(0)
+                val mm = ((total % 3600) / 60).toString()
+                val ss = (total % 60).toString().padStart(2, '0')
+                Text(
+                    if (total >= 3600) "${total / 3600}:" + mm.padStart(2, '0') + ":" + ss else "${total / 60}:$ss",
+                    Modifier.padding(start = 5.dp), color = tint, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false,
+                )
+            } else if (sleep.endOfSong) {
+                Text(stringResource(R.string.sleep_end_of_song), Modifier.padding(start = 5.dp), color = tint, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            }
+        }
+    }
+}
+
+/** The "playing from ..." line: one text per kind of source, taken from the id the songs were started with. */
+private fun contextLabelRes(contextId: String?, context: String?, radio: Boolean, dj: Boolean): Int = when {
+    dj || context == "DJ" -> R.string.pl_from_dj
+    radio -> R.string.pl_from_radio
+    contextId == "favorites" -> R.string.pl_from_favorites
+    contextId == "downloads" -> R.string.pl_from_downloads
+    contextId == "search" -> R.string.pl_from_search
+    contextId != null && contextId.length > 1 && contextId[0] == 'p' -> R.string.pl_from_playlist
+    contextId != null && contextId.length > 1 && contextId[0] == 'r' -> R.string.pl_from_artist
+    contextId == null && context != null -> R.string.pl_from_mix
+    else -> R.string.pl_from_album
+}
+
+/** The "..." menu of the player: 20 dp symbol in a 40 dp box, no press highlight. */
+@Composable
+private fun PlayerMoreMenu(items: @Composable (close: () -> Unit) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        PlainButton(onClick = { open = true }, Modifier.size(40.dp)) {
+            Icon(TonaloGlyphs.MoreHorizontal, stringResource(R.string.cd_more), Modifier.size(20.dp), tint = Color.White)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) { items { open = false } }
+    }
 }
 
 /** Position asked a few times a second while playing; `seek` moves it right away. */
@@ -163,26 +382,31 @@ private fun SeekBar(position: androidx.compose.runtime.MutableLongState, duratio
         )
         Row(Modifier.fillMaxWidth()) {
             val shown = if (dragging) (dragValue * durationMs).toLong() else pos
-            Text(if (live) stringResource(R.string.now_live) else formatTime(shown / 1000), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
+            // Tabular digits, so the numbers do not jiggle while counting
+            val timeStyle = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontFeatureSettings = "tnum")
+            Text(if (live) stringResource(R.string.now_live) else formatTime(shown / 1000), style = timeStyle, color = Color.White.copy(alpha = 0.7f))
             Spacer(Modifier.weight(1f))
-            if (!live) Text("-" + formatTime((durationMs - shown).coerceAtLeast(0) / 1000), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
+            if (!live) Text("-" + formatTime((durationMs - shown).coerceAtLeast(0) / 1000), style = timeStyle, color = Color.White.copy(alpha = 0.7f))
         }
     }
 }
 
 @Composable
-private fun PlayButton(size: androidx.compose.ui.unit.Dp = 76.dp) {
+private fun PlayButton(size: androidx.compose.ui.unit.Dp = 66.dp) {
     val player = LocalPlayer.current
     val state by player.state.collectAsState()
     Box(
-        Modifier.size(size).clip(CircleShape).background(Color.White).clickable { player.toggle() },
+        Modifier.size(size).clip(CircleShape).background(Color.White).clickable(
+            interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Button,
+        ) { player.toggle() },
         contentAlignment = Alignment.Center,
     ) {
         if (state.buffering && !state.isPlaying) CircularProgressIndicator(Modifier.size(size * 0.42f), color = Color.Black, strokeWidth = 3.dp)
         else Icon(
             if (state.isPlaying) TonaloIcons.Pause else TonaloIcons.Play,
             stringResource(if (state.isPlaying) R.string.cd_pause else R.string.cd_play),
-            Modifier.size(size * 0.62f), tint = Color.Black,
+            // The triangle looks centered when nudged to the right, like on the iPhone
+            Modifier.size(size * 0.4f).offset(x = if (state.isPlaying) 0.dp else size * 0.03f), tint = Color.Black,
         )
     }
 }
@@ -210,22 +434,34 @@ fun PlayerScreen(onClose: () -> Unit) {
     val station = state.station
     val position = rememberPosition(song?.id ?: station?.id, state.isPlaying)
 
-    PlayerBackground(song?.coverArt) {
-        Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 24.dp)) {
-            // Header: close, where it's playing from, menu
-            Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onClose) { Icon(TonaloGlyphs.ChevronDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+    val radio by Playback.radio.collectAsState()
+    val drag = remember { DismissDrag(scope) }
+    drag.onClose = onClose
+
+    // The tint follows the cover; a station has none (grey)
+    PlayerBackground(
+        if (station != null) null else song?.coverArt,
+        Modifier.onSizeChanged { drag.height = it.height.toFloat().coerceAtLeast(1f) }.graphicsLayer { translationY = drag.offset.coerceAtLeast(0f) },
+    ) {
+        Column(Modifier.fillMaxSize().systemBarsPadding().padding(start = 24.dp, end = 24.dp, bottom = 32.dp)) {
+            // Header: close, where it's playing from, menu. Pulling it down closes the player.
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp).dismissDrag(drag, skips = false), verticalAlignment = Alignment.CenterVertically) {
+                PlainButton(onClick = onClose, Modifier.size(40.dp)) {
+                    Icon(TonaloGlyphs.ChevronDown, stringResource(R.string.cd_close), Modifier.size(20.dp), tint = Color.White)
+                }
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        (state.tvName?.let { stringResource(if (state.tvGuest) R.string.guest_of else R.string.playing_on, it) } ?: stringResource(R.string.playing_from)).uppercase(),
-                        style = MaterialTheme.typography.labelSmall, color = if (state.tvName != null) Palette.accent else Color.White.copy(alpha = 0.7f),
+                        state.tvName?.let { stringResource(if (state.tvGuest) R.string.guest_of else R.string.playing_on, it).uppercase() }
+                            ?: stringResource(contextLabelRes(state.contextId, state.context, radio, djActive && state.tvName == null)),
+                        fontSize = 11.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        color = if (state.tvName != null) Palette.accent else Color.White.copy(alpha = 0.75f),
                     )
                     Text(
                         (if (djActive && state.tvName == null) djLine else null) ?: state.context ?: station?.let { stringResource(R.string.stations) } ?: song?.album ?: "",
-                        style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                 }
-                MoreMenu { close ->
+                PlayerMoreMenu { close ->
                     MenuItem(R.string.devices, Icons.Default.Tv) { close(); onClose(); nav.open("devices") }
                     if (state.tvName == null) MenuItem(R.string.sleep_timer, Icons.Default.Bedtime) { close(); sleepDialog = true }
                     if (state.tvName == null) MenuItem(R.string.equalizer, Icons.Default.GraphicEq) { close(); nav.open("settings/eq") }
@@ -249,43 +485,47 @@ fun PlayerScreen(onClose: () -> Unit) {
                 }
             }
 
-            // Cover
-            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+            // Cover: pull down to close, swipe sideways to skip
+            BoxWithConstraints(
+                Modifier.weight(1f).fillMaxWidth().padding(vertical = 16.dp)
+                    .dismissDrag(drag, skips = station == null, onNext = { player.next() }, onPrevious = { player.previous() }),
+                contentAlignment = Alignment.Center,
+            ) {
                 val side = minOf(maxWidth, maxHeight)
                 if (station != null) Box(
-                    Modifier.size(side).shadow(24.dp, RoundedCornerShape(8.dp)).clip(RoundedCornerShape(8.dp)).background(Palette.hue(station.name, 0.5f, 0.6f)),
+                    Modifier.size(side).coverShadow().clip(RoundedCornerShape(8.dp)).background(Palette.hue(station.name, 0.5f, 0.6f)),
                     contentAlignment = Alignment.Center,
                 ) { Icon(Icons.Default.Radio, null, Modifier.size(side / 3)) }
-                else Box(Modifier.shadow(24.dp, RoundedCornerShape(8.dp))) { Cover(song?.coverArt, side, corner = 8.dp, pixels = 1000) }
+                else Box(Modifier.coverShadow()) { Cover(song?.coverArt, side, corner = 8.dp, pixels = 1000) }
             }
 
             // Title, artist, heart
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(song?.title ?: station?.name ?: "", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(song?.title ?: station?.name ?: "", fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
                         song?.artist ?: state.liveTitle ?: stringResource(R.string.live), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodyLarge,
-                        modifier = song?.artistId?.let { id -> Modifier.clickable { onClose(); nav.open(artistRoute(id)) } } ?: Modifier,
+                        color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp, lineHeight = 22.sp,
+                        modifier = song?.artistId?.let { id ->
+                            Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onClose(); nav.open(artistRoute(id)) }
+                        } ?: Modifier,
                     )
                 }
                 if (song != null) {
                     val starred = rememberStarred(song.id, song.starred)
-                    IconButton(onClick = { toggleFavorite(context, song, player, scope, snackbar) }) {
+                    PlainButton(onClick = { toggleFavorite(context, song, player, scope, snackbar) }, Modifier.size(44.dp)) {
                         Icon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart, stringResource(R.string.cd_favorite),
-                            Modifier.size(28.dp), tint = if (starred) Palette.accent else Color.White)
+                            Modifier.size(26.dp), tint = if (starred) Palette.accent else Color.White)
                     }
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(18.dp))
             SeekBar(position, state.durationMs, live = station != null)
+            Spacer(Modifier.height(14.dp))
 
             // Transport
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically,
-            ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 val stateOn = stringResource(R.string.state_on)
                 val stateOff = stringResource(R.string.state_off)
                 val repeatState = stringResource(when (state.repeatMode) {
@@ -293,57 +533,77 @@ fun PlayerScreen(onClose: () -> Unit) {
                     Player.REPEAT_MODE_ALL -> R.string.state_repeat_all
                     else -> R.string.state_off
                 })
-                IconButton(onClick = { player.toggleShuffle() }, Modifier.semantics { stateDescription = if (state.shuffle) stateOn else stateOff }, enabled = station == null) {
-                    Icon(TonaloGlyphs.Shuffle, stringResource(R.string.cd_shuffle), Modifier.size(28.dp), tint = if (state.shuffle) Palette.accent else Color.White)
-                }
-                IconButton(onClick = { player.previous() }, Modifier.size(60.dp), enabled = station == null) {
-                    Icon(TonaloIcons.Previous, stringResource(R.string.cd_previous), Modifier.size(44.dp))
+                // The outer buttons are 48 dp wide to hit easily; shifted out so their symbols line up with the margins
+                PlainButton(
+                    onClick = { player.toggleShuffle() },
+                    Modifier.size(48.dp).offset(x = (-13).dp).semantics { stateDescription = if (state.shuffle) stateOn else stateOff },
+                    enabled = station == null,
+                ) { ToggleIcon(TonaloGlyphs.Shuffle, stringResource(R.string.cd_shuffle), state.shuffle) }
+                PlainButton(onClick = { player.previous() }, Modifier.size(48.dp), enabled = station == null) {
+                    Icon(TonaloIcons.Previous, stringResource(R.string.cd_previous), Modifier.size(30.dp), tint = Color.White)
                 }
                 PlayButton()
-                IconButton(onClick = { player.next() }, Modifier.size(60.dp), enabled = station == null) {
-                    Icon(TonaloIcons.Next, stringResource(R.string.cd_next), Modifier.size(44.dp))
+                PlainButton(onClick = { player.next() }, Modifier.size(48.dp), enabled = station == null) {
+                    Icon(TonaloIcons.Next, stringResource(R.string.cd_next), Modifier.size(30.dp), tint = Color.White)
                 }
-                IconButton(onClick = { player.cycleRepeat() }, Modifier.semantics { stateDescription = repeatState }, enabled = station == null) {
-                    Icon(
+                PlainButton(
+                    onClick = { player.cycleRepeat() },
+                    Modifier.size(48.dp).offset(x = 13.dp).semantics { stateDescription = repeatState },
+                    enabled = station == null,
+                ) {
+                    ToggleIcon(
                         if (state.repeatMode == Player.REPEAT_MODE_ONE) TonaloGlyphs.RepeatOne else TonaloGlyphs.Repeat,
-                        stringResource(R.string.cd_repeat),
-                        Modifier.size(28.dp),
-                        tint = if (state.repeatMode != Player.REPEAT_MODE_OFF) Palette.accent else Color.White,
+                        stringResource(R.string.cd_repeat), state.repeatMode != Player.REPEAT_MODE_OFF,
                     )
                 }
             }
+            Spacer(Modifier.height(20.dp))
 
             state.error?.let {
                 Text(stringResource(R.string.error_playback), Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
             }
 
-            // Lyrics · sleep timer · queue
-            Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { nav.open("lyrics") }, enabled = song != null) { Icon(TonaloGlyphs.Lyrics, stringResource(R.string.lyrics)) }
+            // Lyrics, sleep timer, (device, DJ), queue
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                PlainButton(onClick = { nav.open("lyrics") }, Modifier.size(48.dp).offset(x = (-14).dp), enabled = song != null) {
+                    Icon(TonaloGlyphs.Lyrics, stringResource(R.string.lyrics), Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.8f))
+                }
+                Spacer(Modifier.weight(1f))
+                SleepButton(sleep) { sleepDialog = true }
                 Spacer(Modifier.weight(1f))
                 val ownTv by TvLink.ownTv.collectAsState()
                 when {
-                    state.tvName != null -> TextButton(onClick = { player.continueHere() }) {
-                        Icon(Icons.Default.PhoneAndroid, null, Modifier.size(18.dp)); Spacer(Modifier.size(6.dp))
-                        Text(stringResource(if (state.tvGuest) R.string.leave else R.string.play_here), color = Color.White)
+                    state.tvName != null -> {
+                        PlainButton(onClick = { player.continueHere() }, Modifier.height(48.dp).padding(horizontal = 8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.PhoneAndroid, null, Modifier.size(18.dp), tint = Color.White); Spacer(Modifier.size(6.dp))
+                                Text(stringResource(if (state.tvGuest) R.string.leave else R.string.play_here), color = Color.White, style = MaterialTheme.typography.labelLarge)
+                            }
+                        }
+                        Spacer(Modifier.weight(1f))
                     }
-                    ownTv != null -> TextButton(onClick = { player.playOnTv() }) {
-                        Icon(Icons.Default.Tv, null, Modifier.size(18.dp), tint = Palette.accent); Spacer(Modifier.size(6.dp))
-                        Text(stringResource(R.string.play_on, ownTv!!.name), color = Palette.accent)
+                    ownTv != null -> {
+                        PlainButton(onClick = { player.playOnTv() }, Modifier.height(48.dp).padding(horizontal = 8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Tv, null, Modifier.size(18.dp), tint = Palette.accent); Spacer(Modifier.size(6.dp))
+                                Text(stringResource(R.string.play_on, ownTv!!.name), color = Palette.accent, style = MaterialTheme.typography.labelLarge)
+                            }
+                        }
+                        Spacer(Modifier.weight(1f))
                     }
                 }
-                if (sleep.active) Text(
-                    if (sleep.endOfSong) stringResource(R.string.sleep_active_song)
-                    else stringResource(R.string.sleep_active, DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(sleep.endsAt!!))),
-                    Modifier.clickable { sleepDialog = true }, style = MaterialTheme.typography.labelMedium, color = Palette.accent,
-                )
-                Spacer(Modifier.weight(1f))
-                if (djReady && state.tvName == null) IconButton(onClick = { nav.open("dj") }) {
-                    Icon(Icons.Default.AutoAwesome, stringResource(R.string.dj), tint = if (djActive) Palette.accent else Color.White)
+                if (djReady && state.tvName == null) {
+                    PlainButton(onClick = { nav.open("dj") }, Modifier.size(48.dp)) {
+                        Icon(Icons.Default.AutoAwesome, stringResource(R.string.dj), Modifier.size(20.dp), tint = if (djActive) Palette.accent else Color.White.copy(alpha = 0.8f))
+                    }
+                    Spacer(Modifier.weight(1f))
                 }
-                IconButton(onClick = { nav.open("queue") }, enabled = song != null) { Icon(TonaloGlyphs.Queue, stringResource(R.string.queue)) }
+                PlainButton(onClick = { nav.open("queue") }, Modifier.size(48.dp).offset(x = 14.dp), enabled = song != null) {
+                    Icon(TonaloGlyphs.Queue, stringResource(R.string.queue), Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.8f))
+                }
             }
+            Spacer(Modifier.height(12.dp))
         }
     }
 

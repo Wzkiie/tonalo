@@ -128,10 +128,10 @@ private fun BookDetail(item: ABSItem, episodeId: String?, refreshing: Boolean, o
                 OwnerLine(a.name, { AuthorImage(a.id, a.name, Modifier.fillMaxSize(), width = 60) }) { nav.open(bookAuthorRoute(a.id)) }
             } else if (item.creator.isNotEmpty()) Text(item.creator, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             m.narrators.orEmpty().forEach { n ->
-                Text(stringResource(R.string.bk_read_by, n), Modifier.clickable { nav.open(bookGroupRoute("narrator", n)) }, fontSize = 13.sp, color = Palette.subtle)
+                Text(stringResource(R.string.bk_read_by, n), Modifier.plainClickable { nav.open(bookGroupRoute("narrator", n)) }, fontSize = 13.sp, color = Palette.subtle)
             }
             m.series?.all.orEmpty().forEach { s ->
-                Row(Modifier.clickable { nav.open(bookSeriesRoute(s.id, s.name)) }, verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.plainClickable { nav.open(bookSeriesRoute(s.id, s.name)) }, verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.AutoMirrored.Filled.LibraryBooks, null, tint = Palette.subtle, modifier = Modifier.size(12.dp))
                     Spacer(Modifier.width(4.dp))
                     Text(s.sequence?.let { "${s.name} #$it" } ?: s.name, fontSize = 13.sp, color = Palette.subtle)
@@ -159,7 +159,7 @@ private fun BookDetail(item: ABSItem, episodeId: String?, refreshing: Boolean, o
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     ActionIcon(
-                        if (favorite) Icons.Rounded.Favorite else TonaloGlyphs.Heart,
+                        if (favorite) TonaloGlyphs.HeartFilled else TonaloGlyphs.Heart,
                         stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite), active = favorite,
                     ) { books.toggleFavorite(item) }
                     if (!item.isPodcast) {
@@ -199,7 +199,7 @@ private fun BookDetail(item: ABSItem, episodeId: String?, refreshing: Boolean, o
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 4.dp).height(48.dp)
                         .clip(RoundedCornerShape(Palette.corner(10.dp))).background(Palette.elevated)
-                        .clickable { showChapters = true }.padding(horizontal = 14.dp),
+                        .plainClickable { showChapters = true }.padding(horizontal = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.AutoMirrored.Filled.List, null, tint = Palette.subtle, modifier = Modifier.size(24.dp))
@@ -214,7 +214,7 @@ private fun BookDetail(item: ABSItem, episodeId: String?, refreshing: Boolean, o
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(description, fontSize = 14.sp, color = Palette.subtle, maxLines = if (expanded) Int.MAX_VALUE else 4, overflow = TextOverflow.Ellipsis)
                 Text(
-                    stringResource(if (expanded) R.string.bk_less else R.string.bk_more), Modifier.clickable { expanded = !expanded },
+                    stringResource(if (expanded) R.string.bk_less else R.string.bk_more), Modifier.plainClickable { expanded = !expanded },
                     fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                 )
             }
@@ -251,7 +251,7 @@ private fun BookEpisodeRow(item: ABSItem, episode: ABSEpisode, highlighted: Bool
     val finished = progress?.isFinished == true
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
         Row(
-            Modifier.weight(1f).clickable { playBook(context, nav, item, episode) },
+            Modifier.weight(1f).plainClickable { playBook(context, nav, item, episode) },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {

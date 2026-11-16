@@ -280,7 +280,7 @@ private fun DownloadGrid() {
 /** Big tile like a playlist card, for the built-in collections (favorites, downloads). */
 @Composable
 fun CollectionCard(title: String, subtitle: String, art: @Composable () -> Unit, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Column(Modifier.fillMaxWidth().plainClickable(onClick = onClick)) {
         Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(Palette.corner(4.dp)))) { art() }
         Text(title, Modifier.padding(top = 6.dp), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(subtitle, color = Palette.secondaryText, fontSize = 12.sp, maxLines = 1)
@@ -346,7 +346,7 @@ private fun DJHomeTile() {
     val playing = state.context == "DJ" && state.isPlaying
     val start = rememberDJStarter()
     Row(
-        Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(Palette.corner(4.dp))).background(Palette.elevated).clickable(onClick = start),
+        Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(Palette.corner(4.dp))).background(Palette.elevated).plainClickable(onClick = start),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(56.dp)) { AnimatedDJArt(playing) }
@@ -389,13 +389,13 @@ private fun Mixes() {
         }
         item {
             val name = stringResource(R.string.favorite_songs)
-            MixCard(stringResource(R.string.favorites_mix), stringResource(R.string.favorites_mix_info), 0.92f, Icons.Rounded.Favorite) {
+            MixCard(stringResource(R.string.favorites_mix), stringResource(R.string.favorites_mix_info), 0.92f, TonaloGlyphs.HeartFilled) {
                 attempt { client()?.starred()?.song }?.takeIf { it.isNotEmpty() }?.let { player.play(it, shuffled = true, context = name) }
             }
         }
         item {
             val name = stringResource(R.string.discover)
-            MixCard(name, stringResource(R.string.discover_info), 0.12f, Icons.Default.AutoAwesome) {
+            MixCard(name, stringResource(R.string.discover_info), 0.12f, TonaloGlyphs.Sparkles) {
                 val c = client() ?: return@MixCard
                 val albums = attempt { c.albumList("random", size = 6) } ?: return@MixCard
                 val songs = albums.flatMap { a -> try { c.album(a.id).song.orEmpty() } catch (e: CancellationException) { throw e } catch (e: Exception) { emptyList() }.shuffled().take(4) }
@@ -436,11 +436,11 @@ fun RadioCards(genres: List<Genre>, size: Dp, wrap: Boolean = false) {
     // In a grid the cards flow on their own; in a shelf they sit in one row
     val holder: @Composable (@Composable () -> Unit) -> Unit = if (wrap) { c -> c() } else { c -> Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) { c() } }
     holder {
-        if (djOn && DJ.configured) MixCard("DJ", stringResource(R.string.dj_tile), 0.88f, Icons.Default.AutoAwesome, size) {
+        if (djOn && DJ.configured) MixCard("DJ", stringResource(R.string.dj_tile), 0.88f, TonaloGlyphs.Sparkles, size) {
             try { DJ.start() } catch (e: CancellationException) { throw e } catch (e: Exception) { snackbar.showSnackbar(djMessage(context, e)) }
         }
         val yours = stringResource(R.string.your_radio)
-        MixCard(yours, stringResource(R.string.your_radio_info), 0.52f, Icons.Default.Sensors, size) {
+        MixCard(yours, stringResource(R.string.your_radio_info), 0.52f, TonaloGlyphs.Radio, size) {
             start {
                 val favs = runCatching { context.tonalo.client()?.starred()?.song }.getOrNull().orEmpty().shuffled().take(8)
                 Playback.service?.startRadio(yours, seeds = favs, seedId = favs.firstOrNull()?.id) ?: false
@@ -449,12 +449,12 @@ fun RadioCards(genres: List<Genre>, size: Dp, wrap: Boolean = false) {
         val song = if (state.station == null) state.current else null
         song?.artist?.let { artist ->
             val name = stringResource(R.string.more_like, artist)
-            MixCard(name, stringResource(R.string.more_like_info), 0.75f, Icons.Default.Mic, size) {
+            MixCard(name, stringResource(R.string.more_like_info), 0.75f, TonaloGlyphs.Mic, size) {
                 start { Playback.service?.startRadio(name, seedId = song.artistId ?: song.id, seeds = listOf(song)) ?: false }
             }
         }
         genres.forEach { g ->
-            MixCard(g.value, stringResource(R.string.genre_radio), stableHue(g.value), Icons.Default.Sensors, size) {
+            MixCard(g.value, stringResource(R.string.genre_radio), stableHue(g.value), TonaloGlyphs.Radio, size) {
                 start { Playback.service?.startRadio(g.value, genre = g.value) ?: false }
             }
         }
@@ -468,7 +468,7 @@ fun StationCard(station: Station, all: List<Station>, size: Dp) {
     val player = LocalPlayer.current
     val state by player.state.collectAsState()
     val live = state.station?.id == station.id
-    Column(Modifier.width(size).clickable { if (live) player.toggle() else scope.launch { Playback.service?.playStation(station) } }) {
+    Column(Modifier.width(size).plainClickable { if (live) player.toggle() else scope.launch { Playback.service?.playStation(station) } }) {
         Box(Modifier.size(size).clip(RoundedCornerShape(Palette.corner(4.dp)))) {
             StationArt(station)
             if (live) LiveBadge(state.isPlaying, Modifier.align(Alignment.TopStart).padding(8.dp))
@@ -487,7 +487,7 @@ fun StationArt(station: Station, modifier: Modifier = Modifier.fillMaxSize(), bi
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.background(hueGradient(stableHue(station.name), 0.3f))) {
         val small = maxWidth < 80.dp
         Icon(
-            Icons.Default.Sensors, null, tint = Color.White.copy(alpha = if (small) 0.9f else 0.75f),
+            TonaloGlyphs.Radio, null, tint = Color.White.copy(alpha = if (small) 0.9f else 0.75f),
             modifier = if (small) Modifier.align(Alignment.Center).size(maxWidth * 0.4f)
             else Modifier.align(Alignment.TopEnd).padding(if (big) 18.dp else 6.dp).size(if (big) 30.dp else 14.dp),
         )
@@ -555,15 +555,15 @@ fun ContinueBanner() {
             Text(listOfNotNull(song.title, song.artist).joinToString(" · "), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Box(
-            Modifier.size(34.dp).clip(CircleShape).background(Palette.accent).clickable {
+            Modifier.size(34.dp).clip(CircleShape).background(Palette.accent).plainClickable {
                 val songs = q.entry.orEmpty()
                 player.play(songs, start = songs.indexOfFirst { it.id == q.current }.coerceAtLeast(0), positionMs = q.position ?: 0)
                 answer()
             },
             contentAlignment = Alignment.Center,
         ) { Icon(TonaloIcons.Play, stringResource(R.string.continue_action), tint = Color.Black, modifier = Modifier.size(20.dp)) }
-        Box(Modifier.size(width = 34.dp, height = 34.dp).clickable { answer() }, contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Close, stringResource(R.string.not_now), tint = Palette.secondaryText, modifier = Modifier.size(16.dp))
+        Box(Modifier.size(width = 34.dp, height = 34.dp).plainClickable { answer() }, contentAlignment = Alignment.Center) {
+            Icon(TonaloGlyphs.Xmark, stringResource(R.string.not_now), tint = Palette.secondaryText, modifier = Modifier.size(16.dp))
         }
     }
 }

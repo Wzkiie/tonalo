@@ -45,7 +45,7 @@ object Palette {
     val card: Color get() = gray(0.075f)
     val panel: Color get() = gray(0.11f)
     val elevated: Color get() = gray(0.16f)
-    val secondaryText = Color(0xFFA7A7A7)
+    val secondaryText = Color(0xFFB3B3B3)
     val subtle = Color(0xFF7A7A7A)
 
     private fun gray(base: Float): Color { val v = (base + lift).coerceIn(0f, 1f); return Color(v, v, v) }
@@ -114,8 +114,10 @@ fun TonaloTheme(content: @Composable () -> Unit) {
 private val coverColors = LruCache<String, Int>(200)
 
 /**
- * The cover's main color, darkened so white text stays readable on it – for the player's background,
- * album pages and the mini player. Null while loading, without a cover, or when switched off in the settings.
+ * The cover's tint, picked like the iPhone app: the average color of the small cover, with the saturation capped
+ * and the brightness kept dark enough for white text – for the player's background, album pages and the mini player.
+ * While the next cover loads the previous color stays (no flash back to a default); null without a cover
+ * or when switched off in the settings.
  */
 @Composable
 fun rememberCoverColor(coverArt: String?): Color? {
@@ -123,9 +125,9 @@ fun rememberCoverColor(coverArt: String?): Color? {
     val app = context.tonalo
     val enabled by app.settings.coverTint.collectAsState()
     val state = produceState<Color?>(initialValue = coverArt?.let { coverColors.get(it) }?.let { Color(it) }, coverArt, enabled) {
-        value = null
-        if (!enabled || coverArt.isNullOrEmpty()) { return@produceState }
+        if (!enabled || coverArt.isNullOrEmpty()) { value = null; return@produceState }
         coverColors.get(coverArt)?.let { value = Color(it); return@produceState }
+        // Not set to null here: the old color stays until the new one is known
         val url = app.client()?.coverURL(coverArt, 120) ?: return@produceState
         val result = SingletonImageLoader.get(context).execute(ImageRequest.Builder(context).data(url).build())
         val bitmap: Bitmap = (result as? SuccessResult)?.image?.toBitmap() ?: return@produceState
@@ -136,14 +138,23 @@ fun rememberCoverColor(coverArt: String?): Color? {
     return if (enabled) state.value else null
 }
 
+/** Average color of the bitmap, as HSV: saturation at most 0.6, brightness between 0.30 and 0.55 (same as the iPhone). */
 private fun pick(bitmap: Bitmap): Color {
-    val p = ColorPalette.from(bitmap).maximumColorCount(16).generate()
-    val swatch = p.vibrantSwatch ?: p.darkVibrantSwatch ?: p.dominantSwatch ?: p.mutedSwatch
+    val src = if (bitmap.config == Bitmap.Config.ARGB_8888) bitmap else (bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: return Color(0.22f, 0.22f, 0.22f))
+    val w = src.width
+    val h = src.height
+    val pixels = IntArray(w * h)
+    src.getPixels(pixels, 0, w, 0, 0, w, h)
+    var r = 0L; var g = 0L; var b = 0L; var n = 0L
+    for (px in pixels) {
+        if ((px ushr 24) < 16) continue
+        r += (px shr 16) and 0xff; g += (px shr 8) and 0xff; b += px and 0xff; n++
+    }
+    if (n == 0L) return Color(0.22f, 0.22f, 0.22f)
     val hsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(swatch?.rgb ?: 0xFF404040.toInt(), hsv)
-    // Dark enough for white text, but still clearly the cover's color
-    hsv[1] = hsv[1].coerceIn(0.25f, 0.75f)
-    hsv[2] = hsv[2].coerceIn(0.32f, 0.5f)
+    android.graphics.Color.RGBToHSV((r / n).toInt(), (g / n).toInt(), (b / n).toInt(), hsv)
+    hsv[1] = minOf(hsv[1], 0.6f)
+    hsv[2] = hsv[2].coerceIn(0.30f, 0.55f)
     return Color(android.graphics.Color.HSVToColor(hsv))
 }
 

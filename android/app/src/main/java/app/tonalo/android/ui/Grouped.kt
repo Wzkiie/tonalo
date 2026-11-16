@@ -124,7 +124,7 @@ fun GroupRow(
 ) {
     Row(
         Modifier.fillMaxWidth().heightIn(min = 54.dp)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.plainClickable(onClick = onClick) else Modifier)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -154,7 +154,7 @@ fun NavRow(title: String, value: String? = null, sub: String? = null, icon: (@Co
     GroupRow(onClick, icon, trailing = {
         Row(Modifier.widthIn(max = 200.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f, fill = false)) { RowValue(value) }
-            Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, null, tint = Palette.subtle, modifier = Modifier.padding(start = 8.dp).size(14.dp))
+            Icon(TonaloGlyphs.ChevronRight, null, tint = Palette.secondaryText, modifier = Modifier.padding(start = 8.dp).size(12.dp))
         }
     }) { RowTitle(title, sub) }
 }

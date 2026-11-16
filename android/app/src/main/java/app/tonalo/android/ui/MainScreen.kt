@@ -1,8 +1,27 @@
 package app.tonalo.android.ui
 
 import android.net.Uri
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.IntOffset
+import androidx.navigation.NavBackStackEntry
+import kotlin.math.roundToInt
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -15,7 +34,6 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.clickable
@@ -112,6 +130,12 @@ fun playlistRoute(id: String) = "playlist/" + Uri.encode(id)
 fun NavController.open(route: String) = navigate(route) { launchSingleTop = true }
 
 /** Pages that cover the whole screen, without tabs and mini player. */
+private const val PUSH_MS = 350
+private val tabRoutes = setOf("home", "search", "library")
+private fun NavBackStackEntry.isTabPage() = destination.route in tabRoutes
+/** The pages that rise from the bottom (the big players); the page under them stays put. */
+private fun NavBackStackEntry.isRising() = destination.route in setOf("player", "lyrics", "queue", "bookplayer")
+
 private val fullScreenRoutes = setOf("player", "lyrics", "queue", "account/{id}", "account/new", "bookplayer")
 
 /** The iPhone's tab bar: three icons with small labels, white when chosen, no highlight behind them. */
@@ -124,9 +148,9 @@ private fun TabBar(chosen: String?, onTap: (Int) -> Unit) {
                 Modifier.weight(1f).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) { onTap(i) },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(if (on) tab.selectedIcon else tab.icon, null, Modifier.size(26.dp), tint = if (on) Color.White else Palette.secondaryText)
+                Icon(if (on) tab.selectedIcon else tab.icon, null, Modifier.size(24.dp), tint = if (on) Color.White else Color.White.copy(alpha = 0.70f))
                 Spacer(Modifier.height(4.dp))
-                Text(stringResource(tab.label), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = if (on) Color.White else Palette.secondaryText)
+                Text(stringResource(tab.label), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = if (on) Color.White else Color.White.copy(alpha = 0.70f))
             }
         }
     }
@@ -203,7 +227,24 @@ fun MainScreen(player: PlayerConnection) {
             Box(Modifier.fillMaxSize().padding(bottom = if (fullScreen || ime) 0.dp else (with(density) { barHeight.toDp() } - 20.dp).coerceAtLeast(0.dp))) {
             NavHost(
                 nav, startDestination = tabs[startTab].route,
-                enterTransition = { fadeIn() }, exitTransition = { fadeOut() },
+                // Like the iPhone: tabs switch without a fade, pages slide in from the right while the page below moves
+                // a third of the way left, the big players rise from the bottom and leave the page below where it is
+                enterTransition = {
+                    if (initialState.isTabPage() && targetState.isTabPage()) EnterTransition.None
+                    else slideInHorizontally(tween(PUSH_MS)) { it }
+                },
+                exitTransition = {
+                    if (initialState.isTabPage() && targetState.isTabPage() || targetState.isRising()) ExitTransition.None
+                    else slideOutHorizontally(tween(PUSH_MS)) { -it / 3 }
+                },
+                popEnterTransition = {
+                    if (initialState.isTabPage() && targetState.isTabPage() || initialState.isRising()) EnterTransition.None
+                    else slideInHorizontally(tween(PUSH_MS)) { -it / 3 }
+                },
+                popExitTransition = {
+                    if (initialState.isTabPage() && targetState.isTabPage()) ExitTransition.None
+                    else slideOutHorizontally(tween(PUSH_MS)) { it }
+                },
             ) {
                 composable("home") { CompositionLocalProvider(LocalReselect provides reselect[0]) { HomeScreen() } }
                 composable("search") { CompositionLocalProvider(LocalReselect provides reselect[1]) { SearchScreen() } }
@@ -226,8 +267,8 @@ fun MainScreen(player: PlayerConnection) {
                 composable("genre/{name}", arguments = listOf(navArgument("name") { type = NavType.StringType })) {
                     GenreScreen(it.arguments?.getString("name")?.takeUnless { n -> n == "_" } ?: "")
                 }
-                composable("player", enterTransition = { slideInVertically { it } }, exitTransition = { fadeOut() },
-                    popExitTransition = { slideOutVertically { it } }) { PlayerScreen(onClose = { nav.popBackStack() }) }
+                composable("player", enterTransition = { slideInVertically(spring(1f, 310f)) { it } }, exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None }, popExitTransition = { slideOutVertically(tween(350)) { it } }) { PlayerScreen(onClose = { nav.popBackStack() }) }
                 composable("lyrics", enterTransition = { slideInVertically { it } }, popExitTransition = { slideOutVertically { it } }) {
                     LyricsScreen(onClose = { nav.popBackStack() })
                 }
@@ -258,8 +299,8 @@ fun MainScreen(player: PlayerConnection) {
                     BookGroupScreen(it.arguments?.getString("kind") ?: "", it.arguments?.getString("name")?.takeUnless { n -> n == "_" } ?: "")
                 }
                 composable("bookauthor/{id}") { BookAuthorScreen(it.arguments?.getString("id") ?: "") }
-                composable("bookplayer", enterTransition = { slideInVertically { it } }, exitTransition = { fadeOut() },
-                    popExitTransition = { slideOutVertically { it } }) { BookPlayerScreen(onClose = { nav.popBackStack() }) }
+                composable("bookplayer", enterTransition = { slideInVertically(spring(1f, 310f)) { it } }, exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None }, popExitTransition = { slideOutVertically(tween(350)) { it } }) { BookPlayerScreen(onClose = { nav.popBackStack() }) }
                 composable("jukebox") { DevicesScreen(jukebox = true) }
             }
             }
@@ -272,7 +313,7 @@ fun MainScreen(player: PlayerConnection) {
             if (!fullScreen && !ime) Column(
                 Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                     .onSizeChanged { barHeight = it.height }
-                    .background(Brush.verticalGradient(0f to Palette.canvas.copy(alpha = 0f), 0.12f to Palette.canvas.copy(alpha = 0.85f), 0.3f to Palette.canvas)),
+                    .background(Brush.verticalGradient(0f to Palette.canvas.copy(alpha = 0f), 0.45f to Palette.canvas.copy(alpha = 0.8f), 1f to Palette.canvas)),
             ) {
                 Notices(snackbar)
                 DownloadNote { nav.open("downloads") }
@@ -304,7 +345,10 @@ fun MainScreen(player: PlayerConnection) {
     }
 }
 
-/** The song that's playing, above the tabs, in the cover's color. Tap opens the full player. */
+/**
+ * The song that's playing, above the tabs, in the cover's color. Like the iPhone's: tap or swipe up opens the full
+ * player, swiping sideways skips (the text moves with the finger by a third of the distance).
+ */
 @Composable
 fun MiniPlayer(open: () -> Unit) {
     val context = LocalContext.current
@@ -320,52 +364,95 @@ fun MiniPlayer(open: () -> Unit) {
     if (!state.hasMedia) return
     val song = state.current
     val station = state.station
-    val tint = rememberCoverColor(song?.coverArt)
+    val cover = rememberCoverColor(song?.coverArt)
+    // The last known color stays while the next cover loads, so the bar never flashes a default color between songs
+    val neutral = Color(0.2f, 0.2f, 0.2f)
+    var lastTint by remember { mutableStateOf(cover ?: neutral) }
+    if (cover != null) lastTint = cover
+    val tint by animateColorAsState(if (cover == null && song?.coverArt == null) neutral else lastTint, label = "miniTint")
     var progress by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(song?.id, state.isPlaying, state.durationMs) {
         while (true) {
             progress = if (state.durationMs > 0) (player.position().toFloat() / state.durationMs).coerceIn(0f, 1f) else 0f
             if (!state.isPlaying) break
-            delay(500)
+            delay(250)
         }
     }
+    val shownProgress by animateFloatAsState(progress, tween(250, easing = LinearEasing), label = "miniProgress")
+    var swipe by remember { mutableFloatStateOf(0f) }
+    val openNow by rememberUpdatedState(open)
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val shape = RoundedCornerShape(Palette.corner(8.dp))
+    val noRipple = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
-        Modifier.padding(horizontal = 10.dp, vertical = 4.dp).clip(RoundedCornerShape(16.dp))
-            .background(tint?.darken(0.75f) ?: Palette.elevated).clickable(onClick = open),
+        Modifier.padding(horizontal = 10.dp, vertical = 4.dp).clip(shape)
+            .background(tint).background(Color.Black.copy(alpha = 0.25f))
+            .pointerInput(Unit) { detectTapGestures(onTap = { openNow() }) }
+            .pointerInput(Unit) {
+                val far = 60.dp.toPx()
+                val up = 40.dp.toPx()
+                var dx = 0f
+                var dy = 0f
+                detectDragGestures(
+                    onDragStart = { dx = 0f; dy = 0f },
+                    onDrag = { change, amount ->
+                        change.consume()
+                        dx += amount.x; dy += amount.y
+                        if (kotlin.math.abs(dx) > kotlin.math.abs(dy)) swipe = dx / 3
+                    },
+                    onDragCancel = { scope.launch { animate(swipe, 0f, animationSpec = spring(1f, 632f)) { v, _ -> swipe = v } } },
+                    onDragEnd = {
+                        when {
+                            dx < -far -> player.next()
+                            dx > far -> player.previous()
+                            dy < -up -> openNow()
+                        }
+                        scope.launch { animate(swipe, 0f, animationSpec = spring(1f, 632f)) { v, _ -> swipe = v } }
+                    },
+                )
+            },
     ) {
-        Column {
-            Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (station != null) Box(Modifier.width(42.dp).height(42.dp).clip(RoundedCornerShape(8.dp)).background(Palette.hue(station.name)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Radio, null)
-                } else Cover(song?.coverArt, 42.dp, corner = 8.dp, pixels = 120)
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(song?.title ?: station?.name ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.bodyMedium)
-                    Text(state.tvName?.let { stringResource(if (state.tvGuest) R.string.guest_of else R.string.playing_on, it) }
-                        ?: song?.artist ?: state.liveTitle ?: stringResource(R.string.live), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-                }
-                if (song != null) {
-                    val starred = rememberStarred(song.id, song.starred)
-                    IconButton(onClick = { toggleFavorite(context, song, player, scope, snackbar) }) {
-                        Icon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart, stringResource(R.string.cd_favorite),
-                            tint = if (starred) Palette.accent else Color.White)
-                    }
-                }
-                IconButton(onClick = { player.toggle() }) {
-                    Icon(
-                        if (state.isPlaying) TonaloIcons.Pause else TonaloIcons.Play,
-                        stringResource(if (state.isPlaying) R.string.cd_pause else R.string.cd_play),
-                    )
+        Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 6.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (station != null) Box(Modifier.width(40.dp).height(40.dp).clip(RoundedCornerShape(Palette.corner(4.dp))).background(Palette.hue(station.name)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Radio, null)
+            } else Cover(song?.coverArt, 40.dp, corner = Palette.corner(4.dp), pixels = 120)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f).offset { IntOffset(swipe.roundToInt(), 0) }) {
+                Text(song?.title ?: station?.name ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp, color = Color.White)
+                Text(state.tvName?.let { stringResource(if (state.tvGuest) R.string.guest_of else R.string.playing_on, it) }
+                    ?: song?.artist ?: state.liveTitle ?: stringResource(R.string.live), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    fontSize = 13.sp, fontWeight = FontWeight.Normal, color = Color.White.copy(alpha = 0.7f))
+            }
+            Spacer(Modifier.width(8.dp))
+            if (song != null) {
+                val starred = rememberStarred(song.id, song.starred)
+                Box(
+                    Modifier.size(36.dp).clickable(interactionSource = noRipple, indication = null, role = Role.Button) {
+                        toggleFavorite(context, song, player, scope, snackbar)
+                    },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart, stringResource(R.string.cd_favorite), Modifier.size(20.dp),
+                        tint = if (starred) Palette.accent else Color.White)
                 }
             }
-            if (station == null) LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 2.dp).height(2.dp).clip(RoundedCornerShape(1.dp)),
-                color = Color.White, trackColor = Color.White.copy(alpha = 0.2f),
-                gapSize = 0.dp, drawStopIndicator = {},
-            )
+            Box(
+                Modifier.size(36.dp).clickable(interactionSource = noRipple, indication = null, role = Role.Button) { player.toggle() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (state.isPlaying) TonaloIcons.Pause else TonaloIcons.Play,
+                    stringResource(if (state.isPlaying) R.string.cd_pause else R.string.cd_play),
+                    Modifier.size(22.dp), tint = Color.White,
+                )
+            }
+        }
+        if (station == null) Box(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 8.dp).height(2.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape).background(Color.White.copy(alpha = 0.25f)),
+        ) {
+            Box(Modifier.fillMaxWidth(shownProgress).height(2.dp).background(Color.White))
         }
     }
 }

@@ -174,7 +174,7 @@ fun WhatsNewSheet(release: NewsRelease, onClose: () -> Unit) {
             if (showAll) {
                 Column(Modifier.fillMaxSize()) {
                     TopBar(stringResource(R.string.whats_new), back = false) {
-                        Text(stringResource(R.string.done), Modifier.clip(CircleShape).clickable { showAll = false }.padding(horizontal = 16.dp, vertical = 10.dp),
+                        Text(stringResource(R.string.done), Modifier.clip(CircleShape).plainClickable { showAll = false }.padding(horizontal = 16.dp, vertical = 10.dp),
                             color = Palette.accent, fontWeight = FontWeight.SemiBold)
                     }
                     androidx.compose.foundation.lazy.LazyColumn(
@@ -212,7 +212,7 @@ private fun SheetPages(release: NewsRelease, onClose: () -> Unit, onChangelog: (
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             Box(Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.CenterEnd) {
                 if (!last) {
-                    Text(stringResource(R.string.wn_skip), Modifier.clip(CircleShape).clickable { onClose() }.padding(horizontal = 14.dp, vertical = 8.dp),
+                    Text(stringResource(R.string.wn_skip), Modifier.clip(CircleShape).plainClickable { onClose() }.padding(horizontal = 14.dp, vertical = 8.dp),
                         color = Palette.subtle, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 }
             }
@@ -228,14 +228,14 @@ private fun SheetPages(release: NewsRelease, onClose: () -> Unit, onChangelog: (
                 }
             }
             Box(
-                Modifier.padding(horizontal = 28.dp).fillMaxWidth().clip(CircleShape).background(color).clickable { next() }.padding(vertical = 16.dp),
+                Modifier.padding(horizontal = 28.dp).fillMaxWidth().clip(CircleShape).background(color).plainClickable { next() }.padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(stringResource(if (last) R.string.done else R.string.wn_next), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             }
             Box(
                 Modifier.padding(start = 28.dp, end = 28.dp, top = 10.dp, bottom = 16.dp).fillMaxWidth().clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.08f)).clickable { onChangelog() }.padding(vertical = 14.dp),
+                    .background(Color.White.copy(alpha = 0.08f)).plainClickable { onChangelog() }.padding(vertical = 14.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(stringResource(R.string.wn_show_changelog), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)

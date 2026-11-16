@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
@@ -302,7 +303,7 @@ fun LibraryScreen() {
                 grid, { app.settings.setLibraryGrid(!grid) })
             Spacer(Modifier.height(14.dp))
             if (filter == LibFilter.PLAYLISTS && hasMusic && query.isEmpty()) {
-                BrowseRow(Icons.Default.Add, stringResource(R.string.new_playlist)) { naming = true }
+                BrowseRow(TonaloGlyphs.Plus, stringResource(R.string.new_playlist)) { naming = true }
                 Spacer(Modifier.height(14.dp))
             }
         }
@@ -352,7 +353,7 @@ fun LibraryScreen() {
             )
             // The library holds what you saved; the whole server is one tap away
             if (booksConnected && q.isEmpty() && (filter == LibFilter.BOOKS || (filter == null && !hasMusic)) && bookLibraries.any { !it.isPodcasts }) {
-                BrowseRow(Icons.Default.Book, stringResource(R.string.bka_browse_audiobooks)) { nav.open("books") }
+                BrowseRow(TonaloGlyphs.BookClosed, stringResource(R.string.bka_browse_audiobooks)) { nav.open("books") }
             }
             if (booksConnected && q.isEmpty() && filter == LibFilter.PODCASTS) {
                 BrowseRow(Icons.Default.Mic, stringResource(R.string.bka_browse_podcasts)) { nav.open("books") }
@@ -375,13 +376,14 @@ fun LibraryScreen() {
 private fun BrowseRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
     Row(
         Modifier.padding(top = 8.dp).fillMaxWidth().height(52.dp).clip(RoundedCornerShape(12.dp)).background(Palette.elevated)
-            .combinedClickable(onClick = onClick)
+            .plainClickable(onClick = onClick)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = Palette.accent, modifier = Modifier.width(28.dp))
+        Box(Modifier.width(28.dp), contentAlignment = Alignment.Center) { Icon(icon, null, tint = Palette.accent, modifier = Modifier.size(20.dp)) }
+        Spacer(Modifier.width(8.dp))
         Text(title, Modifier.weight(1f), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Icon(Icons.Default.ChevronRight, null, tint = Palette.subtle)
+        Icon(TonaloGlyphs.ChevronRight, null, tint = Palette.secondaryText, modifier = Modifier.size(12.dp))
     }
 }
 
@@ -406,7 +408,7 @@ private fun downloadedCollection(item: LibItem, ids: Set<String>, starred: Searc
 private fun SubtitleLine(pinned: Boolean, text: String, downloaded: Boolean?) {
     Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         if (pinned) {
-            Icon(Icons.Default.PushPin, null, tint = Palette.accent, modifier = Modifier.size(11.dp).rotate(45f))
+            Icon(TonaloGlyphs.Pin, null, tint = Palette.accent, modifier = Modifier.size(9.dp).rotate(45f))
             Spacer(Modifier.width(4.dp))
         }
         if (downloaded == true) {
@@ -425,12 +427,15 @@ private fun PinMenuBox(
     extra: @Composable (close: () -> Unit) -> Unit = {}, content: @Composable () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
-    Box(modifier.combinedClickable(onClick = onClick, onLongClick = { if (!fixed) menu = true })) {
+    Box(modifier.combinedClickable(
+        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null,
+        onClick = onClick, onLongClick = { if (!fixed) menu = true },
+    )) {
         content()
         DropdownMenu(menu, { menu = false }) {
             if (!fixed) DropdownMenuItem(
                 text = { Text(stringResource(if (pinned) R.string.unpin else R.string.pin_to_top)) },
-                leadingIcon = { Icon(if (pinned) Icons.Outlined.PushPin else Icons.Default.PushPin, null) },
+                leadingIcon = { Icon(TonaloGlyphs.Pin, null, modifier = Modifier.size(20.dp).rotate(45f)) },
                 onClick = { menu = false; toggle() },
             )
             extra { menu = false }
@@ -440,7 +445,7 @@ private fun PinMenuBox(
 
 /** A cover that fills the size it's given. */
 @Composable
-fun FillCover(coverArt: String?, modifier: Modifier, corner: androidx.compose.ui.unit.Dp, placeholder: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.ViewModule) {
+fun FillCover(coverArt: String?, modifier: Modifier, corner: androidx.compose.ui.unit.Dp, placeholder: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.MusicNote) {
     androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
         Cover(coverArt, maxWidth, corner = minOf(corner, maxWidth / 2), pixels = 300, placeholder = placeholder)
     }
@@ -461,7 +466,7 @@ private fun LibraryToolbar(
                 Modifier.weight(1f).height(36.dp).clip(RoundedCornerShape(10.dp)).background(Palette.elevated).padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Default.Search, null, tint = Palette.secondaryText, modifier = Modifier.size(18.dp))
+                Icon(TonaloGlyphs.Search, null, tint = Palette.secondaryText, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Box(Modifier.weight(1f)) {
                     if (query.isEmpty()) Text(stringResource(R.string.search_library), color = Palette.subtle, fontSize = 15.sp)
@@ -469,28 +474,28 @@ private fun LibraryToolbar(
                         textStyle = TextStyle(color = Color.White, fontSize = 15.sp), cursorBrush = SolidColor(Palette.accent))
                 }
             }
-            Text(stringResource(R.string.cancel), Modifier.padding(start = 14.dp).combinedClickable(onClick = { setSearching(false) }),
+            Text(stringResource(R.string.cancel), Modifier.padding(start = 14.dp).plainClickable(onClick = { setSearching(false) }),
                 fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         } else {
             var open by remember { mutableStateOf(false) }
             Box {
-                Row(Modifier.combinedClickable(onClick = { open = true }), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.SwapVert, null, modifier = Modifier.size(18.dp))
+                Row(Modifier.plainClickable(onClick = { open = true }), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(TonaloGlyphs.Sort, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(sortLabel(sort)), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
                 DropdownMenu(open, { open = false }) {
                     LibrarySort.entries.forEach { s ->
                         DropdownMenuItem(text = { Text(stringResource(sortLabel(s))) },
-                            leadingIcon = { if (s == sort) Icon(Icons.Default.Check, null, tint = Palette.accent) else Spacer(Modifier.size(24.dp)) },
+                            leadingIcon = { if (s == sort) Icon(TonaloGlyphs.Checkmark, null, tint = Palette.accent, modifier = Modifier.size(20.dp)) else Spacer(Modifier.size(24.dp)) },
                             onClick = { open = false; onSort(s) })
                     }
                 }
             }
             Spacer(Modifier.weight(1f))
-            IconButton(onClick = { setSearching(true) }) { Icon(Icons.Default.Search, stringResource(R.string.search_library)) }
+            IconButton(onClick = { setSearching(true) }) { Icon(TonaloGlyphs.Search, stringResource(R.string.search_library), modifier = Modifier.size(22.dp)) }
             IconButton(onClick = toggleGrid) {
-                Icon(if (grid) Icons.AutoMirrored.Filled.List else Icons.Default.GridView, stringResource(if (grid) R.string.show_as_list else R.string.show_as_grid))
+                Icon(if (grid) TonaloGlyphs.Queue else TonaloGlyphs.Grid, stringResource(if (grid) R.string.show_as_list else R.string.show_as_grid), modifier = Modifier.size(22.dp))
             }
         }
     }

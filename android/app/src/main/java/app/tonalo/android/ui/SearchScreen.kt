@@ -143,7 +143,7 @@ fun SearchScreen() {
                     .clip(RoundedCornerShape(8.dp)).background(Color.White).padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Default.Search, null, tint = Color.Black, modifier = Modifier.size(22.dp))
+                Icon(TonaloGlyphs.Search, null, tint = Color.Black, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.size(10.dp))
                 Box(Modifier.weight(1f)) {
                     if (query.isEmpty()) Text(stringResource(R.string.search_prompt), color = Color(0xFF595959), fontSize = 16.sp, fontWeight = FontWeight.Medium)
@@ -158,7 +158,7 @@ fun SearchScreen() {
                         }),
                     )
                 }
-                if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, stringResource(R.string.cd_close), tint = Color.Black) }
+                if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(TonaloGlyphs.Xmark, stringResource(R.string.cd_close), tint = Color.Black, modifier = Modifier.size(20.dp)) }
             }
         }
         if (text.length < 2) {
@@ -171,7 +171,7 @@ fun SearchScreen() {
                         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(stringResource(R.string.recent_songs), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             Text(stringResource(R.string.clear_all), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Palette.secondaryText,
-                                modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { searchPlays = SearchPlays.clear(app, account?.id) }.padding(8.dp))
+                                modifier = Modifier.clip(RoundedCornerShape(6.dp)).plainClickable { searchPlays = SearchPlays.clear(app, account?.id) }.padding(8.dp))
                         }
                     }
                     items(searchPlays.size, key = { "played-" + searchPlays[it].key }) { i ->
@@ -286,7 +286,8 @@ private val genreColors = listOf("#C2410C", "#7C3AED", "#0E7490", "#BE185D", "#1
 
 private fun genreColor(name: String): Color {
     var h = 7
-    name.lowercase().forEach { h = (h * 31 + it.code) and 0x7fffffff }
+    // Unicode scalars, like the iPhone (not UTF-16 units), so every genre gets the same color on both
+    name.lowercase().codePoints().toArray().forEach { h = (h * 31 + it) and 0x7fffffff }
     return Palette.parse(genreColors[h % genreColors.size]) ?: Color.Gray
 }
 
@@ -294,8 +295,8 @@ private fun genreColor(name: String): Color {
 private fun GenreTile(genre: Genre, modifier: Modifier, onClick: () -> Unit) {
     val cover = rememberLoad("genre-cover", genre.value) { c -> c.albumList("byGenre", size = 1, genre = genre.value).firstOrNull() }
     val album = (cover.state as? Load.Ready<Album?>)?.value
-    Box(modifier.height(100.dp).clip(RoundedCornerShape(Palette.corner(6.dp))).background(genreColor(genre.value)).clickable(onClick = onClick)) {
-        if (album != null) Box(Modifier.align(Alignment.BottomEnd).offset(x = 16.dp, y = 6.dp).rotate(25f).shadow(4.dp, RoundedCornerShape(4.dp))) {
+    Box(modifier.height(100.dp).clip(RoundedCornerShape(Palette.corner(6.dp))).background(genreColor(genre.value)).plainClickable(onClick = onClick)) {
+        if (album != null) Box(Modifier.align(Alignment.BottomEnd).offset(x = 16.dp, y = 6.dp).rotate(25f).shadow(4.dp, RoundedCornerShape(4.dp), ambientColor = Color.Black.copy(alpha = 0.35f), spotColor = Color.Black.copy(alpha = 0.35f))) {
             Cover(album.coverArt, 70.dp, corner = 4.dp, pixels = 200)
         }
         Text(genre.value, Modifier.padding(12.dp).padding(end = 40.dp), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White, maxLines = 2)

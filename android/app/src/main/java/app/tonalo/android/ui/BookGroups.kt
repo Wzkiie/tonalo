@@ -66,7 +66,7 @@ internal fun BookSortMenu(options: List<Pair<String, Int>>, selected: String, on
     val label = (options.firstOrNull { it.first == selected } ?: options.first()).second
     Box {
         Row(
-            Modifier.clip(RoundedCornerShape(8.dp)).clickable { open = true }.padding(horizontal = 4.dp, vertical = 8.dp),
+            Modifier.clip(RoundedCornerShape(8.dp)).plainClickable { open = true }.padding(horizontal = 4.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Default.SwapVert, stringResource(R.string.bk_sort_by), modifier = Modifier.size(18.dp))
@@ -259,7 +259,7 @@ fun BookAuthorScreen(id: String) {
                         if (page.items.isNotEmpty()) Text(pluralString(R.plurals.bk_books, page.items.size), fontSize = 13.sp, color = Palette.subtle)
                         val favorite = id in favorites
                         ActionIcon(
-                            if (favorite) Icons.Rounded.Favorite else TonaloGlyphs.Heart,
+                            if (favorite) TonaloGlyphs.HeartFilled else TonaloGlyphs.Heart,
                             stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite), active = favorite,
                         ) { books.toggleFavoriteAuthor(id, name) }
                     }
@@ -269,7 +269,7 @@ fun BookAuthorScreen(id: String) {
                     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(bio, fontSize = 14.sp, color = Palette.subtle, maxLines = if (expanded) Int.MAX_VALUE else 4, overflow = TextOverflow.Ellipsis)
                         Text(
-                            stringResource(if (expanded) R.string.bk_less else R.string.bk_more), Modifier.clickable { expanded = !expanded },
+                            stringResource(if (expanded) R.string.bk_less else R.string.bk_more), Modifier.plainClickable { expanded = !expanded },
                             fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                         )
                     }
