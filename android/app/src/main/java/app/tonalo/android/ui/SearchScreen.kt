@@ -100,7 +100,7 @@ fun SearchScreen() {
         if (!hasMusic) return@produceState
         value = try { app.client()?.let { suggestedSongs(it) }.orEmpty() } catch (e: CancellationException) { throw e } catch (e: Exception) { emptyList() }
     }
-    val loader = if (hasMusic && text.length >= 2) rememberLoad("search", text, refresh = attempt) { c -> delay(200); c.smartSearch(text, SearchSignals(app.history.dates(account?.id), searchPlays)) } else null
+    val loader = if (hasMusic && text.length >= 2) rememberLoad("search", text, refresh = attempt) { c -> delay(200); c.smartSearch(text, SearchSignals(app.history.dates(account?.id), searchPlays.mapNotNull { it.song })) } else null
     // The same wait for typing to pause as the music search
     val found by produceState<ABSSearchResults?>(null, text, attempt, booksConnected) {
         value = null
@@ -161,10 +161,25 @@ fun SearchScreen() {
                                 modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { searchPlays = SearchPlays.clear(app, account?.id) }.padding(8.dp))
                         }
                     }
-                    items(searchPlays.size, key = { "played-" + searchPlays[it].id }) { i ->
-                        SongRow(searchPlays[i], showCover = true) {
-                            searchPlays = SearchPlays.remember(app, account?.id, searchPlays[i])
-                            player.play(searchPlays, 0, context = suggestedTitle, contextId = "search")
+                    items(searchPlays.size, key = { "played-" + searchPlays[it].key }) { i ->
+                        val entry = searchPlays[i]
+                        val song = entry.song
+                        val artist = entry.artist
+                        if (song != null) {
+                            SongRow(song, showCover = true) {
+                                searchPlays = SearchPlays.remember(app, account?.id, song)
+                                val songsOnly = searchPlays.mapNotNull { it.song }
+                                player.play(songsOnly, songsOnly.indexOfFirst { it.id == song.id }.coerceAtLeast(0), context = suggestedTitle, contextId = "search")
+                            }
+                        } else if (artist != null) {
+                            Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                                ItemRow(artist.name, stringResource(R.string.artist), onClick = {
+                                    searchPlays = SearchPlays.remember(app, account?.id, artist)
+                                    nav.open(artistRoute(artist.id))
+                                }) {
+                                    FillCover(artist.coverArt ?: "ar-${artist.id}", Modifier.size(52.dp), 26.dp, Icons.Default.Person)
+                                }
+                            }
                         }
                     }
                 }
@@ -195,7 +210,10 @@ fun SearchScreen() {
         }
         items(artists, key = { "r" + it.id }) { a ->
             Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                ItemRow(a.name, stringResource(R.string.artist), onClick = { nav.open(artistRoute(a.id)) }) {
+                ItemRow(a.name, stringResource(R.string.artist), onClick = {
+                    searchPlays = SearchPlays.remember(app, account?.id, a)
+                    nav.open(artistRoute(a.id))
+                }) {
                     FillCover(a.coverArt ?: "ar-${a.id}", Modifier.size(52.dp), 26.dp, Icons.Default.Person)
                 }
             }
