@@ -409,6 +409,10 @@ struct SearchView: View {
     @State private var recent: [String] = []
     /// Songs that fit what was listened to lately, shown while the field is empty.
     @State private var suggested: [Song] = []
+    /// The search is open: from tapping into the field until "Cancel". Scrolling closes the keyboard, so this can't follow `focused`.
+    @State private var suggesting = false
+    /// Briefly true after the tab was tapped again, see `onChange(of: reselected)`.
+    @State private var resetting = false
 
     private var recentKey: String { "search.recent." + (app.current?.id.uuidString ?? "none") }
 
@@ -420,7 +424,15 @@ struct SearchView: View {
                 Section {
                     if query.trimmingCharacters(in: .whitespaces).count >= 2 { results } else { browse }
                 } header: {
-                    field.padding(.horizontal, 16).padding(.bottom, 12).background(Color.canvas)
+                    HStack(spacing: 12) {
+                        field
+                        if suggesting {
+                            Button("Cancel") { query = ""; focused = false; withAnimation(.easeOut(duration: 0.2)) { suggesting = false } }
+                                .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                                .transition(.move(edge: .trailing).combined(with: .opacity))
+                        }
+                    }
+                    .padding(.horizontal, 16).padding(.bottom, 12).background(Color.canvas)
                 }
             }
             .padding(.bottom, 24)
@@ -428,7 +440,17 @@ struct SearchView: View {
         .scrollDismissesKeyboard(.immediately)
         .toolbar(.hidden, for: .navigationBar)
         .statusBarBackground()
-        .onChange(of: reselected) { withAnimation(.easeOut(duration: 0.3)) { scroller.scrollTo("search.top", anchor: .top) } }
+        .onChange(of: reselected) {
+            // Tapping the tab again starts the search over. iOS gives the field its focus back when the page returns,
+            // so focus gained right after this is turned down
+            query = ""; suggesting = false; focused = false; resetting = true
+            withAnimation(.easeOut(duration: 0.3)) { scroller.scrollTo("search.top", anchor: .top) }
+            Task { try? await Task.sleep(for: .milliseconds(700)); resetting = false }
+        }
+        .onChange(of: focused) {
+            if focused && resetting { focused = false; return }
+            if focused { withAnimation(.easeOut(duration: 0.2)) { suggesting = true } }
+        }
         .refreshable { await pulled { attempt += 1 } }
         .task(id: "\(query)|\(attempt)") {
             let q = query.trimmingCharacters(in: .whitespaces)
@@ -454,13 +476,13 @@ struct SearchView: View {
             }
             if !Task.isCancelled { searching = false }
             // Searches that found something and stayed for a moment are worth keeping, not every half-typed word
-            let r = result ?? SearchBody()
-            let found = !(r.artist ?? []).isEmpty || !(r.album ?? []).isEmpty || !(r.song ?? []).isEmpty || !books.items.isEmpty || !books.authors.isEmpty
-            if found {
-                try? await Task.sleep(for: .milliseconds(1500))
+            if hasResults {
+                try? await Task.sleep(for: .milliseconds(1000))
                 if !Task.isCancelled { remember(q) }
             }
         }
+        // Opening a result (or another tab) ends this view's tasks before the moment is up: keep the search then
+        .onDisappear { if hasResults { remember(query) }; focused = false }
         .onAppear { recent = UserDefaults.standard.stringArray(forKey: recentKey) ?? [] }
         .onChange(of: app.current?.id) { recent = UserDefaults.standard.stringArray(forKey: recentKey) ?? [] }
         #if DEBUG
@@ -534,6 +556,11 @@ struct SearchView: View {
         }
     }
 
+    private var hasResults: Bool {
+        let r = result ?? SearchBody()
+        return !(r.artist ?? []).isEmpty || !(r.album ?? []).isEmpty || !(r.song ?? []).isEmpty || !books.items.isEmpty || !books.authors.isEmpty
+    }
+
     /// Saves a search at the top. Typing on from the newest one replaces it, so "nin" and "nine inch" don't both stay.
     private func remember(_ text: String) {
         let t = text.trimmingCharacters(in: .whitespaces)
@@ -590,7 +617,7 @@ struct SearchView: View {
     private var browse: some View {
         // The tiles stay what the search shows at first. Tapping into the field swaps them for earlier searches and
         // suggestions – as long as there are any, otherwise the tiles stay.
-        let typing = focused && (!suggestions.isEmpty || (query.trimmingCharacters(in: .whitespaces).isEmpty && !suggested.isEmpty))
+        let typing = suggesting && (!suggestions.isEmpty || (query.trimmingCharacters(in: .whitespaces).isEmpty && !suggested.isEmpty))
         return VStack(alignment: .leading, spacing: 14) {
             if typing {
                 recentList

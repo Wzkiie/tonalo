@@ -293,7 +293,11 @@ struct RootView: View {
                 ContinueBanner().padding(.horizontal, 8)
                 MiniPlayer().padding(.horizontal, 8)
                 TabBar(tab: $tab) { i in
-                    if paths[i].isEmpty { reselected[i] += 1 } else { paths[i] = NavigationPath() }
+                    if paths[i].isEmpty { reselected[i] += 1 } else {
+                        paths[i] = NavigationPath()
+                        // Back from an opened result: the search starts over too, not on the old results
+                        if i == 1 { reselected[i] += 1 }
+                    }
                 }
             }
         }
