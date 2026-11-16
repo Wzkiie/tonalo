@@ -51,6 +51,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.draw.shadow
 import app.tonalo.android.R
+import app.tonalo.android.data.SubsonicClient
+import app.tonalo.android.data.Song
+import app.tonalo.android.data.RecentSearches
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.material.icons.filled.History
+import androidx.compose.foundation.layout.heightIn
 import app.tonalo.android.data.ABSSearchResults
 import app.tonalo.android.data.Album
 import app.tonalo.android.data.Genre
@@ -81,6 +88,14 @@ fun SearchScreen() {
     // An account with audiobooks only has no music server: only the audiobooks are searched
     val hasMusic = account?.hasMusic != false
     val booksConnected by app.books.connected.collectAsState()
+    var focused by androidx.compose.runtime.remember { mutableStateOf(false) }
+    var recent by androidx.compose.runtime.remember(account?.id) { mutableStateOf(RecentSearches.load(app, account?.id)) }
+    val suggestedTitle = stringResource(R.string.suggested_for_you)
+    // Songs that fit what was listened to lately, shown while the field is empty. Nothing if the server knows no similar ones.
+    val suggested by produceState<List<Song>>(emptyList(), account?.id, attempt) {
+        if (!hasMusic) return@produceState
+        value = try { app.client()?.let { suggestedSongs(it) }.orEmpty() } catch (e: CancellationException) { throw e } catch (e: Exception) { emptyList() }
+    }
     val loader = if (hasMusic && text.length >= 2) rememberLoad("search", text, refresh = attempt) { c -> delay(200); c.search(text) } else null
     // The same wait for typing to pause as the music search
     val found by produceState<ABSSearchResults?>(null, text, attempt, booksConnected) {
@@ -93,6 +108,16 @@ fun SearchScreen() {
             throw e
         } catch (e: Exception) {
             ABSSearchResults()
+        }
+    }
+
+    // Searches that found something and stayed for a moment are worth keeping, not every half-typed word
+    val foundMusic = (loader?.state as? Load.Ready<SearchBody>)?.value?.let { it.artist.orEmpty().isNotEmpty() || it.album.orEmpty().isNotEmpty() || it.song.orEmpty().isNotEmpty() } == true
+    val foundBooks = found?.let { it.items.isNotEmpty() || it.authors.isNotEmpty() || it.series.isNotEmpty() || it.narrators.isNotEmpty() } == true
+    LaunchedEffect(text, foundMusic, foundBooks) {
+        if (text.length >= 2 && (foundMusic || foundBooks)) {
+            delay(1_500)
+            recent = RecentSearches.remember(app, account?.id, text)
         }
     }
 
@@ -116,12 +141,13 @@ fun SearchScreen() {
                 Box(Modifier.weight(1f)) {
                     if (query.isEmpty()) Text(stringResource(R.string.search_prompt), color = Color(0xFF595959), fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     BasicTextField(
-                        query, { query = it }, Modifier.fillMaxWidth(),
+                        query, { query = it }, Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
                         singleLine = true,
                         textStyle = TextStyle(color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Medium),
                         cursorBrush = SolidColor(Color.Black),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = {
+                            recent = RecentSearches.remember(app, account?.id, query)
                             keyboard?.hide(); focus.clearFocus()
                         }),
                     )
@@ -130,8 +156,45 @@ fun SearchScreen() {
             }
         }
         if (text.length < 2) {
-            // The genres are the music server's: an account with audiobooks only has nothing to browse here
-            if (hasMusic) browseAll(attempt)
+            // Tapping into the field swaps the tiles for earlier searches and suggestions – as long as there are any
+            val earlier = if (text.isEmpty()) recent else recent.filter { it.contains(text, ignoreCase = true) && !it.equals(text, ignoreCase = true) }
+            val showSuggested = text.isEmpty() && suggested.isNotEmpty()
+            if (focused && (earlier.isNotEmpty() || showSuggested)) {
+                if (earlier.isNotEmpty()) {
+                    item(key = "recent-head") {
+                        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.recent_searches), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Text(stringResource(R.string.clear_all), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Palette.secondaryText,
+                                modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { recent = RecentSearches.forget(app, account?.id, null) }.padding(8.dp))
+                        }
+                    }
+                    items(earlier, key = { "recent-" + it }) { s ->
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                .clickable { query = s; recent = RecentSearches.remember(app, account?.id, s); focus.clearFocus() }.padding(start = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Default.History, null, tint = Palette.secondaryText, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(14.dp))
+                            Text(s, fontSize = 16.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            IconButton(onClick = { recent = RecentSearches.forget(app, account?.id, s) }) {
+                                Icon(Icons.Default.Close, stringResource(R.string.remove), tint = Palette.secondaryText, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                }
+                if (showSuggested) {
+                    item(key = "suggested-head") {
+                        Text(stringResource(R.string.suggested_for_you), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp))
+                    }
+                    items(suggested.size, key = { "suggested-" + suggested[it].id }) { i ->
+                        SongRow(suggested[i], showCover = true) { player.play(suggested, i, context = suggestedTitle, contextId = "search") }
+                    }
+                }
+            } else {
+                // The genres are the music server's: an account with audiobooks only has nothing to browse here
+                if (hasMusic) browseAll(attempt)
+            }
             return@LazyColumn
         }
         val music = (loader?.state as? Load.Ready<SearchBody>)?.value
@@ -217,4 +280,30 @@ private fun GenreTile(genre: Genre, modifier: Modifier, onClick: () -> Unit) {
         }
         Text(genre.value, Modifier.padding(12.dp).padding(end = 40.dp), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White, maxLines = 2)
     }
+}
+
+/**
+ * Songs similar to the last few albums played, without the songs of those albums. It takes the server's own idea of
+ * "similar" (the same one the song radio uses), so it is nothing when the server has none.
+ */
+private suspend fun suggestedSongs(client: SubsonicClient): List<Song> {
+    val albums = client.albumList("recent", size = 4)
+    if (albums.isEmpty()) return emptyList()
+    val heard = HashSet<String>()
+    val seeds = ArrayList<Song>()
+    for (a in albums.take(3)) {
+        val songs = runCatching { client.album(a.id).song }.getOrNull().orEmpty()
+        songs.forEach { heard += it.id }
+        songs.randomOrNull()?.let { seeds += it }
+    }
+    val lists = seeds.map { client.similarSongs(it.id) }
+    // One from each list in turn, so it isn't all about the newest album
+    val out = ArrayList<Song>()
+    val seen = HashSet(heard)
+    var i = 0
+    while (out.size < 10 && lists.any { i < it.size }) {
+        for (l in lists) if (i < l.size && out.size < 10 && seen.add(l[i].id)) out += l[i]
+        i++
+    }
+    return out
 }

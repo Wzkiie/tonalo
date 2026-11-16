@@ -9,8 +9,9 @@ A native Android app for Navidrome and other Subsonic servers. It is written in 
 - **Sign in:** server address, user and password. You can add custom headers (Cloudflare Access and similar) and an optional **home address**. The home address is used on Wi-Fi when the same server answers there. Several accounts are supported.
 - **Same look as the iPhone app:** black or dark gray background, an accent color you pick, and pages tinted with the cover's color (player, albums, mini player).
 - **Home:** quick tiles, *Made for you* (Shuffle mix, Favorites mix, Discover), *Radio*, then album shelves. There are chips for Playlists and Downloads.
-- **Search:** *Browse all* genre tiles, then artists, albums and songs.
+- **Search:** *Browse all* genre tiles, then artists, albums and songs. Tap the empty field to see your recent searches and songs that fit what you listened to lately (kept on the phone only).
 - **Your Library:** Favorite songs and Downloads pinned on top, then playlists and albums. Chips filter by Playlists, Albums, Artists or Downloads.
+- **Swipe a song:** right plays it next, left adds it to a playlist.
 - **Pages:** album, artist (top songs, biography, artist radio) and playlist (reorder songs, remove songs, delete the playlist).
 - **Endless radio:** Your radio, *More like …*, genre radios, *Radio from this song*. It tops itself up and learns from skips and hearts, like on the iPhone.
 - **Radio stations** from the server play live and show the current title.
