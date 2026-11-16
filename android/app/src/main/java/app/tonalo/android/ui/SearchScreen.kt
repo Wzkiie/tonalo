@@ -67,6 +67,8 @@ import app.tonalo.android.data.Genre
 import app.tonalo.android.data.SearchBody
 import app.tonalo.android.tonalo
 import app.tonalo.android.playback.Playback
+import app.tonalo.android.data.Artist
+import app.tonalo.android.data.Fuzzy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -218,7 +220,11 @@ fun SearchScreen() {
                 Text(stringResource(R.string.similar_results), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp))
             }
         }
-        items(artists, key = { "r" + it.id }) { a ->
+        // Songs come first. Only an artist whose name is exactly what was typed stays on top, then the rest follow the songs.
+        val typed = Fuzzy.norm(text)
+        val (exactArtists, otherArtists) = artists.partition { Fuzzy.norm(it.name) == typed }
+        @Composable
+        fun ArtistRow(a: Artist) {
             // Same row as the songs, so covers and texts line up
             ListRow(a.name, stringResource(R.string.artist), leading = {
                 FillCover(a.coverArt ?: "ar-${a.id}", Modifier.size(48.dp), 24.dp, Icons.Default.Person)
@@ -227,10 +233,12 @@ fun SearchScreen() {
                 nav.open(artistRoute(a.id))
             }
         }
+        items(exactArtists, key = { "r" + it.id }) { ArtistRow(it) }
         items(songs.size, key = { "s" + songs[it].id + it }) { i -> SongRow(songs[i], showCover = true) {
             searchPlays = SearchPlays.remember(app, account?.id, songs[i])
             playWithRadio(songs[i])
         } }
+        items(otherArtists, key = { "r" + it.id }) { ArtistRow(it) }
         items(albums, key = { "a" + it.id }) { a ->
             ListRow(a.name, listOfNotNull(stringResource(R.string.album), a.artist).joinToString(" • "), leading = {
                 FillCover(a.coverArt, Modifier.size(48.dp), 2.dp)
