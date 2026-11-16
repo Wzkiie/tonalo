@@ -462,10 +462,10 @@ fun MiniPlayer(open: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f).offset { IntOffset(swipe.roundToInt(), 0) }) {
                 Text(song?.title ?: station?.name ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp, color = Color.White)
+                    fontSize = 13.sp, color = Color.White)
                 Text(state.tvName?.let { stringResource(if (state.tvGuest) R.string.guest_of else R.string.playing_on, it) }
                     ?: song?.artist?.replace(" / ", " • ") ?: state.liveTitle ?: stringResource(R.string.live), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    fontSize = 15.sp, fontWeight = FontWeight.Normal, color = Color.White.copy(alpha = 0.7f))
+                    fontSize = 13.sp, fontWeight = FontWeight.Normal, color = Color.White.copy(alpha = 0.7f))
             }
             Spacer(Modifier.width(8.dp))
             if (song != null) {
