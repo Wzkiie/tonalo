@@ -405,6 +405,12 @@ struct SearchView: View {
     /// Goes up to ask again – pulling down, or "Try again".
     @State private var attempt = 0
     @FocusState private var focused: Bool
+    /// Earlier searches of this account, newest first. Only kept on this device.
+    @State private var recent: [String] = []
+    /// Songs that fit what was listened to lately, shown while the field is empty.
+    @State private var suggested: [Song] = []
+
+    private var recentKey: String { "search.recent." + (app.current?.id.uuidString ?? "none") }
 
     var body: some View {
         ScrollViewReader { scroller in
@@ -447,11 +453,21 @@ struct SearchView: View {
                 }
             }
             if !Task.isCancelled { searching = false }
+            // Searches that found something and stayed for a moment are worth keeping, not every half-typed word
+            let r = result ?? SearchBody()
+            let found = !(r.artist ?? []).isEmpty || !(r.album ?? []).isEmpty || !(r.song ?? []).isEmpty || !books.items.isEmpty || !books.authors.isEmpty
+            if found {
+                try? await Task.sleep(for: .milliseconds(1500))
+                if !Task.isCancelled { remember(q) }
+            }
         }
+        .onAppear { recent = UserDefaults.standard.stringArray(forKey: recentKey) ?? [] }
+        .onChange(of: app.current?.id) { recent = UserDefaults.standard.stringArray(forKey: recentKey) ?? [] }
         #if DEBUG
         // Test hook: -demoSearch <text> fills in the search field, typing doesn't reach it in the simulator
         .onAppear { if query.isEmpty, let demo = UserDefaults.standard.string(forKey: "demoSearch") { query = demo } }
         #endif
+        .task(id: "\(attempt)|\(app.current?.id.uuidString ?? "")") { await loadSuggestions() }
         .task(id: attempt) {
             guard genres.isEmpty || attempt > 0, let all = try? await app.client?.genres() else { return }
             genres = Array(all.filter { ($0.albumCount ?? 0) > 0 }.sorted { ($0.albumCount ?? 0) > ($1.albumCount ?? 0) }.prefix(30))
@@ -467,6 +483,7 @@ struct SearchView: View {
                 .focused($focused)
                 .submitLabel(.search)
                 .autocorrectionDisabled()
+                .onSubmit { remember(query) }
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark") }.accessibilityLabel("Clear")
             }
@@ -478,13 +495,113 @@ struct SearchView: View {
         .background(.white, in: RoundedRectangle(cornerRadius: 8))
     }
 
-    private var browse: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if app.client != nil { Text("Browse all").font(.system(size: 17, weight: .bold)).padding(.top, 8) }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                ForEach(genres, id: \.value) { GenreTile(genre: $0.value) }
+    /// Songs similar to the last few albums played, without the songs of those albums. Takes the server's own idea of
+    /// "similar" (the same one the song radio uses), so it's nothing when the server has none.
+    private func loadSuggestions() async {
+        guard let client = app.client, let albums = try? await client.albumList("recent", size: 4), !albums.isEmpty else { return }
+        var heard = Set<String>()
+        var seeds: [Song] = []
+        for a in albums.prefix(3) {
+            guard let songs = (try? await client.album(a.id))?.song, let seed = songs.randomElement() else { continue }
+            songs.forEach { heard.insert($0.id) }
+            seeds.append(seed)
+        }
+        var lists: [[Song]] = []
+        for seed in seeds { lists.append(await client.similarSongs(seed.id)) }
+        // One from each list in turn, so it isn't all about the newest album
+        var out: [Song] = []
+        var seen = heard
+        var i = 0
+        while out.count < 10, lists.contains(where: { i < $0.count }) {
+            for l in lists where i < l.count && out.count < 10 {
+                if seen.insert(l[i].id).inserted { out.append(l[i]) }
             }
-            if genres.isEmpty && app.isOnline && app.client != nil { ProgressView().frame(maxWidth: .infinity).padding(30) }
+            i += 1
+        }
+        if !Task.isCancelled { suggested = out }
+    }
+
+    @ViewBuilder private var suggestedList: some View {
+        if query.trimmingCharacters(in: .whitespaces).isEmpty && !suggested.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Suggested for you").font(.system(size: 17, weight: .bold)).padding(.top, 8)
+                ForEach(Array(suggested.enumerated()), id: \.element.id) { i, s in
+                    SongRow(song: s, showCover: true) {
+                        app.player.play(suggested, from: i, context: .init(kind: .search, name: String(localized: "Suggested for you")))
+                    }
+                }
+            }
+        }
+    }
+
+    /// Saves a search at the top. Typing on from the newest one replaces it, so "nin" and "nine inch" don't both stay.
+    private func remember(_ text: String) {
+        let t = text.trimmingCharacters(in: .whitespaces)
+        guard t.count >= 2 else { return }
+        var list = recent
+        if let first = list.first, t.lowercased().hasPrefix(first.lowercased()) { list.removeFirst() }
+        list.removeAll { $0.caseInsensitiveCompare(t) == .orderedSame }
+        list.insert(t, at: 0)
+        recent = Array(list.prefix(10))
+        UserDefaults.standard.set(recent, forKey: recentKey)
+    }
+
+    private func forget(_ text: String?) {
+        if let text { recent.removeAll { $0 == text } } else { recent = [] }
+        UserDefaults.standard.set(recent, forKey: recentKey)
+    }
+
+    /// Earlier searches that fit what's typed so far (all of them while the field is empty).
+    private var suggestions: [String] {
+        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        return q.isEmpty ? recent : recent.filter { $0.lowercased().contains(q) && $0.lowercased() != q }
+    }
+
+    @ViewBuilder private var recentList: some View {
+        let list = suggestions
+        if !list.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Recent searches").font(.system(size: 17, weight: .bold))
+                    Spacer()
+                    Button("Clear all") { withAnimation { forget(nil) } }
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.subtle)
+                }
+                .padding(.top, 8).padding(.bottom, 4)
+                ForEach(list, id: \.self) { text in
+                    HStack(spacing: 14) {
+                        Image(systemName: "clock.arrow.circlepath").font(.system(size: 16)).foregroundStyle(Color.subtle).frame(width: 22)
+                        Text(text).font(.system(size: 16)).lineLimit(1)
+                        Spacer(minLength: 8)
+                        Button { withAnimation { forget(text) } } label: {
+                            Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.subtle)
+                                .frame(width: 36, height: 40).contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("Remove")
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                    .onTapGesture { query = text; remember(text); focused = false }
+                }
+            }
+        }
+    }
+
+    private var browse: some View {
+        // The tiles stay what the search shows at first. Tapping into the field swaps them for earlier searches and
+        // suggestions – as long as there are any, otherwise the tiles stay.
+        let typing = focused && (!suggestions.isEmpty || (query.trimmingCharacters(in: .whitespaces).isEmpty && !suggested.isEmpty))
+        return VStack(alignment: .leading, spacing: 14) {
+            if typing {
+                recentList
+                suggestedList
+            } else {
+                if app.client != nil { Text("Browse all").font(.system(size: 17, weight: .bold)).padding(.top, 8) }
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                    ForEach(genres, id: \.value) { GenreTile(genre: $0.value) }
+                }
+                if genres.isEmpty && app.isOnline && app.client != nil { ProgressView().frame(maxWidth: .infinity).padding(30) }
+            }
         }
         .padding(.horizontal, 16)
     }
