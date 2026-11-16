@@ -86,7 +86,7 @@ fun ProfileMenu(close: () -> Unit, open: (String) -> Unit) {
             if (current?.hasMusic != false) {
                 MenuRow(stringResource(R.string.devices_title), icon = TonaloGlyphs.Tv, iconSize = 19.dp) { open("devices") }
                 MenuRow(stringResource(R.string.jukebox), icon = TonaloGlyphs.Jukebox, iconSize = 20.dp) { open("jukebox") }
-                MenuRow(stringResource(R.string.dj), icon = { DJMark(Modifier.size(24.dp), Color.White) }) { open("dj") }
+                MenuRow(stringResource(R.string.dj), icon = { DJMark(Modifier.size(24.dp), Palette.accent) }) { open("dj") }
             }
             MenuRow(stringResource(R.string.tab_settings), icon = TonaloGlyphs.Gear, iconSize = 22.dp) { open("settings") }
             Spacer(Modifier.weight(1f))
@@ -109,7 +109,7 @@ private fun ServerLine(icon: ImageVector, user: String, host: String) {
 
 @Composable
 private fun MenuRow(title: String, sub: String? = null, icon: ImageVector, iconSize: androidx.compose.ui.unit.Dp = 26.dp, color: Color = Color.White, onClick: () -> Unit) =
-    MenuRow(title, sub, icon = { Icon(icon, null, tint = color, modifier = Modifier.size(iconSize)) }, color = color, onClick = onClick)
+    MenuRow(title, sub, icon = { Icon(icon, null, tint = if (color == Color.White) Palette.accent else color, modifier = Modifier.size(iconSize)) }, color = color, onClick = onClick)
 
 @Composable
 private fun MenuRow(title: String, sub: String? = null, icon: @Composable () -> Unit, color: Color = Color.White, onClick: () -> Unit) {

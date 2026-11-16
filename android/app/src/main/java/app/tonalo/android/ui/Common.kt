@@ -548,7 +548,7 @@ fun SongMenu(
 
 @Composable
 fun MenuItem(text: Int, icon: ImageVector, onClick: () -> Unit) {
-    DropdownMenuItem(text = { Text(stringResource(text)) }, leadingIcon = { Icon(icon, null) }, onClick = onClick)
+    DropdownMenuItem(text = { Text(stringResource(text)) }, leadingIcon = { Icon(icon, null, tint = Palette.accent) }, onClick = onClick)
 }
 
 fun toggleFavorite(context: Context, song: Song, player: PlayerConnection, scope: kotlinx.coroutines.CoroutineScope, snackbar: SnackbarHostState, notify: Boolean = false) {

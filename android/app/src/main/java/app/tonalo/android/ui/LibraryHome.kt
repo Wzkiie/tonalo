@@ -436,7 +436,7 @@ private fun PinMenuBox(
         DropdownMenu(menu, { menu = false }) {
             if (!fixed) DropdownMenuItem(
                 text = { Text(stringResource(if (pinned) R.string.unpin else R.string.pin_to_top)) },
-                leadingIcon = { Icon(TonaloGlyphs.Pin, null, modifier = Modifier.size(20.dp).rotate(45f)) },
+                leadingIcon = { Icon(TonaloGlyphs.Pin, null, tint = Palette.accent, modifier = Modifier.size(20.dp).rotate(45f)) },
                 onClick = { menu = false; toggle() },
             )
             extra { menu = false }

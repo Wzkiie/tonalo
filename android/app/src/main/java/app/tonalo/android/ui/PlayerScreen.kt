@@ -350,7 +350,7 @@ private fun IosMenu(expanded: Boolean, onDismiss: () -> Unit, content: @Composab
 
 /** One row of such a menu: 17 sp text, an optional symbol at the end. */
 @Composable
-private fun IosMenuItem(text: String, icon: ImageVector? = null, iconTint: Color = Color.White, textColor: Color = Color.White, onClick: () -> Unit) {
+private fun IosMenuItem(text: String, icon: ImageVector? = null, iconTint: Color = Palette.accent, textColor: Color = Color.White, onClick: () -> Unit) {
     DropdownMenuItem(
         text = { Text(text, fontSize = 17.sp, color = textColor, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         trailingIcon = if (icon == null) null else { { Icon(icon, null, Modifier.size(20.dp), tint = iconTint) } },
@@ -510,8 +510,8 @@ fun PlayerScreen(onClose: () -> Unit) {
                     )
                 }
                 PlayerMoreMenu { close ->
-                    IosMenuItem(R.string.devices, Icons.Default.Tv) { close(); onClose(); nav.open("devices") }
-                    if (djReady && song != null && (state.tvName == null || !state.tvGuest) && station == null) IosMenuItem(R.string.dj_from_here, Icons.Default.AutoAwesome) {
+                    IosMenuItem(R.string.devices, TonaloGlyphs.Tv) { close(); onClose(); nav.open("devices") }
+                    if (djReady && song != null && (state.tvName == null || !state.tvGuest) && station == null) IosMenuItem(R.string.dj_from_here, TonaloGlyphs.Sparkles) {
                         close()
                         scope.launch {
                             try { DJ.takeOver(song); nav.open("dj") }
@@ -519,14 +519,14 @@ fun PlayerScreen(onClose: () -> Unit) {
                         }
                     }
                     if (song != null) {
-                        IosMenuItem(R.string.add_to_playlist, Icons.AutoMirrored.Filled.PlaylistAdd) { close(); pickPlaylist = true }
+                        IosMenuItem(R.string.add_to_playlist, TonaloGlyphs.TextBadgePlus) { close(); pickPlaylist = true }
                         val downloaded = Downloads.isDownloaded(context, song.id)
-                        IosMenuItem(if (downloaded) R.string.remove_download else R.string.download, Icons.Default.Download) {
+                        IosMenuItem(if (downloaded) R.string.remove_download else R.string.download, if (downloaded) TonaloGlyphs.Trash else TonaloGlyphs.Download) {
                             close()
                             if (downloaded) Downloads.remove(context, listOf(song.id)) else Downloads.download(context, listOf(song))
                         }
-                        song.albumId?.let { id -> IosMenuItem(R.string.go_to_album, Icons.Default.Album) { close(); onClose(); nav.open(albumRoute(id)) } }
-                        song.artistId?.let { id -> IosMenuItem(R.string.go_to_artist, Icons.Default.Person) { close(); onClose(); nav.open(artistRoute(id)) } }
+                        song.albumId?.let { id -> IosMenuItem(R.string.go_to_album, TonaloGlyphs.SquareStack) { close(); onClose(); nav.open(albumRoute(id)) } }
+                        song.artistId?.let { id -> IosMenuItem(R.string.go_to_artist, TonaloGlyphs.Mic) { close(); onClose(); nav.open(artistRoute(id)) } }
                     }
                 }
             }
@@ -716,8 +716,8 @@ private fun QueueSheet(onDismiss: () -> Unit, onClose: () -> Unit) {
             item { SectionHeader(stringResource(R.string.now_playing)) }
             item {
                 QueueRow(current.title, current.artist, current.coverArt, playing = true, playingNow = state.isPlaying) { close ->
-                    current.albumId?.let { id -> IosMenuItem(R.string.go_to_album, Icons.Default.Album) { close(); onDismiss(); onClose(); nav.open(albumRoute(id)) } }
-                    current.artistId?.let { id -> IosMenuItem(R.string.go_to_artist, Icons.Default.Person) { close(); onDismiss(); onClose(); nav.open(artistRoute(id)) } }
+                    current.albumId?.let { id -> IosMenuItem(R.string.go_to_album, TonaloGlyphs.SquareStack) { close(); onDismiss(); onClose(); nav.open(albumRoute(id)) } }
+                    current.artistId?.let { id -> IosMenuItem(R.string.go_to_artist, TonaloGlyphs.Mic) { close(); onDismiss(); onClose(); nav.open(artistRoute(id)) } }
                 }
             }
             item {
@@ -734,7 +734,7 @@ private fun QueueSheet(onDismiss: () -> Unit, onClose: () -> Unit) {
                             if (pos > 0) IosMenuItem(R.string.cd_move_up, Icons.Default.KeyboardArrowUp) { close(); player.move(index, index - 1) }
                             if (pos < upNext.lastIndex) IosMenuItem(R.string.cd_move_down, Icons.Default.KeyboardArrowDown) { close(); player.move(index, index + 1) }
                         }
-                        if (state.tvName == null) IosMenuItem(R.string.remove_from_queue, Icons.Default.Close) { close(); player.remove(index) }
+                        if (state.tvName == null) IosMenuItem(R.string.remove_from_queue, TonaloGlyphs.Xmark) { close(); player.remove(index) }
                     }
                 }
             }
