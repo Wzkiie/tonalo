@@ -38,6 +38,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -189,21 +191,38 @@ fun ToggleRow(title: String, checked: Boolean, sub: String? = null, enabled: Boo
 /** Picks one of a few values from a menu at the row. */
 @Composable
 fun <T> PickerRow(title: String, value: T, options: List<T>, sub: String? = null, label: @Composable (T) -> String, onPick: (T) -> Unit) {
+    // No popup: the choices open right below the row, inside the same group, and close again after picking
     var open by remember { mutableStateOf(false) }
-    Box {
-        GroupRow({ open = true }, trailing = {
+    val turn by androidx.compose.animation.core.animateFloatAsState(if (open) 180f else 0f, androidx.compose.animation.core.tween(250), label = "chevron")
+    Column {
+        GroupRow({ open = !open }, trailing = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                RowValue(label(value))
-                Icon(Icons.Default.UnfoldMore, null, tint = Palette.subtle, modifier = Modifier.padding(start = 4.dp).size(18.dp))
+                if (!open) RowValue(label(value))
+                Icon(
+                    Icons.Default.KeyboardArrowDown, null, tint = Palette.subtle,
+                    modifier = Modifier.padding(start = 4.dp).size(20.dp).graphicsLayer { rotationZ = turn },
+                )
             }
         }) { RowTitle(title, sub) }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.background(Palette.elevated)) {
-            options.forEach { o ->
-                DropdownMenuItem(
-                    text = { Text(label(o)) },
-                    leadingIcon = { if (o == value) Icon(Icons.Default.Check, null, tint = Palette.accent) else Spacer(Modifier.size(24.dp)) },
-                    onClick = { onPick(o); open = false },
-                )
+        androidx.compose.animation.AnimatedVisibility(
+            open,
+            enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.tween(250)) + androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200)),
+            exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.tween(220)) + androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(150)),
+        ) {
+            Column(Modifier.fillMaxWidth().background(Color.White.copy(alpha = 0.04f))) {
+                options.forEach { o ->
+                    Row(
+                        Modifier.fillMaxWidth().heightIn(min = 48.dp).plainClickable { onPick(o); open = false }
+                            .padding(start = 32.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            label(o), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
+                            color = if (o == value) Palette.accent else Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        )
+                        if (o == value) Icon(Icons.Default.Check, null, tint = Palette.accent, modifier = Modifier.size(20.dp))
+                    }
+                }
             }
         }
     }
