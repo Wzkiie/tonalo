@@ -242,10 +242,10 @@ fun SearchScreen() {
             } else if (failed != null) item(key = "failed") {
                 ErrorView(failed.message, loader?.reload ?: {})
             } else item(key = "none") {
-                Column(Modifier.fillMaxWidth().padding(top = 60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.no_results_for, text), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Column(Modifier.fillMaxWidth().padding(top = 60.dp, start = 24.dp, end = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stringResource(R.string.no_results_for, text), fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     Spacer(Modifier.height(8.dp))
-                    Text(stringResource(R.string.no_results_hint), color = Palette.secondaryText)
+                    Text(stringResource(R.string.no_results_hint), color = Palette.secondaryText, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
             }
         }

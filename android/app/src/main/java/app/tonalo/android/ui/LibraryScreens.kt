@@ -412,7 +412,8 @@ fun RadioScreen() {
         TopBar(stringResource(R.string.radio))
         Refreshable(genres.refreshing || stations.refreshing, { genres.reload(); stations.reload() }, Modifier.weight(1f).fillMaxWidth()) {
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
-            val size = maxOf(120.dp, (maxWidth - 32.dp - 14.dp) / 2)
+            // A little less than half, so rounding never pushes the second card of a row into the next row
+            val size = maxOf(120.dp, (maxWidth - 32.dp - 14.dp - 2.dp) / 2)
             LazyColumn(contentPadding = PaddingValues(vertical = 16.dp)) {
                 item {
                     Text(stringResource(R.string.endless_radio), Modifier.padding(horizontal = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.Bold)

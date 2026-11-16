@@ -87,7 +87,8 @@ suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
     enqueue(object : Callback {
         override fun onResponse(call: Call, response: Response) {
             // The handler closes the response if the coroutine is cancelled before it gets to run again
-            if (cont.isActive) cont.resume(response) { _ -> response.close() } else response.close()
+            // Closing can read the rest of the body from the network, so never on the main thread (that crashed the app)
+            if (cont.isActive) cont.resume(response) { _ -> Thread { runCatching { response.close() } }.start() } else response.close()
         }
         override fun onFailure(call: Call, e: IOException) { if (!cont.isCancelled) cont.resumeWithException(e) }
     })
