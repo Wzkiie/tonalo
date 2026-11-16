@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.filled.ArrowCircleDown
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Check
@@ -434,7 +435,7 @@ fun BookFavoriteMenuItem(item: ABSItem, close: () -> Unit) {
     val books = LocalContext.current.tonalo.books
     val favorites by books.favorites.collectAsState()
     val on = item.id in favorites
-    MenuItem(if (on) R.string.remove_favorite else R.string.add_favorite, if (on) Icons.Default.HeartBroken else Icons.Default.FavoriteBorder) {
+    MenuItem(if (on) R.string.remove_favorite else R.string.add_favorite, if (on) Icons.Default.HeartBroken else Icons.Rounded.FavoriteBorder) {
         books.toggleFavorite(item)
         close()
     }
@@ -446,7 +447,7 @@ fun AuthorFavoriteMenuItem(id: String, name: String, close: () -> Unit) {
     val books = LocalContext.current.tonalo.books
     val favorites by books.favoriteAuthors.collectAsState()
     val on = id in favorites
-    MenuItem(if (on) R.string.remove_favorite else R.string.add_favorite, if (on) Icons.Default.HeartBroken else Icons.Default.FavoriteBorder) {
+    MenuItem(if (on) R.string.remove_favorite else R.string.add_favorite, if (on) Icons.Default.HeartBroken else Icons.Rounded.FavoriteBorder) {
         books.toggleFavoriteAuthor(id, name)
         close()
     }

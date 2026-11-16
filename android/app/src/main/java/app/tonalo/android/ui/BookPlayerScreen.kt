@@ -25,6 +25,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Bedtime
@@ -307,7 +311,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = { BookPlayer.previousChapter() }, enabled = state.chapters.isNotEmpty()) {
-                    Icon(Icons.Default.SkipPrevious, stringResource(R.string.bpl_prev_chapter), Modifier.size(32.dp))
+                    Icon(Icons.Rounded.SkipPrevious, stringResource(R.string.bpl_prev_chapter), Modifier.size(32.dp))
                 }
                 IconButton(onClick = { BookPlayer.skip(-state.skipBack) }, Modifier.size(56.dp).semantics { contentDescription = backDesc }) {
                     Box(Modifier.size(44.dp)) { BplSkipIcon(false, state.skipBack, 44.dp) }
@@ -318,7 +322,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
                 ) {
                     if (state.loading) CircularProgressIndicator(Modifier.size(30.dp), color = Color.Black, strokeWidth = 3.dp)
                     else Icon(
-                        if (state.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        if (state.playing) TonaloIcons.Pause else TonaloIcons.Play,
                         stringResource(if (state.playing) R.string.cd_pause else R.string.cd_play),
                         Modifier.size(36.dp), tint = Color.Black,
                     )
@@ -327,7 +331,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
                     Box(Modifier.size(44.dp)) { BplSkipIcon(true, state.skipForward, 44.dp) }
                 }
                 IconButton(onClick = { BookPlayer.nextChapter() }, enabled = state.chapters.isNotEmpty()) {
-                    Icon(Icons.Default.SkipNext, stringResource(R.string.bpl_next_chapter), Modifier.size(32.dp))
+                    Icon(Icons.Rounded.SkipNext, stringResource(R.string.bpl_next_chapter), Modifier.size(32.dp))
                 }
             }
 

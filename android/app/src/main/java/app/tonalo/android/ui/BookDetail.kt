@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.filled.List
@@ -157,7 +159,7 @@ private fun BookDetail(item: ABSItem, episodeId: String?, refreshing: Boolean, o
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     ActionIcon(
-                        if (favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite), active = favorite,
                     ) { books.toggleFavorite(item) }
                     if (!item.isPodcast) {

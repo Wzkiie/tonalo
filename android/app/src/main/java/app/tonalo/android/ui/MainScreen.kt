@@ -30,6 +30,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
@@ -345,13 +349,13 @@ fun MiniPlayer(open: () -> Unit) {
                 if (song != null) {
                     val starred = rememberStarred(song.id, song.starred)
                     IconButton(onClick = { toggleFavorite(context, song, player, scope, snackbar) }) {
-                        Icon(if (starred) Icons.Default.Favorite else Icons.Default.FavoriteBorder, stringResource(R.string.cd_favorite),
+                        Icon(if (starred) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, stringResource(R.string.cd_favorite),
                             tint = if (starred) Palette.accent else Color.White)
                     }
                 }
                 IconButton(onClick = { player.toggle() }) {
                     Icon(
-                        if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        if (state.isPlaying) TonaloIcons.Pause else TonaloIcons.Play,
                         stringResource(if (state.isPlaying) R.string.cd_pause else R.string.cd_play),
                     )
                 }

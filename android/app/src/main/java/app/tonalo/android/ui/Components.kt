@@ -22,6 +22,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
@@ -241,7 +245,7 @@ fun FavoritesArt(modifier: Modifier = Modifier.fillMaxSize(), corner: Dp = 0.dp)
         modifier.clip(RoundedCornerShape(corner)).background(Palette.canvas)
             .background(Brush.linearGradient(listOf(Palette.accent, Palette.accent.copy(alpha = 0.35f)))),
         contentAlignment = Alignment.Center,
-    ) { Icon(Icons.Default.Favorite, null, tint = Color.White, modifier = Modifier.fillMaxSize(0.38f)) }
+    ) { Icon(Icons.Rounded.Favorite, null, tint = Color.White, modifier = Modifier.fillMaxSize(0.38f)) }
 }
 
 /** "Downloads": the accent arrow on a gray gradient. */
@@ -338,7 +342,7 @@ fun GlassBackButton(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null
 @Composable
 fun BigPlayButton(size: Dp = 56.dp, onClick: () -> Unit) {
     Box(Modifier.size(size).clip(CircleShape).background(Palette.accent).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Icon(Icons.Default.PlayArrow, stringResource(R.string.play), tint = Color.Black, modifier = Modifier.size(size * 0.55f))
+        Icon(TonaloIcons.Play, stringResource(R.string.play), tint = Color.Black, modifier = Modifier.size(size * 0.55f))
     }
 }
 
@@ -433,7 +437,7 @@ private fun CoverCard(title: String, subtitle: String, coverArt: String?, width:
 fun PlayCircle(playing: Boolean, size: Dp = 52.dp, color: Color = Palette.accent, onClick: () -> Unit) {
     Box(Modifier.size(size).clip(CircleShape).background(color).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
         Icon(
-            if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+            if (playing) TonaloIcons.Pause else TonaloIcons.Play,
             stringResource(if (playing) R.string.cd_pause else R.string.cd_play), tint = Color.Black,
             modifier = Modifier.size(size * 0.5f).padding(start = if (playing) 0.dp else size * 0.03f),
         )
@@ -444,7 +448,7 @@ fun PlayCircle(playing: Boolean, size: Dp = 52.dp, color: Color = Palette.accent
 @Composable
 fun PlayButtons(playing: Boolean, play: () -> Unit, shuffle: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = shuffle) { Icon(Icons.Default.Shuffle, stringResource(R.string.shuffle), tint = Palette.secondaryText, modifier = Modifier.size(26.dp)) }
+        IconButton(onClick = shuffle) { Icon(Icons.Rounded.Shuffle, stringResource(R.string.shuffle), tint = Palette.secondaryText, modifier = Modifier.size(26.dp)) }
         Spacer(Modifier.width(12.dp))
         PlayCircle(playing, onClick = play)
     }

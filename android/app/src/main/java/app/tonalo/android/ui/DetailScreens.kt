@@ -26,6 +26,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
@@ -217,7 +219,7 @@ fun AlbumScreen(id: String) {
                 actions = {
                     ActionRow(
                         left = {
-                            ActionIcon(if (starred) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            ActionIcon(if (starred) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                                 stringResource(if (starred) R.string.remove_favorite else R.string.add_favorite), active = starred) {
                                 val on = !starred
                                 Favorites.set(a.id, on)
@@ -503,7 +505,7 @@ fun ArtistScreen(id: String) {
                     Spacer(Modifier.height(8.dp))
                     ActionRow(
                         left = {
-                            ActionIcon(if (starred) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            ActionIcon(if (starred) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                                 stringResource(if (starred) R.string.remove_favorite else R.string.add_favorite), active = starred) {
                                 val on = !starred
                                 Favorites.set(artist.id, on)

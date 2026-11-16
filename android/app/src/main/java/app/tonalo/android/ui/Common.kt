@@ -23,6 +23,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material.icons.filled.Close
@@ -370,7 +373,7 @@ fun SongRow(
         Column(Modifier.weight(1f)) {
             Text(song.title, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (isCurrent) Palette.accent else Color.White)
             Row(Modifier.padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (starred) { Icon(Icons.Default.Favorite, stringResource(R.string.favorites), tint = Palette.accent, modifier = Modifier.size(11.dp)); Spacer(Modifier.width(5.dp)) }
+                if (starred) { Icon(Icons.Rounded.Favorite, stringResource(R.string.favorites), tint = Palette.accent, modifier = Modifier.size(11.dp)); Spacer(Modifier.width(5.dp)) }
                 when {
                     download?.done == true -> { Icon(Icons.Default.ArrowCircleDown, null, tint = Palette.accent, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
                     download != null && !download.failed -> {
@@ -452,7 +455,7 @@ fun BoxScope.SongSwipeBackdrop(s: SongSwipe) {
     if (!s.enabled || pulled == 0f) return
     Box(Modifier.matchParentSize().padding(horizontal = 24.dp), contentAlignment = if (pulled > 0) Alignment.CenterStart else Alignment.CenterEnd) {
         Icon(
-            if (pulled > 0) Icons.Default.SkipNext else Icons.AutoMirrored.Filled.PlaylistAdd, null, tint = Palette.accent,
+            if (pulled > 0) Icons.Rounded.SkipNext else Icons.AutoMirrored.Filled.PlaylistAdd, null, tint = Palette.accent,
             modifier = Modifier.size(24.dp).graphicsLayer {
                 val k = if (s.armed) 1.2f else 0.8f
                 scaleX = k; scaleY = k; alpha = (kotlin.math.abs(pulled) / 90f).coerceAtMost(1f)
@@ -491,7 +494,7 @@ fun SongMenu(
             val close = { setOpen(false) }
             song.albumId?.let { id -> MenuItem(R.string.go_to_album, Icons.Default.Album) { close(); nav.open(albumRoute(id)) } }
             song.artistId?.let { id -> MenuItem(R.string.go_to_artist, Icons.Default.Person) { close(); nav.open(artistRoute(id)) } }
-            MenuItem(R.string.play_next, Icons.Default.SkipNext) { close(); player.playNext(listOf(song)) }
+            MenuItem(R.string.play_next, Icons.Rounded.SkipNext) { close(); player.playNext(listOf(song)) }
             MenuItem(R.string.add_to_queue, Icons.AutoMirrored.Filled.QueueMusic) {
                 close(); player.enqueue(listOf(song))
                 scope.launch { snackbar.showSnackbar(context.getString(R.string.added_to_queue)) }
@@ -517,7 +520,7 @@ fun SongMenu(
                 download != null && !download.failed -> MenuItem(R.string.cancel_download, Icons.Default.Close) { close(); app.tonalo.android.downloads.Downloads.remove(context, listOf(song.id)) }
                 else -> MenuItem(R.string.download, Icons.Default.Download) { close(); app.tonalo.android.downloads.Downloads.download(context, listOf(song)) }
             }
-            MenuItem(if (starred) R.string.remove_favorite else R.string.add_favorite, if (starred) Icons.Default.HeartBroken else Icons.Default.FavoriteBorder) {
+            MenuItem(if (starred) R.string.remove_favorite else R.string.add_favorite, if (starred) Icons.Default.HeartBroken else Icons.Rounded.FavoriteBorder) {
                 close(); toggleFavorite(context, song, player, scope, snackbar, notify = true)
             }
             extraMenu?.invoke(close)

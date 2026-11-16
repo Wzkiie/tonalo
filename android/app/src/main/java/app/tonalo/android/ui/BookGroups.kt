@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
@@ -257,7 +259,7 @@ fun BookAuthorScreen(id: String) {
                         if (page.items.isNotEmpty()) Text(pluralString(R.plurals.bk_books, page.items.size), fontSize = 13.sp, color = Palette.subtle)
                         val favorite = id in favorites
                         ActionIcon(
-                            if (favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                             stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite), active = favorite,
                         ) { books.toggleFavoriteAuthor(id, name) }
                     }

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Tv
@@ -71,7 +73,7 @@ fun BookMiniBar(onOpen: () -> Unit) {
                     CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
                 } else IconButton(onClick = { BookPlayer.toggle() }) {
                     Icon(
-                        if (state.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        if (state.playing) TonaloIcons.Pause else TonaloIcons.Play,
                         stringResource(if (state.playing) R.string.cd_pause else R.string.cd_play),
                     )
                 }

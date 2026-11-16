@@ -21,6 +21,16 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.FormatQuote
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Repeat
+import androidx.compose.material.icons.rounded.RepeatOne
+import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
@@ -170,9 +180,9 @@ private fun PlayButton(size: androidx.compose.ui.unit.Dp = 76.dp) {
     ) {
         if (state.buffering && !state.isPlaying) CircularProgressIndicator(Modifier.size(size * 0.42f), color = Color.Black, strokeWidth = 3.dp)
         else Icon(
-            if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+            if (state.isPlaying) TonaloIcons.Pause else TonaloIcons.Play,
             stringResource(if (state.isPlaying) R.string.cd_pause else R.string.cd_play),
-            Modifier.size(size * 0.5f), tint = Color.Black,
+            Modifier.size(size * 0.62f), tint = Color.Black,
         )
     }
 }
@@ -262,7 +272,7 @@ fun PlayerScreen(onClose: () -> Unit) {
                 if (song != null) {
                     val starred = rememberStarred(song.id, song.starred)
                     IconButton(onClick = { toggleFavorite(context, song, player, scope, snackbar) }) {
-                        Icon(if (starred) Icons.Default.Favorite else Icons.Default.FavoriteBorder, stringResource(R.string.cd_favorite),
+                        Icon(if (starred) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, stringResource(R.string.cd_favorite),
                             Modifier.size(28.dp), tint = if (starred) Palette.accent else Color.White)
                     }
                 }
@@ -284,19 +294,20 @@ fun PlayerScreen(onClose: () -> Unit) {
                     else -> R.string.state_off
                 })
                 IconButton(onClick = { player.toggleShuffle() }, Modifier.semantics { stateDescription = if (state.shuffle) stateOn else stateOff }, enabled = station == null) {
-                    Icon(Icons.Default.Shuffle, stringResource(R.string.cd_shuffle), tint = if (state.shuffle) Palette.accent else Color.White)
+                    Icon(Icons.Rounded.Shuffle, stringResource(R.string.cd_shuffle), Modifier.size(28.dp), tint = if (state.shuffle) Palette.accent else Color.White)
                 }
-                IconButton(onClick = { player.previous() }, Modifier.size(56.dp), enabled = station == null) {
-                    Icon(Icons.Default.SkipPrevious, stringResource(R.string.cd_previous), Modifier.size(40.dp))
+                IconButton(onClick = { player.previous() }, Modifier.size(60.dp), enabled = station == null) {
+                    Icon(TonaloIcons.Previous, stringResource(R.string.cd_previous), Modifier.size(44.dp))
                 }
                 PlayButton()
-                IconButton(onClick = { player.next() }, Modifier.size(56.dp), enabled = station == null) {
-                    Icon(Icons.Default.SkipNext, stringResource(R.string.cd_next), Modifier.size(40.dp))
+                IconButton(onClick = { player.next() }, Modifier.size(60.dp), enabled = station == null) {
+                    Icon(TonaloIcons.Next, stringResource(R.string.cd_next), Modifier.size(44.dp))
                 }
                 IconButton(onClick = { player.cycleRepeat() }, Modifier.semantics { stateDescription = repeatState }, enabled = station == null) {
                     Icon(
-                        if (state.repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
+                        if (state.repeatMode == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
                         stringResource(R.string.cd_repeat),
+                        Modifier.size(28.dp),
                         tint = if (state.repeatMode != Player.REPEAT_MODE_OFF) Palette.accent else Color.White,
                     )
                 }
@@ -309,7 +320,7 @@ fun PlayerScreen(onClose: () -> Unit) {
 
             // Lyrics · sleep timer · queue
             Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { nav.open("lyrics") }, enabled = song != null) { Icon(Icons.Default.FormatQuote, stringResource(R.string.lyrics)) }
+                IconButton(onClick = { nav.open("lyrics") }, enabled = song != null) { Icon(Icons.Rounded.FormatQuote, stringResource(R.string.lyrics)) }
                 Spacer(Modifier.weight(1f))
                 val ownTv by TvLink.ownTv.collectAsState()
                 when {

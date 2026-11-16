@@ -24,6 +24,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
@@ -357,7 +360,7 @@ private fun DJHomeTile() {
         Box(Modifier.width(44.dp), contentAlignment = Alignment.Center) {
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Palette.secondaryText, strokeWidth = 2.dp)
             else if (playing) PlayingBars(true, Modifier.size(width = 18.dp, height = 16.dp))
-            else Icon(Icons.Default.PlayArrow, null, tint = Palette.accent, modifier = Modifier.size(20.dp))
+            else Icon(TonaloIcons.Play, null, tint = Palette.accent, modifier = Modifier.size(20.dp))
         }
     }
 }
@@ -380,13 +383,13 @@ private fun Mixes() {
     LazyRow(contentPadding = HorizontalPadding, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             val name = stringResource(R.string.shuffle_mix)
-            MixCard(name, stringResource(R.string.shuffle_mix_info), 0.62f, Icons.Default.Shuffle) {
+            MixCard(name, stringResource(R.string.shuffle_mix_info), 0.62f, Icons.Rounded.Shuffle) {
                 attempt { client()?.randomSongs(150) }?.let { player.play(it, context = name) }
             }
         }
         item {
             val name = stringResource(R.string.favorite_songs)
-            MixCard(stringResource(R.string.favorites_mix), stringResource(R.string.favorites_mix_info), 0.92f, Icons.Default.Favorite) {
+            MixCard(stringResource(R.string.favorites_mix), stringResource(R.string.favorites_mix_info), 0.92f, Icons.Rounded.Favorite) {
                 attempt { client()?.starred()?.song }?.takeIf { it.isNotEmpty() }?.let { player.play(it, shuffled = true, context = name) }
             }
         }
@@ -558,7 +561,7 @@ fun ContinueBanner() {
                 answer()
             },
             contentAlignment = Alignment.Center,
-        ) { Icon(Icons.Default.PlayArrow, stringResource(R.string.continue_action), tint = Color.Black, modifier = Modifier.size(20.dp)) }
+        ) { Icon(TonaloIcons.Play, stringResource(R.string.continue_action), tint = Color.Black, modifier = Modifier.size(20.dp)) }
         Box(Modifier.size(width = 34.dp, height = 34.dp).clickable { answer() }, contentAlignment = Alignment.Center) {
             Icon(Icons.Default.Close, stringResource(R.string.not_now), tint = Palette.secondaryText, modifier = Modifier.size(16.dp))
         }
