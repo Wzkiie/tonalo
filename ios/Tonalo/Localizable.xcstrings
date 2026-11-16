@@ -1110,6 +1110,116 @@
         }
       }
     },
+    "Tonalo isn't allowed to search your network. Turn on Local Network for Tonalo in Settings." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tonalo darf dein Netzwerk nicht durchsuchen. Schalte in den Einstellungen „Lokales Netzwerk“ für Tonalo ein."
+          }
+        }
+      }
+    },
+    "Still nothing? Make sure Local Network is turned on for Tonalo in Settings." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immer noch nichts? Prüfe in den Einstellungen, ob „Lokales Netzwerk“ für Tonalo eingeschaltet ist."
+          }
+        }
+      }
+    },
+    "Open Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen öffnen"
+          }
+        }
+      }
+    },
+    "Plays next" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommt als Nächstes"
+          }
+        }
+      }
+    },
+    "Recent searches" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letzte Suchanfragen"
+          }
+        }
+      }
+    },
+    "Clear all" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle löschen"
+          }
+        }
+      }
+    },
+    "Suggested for you" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für dich vorgeschlagen"
+          }
+        }
+      }
+    },
+    "Swipe a song" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songs wischen"
+          }
+        }
+      }
+    },
+    "Swipe a song to the right to play it next, or to the left to add it to a playlist." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wische einen Song nach rechts, um ihn als Nächstes zu spielen, oder nach links, um ihn einer Playlist hinzuzufügen."
+          }
+        }
+      }
+    },
+    "Search remembers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Suche merkt sich was"
+          }
+        }
+      }
+    },
+    "Tap the search field to see your last searches and songs that fit what you listened to lately." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tippe aufs Suchfeld und sieh deine letzten Suchen und Songs, die zu dem passen, was du zuletzt gehört hast."
+          }
+        }
+      }
+    },
     "Nothing found. Open Tonalo on your TV or computer." : {
       "localizations" : {
         "de" : {

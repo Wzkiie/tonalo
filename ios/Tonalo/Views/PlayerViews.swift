@@ -532,12 +532,12 @@ struct QueueView: View {
             List {
                 if let cur = p.current {
                     Section {
-                        SongRow(song: cur, showCover: true) { p.toggle() }
+                        SongRow(song: cur, showCover: true, swipe: false) { p.toggle() }
                     } header: { header("Now playing") }
                 }
                 Section {
                     ForEach(rows(p.upNext)) { row in
-                        SongRow(song: row.song, showCover: true, holdMenu: false) { p.jump(to: p.index + 1 + row.offset) }
+                        SongRow(song: row.song, showCover: true, holdMenu: false, swipe: false) { p.jump(to: p.index + 1 + row.offset) }
                     }
                     .onDelete { set in set.sorted(by: >).forEach { p.remove(at: p.index + 1 + $0) } }
                     .onMove { from, to in p.moveUpNext(from: from, to: to) }

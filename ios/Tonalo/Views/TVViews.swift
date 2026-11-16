@@ -77,6 +77,13 @@ struct DevicesView: View {
                 }
                 if nearby.isEmpty {
                     Text("Nothing found. Open Tonalo on your TV or computer.").foregroundStyle(.secondary)
+                    // Without the Local Network switch iOS finds nothing and says nothing
+                    Text(link.localNetworkDenied ? "Tonalo isn't allowed to search your network. Turn on Local Network for Tonalo in Settings."
+                                                 : "Still nothing? Make sure Local Network is turned on for Tonalo in Settings.")
+                        .font(.footnote).foregroundStyle(link.localNetworkDenied ? Color.accent : .secondary)
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                    }.foregroundStyle(Color.accent)
                 }
             } header: {
                 Text("Nearby")

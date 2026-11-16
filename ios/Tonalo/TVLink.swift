@@ -114,6 +114,9 @@ final class TVLink {
     /// Own TVs where someone with another account is signed in right now: this phone can join their Jukebox.
     private(set) var guestOnly: Set<String> = []
 
+    /// iOS refuses the search on the local network until the user allows it (Settings → Privacy & Security → Local Network).
+    private(set) var localNetworkDenied = false
+
     @ObservationIgnored private var browser: NWBrowser?
     /// One connection per own device (TV, computer): the phone follows all of them and shows the one that plays.
     @ObservationIgnored private var listeners: [String: Task<Void, Never>] = [:]
@@ -229,6 +232,12 @@ final class TVLink {
                 return Device(id: id, name: name, endpoint: r.endpoint, isPhone: txt["kind"] == "phone", isPC: txt["kind"] == "pc")
             }
             Task { @MainActor in self?.found(found) }
+        }
+        b.stateUpdateHandler = { [weak self] state in
+            // kDNSServiceErr_PolicyDenied: the Local Network switch for Tonalo is off
+            var denied = false
+            if case let .waiting(error) = state, case let .dns(code) = error, code == -65570 { denied = true }
+            Task { @MainActor in self?.localNetworkDenied = denied }
         }
         b.start(queue: .main)
         browser = b

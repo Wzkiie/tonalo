@@ -59,6 +59,8 @@ struct SongRow: View {
     var showCover = false
     /// Off in the queue: there holding a song picks it up to move it (the "…" button still has the menu)
     var holdMenu = true
+    /// Swipe right: play next. Swipe left: choose a playlist. Off where rows already have their own gestures (the queue).
+    var swipe = true
     let onTap: () -> Void
 
     var body: some View {
@@ -104,6 +106,97 @@ struct SongRow: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
         .modifier(HoldMenu(song: song, on: holdMenu))
+        .modifier(SwipeActions(song: song, on: swipe))
+    }
+}
+
+/// Swipe a song row like in other music apps: right plays it next, left opens the playlists to add it to.
+/// The row follows the finger and shows the action in the gap; letting go far enough triggers it, otherwise it springs back.
+/// Only on iOS 18 and newer: the sideways swipe needs UIKit's gesture, a SwiftUI drag on a row would stop the list from
+/// scrolling when the finger starts on it. On iOS 17 the "…" menu and the long press still do the same.
+private struct SwipeActions: ViewModifier {
+    @Environment(AppModel.self) private var app
+    @Environment(\.ui) private var ui
+    let song: Song
+    let on: Bool
+    @State private var dx: CGFloat = 0
+    @State private var armed = false
+
+    private let trigger: CGFloat = 72
+
+    func body(content: Content) -> some View {
+        if on, #available(iOS 18.0, *) {
+            content
+                .offset(x: dx)
+                .background(alignment: dx > 0 ? .leading : .trailing) {
+                    Image(systemName: dx > 0 ? "text.insert" : "text.badge.plus")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.accent)
+                        .frame(width: abs(dx))
+                        .scaleEffect(armed ? 1.2 : 0.8)
+                        .opacity(min(1, abs(dx) / 40))
+                        .accessibilityHidden(true)
+                }
+                .gesture(SidewaysPan(
+                    onMove: { w in
+                        // A little resistance, so it feels like pulling something
+                        dx = w > 0 ? min(w * 0.85, 130) : max(w * 0.85, -130)
+                        let now = abs(dx) >= trigger
+                        if now != armed {
+                            armed = now
+                            if now { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+                        }
+                    },
+                    onEnd: { finished in
+                        let go = finished && abs(dx) >= trigger
+                        let right = dx > 0
+                        armed = false
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dx = 0 }
+                        guard go else { return }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        if right {
+                            let playing = app.player.current != nil
+                            app.player.playNext([song])
+                            if playing { app.notify(String(localized: "Plays next")) }
+                        } else {
+                            ui.addToPlaylist([song])
+                        }
+                    }))
+        } else {
+            content
+        }
+    }
+}
+
+/// A pan that only starts when the finger moves sideways. Up and down it stays out of the way, so the list scrolls.
+@available(iOS 18.0, *)
+private struct SidewaysPan: UIGestureRecognizerRepresentable {
+    let onMove: (CGFloat) -> Void
+    let onEnd: (Bool) -> Void
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+            guard let p = g as? UIPanGestureRecognizer else { return false }
+            let v = p.velocity(in: p.view)
+            return abs(v.x) > abs(v.y) * 1.4
+        }
+    }
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let g = UIPanGestureRecognizer()
+        g.delegate = context.coordinator
+        return g
+    }
+
+    func handleUIGestureRecognizerAction(_ g: UIPanGestureRecognizer, context: Context) {
+        switch g.state {
+        case .changed: onMove(g.translation(in: g.view).x)
+        case .ended: onEnd(true)
+        case .cancelled, .failed: onEnd(false)
+        default: break
+        }
     }
 }
 
