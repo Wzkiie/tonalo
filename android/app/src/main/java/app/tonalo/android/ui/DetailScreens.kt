@@ -219,7 +219,7 @@ fun AlbumScreen(id: String) {
                 actions = {
                     ActionRow(
                         left = {
-                            ActionIcon(if (starred) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                            ActionIcon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart,
                                 stringResource(if (starred) R.string.remove_favorite else R.string.add_favorite), active = starred) {
                                 val on = !starred
                                 Favorites.set(a.id, on)
@@ -505,7 +505,7 @@ fun ArtistScreen(id: String) {
                     Spacer(Modifier.height(8.dp))
                     ActionRow(
                         left = {
-                            ActionIcon(if (starred) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                            ActionIcon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart,
                                 stringResource(if (starred) R.string.remove_favorite else R.string.add_favorite), active = starred) {
                                 val on = !starred
                                 Favorites.set(artist.id, on)

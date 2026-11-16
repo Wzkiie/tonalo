@@ -259,7 +259,7 @@ fun BookAuthorScreen(id: String) {
                         if (page.items.isNotEmpty()) Text(pluralString(R.plurals.bk_books, page.items.size), fontSize = 13.sp, color = Palette.subtle)
                         val favorite = id in favorites
                         ActionIcon(
-                            if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                            if (favorite) Icons.Rounded.Favorite else TonaloGlyphs.Heart,
                             stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite), active = favorite,
                         ) { books.toggleFavoriteAuthor(id, name) }
                     }

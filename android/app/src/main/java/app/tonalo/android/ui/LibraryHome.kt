@@ -410,7 +410,7 @@ private fun SubtitleLine(pinned: Boolean, text: String, downloaded: Boolean?) {
             Spacer(Modifier.width(4.dp))
         }
         if (downloaded == true) {
-            Icon(Icons.Default.ArrowCircleDown, null, tint = Palette.accent, modifier = Modifier.size(13.dp))
+            Icon(TonaloGlyphs.Downloaded, null, tint = Palette.accent, modifier = Modifier.size(13.dp))
             Spacer(Modifier.width(4.dp))
         }
         Text(text, color = Palette.secondaryText, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

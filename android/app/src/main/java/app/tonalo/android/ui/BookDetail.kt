@@ -159,7 +159,7 @@ private fun BookDetail(item: ABSItem, episodeId: String?, refreshing: Boolean, o
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     ActionIcon(
-                        if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                        if (favorite) Icons.Rounded.Favorite else TonaloGlyphs.Heart,
                         stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite), active = favorite,
                     ) { books.toggleFavorite(item) }
                     if (!item.isPodcast) {

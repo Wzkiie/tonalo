@@ -375,10 +375,10 @@ fun SongRow(
             Row(Modifier.padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (starred) { Icon(Icons.Rounded.Favorite, stringResource(R.string.favorites), tint = Palette.accent, modifier = Modifier.size(11.dp)); Spacer(Modifier.width(5.dp)) }
                 when {
-                    download?.done == true -> { Icon(Icons.Default.ArrowCircleDown, null, tint = Palette.accent, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
+                    download?.done == true -> { Icon(TonaloGlyphs.Downloaded, null, tint = Palette.accent, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
                     download != null && !download.failed -> {
                         if (download.progress > 0) CircularProgressIndicator(progress = { download.progress }, Modifier.size(11.dp), color = Palette.accent, strokeWidth = 2.dp, trackColor = Palette.elevated)
-                        else Icon(Icons.Outlined.ArrowCircleDown, null, tint = Palette.secondaryText, modifier = Modifier.size(12.dp))
+                        else Icon(TonaloGlyphs.Download, null, tint = Palette.secondaryText, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.width(5.dp))
                     }
                 }
@@ -518,9 +518,9 @@ fun SongMenu(
             when {
                 download?.done == true -> MenuItem(R.string.remove_download, Icons.Default.Delete) { close(); app.tonalo.android.downloads.Downloads.remove(context, listOf(song.id)) }
                 download != null && !download.failed -> MenuItem(R.string.cancel_download, Icons.Default.Close) { close(); app.tonalo.android.downloads.Downloads.remove(context, listOf(song.id)) }
-                else -> MenuItem(R.string.download, Icons.Default.Download) { close(); app.tonalo.android.downloads.Downloads.download(context, listOf(song)) }
+                else -> MenuItem(R.string.download, TonaloGlyphs.Download) { close(); app.tonalo.android.downloads.Downloads.download(context, listOf(song)) }
             }
-            MenuItem(if (starred) R.string.remove_favorite else R.string.add_favorite, if (starred) Icons.Default.HeartBroken else Icons.Rounded.FavoriteBorder) {
+            MenuItem(if (starred) R.string.remove_favorite else R.string.add_favorite, if (starred) Icons.Default.HeartBroken else TonaloGlyphs.Heart) {
                 close(); toggleFavorite(context, song, player, scope, snackbar, notify = true)
             }
             extraMenu?.invoke(close)

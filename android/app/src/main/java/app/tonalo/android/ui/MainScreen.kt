@@ -98,9 +98,9 @@ import kotlinx.coroutines.delay
 private data class Tab(val route: String, val label: Int, val icon: ImageVector, val selectedIcon: ImageVector)
 
 private val tabs = listOf(
-    Tab("home", R.string.tab_home, Icons.Outlined.Home, Icons.Default.Home),
-    Tab("search", R.string.tab_search, Icons.Default.Search, Icons.Default.Search),
-    Tab("library", R.string.your_library, Icons.Outlined.LibraryBooks, Icons.Default.LibraryBooks),
+    Tab("home", R.string.tab_home, TonaloGlyphs.HomeOutline, TonaloGlyphs.HomeFilled),
+    Tab("search", R.string.tab_search, TonaloGlyphs.Search, TonaloGlyphs.SearchBold),
+    Tab("library", R.string.your_library, TonaloGlyphs.LibraryOutline, TonaloGlyphs.LibraryFilled),
 )
 
 fun genreRoute(name: String) = "genre/" + Uri.encode(name.ifBlank { "_" })
@@ -349,7 +349,7 @@ fun MiniPlayer(open: () -> Unit) {
                 if (song != null) {
                     val starred = rememberStarred(song.id, song.starred)
                     IconButton(onClick = { toggleFavorite(context, song, player, scope, snackbar) }) {
-                        Icon(if (starred) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, stringResource(R.string.cd_favorite),
+                        Icon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart, stringResource(R.string.cd_favorite),
                             tint = if (starred) Palette.accent else Color.White)
                     }
                 }

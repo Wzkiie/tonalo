@@ -335,7 +335,7 @@ fun GlassBackButton(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null
     IconButton(
         onClick = onClick ?: { nav?.popBackStack(); Unit },
         modifier = modifier.size(46.dp).clip(CircleShape).background(Color(0xFF2C2C2E).copy(alpha = 0.88f)),
-    ) { Icon(Icons.AutoMirrored.Filled.ArrowBackIos, stringResource(R.string.cd_back), tint = Color.White, modifier = Modifier.padding(start = 6.dp).size(20.dp)) }
+    ) { Icon(TonaloGlyphs.ChevronLeft, stringResource(R.string.cd_back), tint = Color.White, modifier = Modifier.size(26.dp)) }
 }
 
 /** The big round play button in the accent color. */
@@ -364,12 +364,12 @@ fun DownloadButton(songs: List<Song>) {
         if (done == songs.size || loading) Downloads.remove(context, songs.map { it.id }) else Downloads.download(context, songs)
     }) {
         when {
-            done == songs.size -> Icon(Icons.Default.CheckCircle, stringResource(R.string.remove_download), tint = Palette.accent)
+            done == songs.size -> Icon(TonaloGlyphs.Downloaded, stringResource(R.string.remove_download), tint = Palette.accent)
             loading -> {
                 val progress = ((done + infos.filter { !it.done }.sumOf { it.progress.toDouble() }.toFloat()) / songs.size.coerceAtLeast(1)).coerceIn(0f, 1f)
                 CircularProgressIndicator(progress = { progress }, Modifier.size(22.dp), color = Palette.accent, strokeWidth = 2.5.dp, trackColor = Palette.elevated)
             }
-            else -> Icon(Icons.Default.Download, stringResource(R.string.download), tint = Palette.secondaryText)
+            else -> Icon(TonaloGlyphs.Download, stringResource(R.string.download), tint = Palette.secondaryText)
         }
     }
 }
@@ -448,7 +448,7 @@ fun PlayCircle(playing: Boolean, size: Dp = 52.dp, color: Color = Palette.accent
 @Composable
 fun PlayButtons(playing: Boolean, play: () -> Unit, shuffle: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = shuffle) { Icon(Icons.Rounded.Shuffle, stringResource(R.string.shuffle), tint = Palette.secondaryText, modifier = Modifier.size(26.dp)) }
+        IconButton(onClick = shuffle) { Icon(TonaloGlyphs.Shuffle, stringResource(R.string.shuffle), tint = Palette.secondaryText, modifier = Modifier.size(26.dp)) }
         Spacer(Modifier.width(12.dp))
         PlayCircle(playing, onClick = play)
     }

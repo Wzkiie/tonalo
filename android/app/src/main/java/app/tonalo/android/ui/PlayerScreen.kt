@@ -214,7 +214,7 @@ fun PlayerScreen(onClose: () -> Unit) {
         Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 24.dp)) {
             // Header: close, where it's playing from, menu
             Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onClose) { Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
+                IconButton(onClick = onClose) { Icon(TonaloGlyphs.ChevronDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         (state.tvName?.let { stringResource(if (state.tvGuest) R.string.guest_of else R.string.playing_on, it) } ?: stringResource(R.string.playing_from)).uppercase(),
@@ -272,7 +272,7 @@ fun PlayerScreen(onClose: () -> Unit) {
                 if (song != null) {
                     val starred = rememberStarred(song.id, song.starred)
                     IconButton(onClick = { toggleFavorite(context, song, player, scope, snackbar) }) {
-                        Icon(if (starred) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, stringResource(R.string.cd_favorite),
+                        Icon(if (starred) Icons.Rounded.Favorite else TonaloGlyphs.Heart, stringResource(R.string.cd_favorite),
                             Modifier.size(28.dp), tint = if (starred) Palette.accent else Color.White)
                     }
                 }
@@ -294,7 +294,7 @@ fun PlayerScreen(onClose: () -> Unit) {
                     else -> R.string.state_off
                 })
                 IconButton(onClick = { player.toggleShuffle() }, Modifier.semantics { stateDescription = if (state.shuffle) stateOn else stateOff }, enabled = station == null) {
-                    Icon(Icons.Rounded.Shuffle, stringResource(R.string.cd_shuffle), Modifier.size(28.dp), tint = if (state.shuffle) Palette.accent else Color.White)
+                    Icon(TonaloGlyphs.Shuffle, stringResource(R.string.cd_shuffle), Modifier.size(28.dp), tint = if (state.shuffle) Palette.accent else Color.White)
                 }
                 IconButton(onClick = { player.previous() }, Modifier.size(60.dp), enabled = station == null) {
                     Icon(TonaloIcons.Previous, stringResource(R.string.cd_previous), Modifier.size(44.dp))
@@ -305,7 +305,7 @@ fun PlayerScreen(onClose: () -> Unit) {
                 }
                 IconButton(onClick = { player.cycleRepeat() }, Modifier.semantics { stateDescription = repeatState }, enabled = station == null) {
                     Icon(
-                        if (state.repeatMode == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
+                        if (state.repeatMode == Player.REPEAT_MODE_ONE) TonaloGlyphs.RepeatOne else TonaloGlyphs.Repeat,
                         stringResource(R.string.cd_repeat),
                         Modifier.size(28.dp),
                         tint = if (state.repeatMode != Player.REPEAT_MODE_OFF) Palette.accent else Color.White,
@@ -320,7 +320,7 @@ fun PlayerScreen(onClose: () -> Unit) {
 
             // Lyrics · sleep timer · queue
             Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { nav.open("lyrics") }, enabled = song != null) { Icon(Icons.Rounded.FormatQuote, stringResource(R.string.lyrics)) }
+                IconButton(onClick = { nav.open("lyrics") }, enabled = song != null) { Icon(TonaloGlyphs.Lyrics, stringResource(R.string.lyrics)) }
                 Spacer(Modifier.weight(1f))
                 val ownTv by TvLink.ownTv.collectAsState()
                 when {
@@ -342,7 +342,7 @@ fun PlayerScreen(onClose: () -> Unit) {
                 if (djReady && state.tvName == null) IconButton(onClick = { nav.open("dj") }) {
                     Icon(Icons.Default.AutoAwesome, stringResource(R.string.dj), tint = if (djActive) Palette.accent else Color.White)
                 }
-                IconButton(onClick = { nav.open("queue") }, enabled = song != null) { Icon(Icons.AutoMirrored.Filled.FormatListBulleted, stringResource(R.string.queue)) }
+                IconButton(onClick = { nav.open("queue") }, enabled = song != null) { Icon(TonaloGlyphs.Queue, stringResource(R.string.queue)) }
             }
         }
     }
@@ -386,7 +386,7 @@ fun LyricsScreen(onClose: () -> Unit) {
     PlayerBackground(song.coverArt) {
         Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 24.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onClose) { Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
+                IconButton(onClick = onClose) { Icon(TonaloGlyphs.ChevronDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
                 Column(Modifier.padding(start = 8.dp)) {
                     Text(song.title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(song.artist ?: "", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
@@ -433,7 +433,7 @@ fun QueueScreen(onClose: () -> Unit) {
     if (current == null) return
     Column(Modifier.fillMaxSize().background(Palette.canvas).systemBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp, start = 8.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onClose) { Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
+            IconButton(onClick = onClose) { Icon(TonaloGlyphs.ChevronDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
             Text(stringResource(R.string.queue), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {

@@ -417,7 +417,7 @@ fun BookRow(item: ABSItem, subtitle: String? = null, onClick: () -> Unit) {
             }
         },
         subtitlePrefix = if (downloaded) ({
-            Icon(Icons.Default.ArrowCircleDown, stringResource(R.string.downloaded), tint = Palette.accent, modifier = Modifier.size(12.dp))
+            Icon(TonaloGlyphs.Downloaded, stringResource(R.string.downloaded), tint = Palette.accent, modifier = Modifier.size(12.dp))
             Spacer(Modifier.width(5.dp))
         }) else null,
         menu = { close -> BookFavoriteMenuItem(item, close) },
@@ -435,7 +435,7 @@ fun BookFavoriteMenuItem(item: ABSItem, close: () -> Unit) {
     val books = LocalContext.current.tonalo.books
     val favorites by books.favorites.collectAsState()
     val on = item.id in favorites
-    MenuItem(if (on) R.string.remove_favorite else R.string.add_favorite, if (on) Icons.Default.HeartBroken else Icons.Rounded.FavoriteBorder) {
+    MenuItem(if (on) R.string.remove_favorite else R.string.add_favorite, if (on) Icons.Default.HeartBroken else TonaloGlyphs.Heart) {
         books.toggleFavorite(item)
         close()
     }
@@ -447,7 +447,7 @@ fun AuthorFavoriteMenuItem(id: String, name: String, close: () -> Unit) {
     val books = LocalContext.current.tonalo.books
     val favorites by books.favoriteAuthors.collectAsState()
     val on = id in favorites
-    MenuItem(if (on) R.string.remove_favorite else R.string.add_favorite, if (on) Icons.Default.HeartBroken else Icons.Rounded.FavoriteBorder) {
+    MenuItem(if (on) R.string.remove_favorite else R.string.add_favorite, if (on) Icons.Default.HeartBroken else TonaloGlyphs.Heart) {
         books.toggleFavoriteAuthor(id, name)
         close()
     }
@@ -484,14 +484,14 @@ fun BookDownloadButton(item: ABSItem, episode: ABSEpisode? = null, size: Dp = 22
         contentAlignment = Alignment.Center,
     ) {
         when (state) {
-            is BookDownloadState.Done -> Icon(Icons.Default.ArrowCircleDown, stringResource(R.string.remove_download), tint = Palette.accent, modifier = Modifier.size(size))
+            is BookDownloadState.Done -> Icon(TonaloGlyphs.Downloaded, stringResource(R.string.remove_download), tint = Palette.accent, modifier = Modifier.size(size))
             is BookDownloadState.Failed -> Icon(Icons.Default.Warning, stringResource(R.string.download), tint = Color(0xFFFF9F0A), modifier = Modifier.size(size))
             is BookDownloadState.Downloading -> CircularProgressIndicator(
                 progress = { state.progress.coerceIn(0f, 1f) }, modifier = Modifier.size(size), color = Palette.accent, strokeWidth = 3.dp,
                 trackColor = Palette.elevated,
             )
             is BookDownloadState.Queued -> CircularProgressIndicator(Modifier.size(size), color = Palette.accent, strokeWidth = 3.dp, trackColor = Palette.elevated)
-            else -> Icon(Icons.Outlined.ArrowCircleDown, stringResource(R.string.download), tint = Palette.subtle, modifier = Modifier.size(size))
+            else -> Icon(TonaloGlyphs.Download, stringResource(R.string.download), tint = Palette.subtle, modifier = Modifier.size(size))
         }
     }
     if (confirmRemove) AlertDialog(

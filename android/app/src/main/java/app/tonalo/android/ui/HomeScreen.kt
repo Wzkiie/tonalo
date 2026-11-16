@@ -383,7 +383,7 @@ private fun Mixes() {
     LazyRow(contentPadding = HorizontalPadding, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             val name = stringResource(R.string.shuffle_mix)
-            MixCard(name, stringResource(R.string.shuffle_mix_info), 0.62f, Icons.Rounded.Shuffle) {
+            MixCard(name, stringResource(R.string.shuffle_mix_info), 0.62f, TonaloGlyphs.Shuffle) {
                 attempt { client()?.randomSongs(150) }?.let { player.play(it, context = name) }
             }
         }
