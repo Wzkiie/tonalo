@@ -391,8 +391,12 @@ struct MixCard: View {
 
 // MARK: - Search
 
+/// What the search suggested last, per account, in memory only.
+@MainActor enum SuggestionCache { static var songs: [UUID: (list: [Song], at: Date)] = [:] }
+
 struct SearchView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.ui) private var ui
     /// Goes up each time the open tab is tapped again.
     var reselected = 0
     @State private var query = ""
@@ -406,15 +410,29 @@ struct SearchView: View {
     @State private var attempt = 0
     @FocusState private var focused: Bool
     /// Earlier searches of this account, newest first. Only kept on this device.
-    @State private var recent: [String] = []
+    @State private var recent: [RecentItem] = []
+    /// Audiobooks being listened to, next to the songs in the suggestions.
+    @State private var suggestedBooks: [ABSItem] = []
+    /// When the servers found nothing but something fits closely: "Did you mean …?"
+    @State private var didYouMean: String?
     /// Songs that fit what was listened to lately, shown while the field is empty.
     @State private var suggested: [Song] = []
     /// The search is open: from tapping into the field until "Cancel". Scrolling closes the keyboard, so this can't follow `focused`.
     @State private var suggesting = false
     /// Briefly true after the tab was tapped again, see `onChange(of: reselected)`.
     @State private var resetting = false
+    /// A search sent with the search key before its results were in: kept once they are, and only if there are any.
+    @State private var pendingQuery: String?
+    @State private var confirmClear = false
 
-    private var recentKey: String { "search.recent." + (app.current?.id.uuidString ?? "none") }
+    private var accountId: String { app.current?.id.uuidString ?? "none" }
+    private var recentKey: String { "search.recent2." + accountId }
+    private var loadRecent: [RecentItem] { RecentStore.load(recentKey, legacy: "search.recent." + accountId) }
+    private var hasAnyResult: Bool {
+        let r = result ?? SearchBody()
+        return !(r.artist ?? []).isEmpty || !(r.album ?? []).isEmpty || !(r.song ?? []).isEmpty || !books.items.isEmpty
+            || !books.authors.isEmpty || !books.series.isEmpty || !books.narrators.isEmpty
+    }
 
     var body: some View {
         ScrollViewReader { scroller in
@@ -456,17 +474,19 @@ struct SearchView: View {
             let q = query.trimmingCharacters(in: .whitespaces)
             guard q.count >= 2 else { result = nil; books = ABSSearchResults(); searching = false; return }
             searching = true
+            didYouMean = nil
             try? await Task.sleep(for: .milliseconds(200)) // wait until typing pauses
             guard !Task.isCancelled else { return }
             // Each server shows its results as they arrive, the slower one doesn't hold up the other
             await withTaskGroup(of: Void.self) { group in
                 group.addTask { @MainActor in
-                    guard let client = app.client else { return }
+                    guard let client = app.client else { result = nil; return }
                     do {
                         let found = try await client.search(q)
                         if !Task.isCancelled { result = found; error = nil }
                     } catch {
-                        if !Task.isCancelled { self.error = error.userMessage }
+                        // Not the results of an earlier input, they don't belong to this one
+                        if !Task.isCancelled { self.error = error.userMessage; result = nil }
                     }
                 }
                 group.addTask { @MainActor in
@@ -474,17 +494,19 @@ struct SearchView: View {
                     if !Task.isCancelled { books = found }
                 }
             }
-            if !Task.isCancelled { searching = false }
-            // Searches that found something and stayed for a moment are worth keeping, not every half-typed word
-            if hasResults {
-                try? await Task.sleep(for: .milliseconds(1000))
-                if !Task.isCancelled { remember(q) }
+            // Little found (a typo, half a name): ask again more loosely, then order by how well it fits
+            if !Task.isCancelled, error == nil { await widen(q) }
+            guard !Task.isCancelled else { return }
+            titleFirst(q)
+            searching = false
+            if let p = pendingQuery, SmartMatch.normalize(p) == SmartMatch.normalize(q) {
+                pendingQuery = nil
+                if hasAnyResult { remember(RecentItem(kind: .query, key: p, title: p)) }
             }
         }
-        // Opening a result (or another tab) ends this view's tasks before the moment is up: keep the search then
-        .onDisappear { if hasResults { remember(query) }; focused = false }
-        .onAppear { recent = UserDefaults.standard.stringArray(forKey: recentKey) ?? [] }
-        .onChange(of: app.current?.id) { recent = UserDefaults.standard.stringArray(forKey: recentKey) ?? [] }
+        .onDisappear { focused = false }
+        .onAppear { recent = loadRecent }
+        .onChange(of: app.current?.id) { recent = loadRecent }
         #if DEBUG
         // Test hook: -demoSearch <text> fills in the search field, typing doesn't reach it in the simulator
         .onAppear { if query.isEmpty, let demo = UserDefaults.standard.string(forKey: "demoSearch") { query = demo } }
@@ -505,7 +527,7 @@ struct SearchView: View {
                 .focused($focused)
                 .submitLabel(.search)
                 .autocorrectionDisabled()
-                .onSubmit { remember(query) }
+                .onSubmit { rememberQuery(query) }
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark") }.accessibilityLabel("Clear")
             }
@@ -517,9 +539,14 @@ struct SearchView: View {
         .background(.white, in: RoundedRectangle(cornerRadius: 8))
     }
 
-    /// Songs similar to the last few albums played, without the songs of those albums. Takes the server's own idea of
-    /// "similar" (the same one the song radio uses), so it's nothing when the server has none.
+    /// Songs similar to the last few albums played, without the songs of those albums, and the audiobooks being
+    /// listened to. Takes the server's own idea of "similar" (the same one the song radio uses), so there are no songs
+    /// when the server has none.
     private func loadSuggestions() async {
+        suggestedBooks = Array(app.books.continueListening.prefix(2))
+        // The same songs for a while: going back and forth doesn't shuffle them. Pulling down asks again.
+        let account = app.current?.id
+        if attempt == 0, let account, let c = SuggestionCache.songs[account], Date().timeIntervalSince(c.at) < 900 { suggested = c.list; return }
         guard let client = app.client, let albums = try? await client.albumList("recent", size: 4), !albums.isEmpty else { return }
         var heard = Set<String>()
         var seeds: [Song] = []
@@ -540,15 +567,26 @@ struct SearchView: View {
             }
             i += 1
         }
-        if !Task.isCancelled { suggested = out }
+        if !Task.isCancelled { suggested = out; if let account { SuggestionCache.songs[account] = (out, Date()) } }
     }
 
+    private var hasSuggestions: Bool { !suggested.isEmpty || !suggestedBooks.isEmpty }
+
     @ViewBuilder private var suggestedList: some View {
-        if query.trimmingCharacters(in: .whitespaces).isEmpty && !suggested.isEmpty {
+        if query.trimmingCharacters(in: .whitespaces).isEmpty && hasSuggestions {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Suggested for you").font(.system(size: 17, weight: .bold)).padding(.top, 8)
+                ForEach(suggestedBooks) { b in
+                    NavigationLink(value: Route.audiobook(b.id)) {
+                        ItemRow(title: b.title, subtitle: [String(localized: b.isPodcast ? "Podcast" : "Audiobook"), b.creator].filter { !$0.isEmpty }.joined(separator: " • ")) {
+                            BookCover(itemId: b.id, width: 200, corner: 2)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
                 ForEach(Array(suggested.enumerated()), id: \.element.id) { i, s in
                     SongRow(song: s, showCover: true) {
+                        remember(songItem(s))
                         app.player.play(suggested, from: i, context: .init(kind: .search, name: String(localized: "Suggested for you")))
                     }
                 }
@@ -556,59 +594,229 @@ struct SearchView: View {
         }
     }
 
-    private var hasResults: Bool {
-        let r = result ?? SearchBody()
-        return !(r.artist ?? []).isEmpty || !(r.album ?? []).isEmpty || !(r.song ?? []).isEmpty || !books.items.isEmpty || !books.authors.isEmpty
+    // MARK: Tolerant search
+
+    /// The servers found little: ask again more loosely (single words, the first letters of a word), then put what came
+    /// back in order by how well it fits what was typed. With nothing found at all, the closest name is offered.
+    private func widen(_ q: String) async {
+        let r0 = result ?? SearchBody()
+        let have = (r0.artist ?? []).count + (r0.album ?? []).count + (r0.song ?? []).count + books.items.count
+            + books.authors.count + books.series.count + books.narrators.count
+        guard have < 4 else { return }
+        // Something that fits fully is there: nothing to look for more loosely
+        var names: [String] = (r0.artist ?? []).map(\.name) + (r0.album ?? []).map(\.name) + (r0.song ?? []).map(\.title)
+        names += books.items.map(\.title) + books.authors.map(\.name) + books.series.map(\.name) + books.narrators
+        guard have == 0 || !names.contains(where: { SmartMatch.score(query: q, text: $0) >= 1 }) else { return }
+        let variants = SmartMatch.variants(for: q)
+        try? await Task.sleep(for: .milliseconds(300)) // typing on? then these questions are not needed
+        guard !Task.isCancelled else { return }
+        var more = SearchBody()
+        var moreBooks = ABSSearchResults()
+        // The whole library is looked through here, not only what the server finds by the start of a word: a typo
+        // anywhere in a name still finds it. Both lists come from the offline copy when it is there.
+        if let client = app.client {
+            let artists = (try? await client.artists()) ?? []
+            more.artist = artists.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
+            let albums = (try? await client.albumList("alphabeticalByName", size: 500)) ?? []
+            more.album = albums.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
+        }
+        await withTaskGroup(of: (SearchBody?, ABSSearchResults).self) { group in
+            for v in variants {
+                group.addTask { @MainActor in
+                    let a = try? await app.client?.search(v, wide: true)
+                    let b = await app.books.search(v)
+                    return (a, b)
+                }
+            }
+            for await (a, b) in group {
+                more.artist = (more.artist ?? []) + (a?.artist ?? [])
+                more.album = (more.album ?? []) + (a?.album ?? [])
+                more.song = (more.song ?? []) + (a?.song ?? [])
+                moreBooks.items += b.items; moreBooks.authors += b.authors; moreBooks.series += b.series; moreBooks.narrators += b.narrators
+            }
+        }
+        guard !Task.isCancelled else { return }
+        func unique<T: Identifiable>(_ a: [T]) -> [T] where T.ID: Hashable {
+            var seen = Set<T.ID>(); return a.filter { seen.insert($0.id).inserted }
+        }
+        /// What the servers had stays; what the looser questions brought needs a fair fit. Best fit first.
+        func rank<T: Identifiable>(_ original: [T], _ extra: [T], _ text: (T) -> String) -> [T] where T.ID: Hashable {
+            let keep = Set(original.map(\.id))
+            let scored = unique(original + extra).map { ($0, SmartMatch.score(query: q, text: text($0))) }.filter { keep.contains($0.0.id) || $0.1 >= 0.72 }
+            return scored.enumerated().sorted { $0.element.1 != $1.element.1 ? $0.element.1 > $1.element.1 : $0.offset < $1.offset }.map { $0.element.0 }
+        }
+        var merged = r0
+        merged.artist = rank(r0.artist ?? [], more.artist ?? []) { $0.name }
+        merged.album = rank(r0.album ?? [], more.album ?? []) { "\($0.name) \($0.artist ?? "")" }
+        merged.song = rank(r0.song ?? [], more.song ?? []) { "\($0.title) \($0.artist ?? "")" }
+        var mergedBooks = books
+        mergedBooks.items = rank(books.items, moreBooks.items) { "\($0.title) \($0.creator)" }
+        mergedBooks.authors = rank(books.authors, moreBooks.authors) { $0.name }
+        mergedBooks.series = rank(books.series, moreBooks.series) { $0.name }
+        let nIds = Set(books.narrators)
+        mergedBooks.narrators = Array(Set(books.narrators + moreBooks.narrators)).map { ($0, SmartMatch.score(query: q, text: $0)) }
+            .filter { nIds.contains($0.0) || $0.1 >= 0.72 }.sorted { $0.1 > $1.1 }.map { $0.0 }
+        result = merged
+        books = mergedBooks
+        // Nothing at first, something close now: offer it
+        guard have == 0 else { return }
+        names = (merged.artist ?? []).map(\.name) + (merged.album ?? []).map(\.name) + (merged.song ?? []).map(\.title)
+        names += mergedBooks.items.map(\.title) + mergedBooks.authors.map(\.name) + mergedBooks.series.map(\.name) + mergedBooks.narrators
+        let best = names.map { ($0, SmartMatch.score(query: q, text: $0)) }.filter { $0.1 >= 0.75 && SmartMatch.normalize($0.0) != SmartMatch.normalize(q) }.max { $0.1 < $1.1 }
+        didYouMean = best?.0
     }
 
-    /// Saves a search at the top. Typing on from the newest one replaces it, so "nin" and "nine inch" don't both stay.
-    private func remember(_ text: String) {
+    /// Songs whose title fits what was typed come before songs that are only by a matching artist.
+    private func titleFirst(_ q: String) {
+        guard var r = result, let songs = r.song, songs.count > 1 else { return }
+        let hit = songs.filter { SmartMatch.score(query: q, text: $0.title) >= 1 }
+        guard !hit.isEmpty, hit.count < songs.count else { return }
+        let ids = Set(hit.map(\.id))
+        r.song = hit + songs.filter { !ids.contains($0.id) }
+        result = r
+    }
+
+    // MARK: Recent
+
+    private func remember(_ item: RecentItem) {
+        var list = recent
+        // What was typed to get here isn't kept next to the thing it found
+        if item.kind != .query {
+            let typed = SmartMatch.normalize(query)
+            if !typed.isEmpty { list.removeAll { $0.kind == .query && SmartMatch.normalize($0.key) == typed } }
+        }
+        recent = RecentStore.adding(item, to: list)
+        RecentStore.save(recent, key: recentKey)
+    }
+
+    private func songItem(_ s: Song) -> RecentItem {
+        RecentItem(kind: .song, key: s.id, title: s.title, detail: s.artist, cover: s.coverArt ?? s.albumId, song: s)
+    }
+
+    /// A search sent with the keyboard's search key. Kept when it found something (right away, or once the results are in).
+    private func rememberQuery(_ text: String) {
         let t = text.trimmingCharacters(in: .whitespaces)
         guard t.count >= 2 else { return }
-        var list = recent
-        if let first = list.first, t.lowercased().hasPrefix(first.lowercased()) { list.removeFirst() }
-        list.removeAll { $0.caseInsensitiveCompare(t) == .orderedSame }
-        list.insert(t, at: 0)
-        recent = Array(list.prefix(10))
-        UserDefaults.standard.set(recent, forKey: recentKey)
+        if searching || t != query.trimmingCharacters(in: .whitespaces) { pendingQuery = t; return }
+        if hasAnyResult { remember(RecentItem(kind: .query, key: t, title: t)) }
     }
 
-    private func forget(_ text: String?) {
-        if let text { recent.removeAll { $0 == text } } else { recent = [] }
-        UserDefaults.standard.set(recent, forKey: recentKey)
+    private func forget(_ item: RecentItem?) {
+        if let item { recent.removeAll { $0.id == item.id } } else { recent = [] }
+        RecentStore.save(recent, key: recentKey)
     }
 
     /// Earlier searches that fit what's typed so far (all of them while the field is empty).
-    private var suggestions: [String] {
-        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
-        return q.isEmpty ? recent : recent.filter { $0.lowercased().contains(q) && $0.lowercased() != q }
+    private var suggestions: [RecentItem] {
+        let q = SmartMatch.normalize(query)
+        return q.isEmpty ? recent : recent.filter { let t = SmartMatch.normalize($0.title); return t.contains(q) && t != q }
+    }
+
+    /// Swiping an earlier song or album like a song row: right plays it next, left adds it to a playlist.
+    private func queue(_ item: RecentItem, next: Bool) {
+        Task {
+            let songs: [Song]
+            switch item.kind {
+            case .song: songs = item.song.map { [$0] } ?? []
+            case .album: songs = (try? await app.client?.album(item.key))?.song ?? []
+            default: songs = []
+            }
+            guard !songs.isEmpty else { return }
+            if next {
+                let playing = app.player.current != nil
+                app.player.playNext(songs)
+                if playing { app.notify(String(localized: "Plays next")) }
+            } else {
+                ui.addToPlaylist(songs)
+            }
+        }
+    }
+
+    private func route(for item: RecentItem) -> Route? {
+        switch item.kind {
+        case .artist: .artist(item.key)
+        case .album: .album(item.key)
+        case .book: .audiobook(item.key)
+        case .author: .bookAuthor(id: item.key, name: item.title)
+        case .series: .bookSeries(id: item.key, name: item.title, library: nil)
+        case .narrator: .bookNarrator(name: item.title, library: nil)
+        case .song, .query: nil
+        }
+    }
+
+    private func subtitle(of item: RecentItem) -> String {
+        let parts: [String?]
+        switch item.kind {
+        case .query: parts = [String(localized: "Search")]
+        case .artist: parts = [String(localized: "Artist")]
+        case .album: parts = [String(localized: "Album"), item.detail]
+        case .song: parts = [item.detail]
+        case .book: parts = [String(localized: item.podcast == true ? "Podcast" : "Audiobook"), item.detail]
+        case .author: parts = [String(localized: "Author")]
+        case .series: parts = [String(localized: "Series")]
+        case .narrator: parts = [String(localized: "Narrator")]
+        }
+        return parts.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " • ")
+    }
+
+    @ViewBuilder private func art(of item: RecentItem) -> some View {
+        switch item.kind {
+        case .artist: CoverView(id: item.cover ?? item.key, size: 120, round: true).frame(width: 52)
+        case .album, .song: CoverView(id: item.cover ?? item.key, size: 120, corner: 2).frame(width: 52)
+        case .book: BookCover(itemId: item.key, width: 200, corner: 2)
+        case .author: AuthorImage(id: item.key, name: item.title).frame(width: 52)
+        case .narrator: AuthorImage(id: nil, name: item.title).frame(width: 52)
+        case .series:
+            Color.elevated.aspectRatio(1, contentMode: .fit).overlay { Image(systemName: "books.vertical").foregroundStyle(Color.subtle) }
+                .clipShape(RoundedRectangle(cornerRadius: 2))
+        case .query:
+            Circle().fill(Color.elevated).overlay { Image(systemName: "magnifyingglass").foregroundStyle(Color.subtle) }.frame(width: 52)
+        }
+    }
+
+    /// Opens what was opened before, right away: no new search.
+    @ViewBuilder private func recentRow(_ item: RecentItem) -> some View {
+        let label = ItemRow(title: item.title, subtitle: subtitle(of: item)) { art(of: item) }
+        if let route = route(for: item) {
+            NavigationLink(value: route) { label }.buttonStyle(.plain)
+                .simultaneousGesture(TapGesture().onEnded { remember(item) })
+        } else if item.kind == .song, let song = item.song {
+            Button {
+                remember(item)
+                app.player.play([song], from: 0, context: .init(kind: .search, name: song.title))
+            } label: { label }.buttonStyle(.plain)
+        } else {
+            Button { query = item.key; remember(item); focused = false } label: { label }.buttonStyle(.plain)
+        }
     }
 
     @ViewBuilder private var recentList: some View {
         let list = suggestions
         if !list.isEmpty {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Recent searches").font(.system(size: 17, weight: .bold))
                     Spacer()
-                    Button("Clear all") { withAnimation { forget(nil) } }
+                    Button("Clear all") { confirmClear = true }
                         .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.subtle)
                 }
                 .padding(.top, 8).padding(.bottom, 4)
-                ForEach(list, id: \.self) { text in
-                    HStack(spacing: 14) {
-                        Image(systemName: "clock.arrow.circlepath").font(.system(size: 16)).foregroundStyle(Color.subtle).frame(width: 22)
-                        Text(text).font(.system(size: 16)).lineLimit(1)
-                        Spacer(minLength: 8)
-                        Button { withAnimation { forget(text) } } label: {
+                .confirmationDialog("Clear recent searches?", isPresented: $confirmClear, titleVisibility: .visible) {
+                    Button("Clear all", role: .destructive) { withAnimation { forget(nil) } }
+                }
+                ForEach(list) { item in
+                    HStack(spacing: 4) {
+                        recentRow(item)
+                            .modifier(SwipeRow(on: item.kind == .album || (item.kind == .song && item.song != nil),
+                                               rightIcon: "text.insert", leftIcon: "text.badge.plus",
+                                               right: { queue(item, next: true) }, left: { queue(item, next: false) }))
+                        Button { withAnimation { forget(item) } } label: {
                             Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.subtle)
-                                .frame(width: 36, height: 40).contentShape(Rectangle())
+                                .frame(width: 44, height: 44).contentShape(Rectangle())
                         }
                         .accessibilityLabel("Remove")
+                        .accessibilityHint(item.title)
                     }
-                    .frame(minHeight: 44)
-                    .contentShape(Rectangle())
-                    .onTapGesture { query = text; remember(text); focused = false }
                 }
             }
         }
@@ -617,7 +825,7 @@ struct SearchView: View {
     private var browse: some View {
         // The tiles stay what the search shows at first. Tapping into the field swaps them for earlier searches and
         // suggestions – as long as there are any, otherwise the tiles stay.
-        let typing = suggesting && (!suggestions.isEmpty || (query.trimmingCharacters(in: .whitespaces).isEmpty && !suggested.isEmpty))
+        let typing = suggesting && (!suggestions.isEmpty || (query.trimmingCharacters(in: .whitespaces).isEmpty && hasSuggestions))
         return VStack(alignment: .leading, spacing: 14) {
             if typing {
                 recentList
@@ -633,11 +841,22 @@ struct SearchView: View {
         .padding(.horizontal, 16)
     }
 
+    private func sectionTitle(_ key: LocalizedStringKey) -> some View {
+        Text(key).font(.system(size: 17, weight: .bold)).padding(.top, 10)
+    }
+
     @ViewBuilder private var results: some View {
         LazyVStack(alignment: .leading, spacing: 12) {
             if let error { LoadState(loading: false, error: error) { attempt += 1 } }
+            if let didYouMean {
+                Button { query = didYouMean } label: {
+                    Text("Did you mean “\(didYouMean)”?").font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.accent)
+                }
+                .padding(.vertical, 6)
+            }
             let r = result ?? SearchBody()
             Group {
+                if !(r.artist ?? []).isEmpty { sectionTitle("Artists") }
                 ForEach(r.artist ?? []) { a in
                     NavigationLink(value: Route.artist(a.id)) {
                         ItemRow(title: a.name, subtitle: String(localized: "Artist")) {
@@ -645,14 +864,28 @@ struct SearchView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .artist, key: a.id, title: a.name, cover: a.coverArt ?? a.id)) })
                 }
+                if !books.authors.isEmpty { sectionTitle("Authors") }
                 ForEach(books.authors) { a in
                     NavigationLink(value: Route.bookAuthor(id: a.id, name: a.name)) {
                         ItemRow(title: a.name, subtitle: String(localized: "Author")) { AuthorImage(id: a.id, name: a.name).frame(width: 52) }
                     }
                     .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .author, key: a.id, title: a.name)) })
                     .contextMenu { AuthorFavoriteMenu(id: a.id, name: a.name) }
                 }
+                if !(r.album ?? []).isEmpty { sectionTitle("Albums") }
+                ForEach(r.album ?? []) { a in
+                    NavigationLink(value: Route.album(a.id)) {
+                        ItemRow(title: a.name, subtitle: [String(localized: "Album"), a.artist].compactMap { $0 }.joined(separator: " • ")) {
+                            CoverView(id: a.coverArt ?? a.id, size: 120, corner: 2).frame(width: 52)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .album, key: a.id, title: a.name, detail: a.artist, cover: a.coverArt ?? a.id)) })
+                }
+                if !books.items.isEmpty { sectionTitle("Audiobooks") }
                 ForEach(books.items) { b in
                     NavigationLink(value: Route.audiobook(b.id)) {
                         ItemRow(title: b.title, subtitle: [app.books.isFinished(b.id) ? String(localized: "Finished") : "", String(localized: b.isPodcast ? "Podcast" : "Audiobook"), b.creator].filter { !$0.isEmpty }.joined(separator: " • ")) {
@@ -660,7 +893,9 @@ struct SearchView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .book, key: b.id, title: b.title, detail: b.creator, podcast: b.isPodcast)) })
                 }
+                if !books.series.isEmpty { sectionTitle("Series") }
                 ForEach(books.series) { s in
                     NavigationLink(value: Route.bookSeries(id: s.id, name: s.name, library: nil)) {
                         ItemRow(title: s.name, subtitle: String(localized: "Series")) {
@@ -669,26 +904,23 @@ struct SearchView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .series, key: s.id, title: s.name)) })
                 }
+                if !books.narrators.isEmpty { sectionTitle("Narrators") }
                 ForEach(books.narrators, id: \.self) { n in
                     NavigationLink(value: Route.bookNarrator(name: n, library: nil)) {
                         ItemRow(title: n, subtitle: String(localized: "Narrator")) { AuthorImage(id: nil, name: n).frame(width: 52) }
                     }
                     .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .narrator, key: n, title: n)) })
                 }
+                if !(r.song ?? []).isEmpty { sectionTitle("Songs") }
                 let songs = r.song ?? []
                 ForEach(Array(songs.enumerated()), id: \.element.id) { i, s in
                     SongRow(song: s, showCover: true) {
+                        remember(songItem(s))
                         app.player.play(songs, from: i, context: .init(kind: .search, name: query))
                     }
-                }
-                ForEach(r.album ?? []) { a in
-                    NavigationLink(value: Route.album(a.id)) {
-                        ItemRow(title: a.name, subtitle: [String(localized: "Album"), a.artist].compactMap { $0 }.joined(separator: " • ")) {
-                            CoverView(id: a.coverArt ?? a.id, size: 120, corner: 2).frame(width: 52)
-                        }
-                    }
-                    .buttonStyle(.plain)
                 }
                 let nothing = (r.artist ?? []).isEmpty && (r.album ?? []).isEmpty && songs.isEmpty && books.items.isEmpty
                     && books.authors.isEmpty && books.series.isEmpty && books.narrators.isEmpty
@@ -732,8 +964,10 @@ struct GenreTile: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
-        .task {
-            coverId = try? await app.client?.albumList("byGenre", size: 1, genre: genre).first.map { $0.coverArt ?? $0.id }
+        // Not a .task: that is cancelled when the page is rebuilt (the tab tapped again) and the tile stays without a cover
+        .onAppear {
+            guard coverId == nil else { return }
+            Task { coverId = try? await app.client?.albumList("byGenre", size: 1, genre: genre).first.map { $0.coverArt ?? $0.id } }
         }
     }
 

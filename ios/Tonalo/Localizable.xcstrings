@@ -1160,6 +1160,26 @@
         }
       }
     },
+    "Clear recent searches?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letzte Suchanfragen löschen?"
+          }
+        }
+      }
+    },
+    "Narrators" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprecher"
+          }
+        }
+      }
+    },
     "Clear all" : {
       "localizations" : {
         "de" : {
@@ -1200,22 +1220,32 @@
         }
       }
     },
-    "Search remembers" : {
+    "Smarter search" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Suche merkt sich was"
+            "value" : "Klügere Suche"
           }
         }
       }
     },
-    "Tap the search field to see your last searches and songs that fit what you listened to lately." : {
+    "Finds what you mean even with typos, searches Audiobookshelf too, and keeps your last five searches with covers. Swipe them like songs." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tippe aufs Suchfeld und sieh deine letzten Suchen und Songs, die zu dem passen, was du zuletzt gehört hast."
+            "value" : "Findet, was du meinst, auch mit Tippfehlern, durchsucht auch Audiobookshelf und merkt sich die letzten fünf Suchen mit Cover. Wische sie wie Songs."
+          }
+        }
+      }
+    },
+    "Did you mean “%@”?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meintest du „%@“?"
           }
         }
       }

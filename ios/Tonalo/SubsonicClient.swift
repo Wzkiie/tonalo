@@ -416,8 +416,10 @@ struct SubsonicClient {
         try await call("getStarred2").starred2 ?? SearchBody()
     }
 
-    func search(_ query: String) async throws -> SearchBody {
-        try await call("search3", ["query": query, "artistCount": "10", "albumCount": "20", "songCount": "40"]).searchResult3 ?? SearchBody()
+    /// `wide` asks for more of each, for the looser questions of the tolerant search.
+    func search(_ query: String, wide: Bool = false) async throws -> SearchBody {
+        try await call("search3", ["query": query, "artistCount": wide ? "30" : "10", "albumCount": wide ? "40" : "20",
+                                   "songCount": wide ? "80" : "40"]).searchResult3 ?? SearchBody()
     }
 
     func setStar(songId: String? = nil, albumId: String? = nil, artistId: String? = nil, on: Bool) async throws {

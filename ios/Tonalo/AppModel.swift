@@ -452,6 +452,7 @@ final class AppModel {
         ServerSession.shared.networkChanged()
         DownloadStore.deleteAccount(id)
         PlayHistory.forget(id)
+        RecentStore.forget(account: id)
         LibraryCache.deleteAccount(id)
         librarySync.forget(id)
         ImageLoader.clearDisk()

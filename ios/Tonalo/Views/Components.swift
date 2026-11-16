@@ -119,6 +119,23 @@ private struct SwipeActions: ViewModifier {
     @Environment(\.ui) private var ui
     let song: Song
     let on: Bool
+
+    func body(content: Content) -> some View {
+        content.modifier(SwipeRow(on: on, rightIcon: "text.insert", leftIcon: "text.badge.plus", right: {
+            let playing = app.player.current != nil
+            app.player.playNext([song])
+            if playing { app.notify(String(localized: "Plays next")) }
+        }, left: { ui.addToPlaylist([song]) }))
+    }
+}
+
+/// The row follows the finger and shows an icon in the gap; letting go far enough triggers the action, otherwise it springs back.
+struct SwipeRow: ViewModifier {
+    let on: Bool
+    let rightIcon: String
+    let leftIcon: String
+    let right: () -> Void
+    let left: () -> Void
     @State private var dx: CGFloat = 0
     @State private var armed = false
 
@@ -129,7 +146,7 @@ private struct SwipeActions: ViewModifier {
             content
                 .offset(x: dx)
                 .background(alignment: dx > 0 ? .leading : .trailing) {
-                    Image(systemName: dx > 0 ? "text.insert" : "text.badge.plus")
+                    Image(systemName: dx > 0 ? rightIcon : leftIcon)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color.accent)
                         .frame(width: abs(dx))
@@ -149,18 +166,12 @@ private struct SwipeActions: ViewModifier {
                     },
                     onEnd: { finished in
                         let go = finished && abs(dx) >= trigger
-                        let right = dx > 0
+                        let isRight = dx > 0
                         armed = false
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dx = 0 }
                         guard go else { return }
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        if right {
-                            let playing = app.player.current != nil
-                            app.player.playNext([song])
-                            if playing { app.notify(String(localized: "Plays next")) }
-                        } else {
-                            ui.addToPlaylist([song])
-                        }
+                        if isRight { right() } else { left() }
                     }))
         } else {
             content

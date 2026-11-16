@@ -33,8 +33,8 @@ enum WhatsNew {
                   text: "Each profile pairs on its own, and the DJ goes to the TV with the right account."),
             .init(icon: "arrow.left.and.right", color: .blue, title: "Swipe a song",
                   text: "Swipe a song to the right to play it next, or to the left to add it to a playlist."),
-            .init(icon: "magnifyingglass", color: .green, title: "Search remembers",
-                  text: "Tap the search field to see your last searches and songs that fit what you listened to lately."),
+            .init(icon: "magnifyingglass", color: .green, title: "Smarter search",
+                  text: "Finds what you mean even with typos, searches Audiobookshelf too, and keeps your last five searches with covers. Swipe them like songs."),
         ]),
         AppRelease(version: "1.5.0", items: [
             .init(icon: "music.note.list", color: .purple, title: "DJ",
