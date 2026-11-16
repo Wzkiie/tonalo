@@ -507,7 +507,7 @@ fun SongMenu(
         IconButton(onClick = { setOpen(true) }, modifier = Modifier.size(width = 32.dp, height = 40.dp)) {
             Icon(TonaloGlyphs.MoreHorizontal, stringResource(R.string.cd_more), tint = Palette.secondaryText, modifier = Modifier.size(16.dp))
         }
-        DropdownMenu(expanded = isOpen, onDismissRequest = { setOpen(false) }) {
+        SheetMenu(isOpen, { setOpen(false) }, title = song.title, subtitle = song.artist, coverArt = song.coverArt) {
             val close = { setOpen(false) }
             song.albumId?.let { id -> MenuItem(R.string.go_to_album, TonaloGlyphs.SquareStack) { close(); nav.open(albumRoute(id)) } }
             song.artistId?.let { id -> MenuItem(R.string.go_to_artist, TonaloGlyphs.Mic) { close(); nav.open(artistRoute(id)) } }

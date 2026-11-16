@@ -185,11 +185,11 @@ fun ActionRow(left: @Composable () -> Unit, playing: Boolean, play: () -> Unit, 
 
 /** The "…" button of a page, with its menu. */
 @Composable
-fun MoreMenu(items: @Composable (close: () -> Unit) -> Unit) {
+fun MoreMenu(title: String? = null, subtitle: String? = null, coverArt: String? = null, items: @Composable (close: () -> Unit) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) { Icon(TonaloGlyphs.MoreHorizontal, stringResource(R.string.cd_more), tint = Palette.secondaryText, modifier = Modifier.size(26.dp)) }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) { items { open = false } }
+        SheetMenu(open, { open = false }, title = title, subtitle = subtitle, coverArt = coverArt) { items { open = false } }
     }
 }
 
@@ -237,7 +237,7 @@ fun AlbumScreen(id: String) {
                                 scope.launch { try { context.tonalo.client()?.setStar(albumId = a.id, on = on) } catch (e: CancellationException) { throw e } catch (e: Exception) { Favorites.set(a.id, !on) } }
                             }
                             DownloadButton(songs)
-                            MoreMenu { close ->
+                            MoreMenu(title = a.name, subtitle = a.artist, coverArt = a.coverArt) { close ->
                                 MenuItem(R.string.add_to_queue, TonaloGlyphs.TextAppend) { close(); player.enqueue(songs) }
                                 MenuItem(R.string.add_to_playlist, TonaloGlyphs.TextBadgePlus) { close(); pick = true }
                                 if (djOn && DJ.configured) MenuItem(R.string.dj_with_album, TonaloGlyphs.Sparkles) {
@@ -320,7 +320,7 @@ fun PlaylistScreen(id: String) {
                             catch (e: CancellationException) { throw e } catch (e: Exception) { snackbar.showSnackbar(errorText(context, e)) }
                         }
                     }) { Text(stringResource(R.string.done), color = Palette.accent) }
-                    else MoreMenu { close ->
+                    else MoreMenu(title = p.name, subtitle = p.owner, coverArt = p.coverArt) { close ->
                         if (songs.isNotEmpty()) {
                             MenuItem(R.string.add_to_queue, TonaloGlyphs.TextAppend) { close(); player.enqueue(songs) }
                             MenuItem(R.string.add_to_other_playlist, TonaloGlyphs.TextBadgePlus) { close(); pick = true }
@@ -525,7 +525,7 @@ fun ArtistScreen(id: String) {
                                 Favorites.set(artist.id, on)
                                 scope.launch { try { context.tonalo.client()?.setStar(artistId = artist.id, on = on) } catch (e: CancellationException) { throw e } catch (e: Exception) { Favorites.set(artist.id, !on) } }
                             }
-                            MoreMenu { close ->
+                            MoreMenu(title = artist.name, coverArt = "ar-${artist.id}") { close ->
                                 MenuItem(R.string.artist_radio, TonaloGlyphs.Radio) {
                                     close()
                                     scope.launch {

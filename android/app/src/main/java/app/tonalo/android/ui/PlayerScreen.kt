@@ -352,8 +352,9 @@ private fun IosMenu(expanded: Boolean, onDismiss: () -> Unit, content: @Composab
 @Composable
 private fun IosMenuItem(text: String, icon: ImageVector? = null, iconTint: Color = Palette.accent, textColor: Color = Color.White, onClick: () -> Unit) {
     DropdownMenuItem(
-        text = { Text(text, fontSize = 17.sp, color = textColor, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        trailingIcon = if (icon == null) null else { { Icon(icon, null, Modifier.size(20.dp), tint = iconTint) } },
+        // Symbol on the left and the usual text size, the same as every other menu in the app
+        text = { Text(text, color = textColor, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        leadingIcon = if (icon == null) null else { { Icon(icon, null, Modifier.size(24.dp), tint = iconTint) } },
         onClick = onClick,
     )
 }
@@ -369,7 +370,8 @@ private fun PlayerMoreMenu(items: @Composable (close: () -> Unit) -> Unit) {
         PlainButton(onClick = { open = true }, Modifier.size(40.dp)) {
             Icon(TonaloGlyphs.MoreHorizontal, stringResource(R.string.cd_more), Modifier.size(20.dp), tint = Color.White)
         }
-        IosMenu(open, { open = false }) { items { open = false } }
+        val now = LocalPlayer.current.state.collectAsState().value.current
+        SheetMenu(open, { open = false }, title = now?.title, subtitle = now?.artist, coverArt = now?.coverArt) { items { open = false } }
     }
 }
 
@@ -761,7 +763,7 @@ private fun QueueRow(
             PlainButton(onClick = { open = true }, Modifier.size(44.dp)) {
                 Icon(TonaloGlyphs.MoreHorizontal, stringResource(R.string.cd_more), Modifier.size(20.dp), tint = Palette.secondaryText)
             }
-            IosMenu(open, { open = false }) { menu { open = false } }
+            SheetMenu(open, { open = false }) { menu { open = false } }
         }
     }
 }

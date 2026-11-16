@@ -390,7 +390,7 @@ fun BookRowFrame(
                 }
             }
         }
-        if (menu != null) DropdownMenu(expanded = open, onDismissRequest = { open = false }) { menu { open = false } }
+        if (menu != null) SheetMenu(open, { open = false }, title = title, subtitle = subtitle) { menu { open = false } }
     }
 }
 

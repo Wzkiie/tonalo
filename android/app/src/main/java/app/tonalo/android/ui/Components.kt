@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -454,5 +455,43 @@ fun PlayButtons(playing: Boolean, play: () -> Unit, shuffle: () -> Unit) {
         IconButton(onClick = shuffle) { Icon(TonaloGlyphs.Shuffle, stringResource(R.string.shuffle), tint = Palette.secondaryText, modifier = Modifier.size(26.dp)) }
         Spacer(Modifier.width(12.dp))
         PlayCircle(playing, onClick = play)
+    }
+}
+
+/**
+ * What the "…" buttons open: a sheet from the bottom, styled like the queue (rounded top, handle, dark background),
+ * with the item's cover and name on top when given. The rows are the usual menu items.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun SheetMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    title: String? = null,
+    subtitle: String? = null,
+    coverArt: String? = null,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    if (!expanded) return
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = Palette.canvas,
+        contentColor = Color.White,
+    ) {
+        androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 12.dp)) {
+            if (title != null) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (coverArt != null) { Cover(coverArt, 48.dp, corner = Palette.corner(4.dp), pixels = 150); Spacer(Modifier.width(12.dp)) }
+                    androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+                        Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (!subtitle.isNullOrEmpty()) Text(subtitle, fontSize = 13.sp, color = Palette.secondaryText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                Box(Modifier.fillMaxWidth().padding(vertical = 8.dp).height(1.dp).background(Color.White.copy(alpha = 0.1f)))
+            }
+            androidx.compose.foundation.layout.Column(Modifier.padding(horizontal = 8.dp), content = content)
+        }
     }
 }
