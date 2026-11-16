@@ -197,7 +197,7 @@ internal fun BplSkipIcon(forward: Boolean, seconds: Int, size: Dp, color: Color 
                 drawLine(color, tip, Offset(tip.x + rx * len, tip.y + ry * len), strokeWidth = stroke, cap = StrokeCap.Round)
             }
         }
-        Text(seconds.toString(), color = color, fontSize = fontSize, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = size * 0.04f))
+        Text(seconds.toString(), color = color, fontSize = fontSize, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = size * 0.04f))
     }
 }
 
@@ -239,7 +239,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
             Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onClose) { Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
                 Text(item.title, Modifier.weight(1f), textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
                 IconButton(onClick = { BookPlayer.stop(); onClose() }) { Icon(Icons.Default.Close, stringResource(R.string.bpl_stop)) }
             }
 
@@ -252,7 +252,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
             // Chapter (or title), book (or author), where it plays
             val authorId = item.media.metadata.authors?.firstOrNull()?.id
             Column(Modifier.fillMaxWidth()) {
-                Text(chapter?.title?.ifBlank { null } ?: title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(chapter?.title?.ifBlank { null } ?: title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
                     if (chapter != null) title else item.creator, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodyLarge,
@@ -377,7 +377,7 @@ fun BookPlayerScreen(onClose: () -> Unit) {
     if (chapterSheet) ModalBottomSheet(onDismissRequest = { chapterSheet = false }, containerColor = Palette.panel) {
         val list = rememberLazyListState()
         LaunchedEffect(Unit) { if (state.chapterIndex > 0) list.scrollToItem((state.chapterIndex - 2).coerceAtLeast(0)) }
-        Text(stringResource(R.string.bpl_chapters), Modifier.padding(horizontal = 24.dp, vertical = 8.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.bpl_chapters), Modifier.padding(horizontal = 24.dp, vertical = 8.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         LazyColumn(Modifier.navigationBarsPadding(), state = list) {
             itemsIndexed(state.chapters, key = { i, c -> "$i-${c.start}" }) { i, c ->
                 BplChapterRow(c.title.orEmpty(), c.end - c.start, i == state.chapterIndex) { BookPlayer.seekTo(c.start); chapterSheet = false }

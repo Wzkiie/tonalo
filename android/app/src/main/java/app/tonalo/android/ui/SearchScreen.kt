@@ -134,7 +134,7 @@ fun SearchScreen() {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 16.dp, top = 8.dp, bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Avatar(32.dp)
                 Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.tab_search), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.tab_search), fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
             }
         }
         stickyHeader {
@@ -169,7 +169,7 @@ fun SearchScreen() {
                 if (showPlayed) {
                     item(key = "played-head") {
                         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.recent_songs), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Text(stringResource(R.string.recent_songs), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                             Text(stringResource(R.string.clear_all), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Palette.secondaryText,
                                 modifier = Modifier.clip(RoundedCornerShape(6.dp)).plainClickable { searchPlays = SearchPlays.clear(app, account?.id) }.padding(8.dp))
                         }
@@ -195,7 +195,7 @@ fun SearchScreen() {
                 }
                 if (showSuggested) {
                     item(key = "suggested-head") {
-                        Text(stringResource(R.string.suggested_for_you), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp))
+                        Text(stringResource(R.string.suggested_for_you), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp))
                     }
                     items(suggested.size, key = { "suggested-" + suggested[it].id }) { i ->
                         SongRow(suggested[i], showCover = true) { playWithRadio(suggested[i]) }
@@ -215,7 +215,7 @@ fun SearchScreen() {
         // Nothing was spelled like this: these are the closest ones
         if (smart?.similarOnly == true && (artists.isNotEmpty() || songs.isNotEmpty() || albums.isNotEmpty())) {
             item(key = "similar-head") {
-                Text(stringResource(R.string.similar_results), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp))
+                Text(stringResource(R.string.similar_results), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp))
             }
         }
         items(artists, key = { "r" + it.id }) { a ->
@@ -250,7 +250,7 @@ fun SearchScreen() {
                 ErrorView(failed.message, loader?.reload ?: {})
             } else item(key = "none") {
                 Column(Modifier.fillMaxWidth().padding(top = 60.dp, start = 24.dp, end = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.no_results_for, text), fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text(stringResource(R.string.no_results_for, text), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     Spacer(Modifier.height(8.dp))
                     Text(stringResource(R.string.no_results_hint), color = Palette.secondaryText, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
@@ -268,7 +268,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.browseAll(refresh: In
         val list = (genres.state as? Load.Ready<List<Genre>>)?.value.orEmpty()
             .filter { it.value.isNotBlank() && (it.albumCount ?: 0) > 0 }.sortedByDescending { it.albumCount ?: 0 }.take(30)
         Column(Modifier.padding(horizontal = 16.dp)) {
-            Text(stringResource(R.string.browse_all_ios), Modifier.padding(top = 8.dp, bottom = 14.dp), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.browse_all_ios), Modifier.padding(top = 8.dp, bottom = 14.dp), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             list.chunked(2).forEach { row ->
                 Row(Modifier.padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { g -> GenreTile(g, Modifier.weight(1f)) { nav.open(genreRoute(g.value)) } }
@@ -299,7 +299,7 @@ private fun GenreTile(genre: Genre, modifier: Modifier, onClick: () -> Unit) {
         if (album != null) Box(Modifier.align(Alignment.BottomEnd).offset(x = 16.dp, y = 6.dp).rotate(25f).shadow(4.dp, RoundedCornerShape(4.dp), ambientColor = Color.Black.copy(alpha = 0.35f), spotColor = Color.Black.copy(alpha = 0.35f))) {
             Cover(album.coverArt, 70.dp, corner = 4.dp, pixels = 200)
         }
-        Text(genre.value, Modifier.padding(12.dp).padding(end = 40.dp), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White, maxLines = 2)
+        Text(genre.value, Modifier.padding(12.dp).padding(end = 40.dp), fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color.White, maxLines = 2)
     }
 }
 

@@ -89,7 +89,7 @@ fun TopBar(title: String, back: Boolean = true, actions: @Composable () -> Unit 
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.SemiBold)
             actions()
         }
         return
@@ -99,7 +99,7 @@ fun TopBar(title: String, back: Boolean = true, actions: @Composable () -> Unit 
         GlassBackButton(Modifier.align(Alignment.CenterStart))
         Text(
             title, Modifier.align(Alignment.Center).padding(horizontal = 64.dp), maxLines = 1, overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
         )
         Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) { actions() }
     }
@@ -424,11 +424,11 @@ fun RadioScreen() {
             val size = maxOf(120.dp, (maxWidth - 32.dp - 14.dp - 2.dp) / 2)
             LazyColumn(contentPadding = PaddingValues(vertical = 16.dp)) {
                 item {
-                    Text(stringResource(R.string.endless_radio), Modifier.padding(horizontal = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.endless_radio), Modifier.padding(horizontal = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(12.dp))
                     WrapGrid(size) { RadioCards(genreList, size, wrap = true) }
                     Spacer(Modifier.height(28.dp))
-                    Text(stringResource(R.string.stations), Modifier.padding(horizontal = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.stations), Modifier.padding(horizontal = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(12.dp))
                     if (stations.state is Load.Ready && stationList.isEmpty()) Text(stringResource(R.string.no_stations), Modifier.padding(horizontal = 16.dp), color = Palette.secondaryText)
                     stationsFailed?.let { Text(it.message, Modifier.padding(horizontal = 16.dp), color = Palette.secondaryText) }

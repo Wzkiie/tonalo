@@ -294,7 +294,7 @@ fun AuthorImage(id: String?, name: String, modifier: Modifier = Modifier, width:
         val initial = @Composable {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    name.firstOrNull()?.uppercaseChar()?.toString() ?: "?", color = Palette.subtle, fontWeight = FontWeight.Bold,
+                    name.firstOrNull()?.uppercaseChar()?.toString() ?: "?", color = Palette.subtle, fontWeight = FontWeight.SemiBold,
                     fontSize = (box.value * 0.42f).sp,
                 )
             }

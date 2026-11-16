@@ -271,7 +271,7 @@ fun Cover(coverArt: String?, size: Dp, modifier: Modifier = Modifier, corner: Dp
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier, action: (@Composable () -> Unit)? = null) {
     Row(modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(text, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Text(text, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
         action?.invoke()
     }
 }
@@ -371,7 +371,7 @@ fun SongRow(
         Modifier.fillMaxWidth().songSwipe(swipeState).combinedClickable(
             interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null,
             onClick = onClick, onLongClick = { menu = true },
-        ).padding(horizontal = if (padded) 16.dp else 0.dp, vertical = 2.dp),
+        ).padding(horizontal = if (padded) 16.dp else 0.dp, vertical = if (showCover) 7.dp else 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (number != null) {

@@ -73,7 +73,7 @@ import kotlinx.coroutines.delay
 fun NameAvatar(name: String, size: Dp = 36.dp, modifier: Modifier = Modifier) {
     val letter = name.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
     Box(modifier.size(size).clip(CircleShape).background(Palette.avatar(name)), contentAlignment = Alignment.Center) {
-        Text(letter, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = (size.value * 0.45f).sp)
+        Text(letter, color = Color.Black, fontWeight = FontWeight.SemiBold, fontSize = (size.value * 0.45f).sp)
     }
 }
 
@@ -95,7 +95,7 @@ fun TabHeader(title: String?, content: @Composable () -> Unit = {}) {
     ) {
         Avatar()
         Spacer(Modifier.width(12.dp))
-        if (title != null) Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        if (title != null) Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         content()
     }
 }
@@ -136,7 +136,7 @@ fun QuickTile(
             Box(Modifier.size(56.dp)) { art() }
             Text(
                 title, Modifier.padding(start = 8.dp, end = 4.dp).weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.Bold, fontSize = 13.sp, lineHeight = 16.sp,
+                fontWeight = FontWeight.SemiBold, fontSize = 13.sp, lineHeight = 16.sp,
                 color = if (current) Palette.accent else Color.White,
             )
         }
@@ -291,7 +291,7 @@ fun MixCard(title: String, subtitle: String?, hue: Float, icon: ImageVector, siz
                 var titleSize by androidx.compose.runtime.remember(title) { androidx.compose.runtime.mutableStateOf(15f) }
                 Text(
                     title, Modifier.align(Alignment.BottomStart).padding(10.dp),
-                    fontWeight = FontWeight.ExtraBold, fontSize = titleSize.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = Color.White,
+                    fontWeight = FontWeight.Bold, fontSize = titleSize.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = Color.White,
                     onTextLayout = { r ->
                         val cut = (0 until r.lineCount - 1).any { l ->
                             val end = r.getLineEnd(l)
@@ -380,7 +380,7 @@ fun DownloadButton(songs: List<Song>) {
 @Composable
 fun SectionHeader(title: String, more: (() -> Unit)? = null) {
     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 12.dp), verticalAlignment = Alignment.Bottom) {
-        Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Text(title, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
         if (more != null) Text(
             stringResource(R.string.show_all), Modifier.plainClickable(onClick = more).padding(start = 8.dp, bottom = 2.dp),
             color = Palette.secondaryText, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,

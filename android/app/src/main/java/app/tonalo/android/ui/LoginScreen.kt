@@ -363,7 +363,7 @@ private fun SignIn(
                 Spacer(Modifier.height(if (onClose != null) 64.dp else 52.dp))
                 TonaloLogo(88)
                 Spacer(Modifier.height(14.dp))
-                Text("Tonalo", fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                Text("Tonalo", fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(6.dp))
                 Text(stringResource(R.string.login_tagline), color = Palette.subtle, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(28.dp))
@@ -514,7 +514,7 @@ private fun EditAccount(
     SubPage(stringResource(R.string.music_server), onClose, actions = {
         if (busy) CircularProgressIndicator(Modifier.padding(end = 12.dp).size(22.dp), strokeWidth = 2.dp)
         else TextButton(onClick = onSubmit, enabled = canSave) {
-            Text(stringResource(R.string.save), fontWeight = FontWeight.Bold, color = if (canSave) Palette.accent else Palette.subtle)
+            Text(stringResource(R.string.save), fontWeight = FontWeight.SemiBold, color = if (canSave) Palette.accent else Palette.subtle)
         }
     }) {
         item {
@@ -659,7 +659,7 @@ internal fun SubPage(title: String, back: () -> Unit, actions: @Composable () ->
             GlassBackButton(Modifier.align(Alignment.CenterStart), onClick = back)
             Text(
                 title, Modifier.align(Alignment.Center).padding(horizontal = 64.dp), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
             )
             Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) { actions() }
         }

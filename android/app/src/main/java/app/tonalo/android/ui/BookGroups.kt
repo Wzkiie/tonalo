@@ -255,7 +255,7 @@ fun BookAuthorScreen(id: String) {
                 item(key = "header") {
                     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         AuthorImage(id, name, Modifier.size(140.dp), width = 400)
-                        Text(name, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                        Text(name, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                         if (page.items.isNotEmpty()) Text(pluralString(R.plurals.bk_books, page.items.size), fontSize = 13.sp, color = Palette.subtle)
                         val favorite = id in favorites
                         ActionIcon(

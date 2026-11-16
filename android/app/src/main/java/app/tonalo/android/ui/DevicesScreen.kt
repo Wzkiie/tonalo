@@ -246,7 +246,7 @@ fun JukeboxRequestDialog() {
         title = { Text(stringResource(R.string.wants_to_join, r.name), textAlign = TextAlign.Center) },
         text = {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(r.code.chunked(3).joinToString(" "), fontSize = 44.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp, color = Color.White)
+                Text(r.code.chunked(3).joinToString(" "), fontSize = 44.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 4.sp, color = Color.White)
                 Text(stringResource(R.string.show_code, r.name), color = Palette.secondaryText, textAlign = TextAlign.Center)
             }
         },

@@ -69,7 +69,7 @@ fun ProfileMenu(close: () -> Unit, open: (String) -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     NameAvatar(acc.username, 52.dp)
                     Spacer(Modifier.width(12.dp))
-                    Text(acc.username, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(acc.username, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 // Both servers, each with the user it's signed in as
                 Column(Modifier.padding(top = 12.dp, bottom = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

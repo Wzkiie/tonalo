@@ -431,7 +431,7 @@ private fun SeekBar(position: androidx.compose.runtime.MutableLongState, duratio
             // What is played: format and bitrate, in a small capsule
             if (badge != null) Text(
                 badge, Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape).padding(horizontal = 9.dp, vertical = 2.dp),
-                fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.75f), maxLines = 1,
+                fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = 0.75f), maxLines = 1,
             )
             Spacer(Modifier.weight(1f))
             if (!live) Text("-" + formatTime((durationMs - shown).coerceAtLeast(0) / 1000), style = timeStyle, color = Color.White.copy(alpha = 0.7f))
@@ -506,12 +506,11 @@ fun PlayerScreen(onClose: () -> Unit) {
                     )
                     Text(
                         (if (djActive && state.tvName == null) djLine else null) ?: state.context ?: station?.let { stringResource(R.string.stations) } ?: song?.album ?: "",
-                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                 }
                 PlayerMoreMenu { close ->
                     IosMenuItem(R.string.devices, Icons.Default.Tv) { close(); onClose(); nav.open("devices") }
-                    if (state.tvName == null) IosMenuItem(R.string.equalizer, Icons.Default.GraphicEq) { close(); nav.open("settings/eq") }
                     if (djReady && song != null && (state.tvName == null || !state.tvGuest) && station == null) IosMenuItem(R.string.dj_from_here, Icons.Default.AutoAwesome) {
                         close()
                         scope.launch {
@@ -549,7 +548,7 @@ fun PlayerScreen(onClose: () -> Unit) {
             // Title, artist, heart
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(song?.title ?: station?.name ?: "", fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(song?.title ?: station?.name ?: "", fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
                         song?.artist ?: state.liveTitle ?: stringResource(R.string.live), maxLines = 1, overflow = TextOverflow.Ellipsis,
                         color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp, lineHeight = 22.sp,
@@ -783,7 +782,7 @@ fun LyricsScreen(onClose: () -> Unit) {
             Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onClose) { Icon(TonaloGlyphs.ChevronDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
                 Column(Modifier.padding(start = 8.dp)) {
-                    Text(song.title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(song.title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(song.artist ?: "", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -799,7 +798,7 @@ fun LyricsScreen(onClose: () -> Unit) {
                             Text(
                                 line.value.ifBlank { "♪" },
                                 style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.SemiBold,
                                 color = when {
                                     !lyrics.synced || i == active -> Color.White
                                     i < active -> Color.White.copy(alpha = 0.55f)
@@ -829,7 +828,7 @@ fun QueueScreen(onClose: () -> Unit) {
     Column(Modifier.fillMaxSize().background(Palette.canvas).systemBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(top = 8.dp, start = 8.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onClose) { Icon(TonaloGlyphs.ChevronDown, stringResource(R.string.cd_close), Modifier.size(32.dp)) }
-            Text(stringResource(R.string.queue), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.queue), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
             item { SectionHeader(stringResource(R.string.now_playing)) }

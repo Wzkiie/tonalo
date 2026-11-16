@@ -250,7 +250,7 @@ fun OfflineBanner() {
         Icon(Icons.Default.WifiOff, null, tint = Palette.secondaryText)
         Spacer(Modifier.width(12.dp))
         Column {
-            Text(stringResource(R.string.offline_title), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text(stringResource(R.string.offline_title), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             Text(stringResource(R.string.offline_info), color = Palette.secondaryText, fontSize = 12.sp)
         }
     }
@@ -351,7 +351,7 @@ private fun DJHomeTile() {
     ) {
         Box(Modifier.size(56.dp)) { AnimatedDJArt(playing) }
         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-            Text("DJ", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text("DJ", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             Text(
                 if (playing) line ?: stringResource(R.string.dj_playing_now) else stringResource(R.string.dj_tile),
                 color = Palette.secondaryText, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -493,7 +493,7 @@ fun StationArt(station: Station, modifier: Modifier = Modifier.fillMaxSize(), bi
         )
         if (!small) Text(
             station.name, Modifier.align(Alignment.BottomStart).padding(if (big) 20.dp else 8.dp),
-            fontWeight = FontWeight.ExtraBold, fontSize = if (big) 30.sp else 14.sp, lineHeight = if (big) 32.sp else 16.sp,
+            fontWeight = FontWeight.Bold, fontSize = if (big) 30.sp else 14.sp, lineHeight = if (big) 32.sp else 16.sp,
             color = Color.White, maxLines = if (big) 3 else 2, overflow = TextOverflow.Ellipsis,
         )
     }

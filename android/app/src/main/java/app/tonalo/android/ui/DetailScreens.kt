@@ -128,7 +128,7 @@ fun DetailPage(
                         Box(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
                             Box(Modifier.size(250.dp).shadow(18.dp, RoundedCornerShape(Palette.corner(4.dp)))) { art() }
                         }
-                        Text(title, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis, lineHeight = 28.sp)
+                        Text(title, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, maxLines = 3, overflow = TextOverflow.Ellipsis, lineHeight = 28.sp)
                         Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { info() }
                         Box(Modifier.padding(vertical = 8.dp)) { actions() }
                     }
@@ -145,7 +145,7 @@ fun DetailPage(
                     .statusBarsPadding().height(58.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(title, Modifier.padding(horizontal = 72.dp), fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(title, Modifier.padding(horizontal = 72.dp), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (stickyPlay != null) Box(Modifier.align(Alignment.CenterEnd).padding(end = 16.dp)) { PlayCircle(stickyPlaying, size = 40.dp, onClick = stickyPlay) }
             }
         }
@@ -163,7 +163,7 @@ fun OwnerLine(name: String, picture: @Composable () -> Unit, onClick: (() -> Uni
     Row(Modifier.then(if (onClick != null) Modifier.plainClickable(onClick = onClick) else Modifier), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(24.dp)) { picture() }
         Spacer(Modifier.width(8.dp))
-        Text(name, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -541,13 +541,13 @@ fun ArtistScreen(id: String) {
                     )
                 }
                 if (top.isNotEmpty()) Text(stringResource(if (topIsOwn) R.string.your_most_played else R.string.popular),
-                    Modifier.padding(start = 16.dp, top = 12.dp, bottom = 8.dp), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Modifier.padding(start = 16.dp, top = 12.dp, bottom = 8.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             }
             val shown = top.take(if (showAll) 10 else 5)
             items(shown.size, key = { "top-" + shown[it].id }) { i -> SongRow(shown[i], number = i + 1) { player.play(top, i, context = artist.name, contextId = cid) } }
             if (top.size > 5) item {
                 Text(stringResource(if (showAll) R.string.show_less else R.string.see_more), Modifier.plainClickable { showAll = !showAll }.padding(16.dp),
-                    fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Palette.secondaryText)
+                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Palette.secondaryText)
             }
             if (albums.isNotEmpty()) item {
                 SectionHeader(stringResource(R.string.discography))
@@ -563,7 +563,7 @@ fun ArtistScreen(id: String) {
             }
             if (bio != null) item {
                 Column(Modifier.padding(horizontal = 16.dp).padding(top = 28.dp)) {
-                    Text(stringResource(R.string.about_artist), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.about_artist), fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(10.dp))
                     Text(bio, Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Palette.elevated).padding(16.dp),
                         fontSize = 14.sp, color = Color(0xFFD9D9D9), maxLines = 6, overflow = TextOverflow.Ellipsis)

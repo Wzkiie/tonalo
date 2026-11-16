@@ -17,6 +17,7 @@ import androidx.palette.graphics.Palette as ColorPalette
 import app.tonalo.android.data.Backdrop
 import app.tonalo.android.data.CardShape
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import app.tonalo.android.tonalo
 import coil3.SingletonImageLoader
 import coil3.request.ImageRequest
@@ -106,7 +107,23 @@ fun TonaloTheme(content: @Composable () -> Unit) {
         outline = Color(0xFF555555),
         outlineVariant = Color(0xFF333333),
     )
-    MaterialTheme(colorScheme = scheme, content = content)
+    MaterialTheme(colorScheme = scheme, typography = tightTypography, content = content)
+}
+
+/**
+ * Material's text styles with the letter spacing of the iPhone's system font (none): Material adds up to 0.5 sp
+ * between letters, which makes every text look wider and bigger than on the iPhone.
+ */
+private val tightTypography: androidx.compose.material3.Typography = androidx.compose.material3.Typography().run {
+    fun androidx.compose.ui.text.TextStyle.tight() = copy(letterSpacing = androidx.compose.ui.unit.TextUnit.Unspecified)
+    copy(
+        displayLarge = displayLarge.tight(), displayMedium = displayMedium.tight(), displaySmall = displaySmall.tight(),
+        headlineLarge = headlineLarge.tight(), headlineMedium = headlineMedium.tight(), headlineSmall = headlineSmall.tight(),
+        titleLarge = titleLarge.tight(), titleMedium = titleMedium.tight(), titleSmall = titleSmall.tight(),
+        // Line heights closer to the iPhone's, so rows with a title and a subtitle are not taller
+        bodyLarge = bodyLarge.tight().copy(lineHeight = 21.sp), bodyMedium = bodyMedium.tight().copy(lineHeight = 18.sp), bodySmall = bodySmall.tight().copy(lineHeight = 16.sp),
+        labelLarge = labelLarge.tight(), labelMedium = labelMedium.tight(), labelSmall = labelSmall.tight(),
+    )
 }
 
 // region Colors from covers

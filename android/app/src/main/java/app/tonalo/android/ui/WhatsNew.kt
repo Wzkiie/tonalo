@@ -252,7 +252,7 @@ private fun WelcomePage() {
             Icon(Icons.Filled.MusicNote, null, Modifier.size(60.dp), tint = Color.White)
         }
         Spacer(Modifier.height(28.dp))
-        Text(stringResource(R.string.wn_welcome_title), fontSize = 30.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.wn_welcome_title), fontSize = 30.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(10.dp))
         Text(stringResource(R.string.wn_welcome_version, version), color = Palette.accent, fontSize = 20.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(10.dp))
@@ -267,7 +267,7 @@ private fun ItemPage(item: NewsItem) {
             Icon(item.icon, null, Modifier.size(56.dp), tint = Color.White)
         }
         Spacer(Modifier.height(28.dp))
-        Text(stringResource(item.title), fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text(stringResource(item.title), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(12.dp))
         Text(stringResource(item.text), color = Palette.subtle, fontSize = 16.sp, textAlign = TextAlign.Center, lineHeight = 22.sp)
     }
@@ -281,10 +281,10 @@ fun LazyListScope.versionHistory() {
         val isCurrent = WhatsNew.currentRelease(context)?.version == release.version
         Column(Modifier.padding(bottom = 24.dp)) {
             Row(Modifier.padding(start = 4.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(release.version, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text(release.version, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
                 if (isCurrent) {
                     Spacer(Modifier.width(10.dp))
-                    Text(stringResource(R.string.wn_current).uppercase(), color = Palette.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                    Text(stringResource(R.string.wn_current).uppercase(), color = Palette.accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clip(CircleShape).background(Palette.accent.copy(alpha = 0.16f)).padding(horizontal = 8.dp, vertical = 4.dp))
                 }
             }

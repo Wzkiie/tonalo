@@ -126,7 +126,7 @@ private fun BookDetail(item: ABSItem, episodeId: String?, refreshing: Boolean, o
             val authors = m.authors.orEmpty()
             if (authors.isNotEmpty()) authors.forEach { a ->
                 OwnerLine(a.name, { AuthorImage(a.id, a.name, Modifier.fillMaxSize(), width = 60) }) { nav.open(bookAuthorRoute(a.id)) }
-            } else if (item.creator.isNotEmpty()) Text(item.creator, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            } else if (item.creator.isNotEmpty()) Text(item.creator, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             m.narrators.orEmpty().forEach { n ->
                 Text(stringResource(R.string.bk_read_by, n), Modifier.plainClickable { nav.open(bookGroupRoute("narrator", n)) }, fontSize = 13.sp, color = Palette.subtle)
             }
@@ -188,7 +188,7 @@ private fun BookDetail(item: ABSItem, episodeId: String?, refreshing: Boolean, o
         if (item.isPodcast) {
             val episodes = item.media.episodes.orEmpty().sortedByDescending { it.publishedAt ?: 0.0 }
             item(key = "episodes-title") {
-                Text(stringResource(R.string.bk_episodes), Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.bk_episodes), Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             }
             items(episodes.size, key = { "ep-" + episodes[it].id }) { i ->
                 BookEpisodeRow(item, episodes[i], highlighted = episodes[i].id == episodeId || player.episode?.id == episodes[i].id)
@@ -225,7 +225,7 @@ private fun BookDetail(item: ABSItem, episodeId: String?, refreshing: Boolean, o
     if (showChapters) ModalBottomSheet(onDismissRequest = { showChapters = false }) {
         val chapters = item.media.chapters.orEmpty()
         val current = if (player.item?.id == item.id) player.chapterIndex else -1
-        Text(stringResource(R.string.bk_chapters), Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.bk_chapters), Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
         LazyColumn(Modifier.navigationBarsPadding()) {
             itemsIndexed(chapters) { index, c ->
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {

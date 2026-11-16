@@ -156,7 +156,7 @@ fun DJScreen() {
                 Box(Modifier.size(84.dp).clip(RoundedCornerShape(6.dp))) { DJArt() }
                 Spacer(Modifier.size(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.dj), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.dj), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
                     Text(
                         if (busy) stringResource(R.string.dj_choosing).uppercase() else line ?: stringResource(R.string.dj_tile),
                         color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodyMedium,

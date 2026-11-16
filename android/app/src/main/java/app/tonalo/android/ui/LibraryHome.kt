@@ -287,7 +287,7 @@ fun LibraryScreen() {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(top = 8.dp, bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Avatar(32.dp)
                 Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.your_library), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.your_library), fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
             }
             ChipRow {
                 val chips = (if (hasMusic) listOf(LibFilter.PLAYLISTS to R.string.playlists, LibFilter.ALBUMS to R.string.albums,

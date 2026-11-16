@@ -83,7 +83,7 @@ fun SettingsScreen() {
             item {
                 Group {
                     GroupRow(icon = { NameAvatar(acc.username, 56.dp) }) {
-                        Text(acc.username, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        Text(acc.username, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                         if (atHome) Row(Modifier.padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Home, null, tint = Palette.accent, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
