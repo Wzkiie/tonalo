@@ -64,7 +64,7 @@ object TonaloGlyphs {
 
     /** Two crossing arrows. */
     val Shuffle: ImageVector by lazy {
-        line("TonaloShuffle", 2.3f) {
+        line("TonaloShuffle", 2.8f) {
             moveTo(3.2f, 7f); horizontalLineTo(6.4f); curveTo(11f, 7f, 11.6f, 17f, 16.2f, 17f); horizontalLineTo(20.3f)
             moveTo(17.6f, 14.4f); lineTo(20.3f, 17f); lineTo(17.6f, 19.6f)
             moveTo(3.2f, 17f); horizontalLineTo(6.4f); curveTo(8f, 17f, 9f, 16.2f, 9.9f, 15f)
@@ -80,14 +80,14 @@ object TonaloGlyphs {
         moveTo(20.4f, 12.4f); verticalLineTo(13.4f); arcTo(3.6f, 3.6f, 0f, false, true, 16.8f, 17f); horizontalLineTo(3.6f)
         moveTo(6.2f, 14.4f); lineTo(3.6f, 17f); lineTo(6.2f, 19.6f)
     }
-    val Repeat: ImageVector by lazy { line("TonaloRepeat", 2.3f, repeatPath) }
+    val Repeat: ImageVector by lazy { line("TonaloRepeat", 2.8f, repeatPath) }
 
     /** The loop with a "1" in the middle. */
     val RepeatOne: ImageVector by lazy {
         ImageVector.Builder("TonaloRepeatOne", 24.dp, 24.dp, 24f, 24f).apply {
             addPath(
                 nodes(repeatPath),
-                stroke = SolidColor(Color.Black), strokeLineWidth = 2.3f, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
+                stroke = SolidColor(Color.Black), strokeLineWidth = 2.8f, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
             )
             addPath(
                 nodes { moveTo(10.6f, 10.4f); lineTo(12.4f, 9.4f); verticalLineTo(14.8f) },

@@ -1,6 +1,7 @@
 package app.tonalo.android.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -166,7 +167,7 @@ private fun PlainButton(onClick: () -> Unit, modifier: Modifier = Modifier, enab
 private fun ToggleIcon(icon: ImageVector, description: String, on: Boolean) {
     val tint = if (on) Palette.accent else Color.White
     Column(Modifier.offset(y = 3.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(icon, description, Modifier.size(22.dp), tint = tint)
+        Icon(icon, description, Modifier.size(27.dp), tint = tint)
         Spacer(Modifier.height(3.dp))
         Box(Modifier.size(4.dp).alpha(if (on) 1f else 0f).background(tint, CircleShape))
     }
@@ -348,7 +349,7 @@ private fun rememberPosition(songId: String?, playing: Boolean): androidx.compos
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun SeekBar(position: androidx.compose.runtime.MutableLongState, durationMs: Long, live: Boolean) {
+private fun SeekBar(position: androidx.compose.runtime.MutableLongState, durationMs: Long, live: Boolean, badge: String? = null) {
     val player = LocalPlayer.current
     var dragging by remember { mutableStateOf(false) }
     var dragValue by remember { mutableFloatStateOf(0f) }
@@ -385,6 +386,12 @@ private fun SeekBar(position: androidx.compose.runtime.MutableLongState, duratio
             // Tabular digits, so the numbers do not jiggle while counting
             val timeStyle = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontFeatureSettings = "tnum")
             Text(if (live) stringResource(R.string.now_live) else formatTime(shown / 1000), style = timeStyle, color = Color.White.copy(alpha = 0.7f))
+            Spacer(Modifier.weight(1f))
+            // What is played: format and bitrate, in a small capsule
+            if (badge != null) Text(
+                badge, Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape).padding(horizontal = 9.dp, vertical = 2.dp),
+                fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.75f), maxLines = 1,
+            )
             Spacer(Modifier.weight(1f))
             if (!live) Text("-" + formatTime((durationMs - shown).coerceAtLeast(0) / 1000), style = timeStyle, color = Color.White.copy(alpha = 0.7f))
         }
@@ -521,7 +528,7 @@ fun PlayerScreen(onClose: () -> Unit) {
             }
 
             Spacer(Modifier.height(18.dp))
-            SeekBar(position, state.durationMs, live = station != null)
+            SeekBar(position, state.durationMs, live = station != null, badge = song?.let { sg -> sg.suffix?.takeIf { it.isNotBlank() }?.let { it.uppercase() + (sg.bitRate?.takeIf { b -> b > 0 }?.let { b -> " $b" } ?: "") } })
             Spacer(Modifier.height(14.dp))
 
             // Transport
@@ -540,11 +547,11 @@ fun PlayerScreen(onClose: () -> Unit) {
                     enabled = station == null,
                 ) { ToggleIcon(TonaloGlyphs.Shuffle, stringResource(R.string.cd_shuffle), state.shuffle) }
                 PlainButton(onClick = { player.previous() }, Modifier.size(48.dp), enabled = station == null) {
-                    Icon(TonaloIcons.Previous, stringResource(R.string.cd_previous), Modifier.size(30.dp), tint = Color.White)
+                    Icon(TonaloIcons.Previous, stringResource(R.string.cd_previous), Modifier.size(38.dp), tint = Color.White)
                 }
                 PlayButton()
                 PlainButton(onClick = { player.next() }, Modifier.size(48.dp), enabled = station == null) {
-                    Icon(TonaloIcons.Next, stringResource(R.string.cd_next), Modifier.size(30.dp), tint = Color.White)
+                    Icon(TonaloIcons.Next, stringResource(R.string.cd_next), Modifier.size(38.dp), tint = Color.White)
                 }
                 PlainButton(
                     onClick = { player.cycleRepeat() },
@@ -564,43 +571,31 @@ fun PlayerScreen(onClose: () -> Unit) {
                     textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
             }
 
-            // Lyrics, sleep timer, (device, DJ), queue
+            // Lyrics, sleep timer, device, DJ, queue: five symbols spread over the width, like the iPhone
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 PlainButton(onClick = { nav.open("lyrics") }, Modifier.size(48.dp).offset(x = (-14).dp), enabled = song != null) {
-                    Icon(TonaloGlyphs.Lyrics, stringResource(R.string.lyrics), Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.8f))
+                    Icon(TonaloGlyphs.Lyrics, stringResource(R.string.lyrics), Modifier.size(24.dp), tint = Color.White.copy(alpha = 0.8f))
                 }
                 Spacer(Modifier.weight(1f))
                 SleepButton(sleep) { sleepDialog = true }
                 Spacer(Modifier.weight(1f))
                 val ownTv by TvLink.ownTv.collectAsState()
-                when {
-                    state.tvName != null -> {
-                        PlainButton(onClick = { player.continueHere() }, Modifier.height(48.dp).padding(horizontal = 8.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.PhoneAndroid, null, Modifier.size(18.dp), tint = Color.White); Spacer(Modifier.size(6.dp))
-                                Text(stringResource(if (state.tvGuest) R.string.leave else R.string.play_here), color = Color.White, style = MaterialTheme.typography.labelLarge)
-                            }
-                        }
-                        Spacer(Modifier.weight(1f))
-                    }
-                    ownTv != null -> {
-                        PlainButton(onClick = { player.playOnTv() }, Modifier.height(48.dp).padding(horizontal = 8.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Tv, null, Modifier.size(18.dp), tint = Palette.accent); Spacer(Modifier.size(6.dp))
-                                Text(stringResource(R.string.play_on, ownTv!!.name), color = Palette.accent, style = MaterialTheme.typography.labelLarge)
-                            }
-                        }
-                        Spacer(Modifier.weight(1f))
-                    }
+                val onDevice = state.tvName != null
+                PlainButton(
+                    onClick = { when { onDevice -> player.continueHere(); ownTv != null -> player.playOnTv(); else -> nav.open("devices") } },
+                    Modifier.size(48.dp),
+                ) {
+                    Icon(TonaloGlyphs.Tv, stringResource(R.string.devices), Modifier.size(24.dp), tint = if (onDevice) Palette.accent else Color.White.copy(alpha = 0.8f))
                 }
-                if (djReady && state.tvName == null) {
+                Spacer(Modifier.weight(1f))
+                if (djReady && !onDevice) {
                     PlainButton(onClick = { nav.open("dj") }, Modifier.size(48.dp)) {
-                        Icon(Icons.Default.AutoAwesome, stringResource(R.string.dj), Modifier.size(20.dp), tint = if (djActive) Palette.accent else Color.White.copy(alpha = 0.8f))
+                        DJMark(Modifier.size(24.dp), if (djActive) Palette.accent else Color.White.copy(alpha = 0.8f))
                     }
                     Spacer(Modifier.weight(1f))
                 }
                 PlainButton(onClick = { nav.open("queue") }, Modifier.size(48.dp).offset(x = 14.dp), enabled = song != null) {
-                    Icon(TonaloGlyphs.Queue, stringResource(R.string.queue), Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.8f))
+                    Icon(TonaloGlyphs.Queue, stringResource(R.string.queue), Modifier.size(24.dp), tint = Color.White.copy(alpha = 0.8f))
                 }
             }
             Spacer(Modifier.height(12.dp))
