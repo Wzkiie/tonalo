@@ -66,8 +66,10 @@ import app.tonalo.android.data.Album
 import app.tonalo.android.data.Genre
 import app.tonalo.android.data.SearchBody
 import app.tonalo.android.tonalo
+import app.tonalo.android.playback.Playback
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Search like the iPhone's: title, the white field that stays at the top while scrolling, genre tiles until two
@@ -94,7 +96,18 @@ fun SearchScreen() {
     var focused by androidx.compose.runtime.remember { mutableStateOf(false) }
     // Songs that were found by searching and then played: shown while the field is empty, and ranked higher
     var searchPlays by androidx.compose.runtime.remember(account?.id) { mutableStateOf(SearchPlays.load(app, account?.id)) }
-    val suggestedTitle = stringResource(R.string.suggested_for_you)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val radioScope = androidx.compose.runtime.rememberCoroutineScope()
+    /** Tapping a song plays that song, then a radio of songs like it follows (the server's similar songs, as Last.fm / ListenBrainz know them) – not the list of results. */
+    fun playWithRadio(song: Song) {
+        radioScope.launch {
+            val ok = try {
+                Playback.service?.startRadio(context.getString(R.string.song_radio, song.title), seedId = song.id, first = song) ?: false
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { false }
+            // No service yet or no connection: at least the song itself
+            if (!ok) player.play(listOf(song), 0, context = song.title, contextId = "search")
+        }
+    }
     // Songs that fit what was listened to lately, shown while the field is empty. Nothing if the server knows no similar ones.
     val suggested by produceState<List<Song>>(emptyList(), account?.id, attempt) {
         if (!hasMusic) return@produceState
@@ -168,8 +181,7 @@ fun SearchScreen() {
                         if (song != null) {
                             SongRow(song, showCover = true) {
                                 searchPlays = SearchPlays.remember(app, account?.id, song)
-                                val songsOnly = searchPlays.mapNotNull { it.song }
-                                player.play(songsOnly, songsOnly.indexOfFirst { it.id == song.id }.coerceAtLeast(0), context = suggestedTitle, contextId = "search")
+                                playWithRadio(song)
                             }
                         } else if (artist != null) {
                             ListRow(artist.name, stringResource(R.string.artist), leading = {
@@ -186,7 +198,7 @@ fun SearchScreen() {
                         Text(stringResource(R.string.suggested_for_you), fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp))
                     }
                     items(suggested.size, key = { "suggested-" + suggested[it].id }) { i ->
-                        SongRow(suggested[i], showCover = true) { player.play(suggested, i, context = suggestedTitle, contextId = "search") }
+                        SongRow(suggested[i], showCover = true) { playWithRadio(suggested[i]) }
                     }
                 }
             } else {
@@ -217,7 +229,7 @@ fun SearchScreen() {
         }
         items(songs.size, key = { "s" + songs[it].id + it }) { i -> SongRow(songs[i], showCover = true) {
             searchPlays = SearchPlays.remember(app, account?.id, songs[i])
-            player.play(songs, i, context = text, contextId = "search")
+            playWithRadio(songs[i])
         } }
         items(albums, key = { "a" + it.id }) { a ->
             ListRow(a.name, listOfNotNull(stringResource(R.string.album), a.artist).joinToString(" • "), leading = {
