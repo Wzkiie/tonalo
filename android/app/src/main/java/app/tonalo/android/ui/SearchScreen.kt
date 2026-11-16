@@ -172,13 +172,11 @@ fun SearchScreen() {
                                 player.play(songsOnly, songsOnly.indexOfFirst { it.id == song.id }.coerceAtLeast(0), context = suggestedTitle, contextId = "search")
                             }
                         } else if (artist != null) {
-                            Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                                ItemRow(artist.name, stringResource(R.string.artist), onClick = {
-                                    searchPlays = SearchPlays.remember(app, account?.id, artist)
-                                    nav.open(artistRoute(artist.id))
-                                }) {
-                                    FillCover(artist.coverArt ?: "ar-${artist.id}", Modifier.size(52.dp), 26.dp, Icons.Default.Person)
-                                }
+                            ListRow(artist.name, stringResource(R.string.artist), leading = {
+                                FillCover(artist.coverArt ?: "ar-${artist.id}", Modifier.size(48.dp), 24.dp, Icons.Default.Person)
+                            }) {
+                                searchPlays = SearchPlays.remember(app, account?.id, artist)
+                                nav.open(artistRoute(artist.id))
                             }
                         }
                     }
@@ -209,13 +207,12 @@ fun SearchScreen() {
             }
         }
         items(artists, key = { "r" + it.id }) { a ->
-            Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                ItemRow(a.name, stringResource(R.string.artist), onClick = {
-                    searchPlays = SearchPlays.remember(app, account?.id, a)
-                    nav.open(artistRoute(a.id))
-                }) {
-                    FillCover(a.coverArt ?: "ar-${a.id}", Modifier.size(52.dp), 26.dp, Icons.Default.Person)
-                }
+            // Same row as the songs, so covers and texts line up
+            ListRow(a.name, stringResource(R.string.artist), leading = {
+                FillCover(a.coverArt ?: "ar-${a.id}", Modifier.size(48.dp), 24.dp, Icons.Default.Person)
+            }) {
+                searchPlays = SearchPlays.remember(app, account?.id, a)
+                nav.open(artistRoute(a.id))
             }
         }
         items(songs.size, key = { "s" + songs[it].id + it }) { i -> SongRow(songs[i], showCover = true) {
@@ -223,11 +220,9 @@ fun SearchScreen() {
             player.play(songs, i, context = text, contextId = "search")
         } }
         items(albums, key = { "a" + it.id }) { a ->
-            Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                ItemRow(a.name, listOfNotNull(stringResource(R.string.album), a.artist).joinToString(" • "), onClick = { nav.open(albumRoute(a.id)) }) {
-                    FillCover(a.coverArt, Modifier.size(52.dp), 2.dp)
-                }
-            }
+            ListRow(a.name, listOfNotNull(stringResource(R.string.album), a.artist).joinToString(" • "), leading = {
+                FillCover(a.coverArt, Modifier.size(48.dp), 2.dp)
+            }) { nav.open(albumRoute(a.id)) }
         }
         // Each server shows its results as they arrive; audiobooks and podcasts follow the music
         val books = found

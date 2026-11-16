@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -617,7 +618,11 @@ fun PlaylistPicker(songs: List<Song>, onDone: () -> Unit) {
                 Box(Modifier.height(320.dp)) {
                     LoadView(loader) { lists ->
                         LazyColumn {
-                            item { ListRow(stringResource(R.string.new_playlist), showCover = false) { creating = true } }
+                            item { ListRow(stringResource(R.string.new_playlist), leading = {
+                                Box(Modifier.size(52.dp).clip(RoundedCornerShape(Palette.corner(4.dp))).background(Palette.elevated), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Add, null)
+                                }
+                            }) { creating = true } }
                             items(lists, key = { it.id }) { p ->
                                 ListRow(p.name, pluralString(R.plurals.song_count, p.songCount ?: 0), p.coverArt) { add(p) }
                             }

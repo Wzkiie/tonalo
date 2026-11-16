@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -49,6 +52,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -105,9 +109,12 @@ fun DetailPage(
     content: LazyListScope.() -> Unit,
 ) {
     val tint = rememberCoverColor(coverArt)
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    // Once the songs scroll up to the top, the clock and icons get a dark ground so they stay readable
+    val scrolled by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 500 } }
     Box(Modifier.fillMaxSize().background(Palette.canvas)) {
         val list: @Composable () -> Unit = {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
                 Box {
                     Box(Modifier.fillMaxWidth().height(560.dp).background(Brush.verticalGradient(listOf(tint ?: Color(0xFF333333), Palette.canvas))))
@@ -125,6 +132,10 @@ fun DetailPage(
         }
         }
         if (onRefresh != null) Refreshable(refreshing, onRefresh) { list() } else list()
+        if (scrolled) Box(
+            Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars)
+                .background(Brush.verticalGradient(listOf(Palette.canvas.copy(alpha = 0.98f), Palette.canvas.copy(alpha = 0.9f)))),
+        )
         RoundBackButton()
     }
 }
@@ -414,7 +425,8 @@ fun FavoritesScreen() {
             InfoText(pluralString(R.plurals.song_count, list.size))
         },
         actions = {
-            ActionRow(
+            // Nothing to play yet: no buttons
+            if (list.isNotEmpty()) ActionRow(
                 left = { DownloadButton(list) },
                 playing = playing,
                 play = { if (state.contextId == "favorites") player.toggle() else player.play(list, context = name, contextId = "favorites") },
