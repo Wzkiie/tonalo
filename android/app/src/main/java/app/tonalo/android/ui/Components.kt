@@ -315,9 +315,10 @@ fun RoundBackButton(modifier: Modifier = Modifier) {
 /** The round back button itself, gray and a little see-through. */
 @Composable
 fun GlassBackButton(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
-    val nav = LocalNav.current
+    // Only needed without an own action: the sign-in screen has no navigation yet, and its pages bring their own
+    val nav = if (onClick == null) LocalNav.current else null
     IconButton(
-        onClick = onClick ?: { nav.popBackStack(); Unit },
+        onClick = onClick ?: { nav?.popBackStack(); Unit },
         modifier = modifier.size(46.dp).clip(CircleShape).background(Color(0xFF2C2C2E).copy(alpha = 0.88f)),
     ) { Icon(Icons.AutoMirrored.Filled.ArrowBackIos, stringResource(R.string.cd_back), tint = Color.White, modifier = Modifier.padding(start = 6.dp).size(20.dp)) }
 }
