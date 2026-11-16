@@ -63,6 +63,10 @@
     <string name="play">Abspielen</string>
     <string name="shuffle">Zufällig</string>
     <string name="play_next">Als Nächstes abspielen</string>
+    <string name="plays_next">Kommt als Nächstes</string>
+    <string name="recent_searches">Letzte Suchanfragen</string>
+    <string name="clear_all">Alle löschen</string>
+    <string name="suggested_for_you">Für dich vorgeschlagen</string>
     <string name="add_to_queue">Zur Warteschlange hinzufügen</string>
     <string name="go_to_album">Zum Album</string>
     <string name="go_to_artist">Zum Künstler</string>

@@ -5,6 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -320,10 +325,16 @@ fun SongRow(
     number: Int? = null,
     padded: Boolean = true,
     extraMenu: (@Composable (close: () -> Unit) -> Unit)? = null,
+    /** Swipe right: play next. Swipe left: choose a playlist. Off where rows have their own gestures. */
+    swipe: Boolean = true,
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val player = LocalPlayer.current
+    val snackbar = LocalSnackbar.current
+    val scope = rememberCoroutineScope()
+    var pickPlaylist by remember { mutableStateOf(false) }
+    val playsNext = stringResource(R.string.plays_next)
     val state by player.state.collectAsState()
     val downloads by app.tonalo.android.downloads.Downloads.all.collectAsState()
     val account by context.tonalo.current.collectAsState()
@@ -331,8 +342,19 @@ fun SongRow(
     val starred = rememberStarred(song.id, song.starred)
     val download = account?.let { downloads[app.tonalo.android.downloads.Downloads.key(it.id, song.id)] }
     var menu by remember { mutableStateOf(false) }
+    val swipeState = rememberSongSwipe(swipe,
+        onRight = {
+            val playing = state.current != null
+            player.playNext(listOf(song))
+            if (playing) scope.launch { snackbar.showSnackbar(playsNext) }
+        },
+        onLeft = { pickPlaylist = true },
+    )
+    if (pickPlaylist) PlaylistPicker(listOf(song)) { pickPlaylist = false }
+    Box(Modifier.fillMaxWidth()) {
+    SongSwipeBackdrop(swipeState)
     Row(
-        Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = { menu = true })
+        Modifier.fillMaxWidth().songSwipe(swipeState).combinedClickable(onClick = onClick, onLongClick = { menu = true })
             .padding(horizontal = if (padded) 16.dp else 0.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -363,6 +385,78 @@ fun SongRow(
         // Says "this one plays right now" – in a playlist, an album and in the search alike
         if (isCurrent) PlayingBars(state.isPlaying, Modifier.size(width = 14.dp, height = 12.dp))
         SongMenu(song, extraMenu, open = menu, onOpen = { menu = it })
+    }
+    }
+}
+
+/**
+ * A song row you can swipe like in other music apps: right plays it next, left opens the playlists to add it to.
+ * The row follows the finger and shows the action in the gap; letting go far enough triggers it, otherwise it springs back.
+ * Only a sideways move counts, so the list still scrolls when the finger starts on a row.
+ */
+class SongSwipe(val enabled: Boolean, val onRight: () -> Unit, val onLeft: () -> Unit, val offset: androidx.compose.animation.core.Animatable<Float, androidx.compose.animation.core.AnimationVector1D>) {
+    var armed by mutableStateOf(false)
+}
+
+@Composable
+fun rememberSongSwipe(enabled: Boolean, onRight: () -> Unit, onLeft: () -> Unit): SongSwipe {
+    val offset = remember { androidx.compose.animation.core.Animatable(0f) }
+    val right by androidx.compose.runtime.rememberUpdatedState(onRight)
+    val left by androidx.compose.runtime.rememberUpdatedState(onLeft)
+    return remember(enabled) { SongSwipe(enabled, { right() }, { left() }, offset) }
+}
+
+private val SwipeTrigger = 72.dp
+private val SwipeMax = 130.dp
+
+@Composable
+fun Modifier.songSwipe(s: SongSwipe): Modifier {
+    if (!s.enabled) return this
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val trigger = with(density) { SwipeTrigger.toPx() }
+    val max = with(density) { SwipeMax.toPx() }
+    val scope = rememberCoroutineScope()
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    return this
+        .offset { androidx.compose.ui.unit.IntOffset(s.offset.value.toInt(), 0) }
+        .pointerInput(s) {
+            fun release(go: Boolean) {
+                val right = s.offset.value > 0
+                s.armed = false
+                scope.launch {
+                    s.offset.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 400f))
+                }
+                if (go) { if (right) s.onRight() else s.onLeft() }
+            }
+            detectHorizontalDragGestures(
+                onDragEnd = { release(kotlin.math.abs(s.offset.value) >= trigger) },
+                onDragCancel = { release(false) },
+            ) { change, drag ->
+                change.consume()
+                // A little resistance, so it feels like pulling something
+                scope.launch { s.offset.snapTo((s.offset.value + drag * 0.85f).coerceIn(-max, max)) }
+                val now = kotlin.math.abs(s.offset.value) >= trigger
+                if (now != s.armed) {
+                    s.armed = now
+                    if (now) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                }
+            }
+        }
+}
+
+/** What shows in the gap while a row is pulled aside. */
+@Composable
+fun BoxScope.SongSwipeBackdrop(s: SongSwipe) {
+    val pulled = s.offset.value
+    if (!s.enabled || pulled == 0f) return
+    Box(Modifier.matchParentSize().padding(horizontal = 24.dp), contentAlignment = if (pulled > 0) Alignment.CenterStart else Alignment.CenterEnd) {
+        Icon(
+            if (pulled > 0) Icons.Default.SkipNext else Icons.AutoMirrored.Filled.PlaylistAdd, null, tint = Palette.accent,
+            modifier = Modifier.size(24.dp).graphicsLayer {
+                val k = if (s.armed) 1.2f else 0.8f
+                scaleX = k; scaleY = k; alpha = (kotlin.math.abs(pulled) / 90f).coerceAtMost(1f)
+            },
+        )
     }
 }
 
