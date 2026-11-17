@@ -22,6 +22,12 @@ struct AppRelease: Identifiable {
 
 enum WhatsNew {
     static let releases: [AppRelease] = [
+        AppRelease(version: "1.5.2", items: [
+            .init(icon: "sparkles", color: .purple, title: "Smart Shuffle",
+                  text: "Shuffle a playlist and a new song that fits follows every two songs. Choose it at the shuffle button of a playlist, or press the shuffle button in the player again."),
+            .init(icon: "heart.text.square", color: .green, title: "Search knows your taste",
+                  text: "Favorites and songs you hear often come first. If nothing fits well you get the closest matches, and a tapped song continues with songs like it."),
+        ]),
         AppRelease(version: "1.5.1", items: [
             .init(icon: "waveform", color: .blue, title: "Now playing, at a glance",
                   text: "The song that plays right now moves with small bars, on the Home tiles and in every playlist, album and search.", visual: .playing),
@@ -35,8 +41,6 @@ enum WhatsNew {
                   text: "Swipe a song to the right to play it next, or to the left to add it to a playlist."),
             .init(icon: "magnifyingglass", color: .green, title: "Smarter search",
                   text: "Finds what you mean even with typos, searches Audiobookshelf too, and keeps your last five searches with covers. Swipe them like songs."),
-            .init(icon: "sparkles", color: .purple, title: "Smart Shuffle",
-                  text: "Shuffle a playlist and a new song that fits follows every two songs. Choose it at the shuffle button of a playlist, or press the shuffle button in the player again."),
         ]),
         AppRelease(version: "1.5.0", items: [
             .init(icon: "music.note.list", color: .purple, title: "DJ",

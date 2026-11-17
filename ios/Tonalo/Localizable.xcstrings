@@ -1230,6 +1230,26 @@
         }
       }
     },
+    "Search knows your taste" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Suche kennt deinen Geschmack"
+          }
+        }
+      }
+    },
+    "Favorites and songs you hear often come first. If nothing fits well you get the closest matches, and a tapped song continues with songs like it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten und oft gehörte Songs kommen zuerst. Passt nichts gut, siehst du die nächsten Treffer, und ein angetippter Song läuft mit ähnlichen Songs weiter."
+          }
+        }
+      }
+    },
     "Clear all" : {
       "localizations" : {
         "de" : {
