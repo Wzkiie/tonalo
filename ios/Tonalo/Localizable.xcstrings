@@ -1180,6 +1180,56 @@
         }
       }
     },
+    "Similar results" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ähnliche Ergebnisse"
+          }
+        }
+      }
+    },
+    "Smart Shuffle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Shuffle"
+          }
+        }
+      }
+    },
+    "No similar songs found, plain shuffle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine ähnlichen Songs gefunden, normale Zufallswiedergabe"
+          }
+        }
+      }
+    },
+    "Added by Smart Shuffle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von Smart Shuffle hinzugefügt"
+          }
+        }
+      }
+    },
+    "Shuffle a playlist and a new song that fits follows every two songs. Choose it at the shuffle button of a playlist, or press the shuffle button in the player again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mische eine Playlist, und nach jeweils zwei Songs folgt ein neuer, der passt. Wähle es am Zufalls-Knopf einer Playlist oder drücke den Zufalls-Knopf im Player noch einmal."
+          }
+        }
+      }
+    },
     "Clear all" : {
       "localizations" : {
         "de" : {

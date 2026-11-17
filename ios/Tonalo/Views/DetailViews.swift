@@ -202,7 +202,8 @@ struct PlaylistView: View {
                     } label: { Image(systemName: "ellipsis").font(.system(size: 22)).foregroundStyle(Color.subtle).frame(height: 30) }
                     PlayButtons(playing: playing,
                                 play: { playing ? app.player.toggle() : app.player.play(songs, context: context) },
-                                shuffle: { app.player.play(songs, shuffled: true, context: context) })
+                                shuffle: { app.player.play(songs, shuffled: true, context: context) },
+                                smartShuffle: { Task { await app.player.smartShuffle(songs, context: context) } })
                 }
             } content: {
                 LazyVStack(spacing: 10) {
@@ -292,7 +293,8 @@ struct FavoritesView: View {
                     .font(.system(size: 22)).foregroundStyle(Color.subtle)
                 PlayButtons(playing: playing,
                             play: { playing ? app.player.toggle() : app.player.play(list, context: context) },
-                            shuffle: { app.player.play(list, shuffled: true, context: context) })
+                            shuffle: { app.player.play(list, shuffled: true, context: context) },
+                            smartShuffle: { Task { await app.player.smartShuffle(list, context: context) } })
             }
         } content: {
             LoadState(loading: songs == nil && error == nil, error: error)

@@ -424,6 +424,8 @@ struct SearchView: View {
     /// A search sent with the search key before its results were in: kept once they are, and only if there are any.
     @State private var pendingQuery: String?
     @State private var confirmClear = false
+    /// Nothing fits well: the closest few are shown, under "Similar results".
+    @State private var similarOnly = false
 
     private var accountId: String { app.current?.id.uuidString ?? "none" }
     private var recentKey: String { "search.recent2." + accountId }
@@ -475,6 +477,7 @@ struct SearchView: View {
             guard q.count >= 2 else { result = nil; books = ABSSearchResults(); searching = false; return }
             searching = true
             didYouMean = nil
+            similarOnly = false
             try? await Task.sleep(for: .milliseconds(200)) // wait until typing pauses
             guard !Task.isCancelled else { return }
             // Each server shows its results as they arrive, the slower one doesn't hold up the other
@@ -497,7 +500,7 @@ struct SearchView: View {
             // Little found (a typo, half a name): ask again more loosely, then order by how well it fits
             if !Task.isCancelled, error == nil { await widen(q) }
             guard !Task.isCancelled else { return }
-            titleFirst(q)
+            await taste(q)
             searching = false
             if let p = pendingQuery, SmartMatch.normalize(p) == SmartMatch.normalize(q) {
                 pendingQuery = nil
@@ -614,11 +617,12 @@ struct SearchView: View {
         var moreBooks = ABSSearchResults()
         // The whole library is looked through here, not only what the server finds by the start of a word: a typo
         // anywhere in a name still finds it. Both lists come from the offline copy when it is there.
+        var poolArtists: [Artist] = [], poolAlbums: [Album] = []
         if let client = app.client {
-            let artists = (try? await client.artists()) ?? []
-            more.artist = artists.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
-            let albums = (try? await client.albumList("alphabeticalByName", size: 500)) ?? []
-            more.album = albums.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
+            poolArtists = (try? await client.artists()) ?? []
+            more.artist = poolArtists.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
+            poolAlbums = (try? await client.albumList("alphabeticalByName", size: 500)) ?? []
+            more.album = poolAlbums.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
         }
         await withTaskGroup(of: (SearchBody?, ABSSearchResults).self) { group in
             for v in variants {
@@ -656,6 +660,19 @@ struct SearchView: View {
         let nIds = Set(books.narrators)
         mergedBooks.narrators = Array(Set(books.narrators + moreBooks.narrators)).map { ($0, SmartMatch.score(query: q, text: $0)) }
             .filter { nIds.contains($0.0) || $0.1 >= 0.72 }.sorted { $0.1 > $1.1 }.map { $0.0 }
+        // Nothing fits well: the closest few are better than an empty page
+        let none = (merged.artist ?? []).isEmpty && (merged.album ?? []).isEmpty && (merged.song ?? []).isEmpty
+            && mergedBooks.items.isEmpty && mergedBooks.authors.isEmpty && mergedBooks.series.isEmpty && mergedBooks.narrators.isEmpty
+        if none, have == 0 {
+            let nearArtists = poolArtists.map { ($0, SmartMatch.score(query: q, text: $0.name)) }.filter { $0.1 >= 0.35 }
+                .sorted { $0.1 > $1.1 }.prefix(3).map(\.0)
+            let nearAlbums = poolAlbums.map { ($0, SmartMatch.score(query: q, text: $0.name)) }.filter { $0.1 >= 0.35 }
+                .sorted { $0.1 > $1.1 }.prefix(3).map(\.0)
+            if !nearArtists.isEmpty || !nearAlbums.isEmpty {
+                merged.artist = Array(nearArtists); merged.album = Array(nearAlbums)
+                similarOnly = true
+            }
+        }
         result = merged
         books = mergedBooks
         // Nothing at first, something close now: offer it
@@ -666,13 +683,40 @@ struct SearchView: View {
         didYouMean = best?.0
     }
 
-    /// Songs whose title fits what was typed come before songs that are only by a matching artist.
-    private func titleFirst(_ q: String) {
-        guard var r = result, let songs = r.song, songs.count > 1 else { return }
-        let hit = songs.filter { SmartMatch.score(query: q, text: $0.title) >= 1 }
-        guard !hit.isEmpty, hit.count < songs.count else { return }
-        let ids = Set(hit.map(\.id))
-        r.song = hit + songs.filter { !ids.contains($0.id) }
+    /// Puts what the person likes and knows further up, like the Android app: favorites, songs heard often, albums
+    /// and artists played lately, songs played from an earlier search. Favorites that fit are found even when the
+    /// server doesn't list them. Everything is ordered by how well it fits plus that little push.
+    private func taste(_ q: String) async {
+        guard var r = result else { return }
+        let fav = (try? await app.client?.starred()) ?? SearchBody()
+        guard !Task.isCancelled else { return }
+        let played = PlayHistory.dates(app.current?.id)
+        let searched = Set(recent.compactMap { $0.kind == .song ? $0.song?.id : nil })
+        let favSongs = Set((fav.song ?? []).map(\.id))
+        let favAlbums = Set((fav.album ?? []).map(\.id))
+        let favArtists = Set((fav.artist ?? []).map(\.id))
+
+        func order<T: Identifiable>(_ server: [T], _ pool: [T], limit: Int, base: (T) -> Double, boost: (T) -> Double) -> [T] where T.ID: Hashable {
+            let have = Set(server.map(\.id))
+            let extra = pool.filter { !have.contains($0.id) && base($0) >= 72 }
+            let scored = (server + extra).enumerated().map { (i, x) -> (Int, T, Double) in
+                var b = base(x)
+                if have.contains(x.id) { b = max(b, 55) }
+                return (i, x, b + boost(x))
+            }
+            return Array(scored.sorted { $0.2 != $1.2 ? $0.2 > $1.2 : $0.0 < $1.0 }.prefix(limit).map { $0.1 })
+        }
+        func heard(_ s: Song) -> Double { (s.playCount ?? 0) > 0 ? min(15, log(1 + Double(s.playCount ?? 0)) * 5) : 0 }
+
+        r.song = order(r.song ?? [], fav.song ?? [], limit: 40,
+                       base: { max(SmartMatch.score(query: q, text: $0.title), 0.95 * SmartMatch.score(query: q, text: "\($0.title) \($0.artist ?? "")")) * 100 },
+                       boost: { ($0.starred != nil || favSongs.contains($0.id) ? 12 : 0) + heard($0) + (searched.contains($0.id) ? 10 : 0) })
+        r.album = order(r.album ?? [], fav.album ?? [], limit: 20,
+                        base: { max(SmartMatch.score(query: q, text: $0.name), 0.95 * SmartMatch.score(query: q, text: "\($0.name) \($0.artist ?? "")")) * 100 },
+                        boost: { ($0.starred != nil || favAlbums.contains($0.id) ? 12 : 0) + (played["a" + $0.id] != nil ? 8 : 0) })
+        r.artist = order(r.artist ?? [], fav.artist ?? [], limit: 10,
+                         base: { SmartMatch.score(query: q, text: $0.name) * 100 },
+                         boost: { ($0.starred != nil || favArtists.contains($0.id) ? 12 : 0) + (played["r" + $0.id] != nil ? 8 : 0) })
         result = r
     }
 
@@ -845,6 +889,16 @@ struct SearchView: View {
         Text(key).font(.system(size: 17, weight: .bold)).padding(.top, 10)
     }
 
+    @ViewBuilder private func artistRow(_ a: Artist) -> some View {
+        NavigationLink(value: Route.artist(a.id)) {
+            ItemRow(title: a.name, subtitle: String(localized: "Artist")) {
+                CoverView(id: a.coverArt ?? a.id, size: 120, round: true).frame(width: 52)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .artist, key: a.id, title: a.name, cover: a.coverArt ?? a.id)) })
+    }
+
     @ViewBuilder private var results: some View {
         LazyVStack(alignment: .leading, spacing: 12) {
             if let error { LoadState(loading: false, error: error) { attempt += 1 } }
@@ -856,16 +910,26 @@ struct SearchView: View {
             }
             let r = result ?? SearchBody()
             Group {
-                if !(r.artist ?? []).isEmpty { sectionTitle("Artists") }
-                ForEach(r.artist ?? []) { a in
-                    NavigationLink(value: Route.artist(a.id)) {
-                        ItemRow(title: a.name, subtitle: String(localized: "Artist")) {
-                            CoverView(id: a.coverArt ?? a.id, size: 120, round: true).frame(width: 52)
+                if similarOnly { sectionTitle("Similar results") }
+                let typed = SmartMatch.normalize(query)
+                let exactArtists = (r.artist ?? []).filter { SmartMatch.normalize($0.name) == typed }
+                let otherArtists = (r.artist ?? []).filter { SmartMatch.normalize($0.name) != typed }
+                ForEach(exactArtists) { artistRow($0) }
+                if !(r.song ?? []).isEmpty { sectionTitle("Songs") }
+                let songs = r.song ?? []
+                ForEach(Array(songs.enumerated()), id: \.element.id) { i, s in
+                    SongRow(song: s, showCover: true) {
+                        remember(songItem(s))
+                        // The song plays, then songs like it follow: not the rest of the results
+                        Task {
+                            if !(await app.player.radio.start(String(localized: "\(s.title) radio"), seedId: s.id, first: s)) {
+                                app.player.play([s], from: 0, context: .init(kind: .search, name: query))
+                            }
                         }
                     }
-                    .buttonStyle(.plain)
-                    .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .artist, key: a.id, title: a.name, cover: a.coverArt ?? a.id)) })
                 }
+                if !otherArtists.isEmpty { sectionTitle("Artists") }
+                ForEach(otherArtists) { artistRow($0) }
                 if !books.authors.isEmpty { sectionTitle("Authors") }
                 ForEach(books.authors) { a in
                     NavigationLink(value: Route.bookAuthor(id: a.id, name: a.name)) {
@@ -913,14 +977,6 @@ struct SearchView: View {
                     }
                     .buttonStyle(.plain)
                     .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .narrator, key: n, title: n)) })
-                }
-                if !(r.song ?? []).isEmpty { sectionTitle("Songs") }
-                let songs = r.song ?? []
-                ForEach(Array(songs.enumerated()), id: \.element.id) { i, s in
-                    SongRow(song: s, showCover: true) {
-                        remember(songItem(s))
-                        app.player.play(songs, from: i, context: .init(kind: .search, name: query))
-                    }
                 }
                 let nothing = (r.artist ?? []).isEmpty && (r.album ?? []).isEmpty && songs.isEmpty && books.items.isEmpty
                     && books.authors.isEmpty && books.series.isEmpty && books.narrators.isEmpty

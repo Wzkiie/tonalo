@@ -89,6 +89,10 @@ struct SongRow: View {
                             Image(systemName: "arrow.down.circle").font(.system(size: 12)).foregroundStyle(Color.subtle)
                         }
                     }
+                    if app.player.smartIds.contains(song.id) {
+                        Image(systemName: "sparkles").font(.system(size: 11)).foregroundStyle(Color.accent)
+                            .accessibilityLabel("Added by Smart Shuffle")
+                    }
                     if let artist = song.artist {
                         Text(artist).font(.system(size: 13)).foregroundStyle(Color.subtle).lineLimit(1)
                     }
@@ -281,11 +285,21 @@ struct PlayButtons: View {
     var playing = false
     let play: () -> Void
     let shuffle: () -> Void
+    /// Offered next to plain shuffle when there is one: a choice instead of a single button.
+    var smartShuffle: (() -> Void)?
     var body: some View {
         HStack(spacing: 20) {
             Spacer()
-            Button(action: shuffle) { Image(systemName: "shuffle").font(.system(size: 22)).foregroundStyle(Color.subtle) }
-                .accessibilityLabel("Shuffle")
+            if let smartShuffle {
+                Menu {
+                    Button(action: shuffle) { Label("Shuffle", systemImage: "shuffle") }
+                    Button(action: smartShuffle) { Label("Smart Shuffle", systemImage: "sparkles") }
+                } label: { Image(systemName: "shuffle").font(.system(size: 22)).foregroundStyle(Color.subtle) }
+                    .accessibilityLabel("Shuffle")
+            } else {
+                Button(action: shuffle) { Image(systemName: "shuffle").font(.system(size: 22)).foregroundStyle(Color.subtle) }
+                    .accessibilityLabel("Shuffle")
+            }
             PlayCircle(playing: playing, action: play)
         }
     }

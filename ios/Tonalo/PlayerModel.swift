@@ -181,6 +181,7 @@ final class PlayerModel {
         PlayHistory.note(context, account: app?.currentId)
         if tvName != nil { tv?.play(songs, from: start, shuffled: shuffled, context: context); return }
         self.context = context
+        smartIds = []; smart = false
         if shuffled {
             original = songs
             queue = songs.shuffled()
@@ -193,6 +194,71 @@ final class PlayerModel {
         shuffle = shuffled
         errorStreak = 0
         load(autoplay: true)
+    }
+
+    /// Songs the server added between the playlist's own in a Smart Shuffle (shown with a mark in the queue).
+    private(set) var smartIds: Set<String> = []
+    /// Shuffle that lets a song from outside follow every two songs.
+    private(set) var smart = false
+
+    /// Two songs of the list, then one that isn't in it. The extra songs are the server's "similar songs" of a few songs
+    /// of the list; `known` are songs that must not come again. Nothing similar found: nil.
+    private func smartMix(_ songs: [Song], known: Set<String>) async -> (mixed: [Song], extra: [Song])? {
+        guard let client = app?.client, !tvGuest, !songs.isEmpty else { return nil }
+        var extra: [Song] = []
+        var seen = known.union(songs.map(\.id))
+        for seed in songs.shuffled().prefix(6) {
+            for s in await client.similarSongs(seed.id) where seen.insert(s.id).inserted { extra.append(s) }
+            if extra.count >= songs.count / 2 + 2 { break }
+        }
+        guard extra.count >= 2 else { return nil }
+        extra.shuffle()
+        var mixed: [Song] = []
+        var rest = songs.shuffled()[...]
+        var more = extra[...]
+        while !rest.isEmpty {
+            for _ in 0..<2 { if let n = rest.popFirst() { mixed.append(n) } }
+            if !rest.isEmpty || mixed.count < 3, let e = more.popFirst() { mixed.append(e) }
+        }
+        return (mixed, extra)
+    }
+
+    /// Shuffle a playlist with Smart Shuffle. Without similar songs it is a plain shuffle, and says so.
+    func smartShuffle(_ songs: [Song], context: Context? = nil) async {
+        guard !songs.isEmpty else { return }
+        guard let m = await smartMix(songs, known: []) else {
+            app?.notify(String(localized: "No similar songs found, plain shuffle"))
+            play(songs, shuffled: true, context: context)
+            return
+        }
+        play(m.mixed, context: context)
+        guard tvName == nil, !tvGuest else { return }
+        original = songs
+        shuffle = true
+        smart = true
+        smartIds = Set(m.extra.map(\.id))
+        persist()
+    }
+
+    /// The shuffle button in the player: off, shuffle, Smart Shuffle, off again.
+    func cycleShuffle() async {
+        if tvGuest || tvName != nil || station != nil { toggleShuffle(); return }
+        guard current != nil else { return }
+        if !shuffle { toggleShuffle(); return }
+        if smart { toggleShuffle(); return }
+        // Shuffle is on: mix songs from outside into what is still to come
+        let head = Array(queue[0...index])
+        let tail = Array(queue[(index + 1)...])
+        guard let m = await smartMix(tail, known: Set(queue.map(\.id))) else {
+            app?.notify(String(localized: "No similar songs found, plain shuffle"))
+            toggleShuffle() // off: back to the order it had
+            return
+        }
+        queue = head + m.mixed
+        smart = true
+        smartIds = Set(m.extra.map(\.id))
+        persist()
+        updateNowPlaying()
     }
 
     /// Puts songs in the queue without starting playback.
@@ -392,6 +458,7 @@ final class PlayerModel {
                 index = queue.firstIndex { $0.id == cur.id } ?? 0
             }
             self.original = nil
+            smart = false; smartIds = []
         } else {
             original = queue
             var rest = queue; rest.remove(at: index)
