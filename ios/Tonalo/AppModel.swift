@@ -453,6 +453,7 @@ final class AppModel {
         DownloadStore.deleteAccount(id)
         PlayHistory.forget(id)
         RecentStore.forget(account: id)
+        SearchPool.forget(id)
         LibraryCache.deleteAccount(id)
         librarySync.forget(id)
         ImageLoader.clearDisk()

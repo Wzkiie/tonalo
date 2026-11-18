@@ -391,6 +391,31 @@ struct MixCard: View {
 
 // MARK: - Search
 
+/// The artists, albums and favorites the search compares against, kept for a few minutes per account (in memory only),
+/// so not every pause in typing fetches them again.
+@MainActor enum SearchPool {
+    private static var libraries: [UUID: (at: Date, artists: [Artist], albums: [Album])] = [:]
+    private static var favs: [UUID: (at: Date, body: SearchBody)] = [:]
+
+    static func library(_ client: SubsonicClient, _ account: UUID) async -> (artists: [Artist], albums: [Album]) {
+        if let c = libraries[account], Date().timeIntervalSince(c.at) < 600 { return (c.artists, c.albums) }
+        async let artists = try? await client.artists()
+        async let albums = try? await client.albumList("alphabeticalByName", size: 500)
+        let (a, b) = await (artists ?? [], albums ?? [])
+        if !a.isEmpty || !b.isEmpty { libraries[account] = (Date(), a, b) }
+        return (a, b)
+    }
+
+    static func favorites(_ client: SubsonicClient, _ account: UUID) async -> SearchBody {
+        if let c = favs[account], Date().timeIntervalSince(c.at) < 180 { return c.body }
+        let body = (try? await client.starred()) ?? SearchBody()
+        favs[account] = (Date(), body)
+        return body
+    }
+
+    static func forget(_ account: UUID) { libraries[account] = nil; favs[account] = nil }
+}
+
 /// What the search suggested last, per account, in memory only.
 @MainActor enum SuggestionCache { static var songs: [UUID: (list: [Song], at: Date)] = [:] }
 
@@ -551,15 +576,20 @@ struct SearchView: View {
         let account = app.current?.id
         if attempt == 0, let account, let c = SuggestionCache.songs[account], Date().timeIntervalSince(c.at) < 900 { suggested = c.list; return }
         guard let client = app.client, let albums = try? await client.albumList("recent", size: 4), !albums.isEmpty else { return }
-        var heard = Set<String>()
-        var seeds: [Song] = []
-        for a in albums.prefix(3) {
-            guard let songs = (try? await client.album(a.id))?.song, let seed = songs.randomElement() else { continue }
-            songs.forEach { heard.insert($0.id) }
-            seeds.append(seed)
+        // Albums and similar songs for the three albums all at once
+        let per = await withTaskGroup(of: (Int, [String], [Song]).self) { group in
+            for (i, a) in albums.prefix(3).enumerated() {
+                group.addTask {
+                    guard let songs = (try? await client.album(a.id))?.song, let seed = songs.randomElement() else { return (i, [], []) }
+                    return (i, songs.map(\.id), await client.similarSongs(seed.id))
+                }
+            }
+            var out: [(Int, [String], [Song])] = []
+            for await x in group { out.append(x) }
+            return out.sorted { $0.0 < $1.0 }
         }
-        var lists: [[Song]] = []
-        for seed in seeds { lists.append(await client.similarSongs(seed.id)) }
+        let heard = Set(per.flatMap(\.1))
+        let lists = per.map(\.2).filter { !$0.isEmpty }
         // One from each list in turn, so it isn't all about the newest album
         var out: [Song] = []
         var seen = heard
@@ -618,11 +648,14 @@ struct SearchView: View {
         // The whole library is looked through here, not only what the server finds by the start of a word: a typo
         // anywhere in a name still finds it. Both lists come from the offline copy when it is there.
         var poolArtists: [Artist] = [], poolAlbums: [Album] = []
-        if let client = app.client {
-            poolArtists = (try? await client.artists()) ?? []
-            more.artist = poolArtists.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
-            poolAlbums = (try? await client.albumList("alphabeticalByName", size: 500)) ?? []
-            more.album = poolAlbums.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
+        var artistScores: [Double] = [], albumScores: [Double] = []
+        if let client = app.client, let account = app.current?.id {
+            let lib = await SearchPool.library(client, account)
+            poolArtists = lib.artists; poolAlbums = lib.albums
+            (artistScores, albumScores) = await Self.scoreLibrary(SmartMatch.prepare(q), poolArtists, poolAlbums)
+            guard !Task.isCancelled, artistScores.count == poolArtists.count else { return }
+            more.artist = zip(poolArtists, artistScores).filter { $0.1 >= 0.72 }.map(\.0)
+            more.album = zip(poolAlbums, albumScores).filter { $0.1 >= 0.72 }.map(\.0)
         }
         await withTaskGroup(of: (SearchBody?, ABSSearchResults).self) { group in
             for v in variants {
@@ -664,9 +697,9 @@ struct SearchView: View {
         let none = (merged.artist ?? []).isEmpty && (merged.album ?? []).isEmpty && (merged.song ?? []).isEmpty
             && mergedBooks.items.isEmpty && mergedBooks.authors.isEmpty && mergedBooks.series.isEmpty && mergedBooks.narrators.isEmpty
         if none, have == 0 {
-            let nearArtists = poolArtists.map { ($0, SmartMatch.score(query: q, text: $0.name)) }.filter { $0.1 >= 0.35 }
+            let nearArtists = Array(zip(poolArtists, artistScores)).filter { $0.1 >= 0.35 }
                 .sorted { $0.1 > $1.1 }.prefix(3).map(\.0)
-            let nearAlbums = poolAlbums.map { ($0, SmartMatch.score(query: q, text: $0.name)) }.filter { $0.1 >= 0.35 }
+            let nearAlbums = Array(zip(poolAlbums, albumScores)).filter { $0.1 >= 0.35 }
                 .sorted { $0.1 > $1.1 }.prefix(3).map(\.0)
             if !nearArtists.isEmpty || !nearAlbums.isEmpty {
                 merged.artist = Array(nearArtists); merged.album = Array(nearAlbums)
@@ -687,11 +720,20 @@ struct SearchView: View {
     /// and artists played lately, songs played from an earlier search. Favorites that fit are found even when the
     /// server doesn't list them. Everything is ordered by how well it fits plus that little push.
     private func taste(_ q: String) async {
-        guard var r = result else { return }
-        let fav = (try? await app.client?.starred()) ?? SearchBody()
+        guard let r = result, let client = app.client, let account = app.current?.id else { return }
+        let fav = await SearchPool.favorites(client, account)
         guard !Task.isCancelled else { return }
-        let played = PlayHistory.dates(app.current?.id)
+        let played = PlayHistory.dates(account)
         let searched = Set(recent.compactMap { $0.kind == .song ? $0.song?.id : nil })
+        let ranked = await Self.rankTaste(SmartMatch.prepare(q), r, fav, played, searched)
+        guard !Task.isCancelled else { return }
+        result = ranked
+    }
+
+    /// The comparing runs off the main thread: with many favorites it would stall the keyboard.
+    private nonisolated static func rankTaste(_ q: SmartMatch.Prepared, _ result: SearchBody, _ fav: SearchBody,
+                                              _ played: [String: Double], _ searched: Set<String>) async -> SearchBody {
+        var r = result
         let favSongs = Set((fav.song ?? []).map(\.id))
         let favAlbums = Set((fav.album ?? []).map(\.id))
         let favArtists = Set((fav.artist ?? []).map(\.id))
@@ -709,15 +751,27 @@ struct SearchView: View {
         func heard(_ s: Song) -> Double { (s.playCount ?? 0) > 0 ? min(15, log(1 + Double(s.playCount ?? 0)) * 5) : 0 }
 
         r.song = order(r.song ?? [], fav.song ?? [], limit: 40,
-                       base: { max(SmartMatch.score(query: q, text: $0.title), 0.95 * SmartMatch.score(query: q, text: "\($0.title) \($0.artist ?? "")")) * 100 },
+                       base: { max(SmartMatch.score(q, text: $0.title), 0.95 * SmartMatch.score(q, text: "\($0.title) \($0.artist ?? "")")) * 100 },
                        boost: { ($0.starred != nil || favSongs.contains($0.id) ? 12 : 0) + heard($0) + (searched.contains($0.id) ? 10 : 0) })
         r.album = order(r.album ?? [], fav.album ?? [], limit: 20,
-                        base: { max(SmartMatch.score(query: q, text: $0.name), 0.95 * SmartMatch.score(query: q, text: "\($0.name) \($0.artist ?? "")")) * 100 },
+                        base: { max(SmartMatch.score(q, text: $0.name), 0.95 * SmartMatch.score(q, text: "\($0.name) \($0.artist ?? "")")) * 100 },
                         boost: { ($0.starred != nil || favAlbums.contains($0.id) ? 12 : 0) + (played["a" + $0.id] != nil ? 8 : 0) })
         r.artist = order(r.artist ?? [], fav.artist ?? [], limit: 10,
-                         base: { SmartMatch.score(query: q, text: $0.name) * 100 },
+                         base: { SmartMatch.score(q, text: $0.name) * 100 },
                          boost: { ($0.starred != nil || favArtists.contains($0.id) ? 12 : 0) + (played["r" + $0.id] != nil ? 8 : 0) })
-        result = r
+        return r
+    }
+
+    /// Scores of every artist and album of the library for what was typed, computed off the main thread.
+    private nonisolated static func scoreLibrary(_ q: SmartMatch.Prepared, _ artists: [Artist], _ albums: [Album]) async -> ([Double], [Double]) {
+        var a: [Double] = []; a.reserveCapacity(artists.count)
+        for (i, x) in artists.enumerated() {
+            if i % 500 == 0, Task.isCancelled { return ([], []) }
+            a.append(SmartMatch.score(q, text: x.name))
+        }
+        var b: [Double] = []; b.reserveCapacity(albums.count)
+        for x in albums { b.append(SmartMatch.score(q, text: x.name)) }
+        return (a, b)
     }
 
     // MARK: Recent

@@ -386,7 +386,7 @@ struct NowPlayingView: View {
     private var controls: some View {
         let p = app.player
         return HStack {
-            Button { Task { await p.cycleShuffle() } } label: { toggleIcon("shuffle", on: p.shuffle, badge: p.smart ? "sparkles" : nil) }
+            Button { Task { await p.cycleShuffle() } } label: { toggleIcon("shuffle", on: p.shuffle, badge: p.smart && p.shuffle ? "sparkles" : nil) }
                 .accessibilityLabel(p.smart ? "Smart Shuffle" : "Shuffle")
             Spacer()
             Button { p.previous() } label: { Image(systemName: "backward.end.fill").font(.system(size: 30)) }
