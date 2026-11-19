@@ -146,13 +146,43 @@ var UI = (function () {
     });
   }
 
+  // Angeheftete Playlists: gemerkt wird der Name (mit Besitzer), nicht die Nummer. Baut der Server eine Playlist
+  // jeden Tag neu, bekommt sie eine neue Nummer, behält aber ihren Namen und damit ihren Platz oben.
+  var Pins = {
+    key: function (p) { return SmartSearch.normalize(p.name) + '|' + (p.owner || ''); },
+    list: function () { var l = U.ustore.get('pins', []); return Array.isArray(l) ? l : []; },
+    has: function (p) { return Pins.list().indexOf(Pins.key(p)) >= 0; },
+    toggle: function (p) {
+      var k = Pins.key(p), l = Pins.list();
+      var i = l.indexOf(k);
+      if (i >= 0) l.splice(i, 1); else l.unshift(k);
+      U.ustore.set('pins', l);
+    },
+    // Angeheftete zuerst (neueste Anheftung oben), der Rest bleibt in der Reihenfolge des Servers
+    sort: function (pls) {
+      var l = Pins.list(), top = [], rest = [];
+      l.forEach(function (k) { pls.forEach(function (p) { if (Pins.key(p) === k && top.indexOf(p) < 0) top.push(p); }); });
+      pls.forEach(function (p) { if (top.indexOf(p) < 0) rest.push(p); });
+      return top.concat(rest);
+    }
+  };
+
   function playlistCard(p) {
-    return card({
+    var el = card({
       coverId: p.coverArt || p.id,
       title: p.name,
-      sub: (p.owner ? T('Von {name}', { name: p.owner }) + ' • ' : '') + T.n(p.songCount || 0, '{n} Song', '{n} Songs'),
-      onClick: function () { App.go('playlist', { id: p.id }); }
+      sub: (Pins.has(p) ? T('Angeheftet') + ' • ' : '') + (p.owner ? T('Von {name}', { name: p.owner }) + ' • ' : '') + T.n(p.songCount || 0, '{n} Song', '{n} Songs'),
+      // Die Kopfzeile der Seite kommt aus der Liste und steht sofort da, die Songs laden danach
+      onClick: function () { App.go('playlist', { id: p.id, name: p.name, coverArt: p.coverArt, owner: p.owner, count: p.songCount, pub: p.public }); },
+      onOptions: function () { Menus.playlist(p); }
     });
+    // Pin-Knopf auf der Karte: am PC immer sichtbar, am Fernseher bei Fokus (dort geht es auch über die Playlist-Seite)
+    var pin = h('span.card-pin' + (Pins.has(p) ? '.on' : ''), { title: Pins.has(p) ? T('Anheften aufheben') : T('Oben anheften'), onclick: function (e) {
+      e.stopPropagation(); e.preventDefault();
+      Pins.toggle(p); App.reload();
+    } }, icon('pin'));
+    el.appendChild(pin);
+    return el;
   }
 
   // Bild für Radiosender und Endlos-Radios: Farbverlauf (fest pro Name) mit Symbol, als Bild-Adresse
@@ -281,7 +311,7 @@ var UI = (function () {
         h('span.t-main', null,
           opts.showCover ? cover(s.coverArt || s.albumId, 80, 'tiny') : null,
           h('span.t-text', null,
-            h('span.t-title.ellipsis', { text: s.title }),
+            h('span.t-title.ellipsis', null, Player.isSmart(s.id) ? Icon.el('sparkle', 22, 'smart-mark') : null, h('span', { text: s.title })),
             opts.hideArtist ? null : h('span.t-artist.ellipsis', { text: s.artist || '' })
           )
         ),
@@ -326,6 +356,14 @@ var UI = (function () {
     opts = opts || {};
     var layer = U.$('#modal-layer');
     var prevFocus = Nav.current();
+    // Ein Klick neben das Fenster schließt es (Maus am PC), wie die Zurück-Taste
+    if (!layer.dataset.outside) {
+      layer.dataset.outside = '1';
+      // Nur wenn Drücken und Loslassen neben dem Fenster liegen (Text im Eingabefeld markieren und daneben loslassen schließt nicht)
+      var downOutside = false;
+      layer.addEventListener('mousedown', function (e) { downOutside = e.target === layer; });
+      layer.addEventListener('click', function (e) { if (e.target === layer && downOutside) closeModal(); downOutside = false; });
+    }
     var box = h('div.modal');
     if (opts.head) {
       box.appendChild(h('div.modal-head', null,
@@ -391,7 +429,7 @@ var UI = (function () {
 
   return {
     icon: icon, cover: cover, coverColor: coverColor, heroBg: heroBg, rgb: rgb,
-    card: card, albumCard: albumCard, artistCard: artistCard, playlistCard: playlistCard, shortcut: shortcut,
+    card: card, albumCard: albumCard, artistCard: artistCard, playlistCard: playlistCard, Pins: Pins, shortcut: shortcut,
     row: row, grid: grid, staticGrid: staticGrid, trackList: trackList, refreshPlaying: refreshPlaying,
     button: button, chip: chip, iconBtn: iconBtn, playBig: playBig, setIcon: setIcon, header: header, loading: loading,
     modal: modal, closeModal: closeModal, modalOpen: modalOpen, confirm: confirm, prompt: prompt,
@@ -511,5 +549,17 @@ var Menus = (function () {
     }).catch(App.error);
   }
 
-  return { song: song, album: album, artist: artist, radio: radio, artistShuffle: artistShuffle, addToPlaylist: addToPlaylist, ownPlaylist: ownPlaylist };
+  // Menü einer Playlist in der Liste: abspielen, zufällig, Smart Shuffle, anheften
+  function playlistMenu(p) {
+    function withSongs(fn) { API.playlist(p.id).then(function (pl) { fn(U.asArray(pl.entry)); }).catch(App.error); }
+    UI.modal(null, [
+      { icon: 'play', label: T('Abspielen'), action: function () { withSongs(function (s) { Player.playList(s, 0); }); } },
+      { icon: 'shuffle', label: T('Zufallswiedergabe'), action: function () { withSongs(function (s) { Player.playList(s, 0, { shuffle: true }); }); } },
+      { icon: 'sparkle', label: T('Smart Shuffle'), action: function () { withSongs(function (s) { Player.playList(s, 0, { shuffle: true, smart: true }); }); } },
+      { icon: 'addQueue', label: T('Zur Warteschlange hinzufügen'), action: function () { withSongs(Player.enqueue); } },
+      { icon: 'pin', label: UI.Pins.has(p) ? T('Anheften aufheben') : T('Oben anheften'), action: function () { UI.Pins.toggle(p); App.reload(); } }
+    ], { head: { coverId: p.coverArt || p.id, title: p.name, sub: T('Playlist') } });
+  }
+
+  return { song: song, album: album, artist: artist, radio: radio, artistShuffle: artistShuffle, addToPlaylist: addToPlaylist, ownPlaylist: ownPlaylist, playlist: playlistMenu };
 })();

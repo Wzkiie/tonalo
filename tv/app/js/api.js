@@ -206,8 +206,9 @@ var API = (function () {
         return { artists: A(s.artist), albums: A(s.album), songs: A(s.song) };
       });
     },
-    search: function (q) {
-      return call('search3', { query: q, artistCount: 20, albumCount: 40, songCount: 60 }).then(function (r) {
+    // loose: lockere Zusatzfragen der Suche brauchen weniger Treffer
+    search: function (q, loose) {
+      return call('search3', loose ? { query: q, artistCount: 8, albumCount: 12, songCount: 24 } : { query: q, artistCount: 20, albumCount: 40, songCount: 60 }).then(function (r) {
         var s = r.searchResult3 || {};
         return { artists: A(s.artist), albums: A(s.album), songs: A(s.song) };
       });

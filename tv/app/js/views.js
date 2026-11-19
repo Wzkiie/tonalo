@@ -240,13 +240,43 @@ var Views = (function () {
   function playlists() {
     var el = view();
     el.appendChild(UI.header(T('Playlists')));
-    async(el, API.playlists(), function (pls) { el.appendChild(UI.staticGrid(pls, UI.playlistCard)); });
+    async(el, API.playlists(), function (pls) { el.appendChild(UI.staticGrid(UI.Pins.sort(pls), UI.playlistCard)); });
     return { el: el };
+  }
+
+  // Anheften direkt auf der Playlist-Seite (am Fernseher wie am PC gleich erreichbar)
+  function pinBtn(pl) {
+    var btn = UI.iconBtn('pin', function () {
+      UI.Pins.toggle(pl);
+      var on = UI.Pins.has(pl);
+      btn.classList.toggle('on', on);
+      btn.title = on ? T('Anheften aufheben') : T('Oben anheften');
+      U.toast(on ? T('Angeheftet') : T('Anheften aufheben'));
+    }, UI.Pins.has(pl) ? T('Anheften aufheben') : T('Oben anheften'), UI.Pins.has(pl) ? 'on' : null);
+    return btn;
+  }
+
+  // Neu gebaute Playlists brauchen manchmal einen zweiten Anlauf: erst still nachfragen, dann erst einen Fehler zeigen
+  function withRetry(fn, tries) {
+    return fn().catch(function (e) {
+      if (tries <= 0) throw e;
+      return new Promise(function (r) { setTimeout(r, 1000); }).then(function () { return withRetry(fn, tries - 1); });
+    });
   }
 
   function playlist(params) {
     var el = view('detail');
-    async(el, API.playlist(params.id), function (pl) {
+    // Titel, Besitzer und Anzahl kennt die Liste schon: die Seite steht sofort, nur die Songs laden nach
+    var stub = null;
+    if (params.name) {
+      stub = hero({
+        type: params.pub ? T('Öffentliche Playlist') : T('Playlist'), title: params.name, coverId: params.coverArt || params.id,
+        meta: [params.owner ? h('span', { style: 'color:#fff;font-weight:700', text: params.owner }) : null, params.count != null ? T.n(params.count, '{n} Song', '{n} Songs') : null]
+      });
+      el.appendChild(stub);
+    }
+    async(el, withRetry(function () { return API.playlist(params.id); }, 2), function (pl) {
+      if (stub && stub.parentNode) stub.parentNode.removeChild(stub);
       var songs = A(pl.entry);
       var own = Menus.ownPlaylist(pl);
       function more() {
@@ -271,6 +301,8 @@ var Views = (function () {
       el.appendChild(h('div.action-bar.nav-container', null,
         UI.playBig(function () { Player.playList(songs, 0); }, true),
         UI.iconBtn('shuffle', function () { Player.playList(songs, 0, { shuffle: true }); }, T('Zufällig')),
+        songs.length >= 4 ? UI.iconBtn('sparkle', function () { Player.playList(songs, 0, { shuffle: true, smart: true }); }, T('Smart Shuffle')) : null,
+        pinBtn(pl),
         UI.iconBtn('addQueue', function () { Player.enqueue(songs); }, T('Zur Warteschlange')),
         own ? UI.iconBtn('more', more, T('Mehr')) : null
       ));
@@ -357,7 +389,8 @@ var Views = (function () {
       if (s.songs.length) {
         el.appendChild(h('div.action-bar.nav-container', null,
           UI.playBig(function () { Player.playList(s.songs, 0); }, true),
-          UI.iconBtn('shuffle', function () { Player.playList(s.songs, 0, { shuffle: true }); }, T('Zufällig'))
+          UI.iconBtn('shuffle', function () { Player.playList(s.songs, 0, { shuffle: true }); }, T('Zufällig')),
+          s.songs.length >= 4 ? UI.iconBtn('sparkle', function () { Player.playList(s.songs, 0, { shuffle: true, smart: true }); }, T('Smart Shuffle')) : null
         ));
         el.appendChild(UI.trackList(s.songs, { showCover: true, showAlbum: true }));
       } else {
@@ -383,9 +416,29 @@ var Views = (function () {
     el.appendChild(results);
     var seq = 0;
 
+    // Zuletzt gesucht: Suchen, Künstler und Alben, die du geöffnet hast (höchstens fünf, pro Konto)
+    function recentsRow() {
+      var list = SmartSearch.recents();
+      if (!list.length) return null;
+      var box = h('div.recents', null, h('h2.section-title', { text: T('Zuletzt gesucht'), style: 'margin-top:0' }));
+      var row = h('div.chips.nav-container');
+      list.forEach(function (r) {
+        row.appendChild(UI.chip(r.name, function () {
+          if (r.t === 'query') { input.value = r.name; run(); }
+          else if (r.t === 'artist') App.go('artist', { id: r.id });
+          else if (r.t === 'album') App.go('album', { id: r.id });
+        }));
+      });
+      row.appendChild(UI.chip(T('Verlauf löschen'), function () { SmartSearch.clear(); browseAll(); }));
+      box.appendChild(row);
+      return box;
+    }
+
     function browseAll() {
       results.innerHTML = '';
-      results.appendChild(h('h2.section-title', { text: T('Genres entdecken'), style: 'margin-top:0' }));
+      var rec = recentsRow();
+      if (rec) results.appendChild(rec);
+      results.appendChild(h('h2.section-title', { text: T('Genres entdecken'), style: rec ? '' : 'margin-top:0' }));
       API.genres().then(function (list) { results.appendChild(genreTiles(list.slice(0, 20))); }).catch(function () { });
     }
 
@@ -395,8 +448,19 @@ var Views = (function () {
         : al ? { coverId: al.coverArt || al.id, title: al.name, sub: al.artist, kind: T('Album'), go: function () { App.go('album', { id: al.id }); } }
           : { coverId: s.coverArt || s.albumId, title: s.title, sub: s.artist, kind: T('Song'), go: function () { Player.playList(r.songs, 0); } };
       var sub = h('div.tc-sub', null, o.sub ? o.sub : null, h('b', { text: o.kind }));
-      return h('button.top-card.focusable', { onclick: o.go },
+      var kindKey = a ? { t: 'artist', id: a.id, name: a.name } : al ? { t: 'album', id: al.id, name: al.name || al.title } : { t: 'query', name: input.value.trim() };
+      return h('button.top-card.focusable', { onclick: function () { SmartSearch.remember(kindKey); o.go(); } },
         UI.cover(o.coverId, 300, o.round ? 'round' : null, o.round ? 'artist' : 'album'), h('div.tc-title.ellipsis', { text: o.title }), sub, h('span.card-play', null, Icon.el('play', 30)));
+    }
+
+    // Alle Künstler einmal laden (für Tippfehler in Namen), zehn Minuten merken
+    var pool = null, poolAt = 0;
+    function artistPool() {
+      if (!pool || Date.now() - poolAt > 600000) {
+        poolAt = Date.now();
+        pool = API.artists().catch(function (e) { pool = null; throw e; });
+      }
+      return pool;
     }
 
     function run() {
@@ -408,10 +472,14 @@ var Views = (function () {
       results.appendChild(UI.loading());
       // Hörbücher und Podcasts werden mitgesucht; scheitert Audiobookshelf, bleibt die Musiksuche trotzdem
       var books = ABS.connected() ? ABS.search(q).catch(function () { return { items: [], series: [], authors: [] }; }) : Promise.resolve({ items: [], series: [], authors: [] });
-      Promise.all([API.search(q), books]).then(function (both) {
+      // Die Suche verzeiht Tippfehler; scheitert sie ganz, bleibt trotzdem der Fehler sichtbar
+      Promise.all([SmartSearch.run(q, API.search, artistPool), books]).then(function (both) {
         var r = both[0], bk = both[1].items.slice(0, 12), ser = both[1].series.slice(0, 12), aut = both[1].authors.slice(0, 12);
         if (my !== seq) return;
         results.innerHTML = '';
+        if (r.similar && (r.artists.length || r.albums.length || r.songs.length)) {
+          results.appendChild(h('div.search-hint', { text: T('Nichts passt genau. Das kommt am nächsten:') }));
+        }
         if (!r.artists.length && !r.albums.length && !r.songs.length && !bk.length && !ser.length && !aut.length) {
           results.appendChild(h('div.empty', { text: T('Keine Ergebnisse für „{q}“', { q: q }) }));
           return;
@@ -426,8 +494,12 @@ var Views = (function () {
         var right = h('div.top-songs', null, r.songs.length ? h('h2.section-title', { text: T('Songs'), style: 'margin-top:0' }) : null,
           r.songs.length ? UI.trackList(r.songs.slice(0, 4), { showCover: true, header: false }) : null);
         results.appendChild(h('div.top-result', null, left, right));
-        if (r.artists.length) results.appendChild(UI.row(T('Künstler'), r.artists, UI.artistCard));
-        if (r.albums.length) results.appendChild(UI.row(T('Alben'), r.albums, UI.albumCard));
+        if (r.artists.length) results.appendChild(UI.row(T('Künstler'), r.artists, function (a) {
+          var c = UI.artistCard(a); c.addEventListener('click', function () { SmartSearch.remember({ t: 'artist', id: a.id, name: a.name }); }); return c;
+        }));
+        if (r.albums.length) results.appendChild(UI.row(T('Alben'), r.albums, function (a) {
+          var c = UI.albumCard(a); c.addEventListener('click', function () { SmartSearch.remember({ t: 'album', id: a.id, name: a.name || a.title }); }); return c;
+        }));
         if (aut.length) results.appendChild(UI.row(T('Autoren'), aut, BookViews.authorCard));
         if (bk.length) results.appendChild(UI.row(T('Hörbücher & Podcasts'), bk, BookViews.card));
         if (ser.length) results.appendChild(UI.row(T('Serien'), ser, BookViews.seriesCard));
@@ -438,7 +510,7 @@ var Views = (function () {
       }).catch(App.error);
     }
     input.addEventListener('input', U.debounce(run, 700));
-    input.addEventListener('keydown', function (e) { if (e.keyCode === 13) { e.preventDefault(); input.blur(); run(); setTimeout(function () { Nav.move('down'); }, 50); } });
+    input.addEventListener('keydown', function (e) { if (e.keyCode === 13) { e.preventDefault(); input.blur(); if (input.value.trim().length >= 2) SmartSearch.remember({ t: 'query', name: input.value.trim() }); run(); setTimeout(function () { Nav.move('down'); }, 50); } });
     run();
     return { el: el, noAutoInput: true };
   }
@@ -453,7 +525,7 @@ var Views = (function () {
     var bar = h('div.np-bar-fill');
     var progress = h('button.np-progress.focusable', null, h('div.np-bar', null, bar));
     var tCur = h('span'), tDur = h('span');
-    var btnShuffle = UI.iconBtn('shuffle', function () { Player.setShuffle(!Player.shuffle()); }, T('Zufällig'));
+    var btnShuffle = UI.iconBtn('shuffle', function () { Player.cycleShuffle(); }, T('Zufällig'));
     var btnPrev = UI.iconBtn('prev', Player.prev, T('Zurück'));
     var btnPlay = h('button.np-play.focusable', { onclick: Player.toggle, title: T('Play/Pause'), 'data-autofocus': true });
     var btnNext = UI.iconBtn('next', Player.next, T('Weiter'));
@@ -667,6 +739,8 @@ var Views = (function () {
     function renderState() {
       UI.setIcon(btnPlay, Player.paused() ? 'play' : 'pause');
       btnShuffle.classList.toggle('on', Player.shuffle());
+      UI.setIcon(btnShuffle, Player.smart() ? 'sparkle' : 'shuffle');
+      btnShuffle.title = Player.smart() ? T('Smart Shuffle') : T('Zufällig');
       var r = Player.repeat();
       btnRepeat.classList.toggle('on', r !== 'off');
       btnRepeat.innerHTML = r === 'one' ? Icon.repeatOne() : Icon.svg('repeat');
@@ -736,7 +810,7 @@ var Views = (function () {
       holder.appendChild(UI.header(T('Warteschlange')));
       if (!q.length) { holder.appendChild(h('div.empty', { text: T('Deine Warteschlange ist leer.') })); return; }
       holder.appendChild(h('div.chips.nav-container', null,
-        UI.chip(T('Zufällig'), function () { Player.setShuffle(!Player.shuffle()); }, Player.shuffle()),
+        UI.chip(Player.smart() ? T('Smart Shuffle') : T('Zufällig'), function () { Player.cycleShuffle(); }, Player.shuffle()),
         UI.chip(T('Als Playlist speichern'), function () { Menus.addToPlaylist(q); }),
         UI.chip(T('Leeren'), function () { UI.confirm(T('Warteschlange leeren?'), T('Leeren'), function () { Player.stop(); }, 'trash'); })
       ));
@@ -784,6 +858,31 @@ var Views = (function () {
   }
 
   // ---------------- Einstellungen
+  // Am PC sind die Einstellungen in Reiter geteilt (Wiedergabe, Konto …) statt einer langen Liste
+  function settingsTabs(el) {
+    var kids = [].slice.call(el.children), header = kids.shift(), version = kids.pop();
+    var groups = [], cur = null;
+    kids.forEach(function (k) {
+      if (k.classList.contains('settings-section')) { cur = { title: k.textContent, box: h('div.settings-group') }; groups.push(cur); k.parentNode.removeChild(k); return; }
+      if (cur) cur.box.appendChild(k);
+    });
+    if (!groups.length) return;
+    var saved = U.store.get('settingsTab', groups[0].title);
+    if (!groups.some(function (g) { return g.title === saved; })) saved = groups[0].title;
+    var tabs = h('div.chips.nav-container.settings-tabs'), chips = [];
+    groups.forEach(function (g) {
+      var c = UI.chip(g.title, function () { show(g.title); }, g.title === saved);
+      chips.push(c); tabs.appendChild(c);
+    });
+    function show(title) {
+      U.store.set('settingsTab', title);
+      groups.forEach(function (g, i) { g.box.style.display = g.title === title ? '' : 'none'; chips[i].classList.toggle('active', g.title === title); });
+    }
+    el.insertBefore(tabs, version);
+    groups.forEach(function (g) { el.insertBefore(g.box, version); });
+    show(saved);
+  }
+
   function settings() {
     var el = view('settings');
     var cfg = API.getConfig();
@@ -828,8 +927,31 @@ var Views = (function () {
     var infoText = h('div.setting-desc', { text: cfg.url });
     API.ping().then(function (r) { infoText.textContent = cfg.url + ' • ' + (r.type || 'Subsonic') + ' ' + (r.serverVersion || ''); }).catch(function () { });
     el.appendChild(h('div.setting', null, h('div', null, h('div.setting-label', { text: T('Angemeldet als {name}', { name: cfg.user }) }), infoText)));
+    if (U.desktop) {
+      // Verbindung prüfen und Server ändern, ohne das Konto zu verlieren
+      var statusText = h('div.setting-desc', { text: T('Noch nicht geprüft') });
+      var checkNo = 0;
+      function check() {
+        var my = ++checkNo;
+        statusText.className = 'setting-desc'; statusText.textContent = T('Prüfe …');
+        var t0 = Date.now();
+        API.ping().then(function (r) {
+          if (my !== checkNo) return;
+          statusText.className = 'setting-desc ok';
+          statusText.textContent = T('Verbunden · {ms} ms', { ms: Date.now() - t0 }) + ' · ' + (r.type || 'Subsonic') + ' ' + (r.serverVersion || '');
+        }).catch(function (e) {
+          if (my !== checkNo) return;
+          statusText.className = 'setting-desc bad';
+          statusText.textContent = T('Verbindung fehlgeschlagen: {msg}', { msg: e.message });
+        });
+      }
+      el.appendChild(h('div.setting', null, h('div', null, h('div.setting-label', { text: T('Verbindung') }), statusText),
+        h('div.nav-container', null, UI.button(T('Verbindung testen'), check, 'outline', 'refresh'))));
+      check();
+    }
     el.appendChild(h('div.settings-actions.nav-container', null,
-      UI.button(T('Benutzer wechseln'), App.showUsers, 'primary', 'swap'),
+      U.desktop ? UI.button(T('Server ändern'), App.editServer, 'primary', 'edit') : null,
+      UI.button(T('Benutzer wechseln'), App.showUsers, U.desktop ? 'outline' : 'primary', 'swap'),
       UI.button(T('Konto entfernen'), function () { UI.confirm(T(U.desktop ? 'Konto „{name}“ von diesem PC entfernen?' : 'Konto „{name}“ von diesem TV entfernen?', { name: cfg.user }), T('Entfernen'), App.logout, 'trash'); }, 'danger', 'logout'),
       UI.button(T('App beenden'), App.exit, 'outline', 'power')
     ));
@@ -901,7 +1023,6 @@ var Views = (function () {
     }
 
     if (U.desktop) {
-      el.appendChild(Desktop.updateSetting());
       el.appendChild(h('div.settings-section', { text: T('Tastatur') }));
       el.appendChild(h('div.keys', { html:
         T('<b>Leertaste</b> Play/Pause · <b>Strg + ← / →</b> Song wechseln · <b>Strg + F</b> Suchen · <b>Esc</b> zurück<br>') +
@@ -912,7 +1033,12 @@ var Views = (function () {
         T('<b>▶ / ❚❚ / ■</b> Play, Pause, Stopp · <b>⏪ ⏩</b> 10 s spulen, gedrückt halten = Song wechseln · <b>CH + / –</b> seitenweise scrollen<br>') +
         T('<b style="color:#e53935">Rot</b> Läuft gerade · <b style="color:#43a047">Grün</b> Suchen · <b style="color:#fdd835">Gelb</b> Optionen · <b style="color:#1e88e5">Blau</b> Play/Pause') }));
     }
+    if (U.desktop) {
+      el.appendChild(h('div.settings-section', { text: T('Info') }));
+      el.appendChild(Desktop.updateSetting());
+    }
     el.appendChild(h('div.version', { text: 'Tonalo · ' + T(U.desktop ? 'inoffizieller Navidrome-Client für Windows' : 'inoffizieller Navidrome-Client für LG webOS') + ' · v' + APP_VERSION }));
+    if (U.desktop) settingsTabs(el);
     setTimeout(function () { App.viewReady(el); }, 0);
     return { el: el };
   }

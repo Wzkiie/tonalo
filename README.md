@@ -28,11 +28,13 @@ Navidrome's web UI technically works in the TV browser, but it's made for a mous
 ### What it does
 
 - Home screen with recently played, recently added, most played and a shuffle mix
-- Albums, artists, playlists, genres, favorites and search
+- Albums, artists, playlists, genres, favorites and search. The search forgives typos and look-alike spellings ("Kolega" finds "Kollegah"), puts your favorites and often heard songs first and remembers your last five searches
 - Full-screen player with synced lyrics (if your server has them)
 - Queue that survives restarts, plus "play next" and adding to playlists (with a warning for duplicates). Songs in the queue can be moved with ▲▼
 - **Endless radio** from a song, an artist, a genre or your favorites – it tops itself up and learns from skips and hearts. Autoplay keeps going with similar songs when an album or playlist ends
 - **Radio stations** set up on your server (Navidrome: Radio) play live
+- **Smart Shuffle**: shuffle a playlist or your favorites and after every two songs one fitting song from outside the list follows. Press the shuffle button again in the player to switch: off, shuffle, Smart Shuffle
+- Pin playlists to the top (yellow or Info button on a playlist): a playlist your server rebuilds every day keeps its place because pins follow the name. Finished podcast episodes get a check mark
 - Rename and delete your playlists and remove songs from them; a sleep timer, crossfade (3–12 seconds) and volume leveling with ReplayGain
 - **Continue on another device**: the queue is kept on your server, so the TV offers to pick up where the iPhone left off (and the other way round)
 - **Control it from your iPhone**: pair once with a code shown on the TV. The iPhone then shows what's playing and the queue, works as a remote, and sends albums, playlists and radio to the TV – or moves the song you're hearing over, at the same second. Everything stays in your home network

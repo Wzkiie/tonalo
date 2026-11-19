@@ -228,7 +228,7 @@ var App = (function () {
     hideAllScreens();
     login.classList.remove('hidden');
     var pre = loginOpts.prefill;
-    U.$('#login-title').textContent = loginOpts.abs ? T('Mit Audiobookshelf verbinden') : T('Mit Navidrome verbinden');
+    U.$('#login-title').textContent = loginOpts.abs ? T('Mit Audiobookshelf verbinden') : loginOpts.replace ? T('Server oder Anmeldung ändern') : T('Mit Navidrome verbinden');
     U.$('#in-url').value = loginOpts.abs ? U.store.get('lastAbsUrl', '') : (pre && pre.url) || U.store.get('lastUrl', '');
     U.$('#in-user').value = loginOpts.abs ? (account ? account.user : '') : (pre && pre.user) || '';
     U.$('#in-pass').value = '';
@@ -281,7 +281,25 @@ var App = (function () {
       var acc = Object.assign({ id: accId(creds.url, creds.user) }, creds);
       var before = accounts().filter(function (a) { return a.id === acc.id; })[0];
       if (before && before.alt) acc.alt = before.alt; // die zweite Adresse bleibt beim neu Anmelden
-      saveAccounts(accounts().filter(function (a) { return a.id !== acc.id; }).concat([acc]));
+      if (before && before.abs) acc.abs = before.abs; // ebenso Audiobookshelf (auch wenn nur das Passwort neu ist)
+      var old = loginOpts.replace && loginOpts.replace !== acc.id ? accounts().filter(function (a) { return a.id === loginOpts.replace; })[0] : null;
+      if (old && before) {
+        // Das neue Ziel gibt es schon als eigenes Konto: nichts vermischen, nichts überschreiben
+        var dup = new Error(T('Dieses Konto ist schon angemeldet. Wähle „Benutzer wechseln“.'));
+        dup.plain = true;
+        throw dup;
+      }
+      if (old) {
+        // Server oder Benutzer geändert: Hörbücher, zweite Adresse und alles, was am Konto hing (Warteschlange, Pins, Verlauf, Einstellungen), ziehen mit um.
+        // Erst den Player lösen: er schreibt dabei zum letzten Mal unter die alte Kennung, und die wird danach umgezogen
+        if (old.abs) acc.abs = old.abs;
+        if (old.alt && !acc.alt) acc.alt = old.alt;
+        if (account && account.id === old.id) { Link.detach(); Player.detach(); Book.close(); account = null; }
+        moveAccountData(old.id, acc.id);
+        DJ.dropAccount(old.id); // der DJ-Schlüssel hängt an der alten Kennung: der Eintrag soll nicht verwaisen
+      }
+      saveAccounts(accounts().filter(function (a) { return a.id !== acc.id && !(old && a.id === old.id); }).concat([acc]));
+      if (U.desktop) Desktop.keepHeaders(accounts()); // Header der alten Adresse gehen mit
       U.store.set('lastUrl', creds.url);
       if (account && account.id === acc.id) { Link.detach(); Player.detach(); account = null; } // gleiches Konto neu angemeldet -> frisch laden
       var next = wantAbs;
@@ -291,12 +309,29 @@ var App = (function () {
       API.setConfig(prev);
       msg.className = 'msg error';
       if (U.desktop) { Desktop.dropHeaders(); if (Desktop.headerProblem(e, msg)) return; }
-      msg.textContent = e.code === 40 ? T('Benutzername oder Passwort falsch.') : T('Verbindung fehlgeschlagen: {msg}', { msg: e.message });
+      msg.textContent = e.plain ? e.message : e.code === 40 ? T('Benutzername oder Passwort falsch.') : T('Verbindung fehlgeschlagen: {msg}', { msg: e.message });
     });
   }
 
   function logout() {
     if (account) removeAccount(account); else showUsers();
+  }
+
+  // Alles, was pro Konto gespeichert ist, unter die neue Kennung schreiben und die alte löschen
+  function moveAccountData(from, to) {
+    try {
+      if (from === to) return;
+      var a = 'nd.u.' + from + '.', b = 'nd.u.' + to + '.', keys = [], i;
+      for (i = 0; i < localStorage.length; i++) if (localStorage.key(i).indexOf(a) === 0) keys.push(localStorage.key(i));
+      // Hat das Ziel schon eigene Daten (das Konto gab es schon), gewinnen sie: nichts wird überschrieben
+      keys.forEach(function (k) { var nk = b + k.slice(a.length); if (localStorage.getItem(nk) === null) localStorage.setItem(nk, localStorage.getItem(k)); });
+      U.ustore.clear(from);
+    } catch (e) { /* voll oder gesperrt: dann eben neu anfangen */ }
+  }
+
+  // Am PC: Server oder Benutzer des angemeldeten Kontos ändern
+  function editServer() {
+    if (account) showLogin(null, { prefill: account, replace: account.id });
   }
 
   // ---------------- Router
@@ -462,6 +497,8 @@ var App = (function () {
     if (evt !== 'time') {
       U.$('#mp-play').innerHTML = Icon.svg(Player.paused() ? 'play' : 'pause');
       U.$('#mp-shuffle').classList.toggle('on', Player.shuffle());
+      U.$('#mp-shuffle').innerHTML = Icon.svg(Player.smart() ? 'sparkle' : 'shuffle');
+      U.$('#mp-shuffle').title = Player.smart() ? T('Smart Shuffle') : T('Zufällig');
       var r = Player.repeat();
       U.$('#mp-repeat').classList.toggle('on', r !== 'off');
       U.$('#mp-repeat').innerHTML = r === 'one' ? Icon.repeatOne() : Icon.svg('repeat');
@@ -678,7 +715,7 @@ var App = (function () {
     U.$('#mp-play').addEventListener('click', function () { if (bookMode()) Book.toggle(); else Player.toggle(); });
     U.$('#mp-prev').addEventListener('click', function () { if (bookMode()) Book.skipBack(); else Player.prev(); });
     U.$('#mp-next').addEventListener('click', function () { if (bookMode()) Book.skipForward(); else Player.next(); });
-    U.$('#mp-shuffle').addEventListener('click', function () { Player.setShuffle(!Player.shuffle()); });
+    U.$('#mp-shuffle').addEventListener('click', function () { Player.cycleShuffle(); });
     U.$('#mp-repeat').addEventListener('click', function () { Player.cycleRepeat(); });
     U.$('#mp-queue').addEventListener('click', function () { go('queue'); });
     U.$('#mp-lyrics').addEventListener('click', function () { U.ustore.set('lyricsOn', true); go('nowplaying'); });
@@ -745,7 +782,7 @@ var App = (function () {
   return {
     init: init, go: go, back: back, reload: reload, viewReady: viewReady, updateScope: updateScope,
     error: error, logout: logout, exit: exit, showUsers: showUsers,
-    saveAbs: saveAbs, bookMode: bookMode, absLogin: function () { showLogin(null, { abs: true }); }, disconnectAbs: disconnectAbs,
+    saveAbs: saveAbs, bookMode: bookMode, absLogin: function () { showLogin(null, { abs: true }); }, editServer: editServer, disconnectAbs: disconnectAbs,
     // Etwas kam vom iPhone: Bildschirmschoner weg, wie bei einem Tastendruck
     wake: function () { touch(); if (ssActive) ssHide(); },
     account: function () { return account; },
