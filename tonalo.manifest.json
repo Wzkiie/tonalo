@@ -1,0 +1,15 @@
+{
+  "id": "tonalo",
+  "version": "1.11.5",
+  "type": "web",
+  "title": "Tonalo",
+  "appDescription": "Unofficial Navidrome/Subsonic client for LG webOS TVs",
+  "iconUri": "https://raw.githubusercontent.com/Wzkiie/tonalo/main/assets/icon-512.png",
+  "sourceUrl": "https://github.com/Wzkiie/tonalo",
+  "rootRequired": false,
+  "ipkUrl": "https://github.com/Wzkiie/tonalo/releases/download/v1.11.5/tonalo_1.11.5_all.ipk",
+  "ipkSize": 178698,
+  "ipkHash": {
+    "sha256": "0943e7620b657366a1d1808a2c6e01a543efe8621f02bd39be99bce143ece711"
+  }
+}
