@@ -27,6 +27,10 @@ enum WhatsNew {
                   text: "Shuffle a playlist and a new song that fits follows every two songs. Choose it at the shuffle button of a playlist, or press the shuffle button in the player again."),
             .init(icon: "heart.text.square", color: .green, title: "Search knows your taste",
                   text: "Favorites and songs you hear often come first. If nothing fits well you get the closest matches, and a tapped song continues with songs like it."),
+            .init(icon: "pin.fill", color: .orange, title: "Pins that stay",
+                  text: "A playlist your server rebuilds every day keeps its pin, because pins follow the name. Opening a new playlist shows its title at once."),
+            .init(icon: "checkmark.circle.fill", color: .blue, title: "Podcasts at a glance",
+                  text: "Finished episodes get a check mark and a dimmed title, so you see what is left."),
         ]),
         AppRelease(version: "1.5.1", items: [
             .init(icon: "waveform", color: .blue, title: "Now playing, at a glance",

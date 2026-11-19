@@ -393,18 +393,21 @@ struct AudiobookView: View {
         LazyVStack(spacing: 14) {
             ForEach((item.media.episodes ?? []).sorted { ($0.publishedAt ?? 0) > ($1.publishedAt ?? 0) }) { e in
                 let p = app.books.progress(of: item, episode: e)
+                let done = p?.isFinished == true
                 HStack(spacing: 12) {
                     Button { app.bookPlayer.play(item, episode: e) } label: {
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(e.title ?? "").font(.system(size: 15, weight: .medium)).lineLimit(2).multilineTextAlignment(.leading)
-                                    .foregroundStyle(app.bookPlayer.episode?.id == e.id ? Color.accent : .white)
-                                Text(p?.isFinished == true ? String(localized: "Finished") : length(e.length))
-                                    .font(.system(size: 12)).foregroundStyle(Color.subtle)
+                                    .foregroundStyle(app.bookPlayer.episode?.id == e.id ? Color.accent : (done ? Color.subtle : .white))
+                                    .opacity(done ? 0.7 : 1)
+                                Text(done ? String(localized: "Finished") : length(e.length))
+                                    .font(.system(size: 12, weight: done ? .semibold : .regular)).foregroundStyle(done ? Color.accent : Color.subtle)
                                 if let value = p?.progress, value > 0, p?.isFinished != true { BookProgressBar(value: value) }
                             }
                             Spacer(minLength: 8)
-                            Image(systemName: "play.circle").font(.system(size: 28))
+                            Image(systemName: done ? "checkmark.circle.fill" : "play.circle").font(.system(size: 28))
+                                .foregroundStyle(done ? Color.accent : .white)
                         }
                         .contentShape(Rectangle())
                     }

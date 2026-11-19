@@ -1136,6 +1136,12 @@ struct LibraryView: View {
             case .author(let a, _): "u" + a.id
             }
         }
+        /// What a pin remembers. A playlist the server rebuilds every day gets a new id but keeps its name,
+        /// so playlists are pinned by name (and owner) and the pin follows the new one.
+        var pinKey: String {
+            if case .playlist(let p) = self { return "pn:" + SmartMatch.normalize(p.name) + "|" + (p.owner ?? "") }
+            return id
+        }
         var name: String {
             switch self {
             case .dj, .favorites, .downloads: ""
@@ -1205,6 +1211,7 @@ struct LibraryView: View {
             }
             .onAppear(perform: loadPins)
             .onChange(of: app.currentId) { loadPins() }
+            .onChange(of: playlists) { migratePins() }
             .onChange(of: pins.first) { old, new in
                 // Something new pinned: go up to where it lands, so it doesn't vanish from where it was
                 if let new, new != old { withAnimation(.snappy(duration: 0.35)) { scroller.scrollTo(Self.top, anchor: .top) } }
@@ -1218,11 +1225,24 @@ struct LibraryView: View {
 
     private var pinsKey: String { "library.pins." + (app.currentId?.uuidString ?? "") }
 
-    private func loadPins() { pins = UserDefaults.standard.stringArray(forKey: pinsKey) ?? [] }
+    private func loadPins() { pins = UserDefaults.standard.stringArray(forKey: pinsKey) ?? []; migratePins() }
+
+    /// Pins from before were saved by id. As soon as the playlist is in the list, they become name pins.
+    private func migratePins() {
+        var next = pins
+        for (i, pin) in next.enumerated() where pin.hasPrefix("p") && !pin.hasPrefix("pn:") {
+            if let p = playlists.first(where: { "p" + $0.id == pin }) { next[i] = Item.playlist(p).pinKey }
+        }
+        guard next != pins else { return }
+        pins = next
+        UserDefaults.standard.set(next, forKey: pinsKey)
+    }
+
+    private func pinMatches(_ pin: String, _ item: Item) -> Bool { item.pinKey == pin || item.id == pin }
 
     private func togglePin(_ item: Item) {
         var next = pins
-        if let i = next.firstIndex(of: item.id) { next.remove(at: i) } else { next.insert(item.id, at: 0) }
+        if next.contains(where: { pinMatches($0, item) }) { next.removeAll { pinMatches($0, item) } } else { next.insert(item.pinKey, at: 0) }
         UserDefaults.standard.set(next, forKey: pinsKey)
         // Wait until the long-press menu has closed and the row is back in place. The row then fades out
         // where it was and in where it goes – sliding it across a long list makes it fly through everything
@@ -1231,13 +1251,15 @@ struct LibraryView: View {
         }
     }
 
-    private func isPinned(_ item: Item) -> Bool { item.pinned || pins.contains(item.id) }
+    private func isUserPinned(_ item: Item) -> Bool { pins.contains { pinMatches($0, item) } }
+
+    private func isPinned(_ item: Item) -> Bool { item.pinned || isUserPinned(item) }
 
     /// Long press: pin or unpin. Favorites and Downloads always stay on top.
     @ViewBuilder private func pinMenu(_ item: Item) -> some View {
         if !item.pinned {
             Button { togglePin(item) } label: {
-                pins.contains(item.id) ? Label("Unpin", systemImage: "pin.slash") : Label("Pin to top", systemImage: "pin")
+                isUserPinned(item) ? Label("Unpin", systemImage: "pin.slash") : Label("Pin to top", systemImage: "pin")
             }
         }
     }
@@ -1397,8 +1419,9 @@ struct LibraryView: View {
         }
         // Pinned ones first (newest pin on top), everything else in the chosen order
         let all = sorted(rest)
-        let top = pins.compactMap { id in all.first { $0.id == id } }
-        let list = top + all.filter { !pins.contains($0.id) }
+        var seen = Set<String>()
+        let top = pins.flatMap { pin in all.filter { pinMatches(pin, $0) } }.filter { seen.insert($0.id).inserted }
+        let list = top + all.filter { !isUserPinned($0) }
         return query.isEmpty ? pinned + list : matching(list)
     }
 
@@ -1556,7 +1579,7 @@ struct LibraryView: View {
 
     /// Pinning gives a row a new identity, so it fades instead of sliding to its new place.
     private var keyed: [(key: String, item: Item)] {
-        items.map { ((pins.contains($0.id) ? "pin." : "") + $0.id, $0) }
+        items.map { ((isUserPinned($0) ? "pin." : "") + $0.id, $0) }
     }
 
     private func tile(_ item: Item) -> some View {

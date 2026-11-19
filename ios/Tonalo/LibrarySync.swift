@@ -29,8 +29,8 @@ import UIKit
     }
     @ObservationIgnored private var accountId: UUID?
 
-    /// Requests at the same time – fast, without hammering a small home server.
-    private let parallel = 4
+    /// Requests at the same time – fast, and still easy on a small home server: these are small metadata pages.
+    private let parallel = 8
 
     /// A sync older than this is worth repeating; the settings say so.
     var isStale: Bool { summary.map { Date().timeIntervalSince($0.date) > 30 * 24 * 3600 } ?? false }
@@ -128,30 +128,32 @@ import UIKit
         let jobs = albums.map { ("getAlbum", $0.id) } + artists.map { ("getArtist", $0.id) } + playlists.map { ("getPlaylist", $0.id) }
         total = jobs.count
         phase = String(localized: "Loading albums, artists and playlists…")
-        var start = 0
         var failed = 0
-        while start < jobs.count {
-            try Task.checkCancellation()
-            let batch = jobs[start..<min(start + parallel, jobs.count)]
-            let lost = try await withThrowingTaskGroup(of: Bool.self) { group in
-                for (method, id) in batch {
-                    group.addTask { @MainActor in
-                        do { _ = try await self.refresh(client, method, ["id": id]); return false } catch {
-                            if error.isCancellation || Task.isCancelled { throw error }
-                            // One album the server can't find (just deleted, say) or that fails again and again
-                            // doesn't stop the sync – many of them do: then the connection is gone
-                            return !error.isServerAnswer
-                        }
+        // A sliding window: as soon as one request is through the next starts, so a slow one doesn't hold up the
+        // others (the old batches of four waited for the slowest of each four)
+        try await withThrowingTaskGroup(of: Bool.self) { group in
+            var next = 0
+            func add() {
+                guard next < jobs.count else { return }
+                let (method, id) = jobs[next]
+                next += 1
+                group.addTask { @MainActor in
+                    do { _ = try await self.refresh(client, method, ["id": id]); return false } catch {
+                        if error.isCancellation || Task.isCancelled { throw error }
+                        // One album the server can't find (just deleted, say) or that fails again and again
+                        // doesn't stop the sync – many of them do: then the connection is gone
+                        return !error.isServerAnswer
                     }
                 }
-                var n = 0
-                for try await gone in group where gone { n += 1 }
-                return n
             }
-            failed += lost
-            if failed > 10 { throw URLError(.networkConnectionLost) }
-            start += batch.count
-            done = start
+            for _ in 0..<parallel { add() }
+            while let gone = try await group.next() {
+                try Task.checkCancellation()
+                if gone { failed += 1 }
+                if failed > 10 { throw URLError(.networkConnectionLost) }
+                done += 1
+                add()
+            }
         }
         return Summary(date: Date(), albums: albums.count, artists: artists.count, playlists: playlists.count,
                        genres: genres.count, songs: albums.reduce(0) { $0 + ($1.songCount ?? 0) })
