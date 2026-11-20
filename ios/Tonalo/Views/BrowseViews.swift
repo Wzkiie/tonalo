@@ -274,16 +274,15 @@ struct QuickTile: View {
             HStack(spacing: 8) {
                 art.frame(width: 56, height: 56).clipped()
                 Text(title).font(.system(size: 13, weight: .bold)).lineLimit(2).multilineTextAlignment(.leading)
-                    .foregroundStyle(current ? Color.accent : .primary)
                     // Room for the level meter on the right
-                    .padding(.trailing, current ? 22 : 0)
+                    .padding(.trailing, current ? 18 : 0)
                 Spacer(minLength: 4)
             }
             .frame(height: 56)
             .background(Color.elevated)
             // The small level meter sits at the right edge, in the middle of the tile
             .overlay(alignment: .trailing) {
-                if current { PlayingBars(active: app.player.isPlaying).frame(width: 13, height: 11).padding(.trailing, 12) }
+                if current { PlayingBars(active: app.player.isPlaying, bars: 3, barWidth: 3, spacing: 2).frame(width: 13, height: 10).padding(.trailing, 12) }
             }
             .clipShape(RoundedRectangle(cornerRadius: 4))
         }

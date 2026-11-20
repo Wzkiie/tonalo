@@ -385,17 +385,21 @@ struct PullSpinner: View {
 /// Driven by the clock, not by a state change – so it keeps moving on its own, wherever it stands.
 struct PlayingBars: View {
     var active: Bool
+    /// How many bars (up to four) and how thick: the tiles on Home use three thin ones.
+    var bars = 4
+    var barWidth: CGFloat = 3.5
+    var spacing: CGFloat = 2.5
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let phase: [Double] = [0, 1.7, 3.1, 0.9], speed: [Double] = [5.2, 6.4, 4.6, 5.8]
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !active || reduceMotion)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
-            HStack(alignment: .bottom, spacing: 2.5) {
-                ForEach(0..<4, id: \.self) { i in
+            HStack(alignment: .bottom, spacing: spacing) {
+                ForEach(0..<min(bars, 4), id: \.self) { i in
                     let level = active && !reduceMotion ? 0.55 + 0.45 * sin(t * speed[i] + phase[i]) : [0.45, 0.8, 0.6, 0.35][i]
                     Capsule().fill(Color.accent)
-                        .frame(width: 3.5)
+                        .frame(width: barWidth)
                         .frame(maxHeight: .infinity, alignment: .bottom)
                         .scaleEffect(y: max(0.18, level), anchor: .bottom)
                 }
