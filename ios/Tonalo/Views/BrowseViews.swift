@@ -282,7 +282,7 @@ struct QuickTile: View {
             .background(Color.elevated)
             // The small level meter sits at the right edge, in the middle of the tile
             .overlay(alignment: .trailing) {
-                if current { PlayingBars(active: app.player.isPlaying, bars: 3, barWidth: 3, spacing: 2).frame(width: 13, height: 10).padding(.trailing, 12) }
+                if current { PlayingBars(active: app.player.isPlaying).frame(width: 13, height: 10).padding(.trailing, 12) }
             }
             .clipShape(RoundedRectangle(cornerRadius: 4))
         }

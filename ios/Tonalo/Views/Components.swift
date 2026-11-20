@@ -100,7 +100,7 @@ struct SongRow: View {
             }
             Spacer(minLength: 8)
             // Says "this one plays right now" – in a playlist, an album and in the search alike
-            if isCurrent { PlayingBars(active: app.player.isPlaying).frame(width: 14, height: 12) }
+            if isCurrent { PlayingBars(active: app.player.isPlaying).frame(width: 13, height: 10) }
             SongMenu(song: song) {
                 Image(systemName: "ellipsis").font(.system(size: 16)).frame(width: 32, height: 40).contentShape(Rectangle())
             }
@@ -385,10 +385,10 @@ struct PullSpinner: View {
 /// Driven by the clock, not by a state change – so it keeps moving on its own, wherever it stands.
 struct PlayingBars: View {
     var active: Bool
-    /// How many bars (up to four) and how thick: the tiles on Home use three thin ones.
-    var bars = 4
-    var barWidth: CGFloat = 3.5
-    var spacing: CGFloat = 2.5
+    /// How many bars (up to four) and how thick: three thin ones by default, everywhere.
+    var bars = 3
+    var barWidth: CGFloat = 3
+    var spacing: CGFloat = 2
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let phase: [Double] = [0, 1.7, 3.1, 0.9], speed: [Double] = [5.2, 6.4, 4.6, 5.8]
 

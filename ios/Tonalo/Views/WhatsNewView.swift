@@ -492,7 +492,7 @@ private struct PlayingPreview: View {
                         Capsule().fill(Color.white.opacity(0.18)).frame(width: 58, height: 5)
                     }
                     Spacer(minLength: 0)
-                    if on { PlayingBars(active: shown).frame(width: 16, height: 14).transition(.scale.combined(with: .opacity)) }
+                    if on { PlayingBars(active: shown).frame(width: 14, height: 12).transition(.scale.combined(with: .opacity)) }
                 }
                 .padding(8)
                 .background(on ? Color.accent.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
