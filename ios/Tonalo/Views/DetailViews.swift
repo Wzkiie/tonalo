@@ -147,6 +147,8 @@ struct PlaylistView: View {
     @Environment(\.dismiss) private var dismiss
     let id: String
     @State private var playlist: Playlist?
+    /// Only the header from the playlist list is there so far: the songs are still on their way
+    @State private var songsPending = false
     @State private var error: String?
     @State private var editing = false
     @State private var renaming = false
@@ -178,7 +180,7 @@ struct PlaylistView: View {
                     Label("Managed by your server · songs can’t be changed here", systemImage: "lock")
                         .font(.system(size: 13)).foregroundStyle(Color.subtle)
                 }
-                Text([String(localized: "\(songs.count) songs"), formatDuration(p.duration ?? 0)].joined(separator: " • "))
+                Text([String(localized: "\(songsPending ? (p.songCount ?? songs.count) : songs.count) songs"), formatDuration(p.duration ?? 0)].joined(separator: " • "))
                     .font(.system(size: 13)).foregroundStyle(Color.subtle)
             } actions: {
                 HStack(spacing: 24) {
@@ -202,7 +204,8 @@ struct PlaylistView: View {
                     } label: { Image(systemName: "ellipsis").font(.system(size: 22)).foregroundStyle(Color.subtle).frame(height: 30) }
                     PlayButtons(playing: playing,
                                 play: { playing ? app.player.toggle() : app.player.play(songs, context: context) },
-                                shuffle: { app.player.play(songs, shuffled: true, context: context) })
+                                shuffle: { app.player.play(songs, shuffled: true, context: context) },
+                                smartShuffle: { Task { await app.player.smartShuffle(songs, context: context) } })
                 }
             } content: {
                 LazyVStack(spacing: 10) {
@@ -210,7 +213,9 @@ struct PlaylistView: View {
                         SongRow(song: s, showCover: true) { app.player.play(songs, from: i, context: context) }
                     }
                 }
-                if songs.isEmpty {
+                if songsPending {
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, 24)
+                } else if songs.isEmpty {
                     Text("This playlist is empty. Add songs with “Add to playlist” in a song’s menu.")
                         .font(.system(size: 14)).foregroundStyle(Color.subtle).padding(.top, 8)
                 }
@@ -227,7 +232,7 @@ struct PlaylistView: View {
                 Text("The playlist is removed from your server. The songs stay in your library.")
             }
         } else {
-            LoadState(loading: error == nil, error: error)
+            LoadState(loading: error == nil, error: error, retry: error == nil ? nil : { error = nil; await load() })
         }
     }
 
@@ -258,13 +263,30 @@ struct PlaylistView: View {
 
     private func load() async {
         if playlist == nil, let saved = app.client?.cached("getPlaylist", ["id": id])?.playlist { playlist = saved } // at once
+        // A playlist that was just created has no saved copy: the header comes from the list until the songs arrive
+        if playlist == nil, let head = app.client?.cached("getPlaylists")?.playlists?.playlist?.first(where: { $0.id == id }) {
+            playlist = head; songsPending = true
+        }
+        defer { songsPending = false }
         do {
-            playlist = try await app.client?.playlist(id)
+            // A playlist the server has just rebuilt can need a second try: ask again quietly before showing an error
+            var attempt = 0
+            while true {
+                do { playlist = try await app.client?.playlist(id); break }
+                catch {
+                    attempt += 1
+                    if attempt > 2 || Task.isCancelled || error is CancellationError { throw error }
+                    try? await Task.sleep(for: .seconds(1))
+                }
+            }
             // A downloaded playlist picks up songs that were added on the server
             if let p = playlist, app.downloads.index.playlists[id] != nil { app.downloads.downloadPlaylist(p) }
         } catch {
             if let saved = app.downloads.index.playlists[id] { playlist = saved }
-            else { self.error = error.userMessage }
+            else {
+                if songsPending { playlist = nil } // header only: show the error instead of a seemingly empty playlist
+                self.error = error.userMessage
+            }
         }
     }
 }
@@ -292,7 +314,8 @@ struct FavoritesView: View {
                     .font(.system(size: 22)).foregroundStyle(Color.subtle)
                 PlayButtons(playing: playing,
                             play: { playing ? app.player.toggle() : app.player.play(list, context: context) },
-                            shuffle: { app.player.play(list, shuffled: true, context: context) })
+                            shuffle: { app.player.play(list, shuffled: true, context: context) },
+                            smartShuffle: { Task { await app.player.smartShuffle(list, context: context) } })
             }
         } content: {
             LoadState(loading: songs == nil && error == nil, error: error)

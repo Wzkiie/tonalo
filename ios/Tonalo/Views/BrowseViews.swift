@@ -391,6 +391,31 @@ struct MixCard: View {
 
 // MARK: - Search
 
+/// The artists, albums and favorites the search compares against, kept for a few minutes per account (in memory only),
+/// so not every pause in typing fetches them again.
+@MainActor enum SearchPool {
+    private static var libraries: [UUID: (at: Date, artists: [Artist], albums: [Album])] = [:]
+    private static var favs: [UUID: (at: Date, body: SearchBody)] = [:]
+
+    static func library(_ client: SubsonicClient, _ account: UUID) async -> (artists: [Artist], albums: [Album]) {
+        if let c = libraries[account], Date().timeIntervalSince(c.at) < 600 { return (c.artists, c.albums) }
+        async let artists = try? await client.artists()
+        async let albums = try? await client.albumList("alphabeticalByName", size: 500)
+        let (a, b) = await (artists ?? [], albums ?? [])
+        if !a.isEmpty || !b.isEmpty { libraries[account] = (Date(), a, b) }
+        return (a, b)
+    }
+
+    static func favorites(_ client: SubsonicClient, _ account: UUID) async -> SearchBody {
+        if let c = favs[account], Date().timeIntervalSince(c.at) < 180 { return c.body }
+        let body = (try? await client.starred()) ?? SearchBody()
+        favs[account] = (Date(), body)
+        return body
+    }
+
+    static func forget(_ account: UUID) { libraries[account] = nil; favs[account] = nil }
+}
+
 /// What the search suggested last, per account, in memory only.
 @MainActor enum SuggestionCache { static var songs: [UUID: (list: [Song], at: Date)] = [:] }
 
@@ -424,6 +449,8 @@ struct SearchView: View {
     /// A search sent with the search key before its results were in: kept once they are, and only if there are any.
     @State private var pendingQuery: String?
     @State private var confirmClear = false
+    /// Nothing fits well: the closest few are shown, under "Similar results".
+    @State private var similarOnly = false
 
     private var accountId: String { app.current?.id.uuidString ?? "none" }
     private var recentKey: String { "search.recent2." + accountId }
@@ -475,6 +502,7 @@ struct SearchView: View {
             guard q.count >= 2 else { result = nil; books = ABSSearchResults(); searching = false; return }
             searching = true
             didYouMean = nil
+            similarOnly = false
             try? await Task.sleep(for: .milliseconds(200)) // wait until typing pauses
             guard !Task.isCancelled else { return }
             // Each server shows its results as they arrive, the slower one doesn't hold up the other
@@ -497,7 +525,7 @@ struct SearchView: View {
             // Little found (a typo, half a name): ask again more loosely, then order by how well it fits
             if !Task.isCancelled, error == nil { await widen(q) }
             guard !Task.isCancelled else { return }
-            titleFirst(q)
+            await taste(q)
             searching = false
             if let p = pendingQuery, SmartMatch.normalize(p) == SmartMatch.normalize(q) {
                 pendingQuery = nil
@@ -548,15 +576,20 @@ struct SearchView: View {
         let account = app.current?.id
         if attempt == 0, let account, let c = SuggestionCache.songs[account], Date().timeIntervalSince(c.at) < 900 { suggested = c.list; return }
         guard let client = app.client, let albums = try? await client.albumList("recent", size: 4), !albums.isEmpty else { return }
-        var heard = Set<String>()
-        var seeds: [Song] = []
-        for a in albums.prefix(3) {
-            guard let songs = (try? await client.album(a.id))?.song, let seed = songs.randomElement() else { continue }
-            songs.forEach { heard.insert($0.id) }
-            seeds.append(seed)
+        // Albums and similar songs for the three albums all at once
+        let per = await withTaskGroup(of: (Int, [String], [Song]).self) { group in
+            for (i, a) in albums.prefix(3).enumerated() {
+                group.addTask {
+                    guard let songs = (try? await client.album(a.id))?.song, let seed = songs.randomElement() else { return (i, [], []) }
+                    return (i, songs.map(\.id), await client.similarSongs(seed.id))
+                }
+            }
+            var out: [(Int, [String], [Song])] = []
+            for await x in group { out.append(x) }
+            return out.sorted { $0.0 < $1.0 }
         }
-        var lists: [[Song]] = []
-        for seed in seeds { lists.append(await client.similarSongs(seed.id)) }
+        let heard = Set(per.flatMap(\.1))
+        let lists = per.map(\.2).filter { !$0.isEmpty }
         // One from each list in turn, so it isn't all about the newest album
         var out: [Song] = []
         var seen = heard
@@ -614,11 +647,15 @@ struct SearchView: View {
         var moreBooks = ABSSearchResults()
         // The whole library is looked through here, not only what the server finds by the start of a word: a typo
         // anywhere in a name still finds it. Both lists come from the offline copy when it is there.
-        if let client = app.client {
-            let artists = (try? await client.artists()) ?? []
-            more.artist = artists.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
-            let albums = (try? await client.albumList("alphabeticalByName", size: 500)) ?? []
-            more.album = albums.filter { SmartMatch.score(query: q, text: $0.name) >= 0.72 }
+        var poolArtists: [Artist] = [], poolAlbums: [Album] = []
+        var artistScores: [Double] = [], albumScores: [Double] = []
+        if let client = app.client, let account = app.current?.id {
+            let lib = await SearchPool.library(client, account)
+            poolArtists = lib.artists; poolAlbums = lib.albums
+            (artistScores, albumScores) = await Self.scoreLibrary(SmartMatch.prepare(q), poolArtists, poolAlbums)
+            guard !Task.isCancelled, artistScores.count == poolArtists.count else { return }
+            more.artist = zip(poolArtists, artistScores).filter { $0.1 >= 0.72 }.map(\.0)
+            more.album = zip(poolAlbums, albumScores).filter { $0.1 >= 0.72 }.map(\.0)
         }
         await withTaskGroup(of: (SearchBody?, ABSSearchResults).self) { group in
             for v in variants {
@@ -656,6 +693,19 @@ struct SearchView: View {
         let nIds = Set(books.narrators)
         mergedBooks.narrators = Array(Set(books.narrators + moreBooks.narrators)).map { ($0, SmartMatch.score(query: q, text: $0)) }
             .filter { nIds.contains($0.0) || $0.1 >= 0.72 }.sorted { $0.1 > $1.1 }.map { $0.0 }
+        // Nothing fits well: the closest few are better than an empty page
+        let none = (merged.artist ?? []).isEmpty && (merged.album ?? []).isEmpty && (merged.song ?? []).isEmpty
+            && mergedBooks.items.isEmpty && mergedBooks.authors.isEmpty && mergedBooks.series.isEmpty && mergedBooks.narrators.isEmpty
+        if none, have == 0 {
+            let nearArtists = Array(zip(poolArtists, artistScores)).filter { $0.1 >= 0.35 }
+                .sorted { $0.1 > $1.1 }.prefix(3).map(\.0)
+            let nearAlbums = Array(zip(poolAlbums, albumScores)).filter { $0.1 >= 0.35 }
+                .sorted { $0.1 > $1.1 }.prefix(3).map(\.0)
+            if !nearArtists.isEmpty || !nearAlbums.isEmpty {
+                merged.artist = Array(nearArtists); merged.album = Array(nearAlbums)
+                similarOnly = true
+            }
+        }
         result = merged
         books = mergedBooks
         // Nothing at first, something close now: offer it
@@ -666,14 +716,62 @@ struct SearchView: View {
         didYouMean = best?.0
     }
 
-    /// Songs whose title fits what was typed come before songs that are only by a matching artist.
-    private func titleFirst(_ q: String) {
-        guard var r = result, let songs = r.song, songs.count > 1 else { return }
-        let hit = songs.filter { SmartMatch.score(query: q, text: $0.title) >= 1 }
-        guard !hit.isEmpty, hit.count < songs.count else { return }
-        let ids = Set(hit.map(\.id))
-        r.song = hit + songs.filter { !ids.contains($0.id) }
-        result = r
+    /// Puts what the person likes and knows further up, like the Android app: favorites, songs heard often, albums
+    /// and artists played lately, songs played from an earlier search. Favorites that fit are found even when the
+    /// server doesn't list them. Everything is ordered by how well it fits plus that little push.
+    private func taste(_ q: String) async {
+        guard let r = result, let client = app.client, let account = app.current?.id else { return }
+        let fav = await SearchPool.favorites(client, account)
+        guard !Task.isCancelled else { return }
+        let played = PlayHistory.dates(account)
+        let searched = Set(recent.compactMap { $0.kind == .song ? $0.song?.id : nil })
+        let ranked = await Self.rankTaste(SmartMatch.prepare(q), r, fav, played, searched)
+        guard !Task.isCancelled else { return }
+        result = ranked
+    }
+
+    /// The comparing runs off the main thread: with many favorites it would stall the keyboard.
+    private nonisolated static func rankTaste(_ q: SmartMatch.Prepared, _ result: SearchBody, _ fav: SearchBody,
+                                              _ played: [String: Double], _ searched: Set<String>) async -> SearchBody {
+        var r = result
+        let favSongs = Set((fav.song ?? []).map(\.id))
+        let favAlbums = Set((fav.album ?? []).map(\.id))
+        let favArtists = Set((fav.artist ?? []).map(\.id))
+
+        func order<T: Identifiable>(_ server: [T], _ pool: [T], limit: Int, base: (T) -> Double, boost: (T) -> Double) -> [T] where T.ID: Hashable {
+            let have = Set(server.map(\.id))
+            let extra = pool.filter { !have.contains($0.id) && base($0) >= 72 }
+            let scored = (server + extra).enumerated().map { (i, x) -> (Int, T, Double) in
+                var b = base(x)
+                if have.contains(x.id) { b = max(b, 55) }
+                return (i, x, b + boost(x))
+            }
+            return Array(scored.sorted { $0.2 != $1.2 ? $0.2 > $1.2 : $0.0 < $1.0 }.prefix(limit).map { $0.1 })
+        }
+        func heard(_ s: Song) -> Double { (s.playCount ?? 0) > 0 ? min(15, log(1 + Double(s.playCount ?? 0)) * 5) : 0 }
+
+        r.song = order(r.song ?? [], fav.song ?? [], limit: 40,
+                       base: { max(SmartMatch.score(q, text: $0.title), 0.95 * SmartMatch.score(q, text: "\($0.title) \($0.artist ?? "")")) * 100 },
+                       boost: { ($0.starred != nil || favSongs.contains($0.id) ? 12 : 0) + heard($0) + (searched.contains($0.id) ? 10 : 0) })
+        r.album = order(r.album ?? [], fav.album ?? [], limit: 20,
+                        base: { max(SmartMatch.score(q, text: $0.name), 0.95 * SmartMatch.score(q, text: "\($0.name) \($0.artist ?? "")")) * 100 },
+                        boost: { ($0.starred != nil || favAlbums.contains($0.id) ? 12 : 0) + (played["a" + $0.id] != nil ? 8 : 0) })
+        r.artist = order(r.artist ?? [], fav.artist ?? [], limit: 10,
+                         base: { SmartMatch.score(q, text: $0.name) * 100 },
+                         boost: { ($0.starred != nil || favArtists.contains($0.id) ? 12 : 0) + (played["r" + $0.id] != nil ? 8 : 0) })
+        return r
+    }
+
+    /// Scores of every artist and album of the library for what was typed, computed off the main thread.
+    private nonisolated static func scoreLibrary(_ q: SmartMatch.Prepared, _ artists: [Artist], _ albums: [Album]) async -> ([Double], [Double]) {
+        var a: [Double] = []; a.reserveCapacity(artists.count)
+        for (i, x) in artists.enumerated() {
+            if i % 500 == 0, Task.isCancelled { return ([], []) }
+            a.append(SmartMatch.score(q, text: x.name))
+        }
+        var b: [Double] = []; b.reserveCapacity(albums.count)
+        for x in albums { b.append(SmartMatch.score(q, text: x.name)) }
+        return (a, b)
     }
 
     // MARK: Recent
@@ -845,6 +943,16 @@ struct SearchView: View {
         Text(key).font(.system(size: 17, weight: .bold)).padding(.top, 10)
     }
 
+    @ViewBuilder private func artistRow(_ a: Artist) -> some View {
+        NavigationLink(value: Route.artist(a.id)) {
+            ItemRow(title: a.name, subtitle: String(localized: "Artist")) {
+                CoverView(id: a.coverArt ?? a.id, size: 120, round: true).frame(width: 52)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .artist, key: a.id, title: a.name, cover: a.coverArt ?? a.id)) })
+    }
+
     @ViewBuilder private var results: some View {
         LazyVStack(alignment: .leading, spacing: 12) {
             if let error { LoadState(loading: false, error: error) { attempt += 1 } }
@@ -856,16 +964,26 @@ struct SearchView: View {
             }
             let r = result ?? SearchBody()
             Group {
-                if !(r.artist ?? []).isEmpty { sectionTitle("Artists") }
-                ForEach(r.artist ?? []) { a in
-                    NavigationLink(value: Route.artist(a.id)) {
-                        ItemRow(title: a.name, subtitle: String(localized: "Artist")) {
-                            CoverView(id: a.coverArt ?? a.id, size: 120, round: true).frame(width: 52)
+                if similarOnly { sectionTitle("Similar results") }
+                let typed = SmartMatch.normalize(query)
+                let exactArtists = (r.artist ?? []).filter { SmartMatch.normalize($0.name) == typed }
+                let otherArtists = (r.artist ?? []).filter { SmartMatch.normalize($0.name) != typed }
+                ForEach(exactArtists) { artistRow($0) }
+                if !(r.song ?? []).isEmpty { sectionTitle("Songs") }
+                let songs = r.song ?? []
+                ForEach(Array(songs.enumerated()), id: \.element.id) { i, s in
+                    SongRow(song: s, showCover: true) {
+                        remember(songItem(s))
+                        // The song plays, then songs like it follow: not the rest of the results
+                        Task {
+                            if !(await app.player.radio.start(String(localized: "\(s.title) radio"), seedId: s.id, first: s)) {
+                                app.player.play([s], from: 0, context: .init(kind: .search, name: query))
+                            }
                         }
                     }
-                    .buttonStyle(.plain)
-                    .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .artist, key: a.id, title: a.name, cover: a.coverArt ?? a.id)) })
                 }
+                if !otherArtists.isEmpty { sectionTitle("Artists") }
+                ForEach(otherArtists) { artistRow($0) }
                 if !books.authors.isEmpty { sectionTitle("Authors") }
                 ForEach(books.authors) { a in
                     NavigationLink(value: Route.bookAuthor(id: a.id, name: a.name)) {
@@ -913,14 +1031,6 @@ struct SearchView: View {
                     }
                     .buttonStyle(.plain)
                     .simultaneousGesture(TapGesture().onEnded { remember(RecentItem(kind: .narrator, key: n, title: n)) })
-                }
-                if !(r.song ?? []).isEmpty { sectionTitle("Songs") }
-                let songs = r.song ?? []
-                ForEach(Array(songs.enumerated()), id: \.element.id) { i, s in
-                    SongRow(song: s, showCover: true) {
-                        remember(songItem(s))
-                        app.player.play(songs, from: i, context: .init(kind: .search, name: query))
-                    }
                 }
                 let nothing = (r.artist ?? []).isEmpty && (r.album ?? []).isEmpty && songs.isEmpty && books.items.isEmpty
                     && books.authors.isEmpty && books.series.isEmpty && books.narrators.isEmpty
@@ -1026,6 +1136,12 @@ struct LibraryView: View {
             case .author(let a, _): "u" + a.id
             }
         }
+        /// What a pin remembers. A playlist the server rebuilds every day gets a new id but keeps its name,
+        /// so playlists are pinned by name (and owner) and the pin follows the new one.
+        var pinKey: String {
+            if case .playlist(let p) = self { return "pn:" + SmartMatch.normalize(p.name) + "|" + (p.owner ?? "") }
+            return id
+        }
         var name: String {
             switch self {
             case .dj, .favorites, .downloads: ""
@@ -1095,6 +1211,7 @@ struct LibraryView: View {
             }
             .onAppear(perform: loadPins)
             .onChange(of: app.currentId) { loadPins() }
+            .onChange(of: playlists) { migratePins() }
             .onChange(of: pins.first) { old, new in
                 // Something new pinned: go up to where it lands, so it doesn't vanish from where it was
                 if let new, new != old { withAnimation(.snappy(duration: 0.35)) { scroller.scrollTo(Self.top, anchor: .top) } }
@@ -1108,11 +1225,24 @@ struct LibraryView: View {
 
     private var pinsKey: String { "library.pins." + (app.currentId?.uuidString ?? "") }
 
-    private func loadPins() { pins = UserDefaults.standard.stringArray(forKey: pinsKey) ?? [] }
+    private func loadPins() { pins = UserDefaults.standard.stringArray(forKey: pinsKey) ?? []; migratePins() }
+
+    /// Pins from before were saved by id. As soon as the playlist is in the list, they become name pins.
+    private func migratePins() {
+        var next = pins
+        for (i, pin) in next.enumerated() where pin.hasPrefix("p") && !pin.hasPrefix("pn:") {
+            if let p = playlists.first(where: { "p" + $0.id == pin }) { next[i] = Item.playlist(p).pinKey }
+        }
+        guard next != pins else { return }
+        pins = next
+        UserDefaults.standard.set(next, forKey: pinsKey)
+    }
+
+    private func pinMatches(_ pin: String, _ item: Item) -> Bool { item.pinKey == pin || item.id == pin }
 
     private func togglePin(_ item: Item) {
         var next = pins
-        if let i = next.firstIndex(of: item.id) { next.remove(at: i) } else { next.insert(item.id, at: 0) }
+        if next.contains(where: { pinMatches($0, item) }) { next.removeAll { pinMatches($0, item) } } else { next.insert(item.pinKey, at: 0) }
         UserDefaults.standard.set(next, forKey: pinsKey)
         // Wait until the long-press menu has closed and the row is back in place. The row then fades out
         // where it was and in where it goes – sliding it across a long list makes it fly through everything
@@ -1121,13 +1251,15 @@ struct LibraryView: View {
         }
     }
 
-    private func isPinned(_ item: Item) -> Bool { item.pinned || pins.contains(item.id) }
+    private func isUserPinned(_ item: Item) -> Bool { pins.contains { pinMatches($0, item) } }
+
+    private func isPinned(_ item: Item) -> Bool { item.pinned || isUserPinned(item) }
 
     /// Long press: pin or unpin. Favorites and Downloads always stay on top.
     @ViewBuilder private func pinMenu(_ item: Item) -> some View {
         if !item.pinned {
             Button { togglePin(item) } label: {
-                pins.contains(item.id) ? Label("Unpin", systemImage: "pin.slash") : Label("Pin to top", systemImage: "pin")
+                isUserPinned(item) ? Label("Unpin", systemImage: "pin.slash") : Label("Pin to top", systemImage: "pin")
             }
         }
     }
@@ -1287,8 +1419,9 @@ struct LibraryView: View {
         }
         // Pinned ones first (newest pin on top), everything else in the chosen order
         let all = sorted(rest)
-        let top = pins.compactMap { id in all.first { $0.id == id } }
-        let list = top + all.filter { !pins.contains($0.id) }
+        var seen = Set<String>()
+        let top = pins.flatMap { pin in all.filter { pinMatches(pin, $0) } }.filter { seen.insert($0.id).inserted }
+        let list = top + all.filter { !isUserPinned($0) }
         return query.isEmpty ? pinned + list : matching(list)
     }
 
@@ -1446,7 +1579,7 @@ struct LibraryView: View {
 
     /// Pinning gives a row a new identity, so it fades instead of sliding to its new place.
     private var keyed: [(key: String, item: Item)] {
-        items.map { ((pins.contains($0.id) ? "pin." : "") + $0.id, $0) }
+        items.map { ((isUserPinned($0) ? "pin." : "") + $0.id, $0) }
     }
 
     private func tile(_ item: Item) -> some View {

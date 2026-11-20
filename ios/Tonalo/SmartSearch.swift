@@ -16,16 +16,17 @@ enum SmartMatch {
     private static func distance(_ a: [Character], _ b: [Character]) -> Int {
         if a.isEmpty { return b.count }
         if b.isEmpty { return a.count }
+        // Three rows, made once and handed on, not a new array per letter
         var older = [Int](repeating: 0, count: b.count + 1)
         var prev = Array(0...b.count)
+        var cur = [Int](repeating: 0, count: b.count + 1)
         for i in 1...a.count {
-            var cur = [i] + Array(repeating: 0, count: b.count)
+            cur[0] = i
             for j in 1...b.count {
                 cur[j] = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1))
                 if i > 1, j > 1, a[i - 1] == b[j - 2], a[i - 2] == b[j - 1] { cur[j] = min(cur[j], older[j - 2] + 1) }
             }
-            older = prev
-            prev = cur
+            (older, prev, cur) = (prev, cur, older)
         }
         return prev[b.count]
     }
@@ -35,10 +36,23 @@ enum SmartMatch {
 
     /// How well the typed words fit a name, 0 to 1: every typed word is compared with the words of the name, a word that
     /// starts the same counts fully, a typo costs a little. Also tried with the spaces left out ("acdc" for "AC/DC").
-    static func score(query: String, text: String) -> Double {
-        let q = tokens(query), t = tokens(text)
+    static func score(query: String, text: String) -> Double { score(prepare(query), text: text) }
+
+    /// The typed text broken up once, for comparing with many names.
+    struct Prepared: Sendable {
+        let words: [String]
+        let sounds: [String]
+    }
+
+    static func prepare(_ query: String) -> Prepared {
+        let t = tokens(query)
+        return Prepared(words: t, sounds: t.map(sound))
+    }
+
+    static func score(_ p: Prepared, text: String) -> Double {
+        let t = tokens(text)
         // Also as it sounds: "kolega" for "Kollegah"
-        return max(rawScore(q, t), rawScore(q.map(sound), t.map(sound)))
+        return max(rawScore(p.words, t), rawScore(p.sounds, t.map(sound)))
     }
 
     /// Double letters count once, "ph" is "f", an "h" that is only a breath (not after c, s, p, t, g) is dropped.

@@ -60,7 +60,7 @@ var BookViews = (function () {
   function progressBar(it, ep) {
     var p = ABS.progressOf(it.id, ep ? ep.id : (it.recentEpisode ? it.recentEpisode.id : null));
     if (!p) return null;
-    if (p.isFinished) return h('span.bk-done', null, Icon.el('play', 20));
+    if (p.isFinished) return h('span.bk-done', null, Icon.el('check', 22));
     return p.progress > 0.005 ? h('span.bk-bar', null, h('span', { style: 'width:' + Math.round(Math.min(1, p.progress) * 100) + '%' })) : null;
   }
 
@@ -295,10 +295,11 @@ var BookViews = (function () {
         var list = h('div.tracklist.nav-container');
         eps.slice(0, 200).forEach(function (ep) {
           var p = ABS.progressOf(it.id, ep.id);
-          var row = h('button.track.focusable', { onclick: function () { startPlayback(it.id, ep.id); App.go('bookplayer'); } },
-            h('span.t-main', null, h('span.t-text', null,
+          var done = !!(p && p.isFinished);
+          var row = h('button.track.focusable' + (done ? '.done' : ''), { onclick: function () { startPlayback(it.id, ep.id); App.go('bookplayer'); } },
+            h('span.t-main', null, done ? h('span.t-done', null, Icon.el('check', 26)) : null, h('span.t-text', null,
               h('span.t-title.ellipsis', { text: ep.title || '' }),
-              h('span.t-artist.ellipsis', { text: [when(ep.publishedAt), p && p.isFinished ? T('gehört') : p && p.progress > 0.01 ? T('{n} % gehört', { n: Math.round(p.progress * 100) }) : ''].filter(Boolean).join(' · ') }))),
+              h('span.t-artist.ellipsis', { text: [when(ep.publishedAt), p && p.isFinished ? T('Beendet') : p && p.progress > 0.01 ? T('{n} % gehört', { n: Math.round(p.progress * 100) }) : ''].filter(Boolean).join(' · ') }))),
             h('span.t-dur', { text: U.fmtTime(lengthOf(it, ep)) }));
           row.addEventListener('options', function () { itemMenu(it, ep); });
           list.appendChild(h('div.track-row', null, row));

@@ -1180,6 +1180,116 @@
         }
       }
     },
+    "Similar results" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ähnliche Ergebnisse"
+          }
+        }
+      }
+    },
+    "Smart Shuffle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Shuffle"
+          }
+        }
+      }
+    },
+    "No similar songs found, plain shuffle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine ähnlichen Songs gefunden, normale Zufallswiedergabe"
+          }
+        }
+      }
+    },
+    "Added by Smart Shuffle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von Smart Shuffle hinzugefügt"
+          }
+        }
+      }
+    },
+    "Shuffle a playlist and a new song that fits follows every two songs. Choose it at the shuffle button of a playlist, or press the shuffle button in the player again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mische eine Playlist, und nach jeweils zwei Songs folgt ein neuer, der passt. Wähle es am Zufalls-Knopf einer Playlist oder drücke den Zufalls-Knopf im Player noch einmal."
+          }
+        }
+      }
+    },
+    "Search knows your taste" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Suche kennt deinen Geschmack"
+          }
+        }
+      }
+    },
+    "Favorites and songs you hear often come first. If nothing fits well you get the closest matches, and a tapped song continues with songs like it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten und oft gehörte Songs kommen zuerst. Passt nichts gut, siehst du die nächsten Treffer, und ein angetippter Song läuft mit ähnlichen Songs weiter."
+          }
+        }
+      }
+    },
+    "Pins that stay" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pins, die bleiben"
+          }
+        }
+      }
+    },
+    "A playlist your server rebuilds every day keeps its pin, because pins follow the name. Opening a new playlist shows its title at once." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Playlist, die dein Server täglich neu baut, behält ihren Pin, denn Pins folgen dem Namen. Eine neue Playlist zeigt sofort ihren Titel."
+          }
+        }
+      }
+    },
+    "Podcasts at a glance" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podcasts auf einen Blick"
+          }
+        }
+      }
+    },
+    "Finished episodes get a check mark and a dimmed title, so you see what is left." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beendete Folgen haben einen Haken und einen abgedunkelten Titel, so siehst du, was noch offen ist."
+          }
+        }
+      }
+    },
     "Clear all" : {
       "localizations" : {
         "de" : {
@@ -3035,12 +3145,12 @@
         }
       }
     },
-    "Downloads keep going in the background. Without cellular, they wait for Wi-Fi." : {
+    "Downloads keep going in the background. Without cellular, they wait for Wi-Fi. The library cache only keeps lists, no songs." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Downloads laufen im Hintergrund weiter. Ohne Mobilfunk warten sie auf WLAN."
+            "value" : "Downloads laufen im Hintergrund weiter. Ohne Mobilfunk warten sie auf WLAN. Der Bibliotheks-Cache enthält nur Listen, keine Songs."
           }
         }
       }
@@ -3365,12 +3475,12 @@
         }
       }
     },
-    "Library offline" : {
+    "Library cache" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bibliothek offline"
+            "value" : "Bibliotheks-Cache"
           }
         }
       }
@@ -3458,12 +3568,12 @@
         }
       }
     },
-    "Loads every album, artist and playlist onto this iPhone once, so everything opens at once and without a connection. Large libraries take a few minutes. Repeat it now and then, about once a month, to pick up changes." : {
+    "The cache keeps the lists of all albums, artists and playlists on this iPhone: names and track lists, no music files. That is why they open at once and without a connection. No songs are downloaded, use Downloads for that. Large libraries take a few minutes. Update it now and then, about once a month, to pick up changes." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lädt alle Alben, Künstler und Playlists einmal auf dieses iPhone, damit sich alles sofort und auch ohne Verbindung öffnet. Große Bibliotheken brauchen ein paar Minuten. Wiederhole es ab und zu, etwa einmal im Monat, um Änderungen zu übernehmen."
+            "value" : "Der Cache hält die Listen aller Alben, Künstler und Playlists auf diesem iPhone: Namen und Titellisten, keine Musikdateien. Deshalb öffnen sie sich sofort und auch ohne Verbindung. Es werden keine Songs geladen, dafür gibt es die Downloads. Große Bibliotheken brauchen ein paar Minuten. Aktualisiere ihn ab und zu, etwa einmal im Monat, um Änderungen zu übernehmen."
           }
         }
       }
@@ -3848,12 +3958,12 @@
         }
       }
     },
-    "On this iPhone" : {
+    "In the cache" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Auf diesem iPhone"
+            "value" : "Im Cache"
           }
         }
       }
@@ -4918,22 +5028,22 @@
         }
       }
     },
-    "Sync again" : {
+    "Update cache" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erneut synchronisieren"
+            "value" : "Cache aktualisieren"
           }
         }
       }
     },
-    "Sync library now" : {
+    "Fill library cache now" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bibliothek jetzt synchronisieren"
+            "value" : "Bibliotheks-Cache jetzt füllen"
           }
         }
       }
@@ -4978,12 +5088,12 @@
         }
       }
     },
-    "The last sync is more than a month old. Sync again to pick up new music." : {
+    "The library cache is more than a month old. Update it to pick up new music." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die letzte Synchronisierung ist über einen Monat her. Synchronisiere erneut, um neue Musik zu übernehmen."
+            "value" : "Der Bibliotheks-Cache ist über einen Monat alt. Aktualisiere ihn, um neue Musik zu übernehmen."
           }
         }
       }

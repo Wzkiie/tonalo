@@ -386,8 +386,8 @@ struct NowPlayingView: View {
     private var controls: some View {
         let p = app.player
         return HStack {
-            Button { p.toggleShuffle() } label: { toggleIcon("shuffle", on: p.shuffle) }
-                .accessibilityLabel("Shuffle")
+            Button { Task { await p.cycleShuffle() } } label: { toggleIcon("shuffle", on: p.shuffle, badge: p.smart && p.shuffle ? "sparkles" : nil) }
+                .accessibilityLabel(p.smart ? "Smart Shuffle" : "Shuffle")
             Spacer()
             Button { p.previous() } label: { Image(systemName: "backward.end.fill").font(.system(size: 30)) }
                 .accessibilityLabel("Previous")
@@ -404,9 +404,12 @@ struct NowPlayingView: View {
     }
 
     /// Shuffle/repeat icon: accent colored with a small dot underneath while on.
-    private func toggleIcon(_ name: String, on: Bool) -> some View {
+    private func toggleIcon(_ name: String, on: Bool, badge: String? = nil) -> some View {
         VStack(spacing: 3) {
             Image(systemName: name).font(.system(size: 22))
+                .overlay(alignment: .topTrailing) {
+                    if let badge { Image(systemName: badge).font(.system(size: 10, weight: .bold)).offset(x: 7, y: -6) }
+                }
             Circle().frame(width: 4, height: 4).opacity(on ? 1 : 0)
         }
         .foregroundStyle(on ? Color.accent : .white)

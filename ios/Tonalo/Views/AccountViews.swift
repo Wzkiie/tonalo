@@ -758,12 +758,12 @@ private struct OfflineSettings: View {
                 }
                 Toggle("Download over cellular", isOn: Bindable(app.downloads).allowCellular)
                 NavigationLink { LibrarySyncView().canvasBackground() } label: {
-                    LabeledContent("Library offline", value: app.librarySync.running ? String(localized: "Syncing…")
+                    LabeledContent("Library cache", value: app.librarySync.running ? String(localized: "Syncing…")
                                    : app.librarySync.summary.map { $0.date.formatted(.relative(presentation: .named)) } ?? String(localized: "Off"))
                 }
                 NavigationLink("Storage") { StorageView().canvasBackground() }
             } footer: {
-                Text("Downloads keep going in the background. Without cellular, they wait for Wi-Fi.")
+                Text("Downloads keep going in the background. Without cellular, they wait for Wi-Fi. The library cache only keeps lists, no songs.")
             }
         }
         .navigationTitle("Offline")
@@ -833,7 +833,7 @@ private struct LibrarySyncView: View {
                     .padding(.vertical, 4)
                     Button("Stop", role: .destructive) { sync.cancel() }
                 } else {
-                    Button(sync.summary == nil ? "Sync library now" : "Sync again") {
+                    Button(sync.summary == nil ? "Fill library cache now" : "Update cache") {
                         if let client = app.client { sync.start(client) }
                     }
                     .disabled(!app.isOnline || app.client == nil)
@@ -843,11 +843,11 @@ private struct LibrarySyncView: View {
                 }
             } footer: {
                 Text(sync.isStale
-                     ? "The last sync is more than a month old. Sync again to pick up new music."
-                     : "Loads every album, artist and playlist onto this iPhone once, so everything opens at once and without a connection. Large libraries take a few minutes. Repeat it now and then, about once a month, to pick up changes.")
+                     ? "The library cache is more than a month old. Update it to pick up new music."
+                     : "The cache keeps the lists of all albums, artists and playlists on this iPhone: names and track lists, no music files. That is why they open at once and without a connection. No songs are downloaded, use Downloads for that. Large libraries take a few minutes. Update it now and then, about once a month, to pick up changes.")
             }
             if let summary = sync.summary {
-                Section("On this iPhone") {
+                Section("In the cache") {
                     LabeledContent("Albums", value: "\(summary.albums)")
                     LabeledContent("Artists", value: "\(summary.artists)")
                     LabeledContent("Songs", value: "\(summary.songs)")
@@ -856,7 +856,7 @@ private struct LibrarySyncView: View {
                 }
             }
         }
-        .navigationTitle("Library offline")
+        .navigationTitle("Library cache")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

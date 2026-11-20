@@ -181,6 +181,7 @@ final class PlayerModel {
         PlayHistory.note(context, account: app?.currentId)
         if tvName != nil { tv?.play(songs, from: start, shuffled: shuffled, context: context); return }
         self.context = context
+        endSmart()
         if shuffled {
             original = songs
             queue = songs.shuffled()
@@ -195,9 +196,113 @@ final class PlayerModel {
         load(autoplay: true)
     }
 
+    /// Songs the server added between the playlist's own in a Smart Shuffle (shown with a mark in the queue).
+    private(set) var smartIds: Set<String> = []
+    /// Shuffle that lets a song from outside follow every two songs.
+    private(set) var smart = false
+
+    @ObservationIgnored private var smartTask: Task<Void, Never>?
+
+    /// Asks the server for songs like a few from `songs`, all at once. Each answer is handed on as soon as it is in.
+    private func similarStream(_ songs: [Song], known: Set<String>) -> AsyncStream<[Song]> {
+        let client = app?.client
+        let seeds = Array(songs.shuffled().prefix(6))
+        return AsyncStream { out in
+            let work = Task {
+                guard let client else { out.finish(); return }
+                var seen = known.union(songs.map(\.id))
+                await withTaskGroup(of: [Song].self) { group in
+                    for seed in seeds { group.addTask { await client.similarSongs(seed.id) } }
+                    for await list in group {
+                        let fresh = list.filter { seen.insert($0.id).inserted }
+                        if !fresh.isEmpty { out.yield(fresh.shuffled()) }
+                    }
+                }
+                out.finish()
+            }
+            out.onTermination = { _ in work.cancel() }
+        }
+    }
+
+    @ObservationIgnored private var smartToken = UUID()
+
+    /// Smart Shuffle is over: whatever queue replaces this one is not woven into any more.
+    private func endSmart() {
+        smartTask?.cancel(); smartTask = nil
+        smartToken = UUID()
+        smart = false
+        smartIds = []
+    }
+
+    /// Smart Shuffle starts at once; the songs from outside are woven into what is still to come as the server answers.
+    private func startSmart(from songs: [Song], known: Set<String>) {
+        smartTask?.cancel()
+        smartToken = UUID()
+        let token = smartToken
+        smart = true
+        smartIds = []
+        // The first answer alone could fill the whole queue with songs like one single song: each answer gets a share
+        let share = max(2, (songs.count / 2 + 5) / 6)
+        smartTask = Task { [weak self] in
+            guard let self, !tvGuest else { return }
+            var found = 0
+            for await extra in similarStream(songs, known: known) {
+                guard !Task.isCancelled, smart, smartToken == token, tvName == nil, !tvGuest else { return }
+                found += extra.count
+                weave(Array(extra.prefix(share)))
+            }
+            guard !Task.isCancelled, smart, smartToken == token else { return }
+            if found < 2 {
+                smart = false
+                app?.notify(String(localized: "No similar songs found, plain shuffle"))
+                persist()
+            }
+        }
+    }
+
+    /// Puts `extra` between the songs that are still to come: two of the list, then one from outside.
+    private func weave(_ extra: [Song]) {
+        guard tvName == nil, queue.indices.contains(index) else { return }
+        let tail = Array(queue[(index + 1)...])
+        let plain = tail.filter { !smartIds.contains($0.id) }
+        let earlier = tail.filter { smartIds.contains($0.id) }
+        smartIds.formUnion(extra.map(\.id))
+        var more = (earlier + extra)[...]
+        var rest = plain[...]
+        var mixed: [Song] = []
+        while !rest.isEmpty {
+            for _ in 0..<2 { if let n = rest.popFirst() { mixed.append(n) } }
+            if let e = more.popFirst() { mixed.append(e) }
+        }
+        // Songs from outside that found no place stay at the end rather than getting lost
+        mixed.append(contentsOf: more.prefix(earlier.count))
+        queue = Array(queue[0...index]) + mixed
+        persist()
+        updateNowPlaying()
+        if isPlaying { preload() }
+    }
+
+    /// Shuffle a playlist with Smart Shuffle: it plays at once, the songs from outside follow in the background.
+    func smartShuffle(_ songs: [Song], context: Context? = nil) async {
+        guard !songs.isEmpty else { return }
+        play(songs, shuffled: true, context: context)
+        guard tvName == nil, !tvGuest else { return }
+        startSmart(from: songs, known: [])
+    }
+
+    /// The shuffle button in the player: off, shuffle, Smart Shuffle, off again.
+    func cycleShuffle() async {
+        if tvGuest || tvName != nil || station != nil { toggleShuffle(); return }
+        guard current != nil else { return }
+        if !shuffle || smart { toggleShuffle(); return }
+        // Shuffle is on: from now on songs from outside come in between what is still to come
+        startSmart(from: Array(queue[(index + 1)...]), known: Set(queue.map(\.id)))
+    }
+
     /// Puts songs in the queue without starting playback.
     func cue(_ songs: [Song], context: Context? = nil) {
         guard !songs.isEmpty else { return }
+        endSmart()
         queue = songs; index = 0; position = 0; original = nil; shuffle = false
         self.context = context
         duration = Double(songs[0].duration ?? 0)
@@ -242,6 +347,7 @@ final class PlayerModel {
         queue.append(contentsOf: songs)
         original = nil
         shuffle = false
+        endSmart()
         persist()
         if isPlaying { preload() }
     }
@@ -389,9 +495,16 @@ final class PlayerModel {
             // After a restart the original order is gone (not saved): then shuffle just goes off and the queue stays as it is.
             if let original {
                 queue = original
-                index = queue.firstIndex { $0.id == cur.id } ?? 0
+                if let k = queue.firstIndex(where: { $0.id == cur.id }) {
+                    index = k
+                } else {
+                    // A song from outside plays: it finishes first, then the list goes on from the start
+                    queue.insert(cur, at: 0)
+                    index = 0
+                }
             }
             self.original = nil
+            endSmart()
         } else {
             original = queue
             var rest = queue; rest.remove(at: index)
@@ -495,6 +608,7 @@ final class PlayerModel {
         endFade()
         player.pause()
         player.replaceCurrentItem(with: nil)
+        endSmart()
         queue = []; index = -1; position = 0; duration = 0; original = nil; context = nil
         remoteOffer = nil; remoteSave?.cancel(); remoteSignature = ""; localChange = .distantPast; unsynced = false
         cancelSleepTimer()
@@ -507,6 +621,8 @@ final class PlayerModel {
         var changed: Date?
         /// When the position was saved – a song left half played days ago starts from the beginning.
         var savedAt: Date?
+        /// Songs from outside of a Smart Shuffle, so they keep their mark after a restart.
+        var smartIds: [String]?
     }
 
     /// When the position last really moved – adding songs to a paused queue doesn't make an old position fresh.
@@ -521,7 +637,9 @@ final class PlayerModel {
     func restore() {
         guard let key = storageKey, let data = UserDefaults.standard.data(forKey: key),
               let s = try? JSONDecoder().decode(Saved.self, from: data) else { return }
+        endSmart()
         queue = s.queue
+        smartIds = Set(s.smartIds ?? []) // the marks come back; whether it still weaves does not
         index = queue.indices.contains(s.index) ? s.index : (queue.isEmpty ? -1 : 0)
         let fresh = Date().timeIntervalSince(s.savedAt ?? .distantPast) < Self.resumeWindow
         position = fresh ? s.position : 0
@@ -540,7 +658,8 @@ final class PlayerModel {
         if sync { localChange = .now }
         if position != lastSavedPosition { lastSavedPosition = position; positionMovedAt = .now }
         let s = Saved(queue: Array(queue.prefix(1000)), index: index, position: station == nil ? position : queuePosition, repeatMode: repeatMode, shuffle: shuffle,
-                      context: context, changed: localChange, savedAt: positionMovedAt)
+                      context: context, changed: localChange, savedAt: positionMovedAt,
+                      smartIds: smartIds.isEmpty ? nil : Array(smartIds))
         UserDefaults.standard.set(try? JSONEncoder().encode(s), forKey: key)
         if sync { syncToServer() }
     }
@@ -607,6 +726,7 @@ final class PlayerModel {
 
     private func take(_ offer: RemoteQueue, play: Bool) {
         remoteOffer = nil
+        endSmart()
         queue = offer.songs; index = offer.index; original = nil; shuffle = false; context = nil
         errorStreak = 0
         if play {
@@ -707,6 +827,7 @@ final class PlayerModel {
             context = .init(kind: .radio, name: String(localized: "Autoplay"))
             original = nil
             shuffle = false
+            endSmart()
             queue.append(contentsOf: songs)
             index += 1
             load(autoplay: true)
@@ -950,6 +1071,7 @@ final class PlayerModel {
             remoteOffer = nil
             qualityLabel = nil
             playingDownload = false
+            endSmart()
             tvName = name
             tvGuest = guest
             tvClock = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in

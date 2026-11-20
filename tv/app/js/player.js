@@ -11,6 +11,11 @@ var Player = (function () {
   var original = null;   // Originalreihenfolge, wenn Shuffle aktiv
   var index = -1;
   var shuffleOn = false;
+  var smart = false;     // Smart Shuffle: alle zwei Songs einer von außerhalb der Liste
+  var smartIds = {};     // welche Songs der Warteschlange von außerhalb kommen
+  var smartToken = 0;    // macht laufende Anfragen ungültig, wenn die Warteschlange ersetzt wird
+  var smartPool = [];    // gefundene Songs, die noch nicht eingewebt sind
+  var smartFailed = false; // nichts gefunden: der nächste Druck auf die Taste schaltet Shuffle aus
   var repeat = 'off';    // off | all | one
   var offset = 0;        // bei transkodierten Streams: Startposition (timeOffset)
   var scrobbled = false;
@@ -392,6 +397,7 @@ var Player = (function () {
     songs = (songs || []).filter(Boolean);
     if (!songs.length) { U.toast(T('Keine Songs zum Abspielen')); return; }
     start = start || 0;
+    endSmart();
     context = (opts && opts.context) || null;
     shuffleOn = !!(opts && opts.shuffle);
     if (shuffleOn) {
@@ -409,6 +415,7 @@ var Player = (function () {
     load((opts && opts.at) || 0, true); // vom iPhone herübergeholt: an derselben Stelle weiter
     emit('queue', queue);
     emit('mode');
+    if (opts && opts.smart && shuffleOn) startSmart();
   }
 
   function playNext(songs) {
@@ -436,6 +443,7 @@ var Player = (function () {
   function replaceUpNext(songs, ctx) {
     songs = U.asArray(songs);
     if (!queue.length || index < 0) return playList(songs, 0, { context: ctx || context });
+    endSmart();
     queue = queue.slice(0, index + 1).concat(songs);
     original = null;
     shuffleOn = false;
@@ -538,7 +546,7 @@ var Player = (function () {
     audio.pause();
     audio.removeAttribute('src');
     try { audio.load(); } catch (e) { /* egal */ }
-    queue = []; original = null; index = -1;
+    endSmart(); queue = []; original = null; index = -1;
     emit('track', null); emit('queue', queue); emit('state');
     persist();
   }
@@ -563,6 +571,8 @@ var Player = (function () {
     if (on === shuffleOn) return;
     if (rm) { shuffleOn = on; emit('mode'); return rSend({ cmd: 'shuffle', on: on }); }
     var cur = current();
+    smartFailed = false;
+    if (!on) removeSmart();
     shuffleOn = on;
     if (on) {
       original = queue.slice();
@@ -570,11 +580,88 @@ var Player = (function () {
       queue = cur ? [cur].concat(rest) : rest;
       index = 0;
     } else if (original) {
-      queue = original;
+      // Läuft gerade ein Song von außerhalb der Liste, bleibt er als Erster und die Liste folgt
+      queue = cur && original.indexOf(cur) < 0 ? [cur].concat(original) : original;
       original = null;
       index = Math.max(0, queue.indexOf(cur));
     }
     emit('queue', queue); emit('mode'); persist();
+  }
+
+  // ---- Smart Shuffle: Zufallswiedergabe, bei der alle zwei Songs einer von außerhalb der Liste kommt.
+  // Der Start ist sofort da; die passenden Songs kommen vom Server (ähnliche Songs) und werden nach und nach eingewebt.
+  function endSmart() { smartToken++; smart = false; smartIds = {}; smartPool = []; smartFailed = false; }
+
+  // Aus: die noch nicht gespielten Songs von außerhalb verschwinden aus der Warteschlange
+  function removeSmart() {
+    if (!smart) return;
+    var cur = current();
+    queue = queue.filter(function (s, i) { return i <= index || !smartIds[s.id]; });
+    index = Math.max(0, queue.indexOf(cur));
+    endSmart();
+  }
+
+  // Jeder Song der Liste in Reihenfolge, nach je zwei einer von außerhalb. Bereits eingewebte bleiben vorn.
+  function weave() {
+    if (!smart) return;
+    var keep = queue.length > index + 1 ? index + 2 : index + 1;
+    var head = queue.slice(0, keep), up = queue.slice(keep);
+    var inside = up.filter(function (s) { return !smartIds[s.id]; });
+    var outs = up.filter(function (s) { return smartIds[s.id]; }).concat(smartPool);
+    var built = [], k = 0;
+    // Der Song direkt nach dem laufenden bleibt, wo er ist; ist er aus der Liste, zählt er für das Zweierpaar mit
+    var lead = keep > index + 1 && !smartIds[queue[index + 1].id] ? 1 : 0;
+    for (var i = 0; i < inside.length; i++) {
+      built.push(inside[i]);
+      if ((i + 1 + lead) % 2 === 0 && k < outs.length) { smartIds[outs[k].id] = true; built.push(outs[k]); k++; }
+    }
+    smartPool = outs.slice(k);
+    queue = head.concat(built);
+    emit('queue', queue); persist();
+  }
+
+  function startSmart() {
+    if (rm || smart || !queue.length) return;
+    if (!shuffleOn) setShuffle(true);
+    smart = true; smartIds = {}; smartPool = [];
+    var token = ++smartToken;
+    emit('mode'); persist();
+    var inList = {}, used = {};
+    (original || queue).forEach(function (s) { inList[s.id] = true; });
+    queue.forEach(function (s) { inList[s.id] = true; });
+    var seeds = U.shuffle((original || queue).slice()).slice(0, 6);
+    var found = 0, i = 0;
+    function next() {
+      if (token !== smartToken) return;
+      if (i >= seeds.length) {
+        if (!found) { smart = false; smartFailed = true; emit('mode'); persist(); U.toast(T('Keine ähnlichen Songs gefunden')); }
+        return;
+      }
+      var seed = seeds[i++];
+      API.similarSongs(seed.id, 25).then(function (list) {
+        if (token !== smartToken) return;
+        var fresh = U.shuffle((list || []).filter(function (x) { return x && x.id && !inList[x.id] && !used[x.id]; })).slice(0, 8);
+        fresh.forEach(function (x) { used[x.id] = true; });
+        if (fresh.length) { found += fresh.length; smartPool = smartPool.concat(fresh); weave(); }
+        next();
+      }).catch(function () { next(); });
+    }
+    next();
+  }
+
+  // Aus → Zufällig → Smart Shuffle → Aus
+  function cycleShuffle() {
+    if (rm) return setShuffle(!shuffleOn);
+    if (!shuffleOn) { setShuffle(true); U.toast(T('Zufall an')); return; }
+    // Nichts in der Warteschlange (z. B. nach Stopp): Smart hat nichts zum Mischen, die Taste schaltet Zufall aus
+    if (!smart && !queue.length) { smartFailed = false; setShuffle(false); U.toast(T('Zufall aus')); return; }
+    if (!smart) {
+      if (smartFailed) { smartFailed = false; setShuffle(false); U.toast(T('Zufall aus')); return; }
+      U.toast(T('Smart Shuffle an'));
+      startSmart(); return;
+    }
+    setShuffle(false);
+    U.toast(T('Zufall aus'));
   }
 
   function cycleRepeat() {
@@ -672,6 +759,7 @@ var Player = (function () {
     U.ustore.set('index', index);
     U.ustore.set('repeat', repeat);
     U.ustore.set('shuffle', shuffleOn);
+    U.ustore.set('smart', smart ? Object.keys(smartIds) : false);
     U.ustore.set('context', context);
     // Ohne geladenen Stream ist die Position 0 – gespeicherte Position dann nicht überschreiben
     if (audio.src && !station) savePos(Math.floor(position()));
@@ -725,7 +813,7 @@ var Player = (function () {
   }
 
   function take(offer, autoplay) {
-    queue = offer.songs.slice(); original = null; shuffleOn = false; index = offer.index; context = null;
+    endSmart(); queue = offer.songs.slice(); original = null; shuffleOn = false; index = offer.index; context = null;
     errorStreak = 0;
     if (autoplay) {
       load(offer.pos, true);
@@ -753,7 +841,7 @@ var Player = (function () {
     audio.pause();
     audio.removeAttribute('src');
     try { audio.load(); } catch (e) { /* egal */ }
-    queue = []; original = null; index = -1; offset = 0;
+    endSmart(); queue = []; original = null; index = -1; offset = 0;
     station = null; stationSeq++; context = null; setSleep(0);
     emit('track', null); emit('queue', queue); emit('state');
   }
@@ -764,6 +852,9 @@ var Player = (function () {
     index = U.ustore.get('index', -1);
     repeat = U.ustore.get('repeat', 'off');
     shuffleOn = U.ustore.get('shuffle', false);
+    var sm = U.ustore.get('smart', false);
+    smart = !!sm && shuffleOn; smartIds = {}; smartPool = [];
+    if (smart && Array.isArray(sm)) sm.forEach(function (id) { smartIds[id] = true; });
     context = U.ustore.get('context', null);
     if (index >= queue.length) index = queue.length ? 0 : -1;
     if (current()) { emit('track', current()); emit('queue', queue); emit('mode'); }
@@ -866,7 +957,7 @@ var Player = (function () {
     stopFade(); stationSeq++;
     players.forEach(clear);
     rm = opts; rState = null; rSig = ''; rOffset = 0;
-    queue = []; original = null; index = -1; station = null; context = null;
+    endSmart(); queue = []; original = null; index = -1; station = null; context = null;
     clearInterval(rTimer);
     rTimer = setInterval(function () { if (rm && rState && rState.playing) emit('time'); }, 500);
     emit('track', null); emit('queue', queue); emit('mode'); emit('state');
@@ -973,6 +1064,10 @@ var Player = (function () {
     paused: function () { return rm ? !rPlaying() : (br && br.phase === 'handoff' ? false : audio.paused); },
     buffering: function () { return !rm && !audio.paused && audio.readyState < 3; },
     shuffle: function () { return shuffleOn; },
+    smart: function () { return smart && shuffleOn; },
+    isSmart: function (id) { return smart && !!smartIds[id]; },
+    cycleShuffle: cycleShuffle,
+    startSmart: startSmart,
     repeat: function () { return repeat; },
     checkRemote: checkRemote,
     take: take,
