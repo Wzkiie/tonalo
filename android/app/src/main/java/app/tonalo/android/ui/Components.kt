@@ -131,20 +131,19 @@ fun QuickTile(
     // What plays (or is paused) right now: the tile shows it, with a small level meter in the corner
     Box(
         modifier.height(56.dp).clip(RoundedCornerShape(Palette.corner(4.dp)))
-            .background(if (current) Palette.accent.copy(alpha = 0.22f) else Palette.elevated).plainClickable(onClick = onClick),
+            .background(Palette.elevated).plainClickable(onClick = onClick),
     ) {
         Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(56.dp)) { art() }
             Text(
-                title, Modifier.padding(start = 8.dp, end = 4.dp).weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                // Room for the level meter on the right while this plays
+                title, Modifier.padding(start = 8.dp, end = if (current) 22.dp else 4.dp).weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.SemiBold, fontSize = 13.sp, lineHeight = 16.sp,
-                color = if (current) Palette.accent else Color.White,
+                color = Color.White,
             )
         }
-        if (current) {
-            Box(Modifier.align(Alignment.CenterStart).width(3.dp).fillMaxHeight().background(Palette.accent))
-            PlayingBars(playing, Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 9.dp).size(width = 13.dp, height = 11.dp))
-        }
+        // The level meter sits at the right edge, in the middle of the tile
+        if (current) PlayingBars(playing, Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).size(width = 13.dp, height = 10.dp))
     }
 }
 
@@ -152,7 +151,7 @@ fun QuickTile(
  * The small level meter that says "this plays right now": the bars move while it plays and rest while it is paused.
  */
 @Composable
-fun PlayingBars(active: Boolean, modifier: Modifier = Modifier.size(width = 14.dp, height = 12.dp)) {
+fun PlayingBars(active: Boolean, modifier: Modifier = Modifier.size(width = 13.dp, height = 10.dp)) {
     var t by androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     LaunchedEffect(active) {
         if (active) while (true) androidx.compose.runtime.withFrameNanos { t = (it / 1_000_000L) / 1000f }
@@ -162,10 +161,12 @@ fun PlayingBars(active: Boolean, modifier: Modifier = Modifier.size(width = 14.d
         val phase = floatArrayOf(0f, 1.7f, 3.1f, 0.9f)
         val speed = floatArrayOf(5.2f, 6.4f, 4.6f, 5.8f)
         val rest = floatArrayOf(0.45f, 0.8f, 0.6f, 0.35f)
-        val barW = 3.5.dp.toPx()
-        val gap = 2.5.dp.toPx()
-        var x = (size.width - (barW * 4 + gap * 3)) / 2
-        for (i in 0 until 4) {
+        // Three thin bars, like the iPhone app
+        val bars = 3
+        val barW = 3.dp.toPx()
+        val gap = 2.dp.toPx()
+        var x = (size.width - (barW * bars + gap * (bars - 1))) / 2
+        for (i in 0 until bars) {
             val level = if (active) 0.55f + 0.45f * kotlin.math.sin(t * speed[i] + phase[i]) else rest[i]
             val h = size.height * maxOf(0.18f, level)
             drawRoundRect(

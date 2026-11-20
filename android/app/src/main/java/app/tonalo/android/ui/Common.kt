@@ -399,7 +399,7 @@ fun SongRow(
         }
         Spacer(Modifier.width(8.dp))
         // Says "this one plays right now" – in a playlist, an album and in the search alike
-        if (isCurrent) PlayingBars(state.isPlaying, Modifier.size(width = 14.dp, height = 12.dp))
+        if (isCurrent) PlayingBars(state.isPlaying, Modifier.size(width = 13.dp, height = 10.dp))
         SongMenu(song, extraMenu, open = menu, onOpen = { menu = it })
     }
     }
