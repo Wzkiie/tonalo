@@ -1023,6 +1023,7 @@ var Views = (function () {
     }
 
     if (U.desktop) {
+      el.appendChild(Desktop.streamDeckSetting());
       el.appendChild(h('div.settings-section', { text: T('Tastatur') }));
       el.appendChild(h('div.keys', { html:
         T('<b>Leertaste</b> Play/Pause · <b>Strg + ← / →</b> Song wechseln · <b>Strg + F</b> Suchen · <b>Esc</b> zurück<br>') +

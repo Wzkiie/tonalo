@@ -432,5 +432,7 @@ I18N.add('pt', {
   'Server ändern': 'Alterar servidor',
   'Server oder Anmeldung ändern': 'Alterar servidor ou login',
   'Info': 'Info',
-  'Dieses Konto ist schon angemeldet. Wähle „Benutzer wechseln“.': 'Esta conta já está conectada. Escolha “Trocar de usuário”.'
+  'Dieses Konto ist schon angemeldet. Wähle „Benutzer wechseln“.': 'Esta conta já está conectada. Escolha “Trocar de usuário”.',
+  'Stream-Deck-Plugin zulassen': 'Permitir o plugin do Stream Deck',
+  'Aus: Tonalo öffnet nichts. An: das Plugin auf diesem PC kann Play/Pause, Herz, DJ und Mix auslösen und sieht, was läuft. Nur dieser PC, mit Schlüssel.': 'Desligado: o Tonalo não abre nada. Ligado: o plugin neste PC pode iniciar reproduzir/pausar, favorito, DJ e mistura e vê o que está a tocar. Apenas este PC, protegido por uma chave.'
 });

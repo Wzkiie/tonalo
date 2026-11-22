@@ -11,6 +11,7 @@ Module._resolveFilename = function (request, ...rest) {
 const ZOOM = 0.6;              // die TV-Oberfläche ist für 3 m Abstand gebaut – am Schreibtisch reicht gut die Hälfte
 const MAC = process.platform === 'darwin';
 let win = null;
+let transport = null;
 
 // ---------------- Fenster merken (Größe, Position, Zoom)
 const stateFile = () => path.join(app.getPath('userData'), 'window.json');
@@ -71,6 +72,7 @@ function createWindow() {
   win.on('close', saveState);
   win.on('closed', () => { win = null; });
 
+  win.webContents.on('did-finish-load', () => { if (transport) transport.refresh(); });
   win.loadFile(path.join(__dirname, 'web', 'index.html'));
 }
 
@@ -265,6 +267,8 @@ if (!app.requestSingleInstanceLock()) {
     startService();
     setupRemote();
     createWindow();
+    transport = require('./transport.js').setupTransport(() => win, fromUs, ipcMain);
+    require('./streamdeck.js').setupStreamDeck(() => win, fromUs, ipcMain);
     setupUpdater();
   });
   app.on('window-all-closed', () => app.quit());

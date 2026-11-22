@@ -125,6 +125,101 @@ var Desktop = (function () {
     ms.setActionHandler('seekforward', function () { if (App.bookMode()) Book.skipForward(); });
   }
 
+  // ---------------- Taskleiste (Windows) und Dock-Menü (Mac): Zustand hinaus, Befehle herein
+  function transportState() {
+    if (!N.transport) return;
+    var book = App.bookMode(), s = Player.current(), st = Player.station();
+    if (book) N.transport.state({ has: !!Book.title(), playing: Book.playing(), title: Book.title() || '', artist: Book.author() || '' });
+    else N.transport.state({ has: !!(s || st), playing: !!(s || st) && !Player.paused(), title: st ? st.name : s ? s.title : '', artist: st ? '' : s ? s.artist : '' });
+  }
+  if (N.transport) N.transport.onCommand(function (c) {
+    var book = App.bookMode();
+    if (c === 'toggle') { if (book) Book.toggle(); else Player.toggle(); }
+    else if (c === 'next') { if (book) Book.nextChapter(); else Player.next(); }
+    else if (c === 'prev') { if (book) Book.prevChapter(); else Player.prev(); }
+  });
+
+  // ---------------- Stream-Deck-Plugin (streamdeck/): Zustand hinaus, Befehle herein – nur wenn in den Einstellungen eingeschaltet
+  var sdTimer = 0;
+  function sdState() {
+    if (!N.streamDeck) return;
+    clearTimeout(sdTimer);
+    sdTimer = setTimeout(function () {
+      var book = App.bookMode(), s = Player.current(), st = Player.station();
+      var st2 = { shuffle: Player.shuffle(), smart: Player.smart(), volume: Player.volume(), dj: DJ.playing() };
+      if (book) st2 = Object.assign(st2, { kind: 'book', playing: Book.playing(), title: Book.title() || '', artist: Book.author() || '' });
+      else if (st) st2 = Object.assign(st2, { kind: 'station', playing: !Player.paused(), title: st.name || '', artist: T('Radio') });
+      else if (s) st2 = Object.assign(st2, { kind: 'song', playing: !Player.paused(), title: s.title || '', artist: s.artist || '', album: s.album || '', starred: !!s.starred, coverUrl: API.cover(s.coverArt || s.albumId, 256) });
+      else st2.kind = 'none';
+      N.streamDeck.state(st2);
+    }, 60);
+  }
+  function sdCommand(c, v) {
+    var book = App.bookMode(), s = Player.current();
+    switch (c) {
+      case 'toggle': if (book) Book.toggle(); else Player.toggle(); break;
+      case 'play': if (book) Book.play(); else Player.play(); break;
+      case 'pause': if (book) Book.pause(); else Player.pause(); break;
+      case 'next': if (book) Book.nextChapter(); else Player.next(); break;
+      case 'prev': if (book) Book.prevChapter(); else Player.prev(); break;
+      case 'shuffle': Player.cycleShuffle(); break; // Aus, Zufällig, Smart Shuffle
+      case 'volumeUp': Player.setVolume(Player.volume() + 0.05); break;
+      case 'volumeDown': Player.setVolume(Player.volume() - 0.05); break;
+      case 'volume': Player.setVolume(v); break;
+      case 'favorite':
+        if (book || !s || Player.station()) return;
+        var on = !s.starred;
+        API.star('song', s.id, on).then(function () {
+          Player.setStarred(s, on);
+          U.toast(on ? T('Zu Favoriten hinzugefügt') : T('Aus Favoriten entfernt'));
+        }).catch(App.error);
+        break;
+      case 'mix':
+        API.randomSongs(150).then(function (list) { Player.playList(list, 0); }).catch(App.error);
+        break;
+      case 'radio':
+        API.starred().then(function (r) {
+          var seeds = U.shuffle(r.songs).slice(0, 10);
+          return Radio.start(T('Dein Radio'), { seeds: seeds, seedId: seeds[0] && seeds[0].id, first: seeds[0] });
+        }).catch(App.error);
+        break;
+      case 'dj':
+        if (DJ.ready() && !(DJ.playing() && !Player.paused())) DJ.start();
+        break;
+    }
+  }
+  if (N.streamDeck) {
+    N.streamDeck.onCommand(sdCommand);
+    N.streamDeck.onConvert(function (bytes, mime) {
+      return createImageBitmap(new Blob([bytes], { type: mime })).then(function (bmp) {
+        var c = document.createElement('canvas');
+        c.width = c.height = 144;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(bmp, 0, 0, 144, 144);
+        return c.toDataURL('image/jpeg', 0.85);
+      });
+    });
+    ['track', 'state', 'volume', 'mode'].forEach(function (evt) { Player.on(evt, sdState); });
+    ['track', 'state'].forEach(function (evt) { Book.on(evt, sdState); });
+  }
+  function streamDeckSetting() {
+    var box = h('div.chips.nav-container');
+    function chips(on) {
+      box.innerHTML = '';
+      [[true, T('An')], [false, T('Aus')]].forEach(function (v) {
+        box.appendChild(UI.chip(v[1], function () {
+          N.streamDeck.setEnabled(v[0]).then(function (now) { chips(now); sdState(); });
+        }, on === v[0]));
+      });
+    }
+    N.streamDeck.enabled().then(chips);
+    var frag = document.createDocumentFragment();
+    frag.appendChild(h('div.settings-section', { text: 'Stream Deck' }));
+    frag.appendChild(h('div.setting', null, h('div', null, h('div.setting-label', { text: T('Stream-Deck-Plugin zulassen') }),
+      h('div.setting-desc', { text: T('Aus: Tonalo öffnet nichts. An: das Plugin auf diesem PC kann Play/Pause, Herz, DJ und Mix auslösen und sieht, was läuft. Nur dieser PC, mit Schlüssel.') })), box));
+    return frag;
+  }
+
   // ---------------- Updates: kommen als neues Release auf GitHub, geladen und installiert wird in der App
   var upd = { state: 'idle' };
   var settingRow = null, offered = {}, wantInstall = false;
@@ -460,7 +555,7 @@ var Desktop = (function () {
     U.$('#main').appendChild(linkbar);
     mini = volumeControl(false);
     U.$('.mp-right').insertBefore(mini, U.$('.mp-right').firstChild);
-    ['track', 'state'].forEach(function (evt) { Player.on(evt, function () { media(); mediaState(); }); Book.on(evt, function () { media(); mediaState(); }); });
+    ['track', 'state'].forEach(function (evt) { Player.on(evt, function () { media(); mediaState(); transportState(); }); Book.on(evt, function () { media(); mediaState(); transportState(); }); });
     N.updates.ready();
   });
 
@@ -482,5 +577,5 @@ var Desktop = (function () {
     // Auch die Adressen von Audiobookshelf: ihre Header bleiben, solange das Konto da ist
     keepHeaders: function (list) { var urls = []; list.forEach(function (a) { urls.push(a.url); if (a.alt) urls.push(a.alt); if (a.abs && a.abs.url) urls.push(a.abs.url); }); N.headers.keepOnly(urls); },
     headerProblem: headerProblem, headerSetting: headerSetting, altSetting: altSetting, checkRoute: checkRoute,
-    updateSetting: updateSetting, volume: function () { return volumeControl(true); }, linked: linked };
+    updateSetting: updateSetting, streamDeckSetting: streamDeckSetting, volume: function () { return volumeControl(true); }, linked: linked };
 })();

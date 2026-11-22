@@ -433,5 +433,7 @@ I18N.add('tr', {
   'Server ändern': 'Sunucuyu değiştir',
   'Server oder Anmeldung ändern': 'Sunucuyu veya girişi değiştir',
   'Info': 'Bilgi',
-  'Dieses Konto ist schon angemeldet. Wähle „Benutzer wechseln“.': 'Bu hesap zaten oturum açmış. “Kullanıcı değiştir” seçeneğini kullan.'
+  'Dieses Konto ist schon angemeldet. Wähle „Benutzer wechseln“.': 'Bu hesap zaten oturum açmış. “Kullanıcı değiştir” seçeneğini kullan.',
+  'Stream-Deck-Plugin zulassen': 'Stream Deck eklentisine izin ver',
+  'Aus: Tonalo öffnet nichts. An: das Plugin auf diesem PC kann Play/Pause, Herz, DJ und Mix auslösen und sieht, was läuft. Nur dieser PC, mit Schlüssel.': 'Kapalı: Tonalo hiçbir şey açmaz. Açık: bu bilgisayardaki eklenti oynat/duraklat, favori, DJ ve karışımı başlatabilir ve çalanı görür. Yalnızca bu bilgisayar, anahtarla korunur.'
 });

@@ -30,6 +30,8 @@
       "preload.js",
       "headers.js",
       "remote.js",
+      "transport.js",
+      "streamdeck.js",
       "webos-service.js",
       "web/**",
       "service/**"

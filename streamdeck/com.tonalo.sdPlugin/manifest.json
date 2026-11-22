@@ -1,0 +1,94 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "SDKVersion": 2,
+  "Name": "Tonalo",
+  "Version": "1.0.0.0",
+  "Author": "Wzkiie",
+  "Description": "Control Tonalo on this PC: play/pause, favorite, DJ, mix, radio and volume.",
+  "Category": "Tonalo",
+  "CategoryIcon": "imgs/category-icon",
+  "Icon": "imgs/plugin-icon",
+  "URL": "https://tonalo.app",
+  "CodePath": "plugin.js",
+  "Nodejs": { "Version": "20", "Debug": "disabled" },
+  "OS": [
+    { "Platform": "windows", "MinimumVersion": "10" },
+    { "Platform": "mac", "MinimumVersion": "12" }
+  ],
+  "Software": { "MinimumVersion": "6.6" },
+  "Actions": [
+    {
+      "Name": "Now playing / Play-Pause",
+      "UUID": "com.tonalo.nowplaying",
+      "Icon": "imgs/action",
+      "Tooltip": "Shows the cover of the playing song. Press for play/pause.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key", "TitleAlignment": "bottom", "FontSize": 11 }]
+    },
+    {
+      "Name": "Favorite",
+      "UUID": "com.tonalo.favorite",
+      "Icon": "imgs/action",
+      "Tooltip": "Adds the playing song to your favorites, or removes it.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key", "ShowTitle": false }]
+    },
+    {
+      "Name": "DJ",
+      "UUID": "com.tonalo.dj",
+      "Icon": "imgs/action",
+      "Tooltip": "Starts a new DJ set (if the DJ is set up).",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key", "ShowTitle": false }]
+    },
+    {
+      "Name": "Random mix",
+      "UUID": "com.tonalo.mix",
+      "Icon": "imgs/action",
+      "Tooltip": "Plays a random mix from your library.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key", "ShowTitle": false }]
+    },
+    {
+      "Name": "Your radio",
+      "UUID": "com.tonalo.radio",
+      "Icon": "imgs/action",
+      "Tooltip": "Endless radio based on your favorite songs.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key", "ShowTitle": false }]
+    },
+    {
+      "Name": "Shuffle / Smart Shuffle",
+      "UUID": "com.tonalo.shuffle",
+      "Icon": "imgs/action",
+      "Tooltip": "Cycles shuffle: off, shuffle, Smart Shuffle.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key", "ShowTitle": false }]
+    },
+    {
+      "Name": "Next",
+      "UUID": "com.tonalo.next",
+      "Icon": "imgs/action",
+      "Tooltip": "Next song.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key", "ShowTitle": false }]
+    },
+    {
+      "Name": "Previous",
+      "UUID": "com.tonalo.prev",
+      "Icon": "imgs/action",
+      "Tooltip": "Previous song.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key", "ShowTitle": false }]
+    },
+    {
+      "Name": "Volume",
+      "UUID": "com.tonalo.volume",
+      "Icon": "imgs/action",
+      "Tooltip": "Turn for Tonalo's volume, press for play/pause.",
+      "Controllers": ["Encoder"],
+      "Encoder": { "layout": "$B1", "TriggerDescription": { "Rotate": "Volume", "Push": "Play/Pause", "Touch": "Play/Pause" } },
+      "States": [{ "Image": "imgs/key", "ShowTitle": false }]
+    }
+  ]
+}

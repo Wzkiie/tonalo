@@ -21,6 +21,24 @@ contextBridge.exposeInMainWorld('TonaloNative', {
   },
   // Für die Wahl zwischen Heimadresse und der von außen: woran man das Netz erkennt, und ob eine Adresse darin liegt
   net: { state: (host) => ipcRenderer.invoke('net-state', String(host || '')) },
+  // Zustand für Taskleiste und Dock-Menü hinaus, Befehle (prev, toggle, next) von dort herein
+  transport: {
+    state: (s) => ipcRenderer.send('media-state', { has: !!s.has, playing: !!s.playing, title: String(s.title || ''), artist: String(s.artist || '') }),
+    onCommand: (fn) => { ipcRenderer.on('media-cmd', (_e, c) => fn(String(c))); }
+  },
+  // Stream-Deck-Plugin: Zustand hinaus, Befehle herein, Schalter in den Einstellungen
+  streamDeck: {
+    state: (s) => ipcRenderer.send('sd-state', s),
+    onCommand: (fn) => { ipcRenderer.on('sd-cmd', (_e, c, v) => fn(String(c), +v || 0)); },
+    // Bild umwandeln (z. B. WebP in JPEG): fn(bytes, mime) liefert ein Promise mit der Daten-Adresse
+    onConvert: (fn) => {
+      ipcRenderer.on('sd-conv', (_e, id, bytes, mime) => {
+        Promise.resolve(fn(bytes, String(mime))).then((d) => ipcRenderer.send('sd-conv-result', id, String(d || '')), () => ipcRenderer.send('sd-conv-result', id, ''));
+      });
+    },
+    enabled: () => ipcRenderer.invoke('sd-get'),
+    setEnabled: (on) => ipcRenderer.invoke('sd-set', !!on)
+  },
   updates: {
     ready: () => ipcRenderer.send('upd-ready'),
     check: () => ipcRenderer.send('upd-check'),
