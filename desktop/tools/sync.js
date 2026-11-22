@@ -21,6 +21,8 @@ fs.mkdirSync(path.join(DESK, 'service'), { recursive: true });
 for (const f of ['service.js', 'package.json']) fs.copyFileSync(path.join(TV, 'service', f), path.join(DESK, 'service', f));
 fs.mkdirSync(path.join(DESK, 'build'), { recursive: true });
 fs.copyFileSync(path.join(DESK, '..', 'assets', 'icon-512.png'), path.join(DESK, 'build', 'icon.png'));
+// Das Stream-Deck-Plugin kommt mit in den Installer; die App kopiert es auf Wunsch in den Ordner des Stream Deck
+copy(path.join(DESK, '..', 'streamdeck', 'com.tonalo.sdPlugin'), path.join(DESK, 'build', 'streamdeck-plugin'));
 
 // Eine Version für TV und Windows: die aus tv/app/appinfo.json
 const version = JSON.parse(fs.readFileSync(path.join(TV, 'app', 'appinfo.json'), 'utf8')).version;

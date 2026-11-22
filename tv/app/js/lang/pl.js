@@ -435,5 +435,10 @@ I18N.add('pl', {
   'Info': 'Informacje',
   'Dieses Konto ist schon angemeldet. Wähle „Benutzer wechseln“.': 'To konto jest już zalogowane. Wybierz „Zmień użytkownika”.',
   'Stream-Deck-Plugin zulassen': 'Zezwól na wtyczkę Stream Deck',
-  'Aus: Tonalo öffnet nichts. An: das Plugin auf diesem PC kann Play/Pause, Herz, DJ und Mix auslösen und sieht, was läuft. Nur dieser PC, mit Schlüssel.': 'Wyłączone: Tonalo niczego nie otwiera. Włączone: wtyczka na tym komputerze może uruchamiać odtwarzanie/pauzę, ulubione, DJ-a i miks oraz widzi, co gra. Tylko ten komputer, zabezpieczone kluczem.'
+  'Aus: Tonalo öffnet nichts. An: das Plugin auf diesem PC kann Play/Pause, Herz, DJ und Mix auslösen und sieht, was läuft. Nur dieser PC, mit Schlüssel.': 'Wyłączone: Tonalo niczego nie otwiera. Włączone: wtyczka na tym komputerze może uruchamiać odtwarzanie/pauzę, ulubione, DJ-a i miks oraz widzi, co gra. Tylko ten komputer, zabezpieczone kluczem.',
+  'Plugin installieren': 'Zainstaluj wtyczkę',
+  'Plugin aktualisieren': 'Zaktualizuj wtyczkę',
+  'Tonalo kopiert das Plugin in den Ordner der Stream-Deck-Software. Danach startest du diese einmal neu.': 'Tonalo kopiuje wtyczkę do folderu oprogramowania Stream Deck. Potem uruchom to oprogramowanie ponownie.',
+  'Plugin installiert. Starte die Stream-Deck-Software neu.': 'Wtyczka zainstalowana. Uruchom ponownie oprogramowanie Stream Deck.',
+  'Das Plugin konnte nicht kopiert werden.': 'Nie udało się skopiować wtyczki.'
 });

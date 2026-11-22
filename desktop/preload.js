@@ -36,6 +36,9 @@ contextBridge.exposeInMainWorld('TonaloNative', {
         Promise.resolve(fn(bytes, String(mime))).then((d) => ipcRenderer.send('sd-conv-result', id, String(d || '')), () => ipcRenderer.send('sd-conv-result', id, ''));
       });
     },
+    // Plugin im Ordner des Stream Deck: { available, installed, current } und kopieren (true bei Erfolg)
+    pluginStatus: () => ipcRenderer.invoke('sd-plugin-status'),
+    pluginInstall: () => ipcRenderer.invoke('sd-plugin-install'),
     enabled: () => ipcRenderer.invoke('sd-get'),
     setEnabled: (on) => ipcRenderer.invoke('sd-set', !!on)
   },

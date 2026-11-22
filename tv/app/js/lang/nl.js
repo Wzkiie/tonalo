@@ -434,5 +434,10 @@ I18N.add('nl', {
   'Info': 'Info',
   'Dieses Konto ist schon angemeldet. Wähle „Benutzer wechseln“.': 'Dit account is al aangemeld. Kies “Andere gebruiker”.',
   'Stream-Deck-Plugin zulassen': 'Stream Deck-plugin toestaan',
-  'Aus: Tonalo öffnet nichts. An: das Plugin auf diesem PC kann Play/Pause, Herz, DJ und Mix auslösen und sieht, was läuft. Nur dieser PC, mit Schlüssel.': 'Uit: Tonalo opent niets. Aan: de plugin op deze pc kan afspelen/pauzeren, hartje, DJ en mix starten en ziet wat er speelt. Alleen deze pc, beveiligd met een sleutel.'
+  'Aus: Tonalo öffnet nichts. An: das Plugin auf diesem PC kann Play/Pause, Herz, DJ und Mix auslösen und sieht, was läuft. Nur dieser PC, mit Schlüssel.': 'Uit: Tonalo opent niets. Aan: de plugin op deze pc kan afspelen/pauzeren, hartje, DJ en mix starten en ziet wat er speelt. Alleen deze pc, beveiligd met een sleutel.',
+  'Plugin installieren': 'Plugin installeren',
+  'Plugin aktualisieren': 'Plugin bijwerken',
+  'Tonalo kopiert das Plugin in den Ordner der Stream-Deck-Software. Danach startest du diese einmal neu.': 'Tonalo kopieert de plugin naar de map van de Stream Deck-software. Start die software daarna één keer opnieuw.',
+  'Plugin installiert. Starte die Stream-Deck-Software neu.': 'Plugin geïnstalleerd. Start de Stream Deck-software opnieuw.',
+  'Das Plugin konnte nicht kopiert werden.': 'De plugin kon niet worden gekopieerd.'
 });

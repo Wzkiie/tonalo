@@ -1,7 +1,7 @@
 {
   "name": "tonalo-desktop",
   "productName": "Tonalo",
-  "version": "1.11.5",
+  "version": "1.11.6",
   "description": "Unofficial Navidrome/Subsonic client for Windows and macOS",
   "homepage": "https://tonalo.app",
   "author": "Wzkiie",
@@ -35,6 +35,9 @@
       "webos-service.js",
       "web/**",
       "service/**"
+    ],
+    "extraResources": [
+      { "from": "build/streamdeck-plugin", "to": "streamdeck-plugin" }
     ],
     "directories": {
       "output": "dist",

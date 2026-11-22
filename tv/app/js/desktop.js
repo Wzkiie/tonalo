@@ -203,20 +203,44 @@ var Desktop = (function () {
     ['track', 'state'].forEach(function (evt) { Book.on(evt, sdState); });
   }
   function streamDeckSetting() {
-    var box = h('div.chips.nav-container');
+    var box = h('div.chips.nav-container'), installRow = h('div.settings-actions.nav-container');
+    function install() {
+      N.streamDeck.pluginInstall().then(function (ok) {
+        U.toast(ok ? T('Plugin installiert. Starte die Stream-Deck-Software neu.') : T('Das Plugin konnte nicht kopiert werden.'), ok ? 8000 : 5000);
+        pluginRow(false);
+      });
+    }
+    function ask(st) {
+      if (UI.modalOpen()) return;
+      UI.modal(null, [
+        { icon: 'play', label: T('Jetzt installieren'), action: install },
+        { icon: 'close', label: T('Später') }
+      ], { head: { title: st.installed ? T('Plugin aktualisieren') : T('Plugin installieren'), sub: T('Tonalo kopiert das Plugin in den Ordner der Stream-Deck-Software. Danach startest du diese einmal neu.') } });
+    }
+    // Nur wenn das Stream Deck hier installiert ist und das Plugin fehlt oder älter ist; beim Einschalten fragt Tonalo gleich
+    function pluginRow(offer) {
+      N.streamDeck.pluginStatus().then(function (st) {
+        installRow.innerHTML = '';
+        if (!st.available || st.current) return;
+        installRow.appendChild(UI.button(st.installed ? T('Plugin aktualisieren') : T('Plugin installieren'), function () { ask(st); }, 'outline', 'play'));
+        if (offer) ask(st);
+      });
+    }
     function chips(on) {
       box.innerHTML = '';
       [[true, T('An')], [false, T('Aus')]].forEach(function (v) {
         box.appendChild(UI.chip(v[1], function () {
-          N.streamDeck.setEnabled(v[0]).then(function (now) { chips(now); sdState(); });
+          N.streamDeck.setEnabled(v[0]).then(function (now) { chips(now); sdState(); pluginRow(now); });
         }, on === v[0]));
       });
     }
     N.streamDeck.enabled().then(chips);
+    pluginRow(false);
     var frag = document.createDocumentFragment();
     frag.appendChild(h('div.settings-section', { text: 'Stream Deck' }));
     frag.appendChild(h('div.setting', null, h('div', null, h('div.setting-label', { text: T('Stream-Deck-Plugin zulassen') }),
       h('div.setting-desc', { text: T('Aus: Tonalo öffnet nichts. An: das Plugin auf diesem PC kann Play/Pause, Herz, DJ und Mix auslösen und sieht, was läuft. Nur dieser PC, mit Schlüssel.') })), box));
+    frag.appendChild(installRow);
     return frag;
   }
 

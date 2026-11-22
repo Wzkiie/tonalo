@@ -151,6 +151,42 @@ function setupStreamDeck(getWin, fromUs, ipcMain) {
     if (!same && clients.size) broadcast();
   });
 
+  // ---- Das Plugin ins Stream Deck kopieren (nur nach Ja in der App, nur in den Plugin-Ordner des Stream Deck)
+  const PLUGIN = 'com.tonalo.sdPlugin';
+  function pluginSource() { return app.isPackaged ? path.join(process.resourcesPath, 'streamdeck-plugin') : path.join(__dirname, 'build', 'streamdeck-plugin'); }
+  function pluginTarget() {
+    if (process.platform === 'win32' && process.env.APPDATA) return path.join(process.env.APPDATA, 'Elgato', 'StreamDeck', 'Plugins');
+    if (process.platform === 'darwin') return path.join(app.getPath('home'), 'Library', 'Application Support', 'com.elgato.StreamDeck', 'Plugins');
+    return '';
+  }
+  // Ein Fingerabdruck aus Manifest und Code: ändert sich das Plugin, erkennt die App das ältere
+  function fingerprint(dir) {
+    try {
+      const h = crypto.createHash('sha256');
+      for (const f of ['manifest.json', 'plugin.js']) h.update(fs.readFileSync(path.join(dir, f)));
+      return h.digest('hex');
+    } catch (_) { return ''; }
+  }
+  function pluginStatus() {
+    const target = pluginTarget();
+    const src = pluginSource();
+    if (!target || !fs.existsSync(target) || !fs.existsSync(path.join(src, 'plugin.js'))) return { available: false, installed: false, current: false };
+    const have = fingerprint(path.join(target, PLUGIN));
+    return { available: true, installed: !!have, current: !!have && have === fingerprint(src) };
+  }
+  function pluginInstall() {
+    const st = pluginStatus();
+    if (!st.available) return false;
+    try {
+      const dest = path.join(pluginTarget(), PLUGIN);
+      // Nur überschreiben, nie den Ordner löschen: läuft das Stream Deck, hält es ihn fest
+      fs.cpSync(pluginSource(), dest, { recursive: true, force: true });
+      return pluginStatus().current;
+    } catch (_) { return false; }
+  }
+  ipcMain.handle('sd-plugin-status', (e) => (fromUs(e) ? pluginStatus() : { available: false, installed: false, current: false }));
+  ipcMain.handle('sd-plugin-install', (e) => (fromUs(e) ? pluginInstall() : false));
+
   ipcMain.handle('sd-get', (e) => (fromUs(e) ? cfg.enabled : false));
   ipcMain.handle('sd-set', async (e, on) => {
     if (!fromUs(e)) return false;

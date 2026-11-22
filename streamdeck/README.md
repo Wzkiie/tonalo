@@ -7,8 +7,8 @@ DJ, Random mix, Your radio, Shuffle / Smart Shuffle, Next, Previous, and a Volum
 
 ## Install
 
-1. In Tonalo, open Settings and switch **Stream-Deck-Plugin zulassen** (Stream Deck plugin) to *On*. It is off by default.
-2. Copy the folder `com.tonalo.sdPlugin` into the Stream Deck plugin folder, then restart the Stream Deck app:
+1. In Tonalo, open Settings and switch **Stream-Deck-Plugin zulassen** (Stream Deck plugin) to *On*. It is off by default. If the Stream Deck software is installed, Tonalo asks whether to copy the plugin there; say yes, restart the Stream Deck software once, and skip to step 3. (The same offer is a button under that switch whenever the plugin is missing or older than the one in the app.)
+2. Or do it by hand: copy the folder `com.tonalo.sdPlugin` into the Stream Deck plugin folder, then restart the Stream Deck app:
    - Windows: `%APPDATA%\Elgato\StreamDeck\Plugins\`
    - Mac: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/`
 3. Drag the Tonalo actions onto your keys.
