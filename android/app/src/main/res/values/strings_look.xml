@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Full-screen player: the line above the context name, one per kind of source (same as the iPhone app) -->
+    <string name="pl_from_album">PLAYING FROM ALBUM</string>
+    <string name="pl_from_playlist">PLAYING FROM PLAYLIST</string>
+    <string name="pl_from_artist">PLAYING FROM ARTIST</string>
+    <string name="pl_from_search">PLAYING FROM SEARCH</string>
+    <string name="pl_from_favorites">PLAYING FROM FAVORITES</string>
+    <string name="pl_from_downloads">PLAYING FROM DOWNLOADS</string>
+    <string name="pl_from_mix">PLAYING MIX</string>
+    <string name="pl_from_radio">PLAYING RADIO</string>
+    <string name="pl_from_dj">PICKED FOR YOU</string>
+    <string name="next_from">Next from: %1$s</string>
+    <string name="this_phone">This phone</string>
+    <string name="more_devices">More devices…</string>
+    <string name="devices_dots">Devices…</string>
+    <string name="sleep_minutes_long">%1$d minutes</string>
+</resources>

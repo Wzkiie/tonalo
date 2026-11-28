@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- What's new: the sheet after an update and the version history (ui/WhatsNew.kt) -->
+    <string name="wn_welcome_title">Tonalo was updated</string>
+    <string name="wn_welcome_version">Version %1$s</string>
+    <string name="wn_welcome_sub">Here\'s what\'s new.</string>
+    <string name="wn_skip">Skip</string>
+    <string name="wn_next">Next</string>
+    <string name="wn_show_changelog">Show changelog</string>
+    <string name="wn_current">Current</string>
+
+    <!-- 0.8.0 -->
+    <string name="wn_080_playing_t">Now playing, at a glance</string>
+    <string name="wn_080_playing">The song that plays right now moves with small bars, on the Home tiles and in every playlist, album and search.</string>
+    <string name="wn_080_dj_t">DJ for your TV</string>
+    <string name="wn_080_dj">Tap the DJ while your TV plays and its queue is replaced, so you hear the new set next. The DJ also has its own entry in your profile menu, and its tile on Home moves while it plays.</string>
+    <string name="wn_080_refresh_t">Pull to refresh everywhere</string>
+    <string name="wn_080_refresh">Pull down to refresh on every list and page, not only on a few.</string>
+    <string name="wn_080_accounts_t">Several accounts on one TV</string>
+    <string name="wn_080_accounts">Each profile pairs on its own, and the DJ goes to the TV with the right account.</string>
+    <string name="wn_080_safer_t">Safer and steadier</string>
+    <string name="wn_080_safer">Many fixes: downloads keep no login token in their database, the Jukebox limits connections, the equalizer sliders behave, and lyrics keep running while playback is paused.</string>
+
+    <!-- Earlier releases: titles (the texts are news_0x in strings.xml) -->
+    <string name="wn_070_t">Android Auto and a library like the iPhone\'s</string>
+    <string name="wn_050_t">Looks like the iPhone app</string>
+    <string name="wn_040_t">DJ</string>
+    <string name="wn_030_t">TV &amp; Jukebox</string>
+    <string name="wn_020_t">Downloads and radio</string>
+    <string name="wn_010_t">The first Android version</string>
+    <string name="wn_090_books_t">Audiobooks and podcasts</string>
+    <string name="wn_090_books">Connect your Audiobookshelf server under Settings or at sign-in and listen in the same app, with chapters, speed, a sleep timer and your progress in sync.</string>
+</resources>
